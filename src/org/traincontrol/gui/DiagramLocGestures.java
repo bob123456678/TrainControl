@@ -138,7 +138,7 @@ final class DiagramLocGestures
         }
 
         // Nor while an editor holds the setup (OB-076): its Cancel would revert and write back this placement.
-        if (!dropping && ui.isLayoutEditorOpen())
+        if (!dropping && ui.editorWindows().isLayoutEditorOpen())
         {
             ui.getModel().logf("layout.warnDiagramKeyWhileEditorOpen");
 

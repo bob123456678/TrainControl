@@ -311,7 +311,7 @@ public class AutonomyViewerPanel extends JPanel
         JPanel run = row();
 
         // Opens the diagram editor, where a station is right-clicked and given a locomotive.
-        placeLocomotives.addActionListener(e -> ui.openAutonomyEditor(null));
+        placeLocomotives.addActionListener(e -> ui.editorWindows().openAutonomyEditor(null));
         run.add(sized(placeLocomotives));
 
         // The step after placing, its own button so the run tab still has something pointing at it.
@@ -417,7 +417,7 @@ public class AutonomyViewerPanel extends JPanel
             // With the squares it names beside its own, outlined there as the editor's own list outlines them
             if (tile != null)
             {
-                ui.openAutonomyEditor(tile, row < findingRelatedRows.size() ? findingRelatedRows.get(row) : null);
+                ui.editorWindows().openAutonomyEditor(tile, row < findingRelatedRows.size() ? findingRelatedRows.get(row) : null);
             }
         }));
 

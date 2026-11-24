@@ -170,7 +170,7 @@ public class TailCrossedPrompt
         if (!wouldAsk(layout, at, arrivedFrom, trainLength)) return Answer.NOT_ASKED;
 
         // WHETHER AN EDITOR IS OPEN AS IT IS ASKED, for the door to know whether one opened in the wait
-        boolean editorWasOpen = parent instanceof TrainControlUI && ((TrainControlUI) parent).isLayoutEditorOpen();
+        boolean editorWasOpen = parent instanceof TrainControlUI && ((TrainControlUI) parent).editorWindows().isLayoutEditorOpen();
 
         List<Choice> choices = choicesFor(layout, at, arrivedFrom, trainLength, shown);
 
@@ -193,7 +193,7 @@ public class TailCrossedPrompt
             : reply(over, train, shownName(shown, at), choices, preselectedIndex(choices, recorded));
 
         boolean editorOpened = !editorWasOpen && parent instanceof TrainControlUI
-            && ((TrainControlUI) parent).isLayoutEditorOpen();
+            && ((TrainControlUI) parent).editorWindows().isLayoutEditorOpen();
 
         return new Answer(reply.answered, reply.answered && reply.choice != null ? reply.choice.getRoad() : null,
             editorOpened);
@@ -745,7 +745,7 @@ public class TailCrossedPrompt
 
             // Not with an editor open: its squares do not take the click and the small window would sit under the
             // editor, so the list is asked where the operator is working.
-            if (ui.isLayoutEditorOpen()) return null;
+            if (ui.editorWindows().isLayoutEditorOpen()) return null;
 
             AutonomySession session = ui.getAutonomySession();
 

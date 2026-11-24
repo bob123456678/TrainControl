@@ -251,14 +251,14 @@ public class testAPageWindowsMenuAsksOverIt
     {
         return Components.onTheEventThread(() ->
         {
-            Point point = ui.getAutonomyPointForTile(square);
+            Point point = ui.stationCaptions().getAutonomyPointForTile(square);
 
             assertTrue(railway().moveLocomotive(HIS_TRAIN, point.getName(), false, true),
                 "precondition: " + HIS_TRAIN + " could not stand on " + square);
 
             ui.updateVisiblePoints();
 
-            return ui.getAutonomyPointForTile(square);
+            return ui.stationCaptions().getAutonomyPointForTile(square);
         });
     }
 
@@ -788,7 +788,7 @@ public class testAPageWindowsMenuAsksOverIt
             "the question is not the page's");
 
         assertTrue(Components.waitFor(() -> !railway().getActiveLocomotives().isEmpty()
-            || railway().getLocomotiveLocation(train) != ui.getAutonomyPointForTile(post), PATIENCE_MS),
+            || railway().getLocomotiveLocation(train) != ui.stationCaptions().getAutonomyPointForTile(post), PATIENCE_MS),
             "Yes sent nothing");
 
         assertTrue(Components.waitFor(() -> railway().getActiveLocomotives().isEmpty(), 120000),
@@ -802,7 +802,7 @@ public class testAPageWindowsMenuAsksOverIt
     {
         for (TileKey square : session.mayTurnTiles())
         {
-            Point point = ui.getAutonomyPointForTile(square);
+            Point point = ui.stationCaptions().getAutonomyPointForTile(square);
 
             if (!square.getPage().equals(mainB.getPage()) || point == null || !point.isDestination()) continue;
 
@@ -820,7 +820,7 @@ public class testAPageWindowsMenuAsksOverIt
     {
         List<String> labels = new ArrayList<>();
 
-        Point point = ui.getAutonomyPointForTile(square);
+        Point point = ui.stationCaptions().getAutonomyPointForTile(square);
 
         for (String side : ArrivalSidePrompt.choicesFor(railway(), point, session.unbarredArrivalSides(square)))
         {
@@ -850,7 +850,7 @@ public class testAPageWindowsMenuAsksOverIt
         List<String> sides = sidesOffered(square);
 
         String question = I18n.f("autolayout.ui.askArrivalSide", org.traincontrol.automationui.StationIndex
-            .withoutArrivalSuffix(ui.getAutonomyPointForTile(square).getName()));
+            .withoutArrivalSuffix(ui.stationCaptions().getAutonomyPointForTile(square).getName()));
 
         for (Window window : bothWindows())
         {
@@ -897,9 +897,9 @@ public class testAPageWindowsMenuAsksOverIt
             TileKey here = new TileKey(mainB.getPage(), each.getX(), each.getY());
 
             if (each.getType() == LayoutDiagramComponent.componentType.STRAIGHT && !session.getStore().isStation(here)
-                && ui.getAutonomyPointForTile(here) != null) track = here;
+                && ui.stationCaptions().getAutonomyPointForTile(here) != null) track = here;
 
-            if (each.isFeedback() && !session.getStore().isStation(here) && ui.getAutonomyPointForTile(here) != null) track = here;
+            if (each.isFeedback() && !session.getStore().isStation(here) && ui.stationCaptions().getAutonomyPointForTile(here) != null) track = here;
         }
 
         assertNotNull(track, "precondition: no square that autonomy knows and is no station");

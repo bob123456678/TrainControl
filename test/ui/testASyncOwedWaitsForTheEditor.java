@@ -429,7 +429,7 @@ public class testASyncOwedWaitsForTheEditor
      * A layout-switch door's gate, asked in the same event as Edit, while the editor is on its way and not yet built,
      * refuses.
      *
-     * MUTATION: in `RunGates.refuseWhileEditorOpen`, ask `ui.isLayoutEditorOpen()` again, and this fails.
+     * MUTATION: in `RunGates.refuseWhileEditorOpen`, ask `ui.editorWindows().isLayoutEditorOpen()` again, and this fails.
      */
     @Test(timeOut = 120000)
     public void testASwitchDoorIsRefusedWhileAnEditorIsOnItsWay() throws Exception
@@ -446,7 +446,7 @@ public class testASyncOwedWaitsForTheEditor
                     ui.openLayoutEditor(PAGE, Boolean.TRUE, null);
 
                     out[0] = (Boolean) Reflect.method(TrainControlUI.class, "anEditorIsOpenOrOnItsWay").invoke(ui);
-                    out[1] = ui.isLayoutEditorOpen();
+                    out[1] = ui.editorWindows().isLayoutEditorOpen();
                     out[2] = (Boolean) Reflect.method(TrainControlUI.class, "refuseWhileEditorOpen").invoke(ui);
                 }
                 catch (Exception e)

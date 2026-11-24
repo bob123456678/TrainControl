@@ -348,7 +348,7 @@ public class testTheActiveTickPausesATrain
 
         final Point[] standing = new Point[1];
 
-        SwingUtilities.invokeAndWait(() -> standing[0] = ui.getAutonomyPointForTile(square));
+        SwingUtilities.invokeAndWait(() -> standing[0] = ui.stationCaptions().getAutonomyPointForTile(square));
 
         final Object options = gather.invoke(null, ui, standing[0]);
 
@@ -409,7 +409,7 @@ public class testTheActiveTickPausesATrain
 
         String leaving = I18n.t("layout.ui.dialogExitConfirmation");
 
-        for (long end = System.currentTimeMillis() + 15000; (editor.isDisplayable() || ui.whyLayoutCannotBeEdited() != null)
+        for (long end = System.currentTimeMillis() + 15000; (editor.isDisplayable() || ui.editorWindows().whyLayoutCannotBeEdited() != null)
             && System.currentTimeMillis() < end; )
         {
             Thread.sleep(100);
@@ -779,7 +779,7 @@ public class testTheActiveTickPausesATrain
     {
         java.awt.Window editor = null;
 
-        SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(mainB.getPage()));
+        SwingUtilities.invokeLater(() -> ui.editorWindows().openAutonomyEditorOnPage(mainB.getPage()));
 
         for (long end = System.currentTimeMillis() + 60000; editor == null && System.currentTimeMillis() < end; )
         {
@@ -1647,7 +1647,7 @@ public class testTheActiveTickPausesATrain
 
             SwingUtilities.invokeLater(save::doClick);
 
-            support.Components.waitFor(() -> !editor.isDisplayable() && ui.whyLayoutCannotBeEdited() == null, 30000);
+            support.Components.waitFor(() -> !editor.isDisplayable() && ui.editorWindows().whyLayoutCannotBeEdited() == null, 30000);
 
             assertFalse(editor.isDisplayable(), "the editor's Save did not close it");
         }, card ->

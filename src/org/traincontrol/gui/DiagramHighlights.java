@@ -77,7 +77,7 @@ public final class DiagramHighlights
     }
 
     /** Lights the squares of this kind carrying one of these logical addresses, on screen or not; returns how many. */
-    int highlightAddresses(Set<Integer> addresses, AddressedAs kind,
+    public int highlightAddresses(Set<Integer> addresses, AddressedAs kind,
         Color wash, int holdMs)
     {
         if (addresses == null || addresses.isEmpty()) return 0;
@@ -127,7 +127,7 @@ public final class DiagramHighlights
     }
 
     /** Lights the accessory squares these commands reach and `notThese` (or null) doesn't (OB-286); returns a count. */
-    int highlightAccessories(
+    public int highlightAccessories(
         Map<Integer, Set<Accessory.accessoryDecoderType>> byAddress,
         Color wash, int holdMs,
         Map<Integer, Set<Accessory.accessoryDecoderType>> notThese)

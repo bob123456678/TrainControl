@@ -996,8 +996,8 @@ public class testRightClickMenuTipsCanBeHidden
         }
 
         // Until the main window would open one again: its menus gray what an editor holds, and give it back late.
-        assertTrue(Components.waitFor(() -> EditorsOpen.editors().isEmpty() && ui.whyAutonomyEditorCannotOpen() == null,
-            PATIENCE_MS), "an editor did not close: " + EditorsOpen.titles() + " " + ui.whyAutonomyEditorCannotOpen());
+        assertTrue(Components.waitFor(() -> EditorsOpen.editors().isEmpty() && ui.editorWindows().whyAutonomyEditorCannotOpen() == null,
+            PATIENCE_MS), "an editor did not close: " + EditorsOpen.titles() + " " + ui.editorWindows().whyAutonomyEditorCannotOpen());
 
         Components.settle();
     }

@@ -89,7 +89,7 @@ public final class RestoreAction
             title, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, choices, choices[1]) != 0) return;
 
         // A route can start while the question is up; the exit's question about unsaved windows, as this ends in one
-        if (this.ui.refuseWhileARunHoldsTheSetup(this.ui) || !this.ui.everyOpenWindowMaySettle()) return;
+        if (this.ui.refuseWhileARunHoldsTheSetup(this.ui) || !this.ui.editorWindows().everyOpenWindowMaySettle()) return;
 
         // Where a stopped run left the trains, into the setup before the backup taken first and the exit without saves
         this.ui.captureRunningLayout();

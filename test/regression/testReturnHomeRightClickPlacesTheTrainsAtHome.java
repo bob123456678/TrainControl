@@ -299,7 +299,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
 
             try
             {
-                assertTrue(ui.isLayoutEditorOpen(), "precondition: the editor did not open");
+                assertTrue(ui.editorWindows().isLayoutEditorOpen(), "precondition: the editor did not open");
 
                 greyedWith(ui, I18n.t("autosetup.ui.menuEditorOpen"), "an editor open");
             }
@@ -360,7 +360,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
 
             try
             {
-                assertTrue(ui.isLayoutEditorOpen(), "precondition: the editor did not open");
+                assertTrue(ui.editorWindows().isLayoutEditorOpen(), "precondition: the editor did not open");
 
                 final JMenuItem run = theRunItem(ui);
 

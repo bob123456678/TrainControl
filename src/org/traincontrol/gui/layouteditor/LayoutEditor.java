@@ -984,7 +984,7 @@ public class LayoutEditor extends PositionAwareJFrame
         // The palette.
         if (x < 0 || y < 0) return null;
 
-        return this.parent.autonomyStationNameAt(new TileGraph.TileKey(this.layout.getName(), x, y));
+        return this.parent.stationCaptions().autonomyStationNameAt(new TileGraph.TileKey(this.layout.getName(), x, y));
     }
 
     /**
@@ -1735,7 +1735,7 @@ public class LayoutEditor extends PositionAwareJFrame
                     final String typed = currentFindingFilter();
 
                     parent.editorWindows().autonomyEditorClosedFromTheEditor(() -> parent.editorWindows()
-                        .openCarryingTheClick(clicked, typed, () -> parent.openAutonomyEditor(tile)));
+                        .openCarryingTheClick(clicked, typed, () -> parent.editorWindows().openAutonomyEditor(tile)));
 
                     dispose();
                 }
@@ -1754,7 +1754,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 final String typed = currentFindingFilter();
 
                 parent.editorWindows().autonomyEditorClosedFromTheEditor(() -> parent.editorWindows()
-                    .openCarryingTheClick(clicked, typed, () -> parent.openAutonomyEditor(at, named)));
+                    .openCarryingTheClick(clicked, typed, () -> parent.editorWindows().openAutonomyEditor(at, named)));
 
                 dispose();
             });
@@ -4011,7 +4011,7 @@ public class LayoutEditor extends PositionAwareJFrame
           {
             // Edit is handed back on any failure here, error or exception, as this runs outside openLayoutEditor's
             // catch.
-            parent.autonomyEditorClosed();
+            parent.editorWindows().autonomyEditorClosed();
 
             if (failed instanceof RuntimeException && parent.getModel() != null)
             {
@@ -4045,7 +4045,7 @@ public class LayoutEditor extends PositionAwareJFrame
         final String typed = currentFindingFilter();
 
         parent.editorWindows().autonomyEditorClosedFromTheEditor(
-            () -> parent.editorWindows().openCarryingTheClick(clicked, typed, () -> parent.openAutonomyEditor(tile)));
+            () -> parent.editorWindows().openCarryingTheClick(clicked, typed, () -> parent.editorWindows().openAutonomyEditor(tile)));
 
         dispose();
     }
@@ -4240,7 +4240,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 // Posted from a finally, as the other branch is, so a throw cannot leave the latch up.
                 try
                 {
-                    parent.autonomyEditorClosed();
+                    parent.editorWindows().autonomyEditorClosed();
                 }
                 finally
                 {

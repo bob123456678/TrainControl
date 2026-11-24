@@ -169,10 +169,11 @@ public class testLocMappingPages
         pageNames.put(-1, "3");
         pageNames.put(-2, "81");
 
-        java.lang.reflect.Method ofPages = Reflect.method(TrainControlUI.class, "namesOfPages");
+        Object pages = Reflect.get(TrainControlUI.class, ui, "locMappingPages");
 
         @SuppressWarnings("unchecked")
-        java.util.Set<String> asked = (java.util.Set<String>) ofPages.invoke(ui);
+        java.util.Set<String> asked = (java.util.Set<String>) Reflect.method(pages.getClass(), "namesOfPages")
+            .invoke(pages);
 
         assertTrue(asked.contains("Yard"), "a real page name was not offered as one: " + asked);
 

@@ -67,7 +67,7 @@ public class testDeleteAsksWhichConfiguration
             // NOTHING LOADED, as after a configuration whose setup would not load
             final boolean[] unloaded = new boolean[1];
 
-            SwingUtilities.invokeAndWait(() -> unloaded[0] = ui[0].unloadAutonomy());
+            SwingUtilities.invokeAndWait(() -> unloaded[0] = ui[0].autonomyLifecycle().unloadAutonomy());
 
             assertTrue(unloaded[0], "precondition: autonomy could not be unloaded");
 

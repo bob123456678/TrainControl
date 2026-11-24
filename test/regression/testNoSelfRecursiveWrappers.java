@@ -140,8 +140,6 @@ public class testNoSelfRecursiveWrappers
             "TrainControlUI", "ui." },
         { "diagramLocGestures", "src/org/traincontrol/gui/DiagramLocGestures.java", "DiagramLocGestures", WINDOW,
             "TrainControlUI", "ui." },
-        { "stationCaptions", "src/org/traincontrol/gui/StationCaptions.java", "StationCaptions", WINDOW,
-            "TrainControlUI", "ui." },
         { "connectingNotice", "src/org/traincontrol/gui/ConnectingNotice.java", "ConnectingNotice", WINDOW,
             "TrainControlUI", "ui." },
     };

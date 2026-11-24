@@ -515,11 +515,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     private static final int SAVE_KEY_ACTIVE_MAPPING_NUMBER = -1;
     private static final int SAVE_KEY_ACTIVE_BUTTON = -2;
 
-    private Set<String> namesOfPages()
-    {
-        return this.locMappingPages.namesOfPages();
-    }
-
     // Image cache
     // ConcurrentHashMap, not HashMap: the EDT, the ImageLoader pools and the render executors share it, and a plain
     // HashMap can corrupt its bucket table and spin at 100% CPU on Java 8.  It rejects nulls, so every put site must
@@ -657,11 +652,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         final LocomotiveSettingsFrame window = this.locomotiveSettings;
 
         if (window != null) SwingUtilities.invokeLater(window::refresh);
-    }
-
-    public boolean everyOpenWindowMaySettle()
-    {
-        return this.editorWindows.everyOpenWindowMaySettle();
     }
 
     // Popup references
@@ -871,7 +861,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
         installExportLogMenuItem();
 
-        installReturnHomeMenu();
+        returnHomeController.installMenu(returnHomeButton);
 
         // The windows it opens follow its always-on-top (MT-703).
         this.addPropertyChangeListener("alwaysOnTop", change ->
@@ -2272,7 +2262,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         }
         finally
         {
-            putThePendingTurnsBack(pendingTurns);
+            runningLayoutSync.putThePendingTurnsBack(pendingTurns);
         }
 
         return carried;
@@ -2315,7 +2305,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      */
     public boolean autonomyMenuIsUsable()
     {
-        return getModel() != null && isLayoutLoaded() && !this.connectingNotice.menusAreHeldByTheNotice();
+        return getModel() != null && editorWindows.isLayoutLoaded() && !this.connectingNotice.menusAreHeldByTheNotice();
     }
 
     /**
@@ -2324,7 +2314,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      */
     public String whyAutonomyIsUnavailable()
     {
-        if (getModel() == null || !isLayoutLoaded()) return I18n.t("autosetup.ui.tooltipNoLayout");
+        if (getModel() == null || !editorWindows.isLayoutLoaded()) return I18n.t("autosetup.ui.tooltipNoLayout");
 
         if (!canUseAutonomy()) return I18n.t("autosetup.ui.tooltipNeedsLocalLayout");
 
@@ -2418,7 +2408,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
         refreshStaticAutonomyLayer();
 
-        refreshAutonomyPrompt();
+        autonomyLifecycle.refreshAutonomyPrompt();
 
         // Locomotive panels are built from what is placed, so a configuration with placements must rebuild them.
         repaintAutoLocList(false);
@@ -3066,22 +3056,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         return autonomyTileMenus.buildTileMenu(tile, null);
     }
 
-    public void openAutonomyEditor(final TileGraph.TileKey tile)
-    {
-        this.editorWindows.openAutonomyEditor(tile);
-    }
-
-    public void openAutonomyEditor(final TileGraph.TileKey tile,
-        final List<TileGraph.TileKey> related)
-    {
-        this.editorWindows.openAutonomyEditor(tile, related);
-    }
-
-    public boolean isLayoutLoaded()
-    {
-        return this.editorWindows.isLayoutLoaded();
-    }
-
     /**
      * Whether neither the saved window state nor the locomotive database has ever been written.  Asks `exists()`, never
      * `databaseLoadFailed`: a file that exists but will not load must not read as empty (a blank setup would replace
@@ -3099,18 +3073,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             new File(Util.dataPath(MarklinControlStation.DATA_FILE_NAME)));
     }
 
-    public String whyLayoutCannotBeEdited()
-    {
-        return this.editorWindows.whyLayoutCannotBeEdited();
-    }
-
     /** Whether no editor window is currently open - the caller's half of the availability answer. */
     boolean noEditorOpen = true;
-
-    public String whyAutonomyEditorCannotOpen()
-    {
-        return this.editorWindows.whyAutonomyEditorCannotOpen();
-    }
 
     public void openLayoutEditor(String page, Boolean autonomy,
         final TileGraph.TileKey reveal)
@@ -3241,16 +3205,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         {
             // Cosmetic: a missing icon must not stop the window opening.
         }
-    }
-
-    public String autonomyStationNameAt(TileGraph.TileKey station)
-    {
-        return this.stationCaptions.autonomyStationNameAt(station);
-    }
-
-    public Point getAutonomyPointForTile(TileGraph.TileKey station)
-    {
-        return this.stationCaptions.getAutonomyPointForTile(station);
     }
 
     final StationCaptions stationCaptions = new StationCaptions(this);
@@ -3460,7 +3414,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      */
     boolean anEditorIsOpenOrOnItsWay()
     {
-        return isLayoutEditorOpen() || this.editorOnItsWay;
+        return editorWindows.isLayoutEditorOpen() || this.editorOnItsWay;
     }
 
     /** Refuses to dispatch where an editor, refresh or route has come since the click; true to stop the door. */
@@ -3679,11 +3633,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         return out.toString();
     }
 
-    private void putThePendingTurnsBack(Map<String, String[]> turns)
-    {
-        this.runningLayoutSync.putThePendingTurnsBack(turns);
-    }
-
     private void putTheTrainsBack(Map<String, String[]> standing,
         Set<String> placementsJustEdited)
     {
@@ -3758,11 +3707,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     /** The setup and the running railway kept in step: the folds, the rebuild and the settings as built. */
     final RunningLayoutSync runningLayoutSync = new RunningLayoutSync(this);
 
-    public boolean isLayoutEditorOpen()
-    {
-        return this.editorWindows.isLayoutEditorOpen();
-    }
-
     /** The windows this one opens follow its always-on-top, heard from the window's own property. */
     private void childWindowsFollowAlwaysOnTop(boolean onTop)
     {
@@ -3792,16 +3736,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
     /** An editor asked for and not yet shown; written on the event thread, read by `anEditorIsOpenOrOnItsWay` from any thread. */
     volatile boolean editorOnItsWay;
-
-    public void autonomyEditorClosed()
-    {
-        this.editorWindows.autonomyEditorClosed();
-    }
-
-    public void openAutonomyEditorOnPage(String page)
-    {
-        this.editorWindows.openAutonomyEditorOnPage(page);
-    }
 
     /** The window's editors: opening, closing, and whether the diagram may be edited. */
     final EditorWindows editorWindows = new EditorWindows(this);
@@ -4191,16 +4125,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
     AutonomyViewerPanel autonomyViewerPanel;
 
-    public void refreshAutonomyPrompt()
-    {
-        this.autonomyLifecycle.refreshAutonomyPrompt();
-    }
-
-    public boolean unloadAutonomy()
-    {
-        return this.autonomyLifecycle.unloadAutonomy();
-    }
-
     /** Tells the window the running configuration was renamed, since captures and reloads look it up by name. */
     public void autonomySetupRenamed(String from, String to)
     {
@@ -4231,11 +4155,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      */
     public void openAutonomyEditorIfItCan()
     {
-        if (whyAutonomyEditorCannotOpen() != null) return;
+        if (editorWindows.whyAutonomyEditorCannotOpen() != null) return;
 
         // Not `refuseWhileEditorOpen`: with an editor open the Edit item brings it forward (`openLayoutEditor`,
         // OB-058), and the guard would show "Close the editor first" there.
-        SwingUtilities.invokeLater(() -> openAutonomyEditor(null));
+        SwingUtilities.invokeLater(() -> editorWindows.openAutonomyEditor(null));
     }
 
     AutonomyBanner autonomyDiagramBanner;
@@ -4250,20 +4174,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
     final DiagramHighlights diagramHighlights = new DiagramHighlights(this);
 
-    public int highlightAddresses(Set<Integer> addresses, DiagramHighlights.AddressedAs kind, Color wash, int holdMs)
+    public DiagramHighlights diagramHighlights()
     {
-        return this.diagramHighlights.highlightAddresses(addresses, kind, wash, holdMs);
-    }
-
-    public int highlightAccessories(Map<Integer, Set<Accessory.accessoryDecoderType>> byAddress, Color wash, int holdMs)
-    {
-        return highlightAccessories(byAddress, wash, holdMs, null);
-    }
-
-    public int highlightAccessories(Map<Integer, Set<Accessory.accessoryDecoderType>> byAddress, Color wash, int holdMs,
-        Map<Integer, Set<Accessory.accessoryDecoderType>> notThese)
-    {
-        return this.diagramHighlights.highlightAccessories(byAddress, wash, holdMs, notThese);
+        return this.diagramHighlights;
     }
 
     public DiagramTileRegistry getDiagramTileRegistry()
@@ -5053,7 +4966,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         // Asked once, of the stored answer (OB-127), not of the model, which answers for the instant it ran.
         this.editorWindows.updateLayoutLoaded();
 
-        if (!isLayoutLoaded())
+        if (!editorWindows.isLayoutLoaded())
         {
             // Only with somebody to ask: a first launch with no layout creates one; later starts still ask.
             createAndApplyEmptyLayout(TrainControlUI.DEMO_LAYOUT_OUTPUT_PATH, !isFirstLaunch());
@@ -5223,7 +5136,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         // Settled before anything is loaded: otherwise, with auto-load off, the Auto tab opened enabled and empty.
         refreshAutonomyTabState();
 
-        SwingUtilities.invokeLater(() -> refreshAutonomyPrompt());
+        SwingUtilities.invokeLater(() -> autonomyLifecycle.refreshAutonomyPrompt());
         // The start-up sync's mark on the Locomotives menu
         greyWhatARunRefuses();
 
@@ -5242,7 +5155,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
                 }
 
                 refreshAutonomyTabState();
-                refreshAutonomyPrompt();
+                autonomyLifecycle.refreshAutonomyPrompt();
             });
         }
                 
@@ -5873,7 +5786,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             this.sourceIsNow(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
 
             // OB-093: the diagram strip's checkbox is separate from the Auto tab that resetAutonomySession grays.
-            this.refreshAutonomyPrompt();
+            autonomyLifecycle.refreshAutonomyPrompt();
 
             if (!this.model.getLayoutList().isEmpty())
             {
@@ -13923,7 +13836,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         // The open editor first, because this is a door out of it (OB-070).  Asked once per window, in
         // `everyOpenWindowMaySettle`: asked here too, a dirty diagram editor is asked twice, and Discard then Save
         // writes the discarded work, as a Save does not clear `canUndo()`.  Cancel cancels the exit.
-        if (!everyOpenWindowMaySettle()) return;
+        if (!editorWindows.everyOpenWindowMaySettle()) return;
 
         // Trains first, and not conditional on the autosave setting: a guard that stops a railway must not be one
         // hidden checkbox away from not running.
@@ -16133,12 +16046,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         return this.returnHomeController.whyTheTrainsCannotBePlacedAtTheirHomes();
     }
 
-    /** Right-click on Return Home opens its menu even when grayed, so the click can say why (FR-129). */
-    private void installReturnHomeMenu()
-    {
-        this.returnHomeController.installMenu(this.returnHomeButton);
-    }
-
     /** For tests: the popup the last right-click on Return Home opened, or null when none was opened. */
     public javax.swing.JPopupMenu returnHomePopupForTest()
     {
@@ -17360,7 +17267,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     private void editAutonomyFromSettingsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editAutonomyFromSettingsActionPerformed
 
         // Opens the autonomy editor itself, not whichever editor was used last, and says why when it cannot.
-        String why = whyAutonomyEditorCannotOpen();
+        String why = editorWindows.whyAutonomyEditorCannotOpen();
 
         if (why != null)
         {
@@ -18245,7 +18152,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         this.model.logf("autolayout.infoSetTrainLength", String.valueOf(units), l.getName());
 
         // The findings follow the number: FR-046's no-length warning must go when the length arrives.
-        refreshAutonomyPrompt();
+        autonomyLifecycle.refreshAutonomyPrompt();
 
         blockedTrackChanged();
     }
@@ -18284,49 +18191,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     public void setLocIcon(Locomotive l, MouseEvent evt)
     {
         this.locIconActions.setLocIcon(l, evt);
-    }
-
-    /**
-     * Notes, beside a crop, which picture it was cut out of (FR-032), because re-cropping needs the ORIGINAL: cropping
-     * a crop can only go tighter. A sidecar file, since a Locomotive field would touch the model and its copy
-     * constructor. Best-effort: if it cannot be written, re-cropping falls back to the crop.
-     */
-    public void rememberCropSource(File crop, File source)
-    {
-        this.locIconActions.rememberCropSource(crop, source);
-    }
-
-    /**
-     * Also records WHERE in the picture the crop was taken (OB-125), as a second line so older notes still read as a
-     * bare path. `view` is the settled view, or null to record only the source.
-     */
-    public void rememberCropSource(File crop, File source, double[] view)
-    {
-        this.locIconActions.rememberCropSource(crop, source, view);
-    }
-
-    /**
-     * The view a crop was taken at (OB-125): five numbers as the crop panel writes them, or null for anything
-     * unreadable (the covering center crop is the fallback).
-     */
-    public double[] cropViewOf(String url)
-    {
-        return this.locIconActions.cropViewOf(url);
-    }
-
-    /** The picture a crop was cut from, or null when there is no note or the file it names has gone. */
-    public File cropSourceOf(String url)
-    {
-        return this.locIconActions.cropSourceOf(url);
-    }
-
-    /**
-     * Crops the icon a locomotive already has without asking for the file again (FR-032), from the original when the
-     * crop remembers one; then as `setLocIcon` does for a fresh file.
-     */
-    public void recropLocIcon(Locomotive l, java.awt.Component parent)
-    {
-        this.locIconActions.recropLocIcon(l, parent);
     }
 
     /** The folder inside the icon folder where the Central Station's pictures are kept to crop from (FR-104). */
@@ -20062,7 +19926,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             {
                 // LayoutPathLabel.setText("Central Station: " + prefs.get(IP_PREF, "(none loaded)"));
                 this.switchCSLayoutMenuItem.setEnabled(false);
-                this.downloadCSLayoutMenuItem.setEnabled(connected && isLayoutLoaded());
+                this.downloadCSLayoutMenuItem.setEnabled(connected && editorWindows.isLayoutLoaded());
             }
             else
             {
@@ -20288,7 +20152,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
                 this.editorWindows.updateLayoutLoaded();
 
-                if (!isLayoutLoaded())
+                if (!editorWindows.isLayoutLoaded())
                 {
                     this.KeyboardTab.setEnabledAt(1, false);
                     if (this.KeyboardTab.getSelectedIndex() == 1)

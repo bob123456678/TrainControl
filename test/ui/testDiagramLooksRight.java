@@ -4344,7 +4344,7 @@ public class testDiagramLooksRight
     {
         final boolean[] unloaded = new boolean[1];
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> unloaded[0] = ui.unloadAutonomy());
+        javax.swing.SwingUtilities.invokeAndWait(() -> unloaded[0] = ui.autonomyLifecycle().unloadAutonomy());
 
         for (int i = 0; i < 10; i++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
 

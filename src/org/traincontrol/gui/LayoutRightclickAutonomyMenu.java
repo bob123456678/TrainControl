@@ -560,7 +560,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      */
     private JMenuItem openFullEditorItem()
     {
-        String refusal = ui.whyAutonomyEditorCannotOpen();
+        String refusal = ui.editorWindows().whyAutonomyEditorCannotOpen();
 
         JMenuItem openEditor = new JMenuItem(I18n.t("autosetup.ui.menuOpenFullEditor"));
 
@@ -568,7 +568,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         {
             // On the square that was clicked, so the editor comes up on the right page with that tile found and
             // flashing.
-            openEditor.addActionListener(event -> ui.openAutonomyEditor(here));
+            openEditor.addActionListener(event -> ui.editorWindows().openAutonomyEditor(here));
         }
         else
         {

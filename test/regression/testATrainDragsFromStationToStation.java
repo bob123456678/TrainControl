@@ -1290,7 +1290,7 @@ public class testATrainDragsFromStationToStation
 
             for (TileKey tile : session.getReducer().getPoints().keySet())
             {
-                if (PAGE.equals(tile.getPage()) && !session.getStore().isStation(tile) && ui.getAutonomyPointForTile(tile) != null)
+                if (PAGE.equals(tile.getPage()) && !session.getStore().isStation(tile) && ui.stationCaptions().getAutonomyPointForTile(tile) != null)
                 {
                     notAStation = tile;
                 }

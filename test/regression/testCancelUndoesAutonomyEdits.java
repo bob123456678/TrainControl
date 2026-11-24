@@ -492,7 +492,7 @@ public class testCancelUndoesAutonomyEdits
 
             final boolean[] mayExit = new boolean[1];
 
-            SwingUtilities.invokeAndWait(() -> mayExit[0] = ui.everyOpenWindowMaySettle());
+            SwingUtilities.invokeAndWait(() -> mayExit[0] = ui.editorWindows().everyOpenWindowMaySettle());
 
             Components.drain(8);
 

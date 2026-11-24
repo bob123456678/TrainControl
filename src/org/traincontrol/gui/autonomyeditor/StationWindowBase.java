@@ -318,7 +318,7 @@ abstract class StationWindowBase extends JDialog
 
         if (main == null) return null;
 
-        if (editor.menuOnly && main.isLayoutEditorOpen()) return I18n.t("autosetup.ui.menuEditorOpen");
+        if (editor.menuOnly && main.editorWindows().isLayoutEditorOpen()) return I18n.t("autosetup.ui.menuEditorOpen");
 
         return main.aRunHoldsTheSetup() ? I18n.t(RunGates.NO_EDITS_WHILE_RUNNING) : null;
     }

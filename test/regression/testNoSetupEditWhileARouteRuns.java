@@ -423,7 +423,7 @@ public class testNoSetupEditWhileARouteRuns
 
             assertNotNull(page, "precondition: no page 1 - Main");
 
-            assertNull(ui.whyAutonomyEditorCannotOpen(), "precondition: the autonomy editor may not open at rest");
+            assertNull(ui.editorWindows().whyAutonomyEditorCannotOpen(), "precondition: the autonomy editor may not open at rest");
 
             assertTrue(modeTab(ui, page, editor).isEnabled(), "precondition: the track editor's Autonomy tab is greyed"
                 + " at rest");
@@ -436,7 +436,7 @@ public class testNoSetupEditWhileARouteRuns
 
             try
             {
-                assertEquals(ui.whyAutonomyEditorCannotOpen(), NO_EDITS, "the autonomy"
+                assertEquals(ui.editorWindows().whyAutonomyEditorCannotOpen(), NO_EDITS, "the autonomy"
                     + " editor may open while a route runs, and Open Full Editor is live");
 
                 for (final Boolean autonomy : new Boolean[] {Boolean.TRUE, Boolean.FALSE})
@@ -447,7 +447,7 @@ public class testNoSetupEditWhileARouteRuns
 
                     Components.drain(6);
 
-                    assertFalse(ui.isLayoutEditorOpen(), "the " + (autonomy ? "autonomy" : "track") + " editor opened"
+                    assertFalse(ui.editorWindows().isLayoutEditorOpen(), "the " + (autonomy ? "autonomy" : "track") + " editor opened"
                         + " while a route runs");
 
                     assertTrue(answering.since(from).contains(refusal), "the Edit door for the "
@@ -1755,7 +1755,7 @@ public class testNoSetupEditWhileARouteRuns
                     {
                         int asked = answering.count();
 
-                        SwingUtilities.invokeAndWait(door.equals("Unload") ? (Runnable) () -> window.unloadAutonomy()
+                        SwingUtilities.invokeAndWait(door.equals("Unload") ? (Runnable) () -> window.autonomyLifecycle().unloadAutonomy()
                             : doors.get(door));
 
                         Components.drain(6);
@@ -1796,7 +1796,7 @@ public class testNoSetupEditWhileARouteRuns
 
             // UNLOAD, the Autonomy menu's other way of replacing the railway: refused while a route runs, offered the same
             // stop while autonomy is busy, and the railway stays either way (done at rest below, before the banner's)
-            final Runnable unload = () -> window.unloadAutonomy();
+            final Runnable unload = () -> window.autonomyLifecycle().unloadAutonomy();
 
             aRouteRuns(ui, true);
 
@@ -1863,9 +1863,9 @@ public class testNoSetupEditWhileARouteRuns
 
             SwingUtilities.invokeAndWait(() ->
             {
-                assertTrue(window.unloadAutonomy(), "precondition: autonomy would not unload at rest");
+                assertTrue(window.autonomyLifecycle().unloadAutonomy(), "precondition: autonomy would not unload at rest");
 
-                window.refreshAutonomyPrompt();
+                window.autonomyLifecycle().refreshAutonomyPrompt();
             });
 
             Components.drain(6);

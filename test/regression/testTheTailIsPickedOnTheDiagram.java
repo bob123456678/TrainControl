@@ -438,7 +438,7 @@ public class testTheTailIsPickedOnTheDiagram
 
             open.set(ui, editor[0]);
 
-            assertTrue(ui.isLayoutEditorOpen(), "precondition: the window does not know the editor is open");
+            assertTrue(ui.editorWindows().isLayoutEditorOpen(), "precondition: the window does not know the editor is open");
 
             asker.submit(() -> TailCrossedPrompt.askAfterPlacement(q.layout, q.tunnel, "N", 5, "FR-100 train", ui, null));
 
@@ -1442,7 +1442,7 @@ public class testTheTailIsPickedOnTheDiagram
             String roadBefore = ui.getAutonomySession().getArrivedAlong(tunnel);
 
             // THE EDITOR, OPENED WHILE THE QUESTION WAITS.
-            javax.swing.SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(tunnel.getPage()));
+            javax.swing.SwingUtilities.invokeLater(() -> ui.editorWindows().openAutonomyEditorOnPage(tunnel.getPage()));
 
             for (long end = System.currentTimeMillis() + 60000; editor == null && System.currentTimeMillis() < end; )
             {
@@ -1653,7 +1653,7 @@ public class testTheTailIsPickedOnTheDiagram
 
         final Point[] standing = new Point[1];
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> standing[0] = ui.getAutonomyPointForTile(square));
+        javax.swing.SwingUtilities.invokeAndWait(() -> standing[0] = ui.stationCaptions().getAutonomyPointForTile(square));
 
         final Object options = gather.invoke(null, ui, standing[0]);
 

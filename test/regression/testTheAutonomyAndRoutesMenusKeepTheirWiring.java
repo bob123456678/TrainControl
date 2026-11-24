@@ -487,7 +487,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
             // CLOSED: the two hidden, and every tooltip back
             SwingUtilities.invokeAndWait(editor::dispose);
 
-            assertTrue(Components.waitFor(() -> !ui.isLayoutEditorOpen(), 10000), "precondition: the editor would not"
+            assertTrue(Components.waitFor(() -> !ui.editorWindows().isLayoutEditorOpen(), 10000), "precondition: the editor would not"
                 + " close");
 
             open(layouts);

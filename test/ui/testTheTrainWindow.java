@@ -1249,7 +1249,7 @@ public class testTheTrainWindow
 
         editor = support.FrozenEditor.editorOn(model, ui, session, PAGE);
 
-        assertTrue(Components.waitFor(() -> Components.onTheEventThread(ui::isLayoutEditorOpen), 10000),
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(ui.editorWindows()::isLayoutEditorOpen), 10000),
             "precondition: the editor did not open");
         assertTrue(Components.onTheEventThread(window::isShowing), "precondition: the editor closed the window");
         assertTrue(StationDoors.live(window, "station.fullAutonomy"), "precondition: the box is gray");
@@ -1895,7 +1895,7 @@ public class testTheTrainWindow
 
         try
         {
-            assertTrue(Components.waitFor(() -> ui.isLayoutEditorOpen(), 30000),
+            assertTrue(Components.waitFor(() -> ui.editorWindows().isLayoutEditorOpen(), 30000),
                 "Open the Full Editor... under Autonomy Setup opened no editor");
         }
         finally
