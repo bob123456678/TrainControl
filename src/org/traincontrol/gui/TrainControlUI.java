@@ -204,7 +204,7 @@ import org.traincontrol.marklin.file.CS2File;
 /**
  * UI for controlling trains and switches using the keyboard
  */
-public class TrainControlUI extends PositionAwareJFrame implements View 
+public class TrainControlUI extends PositionAwareJFrame implements View, DiagramHighlights.Diagrams
 {
     // Data save file name
     public static final String DATA_FILE_NAME = "UIState.data";
@@ -4247,25 +4247,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Whether the strip's copy of the run buttons already follows the real ones, apart from the strip existing. */
     private boolean listeningToRunButtons;
 
-    /**
-     * What an address names, since every tile carries a number (MT-462): a page link's address is a page, a route
-     * tile's the route's id, an s88's the sensor.  Three values because a route can command another route
-     * (`RouteCommand.isRoute`), and its tile must not be lit by an accessory of the same number.
-     */
-    public enum AddressedAs
-    {
-        /** A switch, a signal or an uncoupler - anything the railway throws. */
-        ACCESSORY,
-
-        /** An s88 contact. */
-        FEEDBACK,
-
-        ROUTE
-    }
-
     final DiagramHighlights diagramHighlights = new DiagramHighlights(this);
 
-    public int highlightAddresses(Set<Integer> addresses, AddressedAs kind, Color wash, int holdMs)
+    public int highlightAddresses(Set<Integer> addresses, DiagramHighlights.AddressedAs kind, Color wash, int holdMs)
     {
         return this.diagramHighlights.highlightAddresses(addresses, kind, wash, holdMs);
     }

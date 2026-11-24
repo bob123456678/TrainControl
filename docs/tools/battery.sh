@@ -837,7 +837,8 @@ list_classes()
 {
     for f in $(find test -name "*.java" | sort)
     do
-        cls=$(echo "$f" | sed 's|^test/||; s|\.java$||; s|/|.|g')
+        # A class in a package folder of test/unit is in that package: unit/org/x/testY is org.x.testY
+        cls=$(echo "$f" | sed 's|^test/unit/\([^/]*/\)|\1|; s|^test/||; s|\.java$||; s|/|.|g')
 
         case "$cls" in *.*) ;; *) continue;; esac
 

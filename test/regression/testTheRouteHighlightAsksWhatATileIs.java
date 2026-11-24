@@ -5,6 +5,7 @@ import javax.swing.SwingUtilities;
 import static org.traincontrol.base.Accessory.accessoryDecoderType.DCC;
 import static org.traincontrol.base.Accessory.accessoryDecoderType.MM2;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.gui.DiagramHighlights.AddressedAs;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -90,7 +91,7 @@ public class testTheRouteHighlightAsksWhatATileIs
     @Test
     public void testASensorIsNotLitByAnAccessoryAddress() throws Exception
     {
-        int lit = light(S88_AT_WEST_END, TrainControlUI.AddressedAs.ACCESSORY);
+        int lit = light(S88_AT_WEST_END, AddressedAs.ACCESSORY);
 
         assertEquals(lit, 0,
             "an accessory address lit " + lit + " tile(s) on a page whose only accessory is numbered "
@@ -110,7 +111,7 @@ public class testTheRouteHighlightAsksWhatATileIs
     @Test
     public void testTheSameAddressAsASensorDoesLightIt() throws Exception
     {
-        int lit = light(S88_AT_WEST_END, TrainControlUI.AddressedAs.FEEDBACK);
+        int lit = light(S88_AT_WEST_END, AddressedAs.FEEDBACK);
 
         assertTrue(lit > 0,
             "the sensor numbered " + S88_AT_WEST_END + " does not light when the address is asked of"
@@ -126,7 +127,7 @@ public class testTheRouteHighlightAsksWhatATileIs
     @Test
     public void testAnAccessoryAddressLightsTheAccessory() throws Exception
     {
-        int lit = light(ACCESSORY_OF_THE_TURNOUT, TrainControlUI.AddressedAs.ACCESSORY);
+        int lit = light(ACCESSORY_OF_THE_TURNOUT, AddressedAs.ACCESSORY);
 
         assertTrue(lit > 0,
             "the turnout numbered " + ACCESSORY_OF_THE_TURNOUT + " does not light for its own"
@@ -238,7 +239,7 @@ public class testTheRouteHighlightAsksWhatATileIs
     }
 
     /** Lights one address, of one kind, and lets the event thread finish; how many labels were lit. */
-    private static int light(final int address, final TrainControlUI.AddressedAs kind) throws Exception
+    private static int light(final int address, final AddressedAs kind) throws Exception
     {
         endEveryFlash();
 

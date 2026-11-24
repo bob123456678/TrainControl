@@ -7,7 +7,7 @@
 Run it from the project root once the class file exists under test/.  Three things, each skipped when already done:
 
   1. build.xml: a <test-one-class class="..."/> line after the last one (regression.testEveryTestIsInTheBattery);
-     none for a unit.* class, which `ant test-unit` runs with its folder.
+     none for a unit.* class or a class in a package folder of test/unit, which `ant test-unit` runs with its folder.
   2. The window census in regression.testSwitchingToACentralStationLayout: the number of test classes that build a
      TrainControlUI is recounted the way that test counts it; when it differs, the pin and its message are set to the
      recount (no comment line: a dated one is history, which regression.testCommentsStayLean refuses).
@@ -184,12 +184,14 @@ def main(argv):
     qualified = names[0]
     folder, simple = qualified.rsplit(".", 1)
     file = os.path.join(root, "test", folder, simple + ".java")
+    if "." in folder:  # a class of another package lives in its package folder of test/unit
+        file = os.path.join(root, "test", "unit", *folder.split("."), simple + ".java")
     if not os.path.isfile(file):
         print("no such test class: %s" % file)
         return 2
     source = read(file)
     steps = []
-    if folder == "unit":
+    if folder == "unit" or "." in folder:
         print("%s is a unit test: `ant test-unit` runs test/unit, so build.xml is not touched" % qualified)
     elif "@Test" in source:
         steps.append(plan_build_xml(root, simple))

@@ -80,6 +80,12 @@ def without_comments(src):
     return "".join(out)
 
 
+def qualified(path):
+    """test/core/testX.java is core.testX; test/unit/org/x/testY.java, in a package folder of test/unit, is org.x.testY."""
+    parts = path[:-5].split("/")[1:]
+    return ".".join(parts[1:] if parts[0] == "unit" and len(parts) > 2 else parts)
+
+
 def main(argv):
     sys.stdout.reconfigure(newline="\n")  # a list file with CR line ends names classes that do not exist
     verbose = "-v" in argv
@@ -114,11 +120,14 @@ def main(argv):
         d = os.path.join("test", folder)
         if not os.path.isdir(d):
             continue
-        for name in sorted(os.listdir(d)):
-            if name.endswith(".java"):
-                text = read(os.path.join(d, name))
-                (tests if "@Test" in text else support)["%s.%s" % (folder, name[:-5])] = text
-    by_simple = {q.split(".")[1]: q for q in tests}
+        # test/unit's package folders hold classes of those packages
+        for base, _dirs, names in os.walk(d) if folder == "unit" else [(d, [], os.listdir(d))]:
+            for name in sorted(names):
+                if name.endswith(".java"):
+                    path = os.path.join(base, name).replace(os.sep, "/")
+                    text = read(path)
+                    (tests if "@Test" in text else support)[qualified(path)] = text
+    by_simple = {q.rsplit(".", 1)[1]: q for q in tests}
 
     why = {}
     guarded = set()
@@ -159,7 +168,7 @@ def main(argv):
                 if m:
                     keys.append(m.group(1))
         elif path.startswith("test/") and path.endswith(".java"):
-            q = path.split("/")[1] + "." + base_name[:-5]
+            q = qualified(path)
             if status == "D":
                 continue
             if q in tests:

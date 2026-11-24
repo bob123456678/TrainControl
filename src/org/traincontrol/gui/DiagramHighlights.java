@@ -9,7 +9,8 @@ import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
-import org.traincontrol.gui.TrainControlUI.AddressedAs;
+import org.traincontrol.gui.autonomy.DiagramTileRegistry;
+import org.traincontrol.model.ViewListener;
 
 /**
  * The route editor's "Highlight on Diagram" (MT-462): flashes the squares, on any page, that a route's addresses name.
@@ -19,15 +20,36 @@ public final class DiagramHighlights
     /** Long enough for anyone to find the squares; the question ends the highlight itself once it is answered. */
     private static final int HOLD_MS = 30 * 60 * 1000;
 
-    private final TrainControlUI ui;
+    /**
+     * What an address names, as every tile carries a number (MT-462): a route can command a route
+     * (`RouteCommand.isRoute`), whose tile an accessory of the same number must not light.
+     */
+    public enum AddressedAs
+    {
+        /** A switch, a signal or an uncoupler - anything the railway throws. */
+        ACCESSORY,
+        FEEDBACK,
+        ROUTE
+    }
 
-    DiagramHighlights(TrainControlUI ui)
+    /** What the highlights read of the main window: its pages, and the squares on screen. */
+    interface Diagrams
+    {
+        /** The railway whose pages are searched. */
+        ViewListener getModel();
+        /** The labels on screen for each square. */
+        DiagramTileRegistry getDiagramTileRegistry();
+    }
+
+    private final Diagrams ui;
+
+    DiagramHighlights(Diagrams ui)
     {
         this.ui = ui;
     }
 
     /** Holds squares lit on the track diagram while a question about them is up, or puts them out. */
-    public static void hold(TrainControlUI ui, Collection<TileGraph.TileKey> squares, boolean on)
+    public static void hold(Diagrams ui, Collection<TileGraph.TileKey> squares, boolean on)
     {
         for (TileGraph.TileKey square : squares)
         {
@@ -47,10 +69,8 @@ public final class DiagramHighlights
         {
             case FEEDBACK:
                 return tile.isFeedback();
-
             case ROUTE:
                 return tile.isRoute();
-
             default:
                 return tile.isAccessory();
         }
