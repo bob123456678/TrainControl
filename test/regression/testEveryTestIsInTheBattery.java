@@ -120,25 +120,26 @@ public class testEveryTestIsInTheBattery
 
     /**
      * The unit suite is test/unit, run in one JVM by `ant test-unit` and class by class by the battery: every file there
-     * is `package unit;` and a test, its code (comments stripped) names nothing that builds the window, a station or a
-     * railway, and it uses only the `support` helpers in UNIT_SUPPORT.
+     * is `package unit;` (in a package folder, that package) and a test, its code (comments stripped) names nothing that
+     * builds the window, a station or a railway, and it uses only the `support` helpers in UNIT_SUPPORT.
      *
      * MUTATION: put `Class<?> c = org.traincontrol.marklin.MarklinControlStation.class;` or `support.StationRig.class`
-     * in a unit class, even after a one-line block comment, and this fails naming it.
+     * in a unit class, in test/unit or a package folder of it, even after a one-line block comment, and this fails.
      */
     @Test
     public void testTheUnitSuiteBuildsNoWindowOrStation() throws Exception
     {
         assertTrue(withoutXmlComments(new String(Files.readAllBytes(new File("build.xml").toPath()),
-            StandardCharsets.UTF_8)).contains("testincludes=\"unit/*.java\""), "build.xml no longer runs test/unit");
+            StandardCharsets.UTF_8)).contains("testincludes=\"unit/**/*.java\""), "build.xml no longer runs test/unit");
 
         List<String> wrong = new ArrayList<>();
 
-        for (File file : new File("test/unit").listFiles())
+        for (File file : filesIn(new File("test/unit")))
         {
             List<String> lines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8);
+            String q = qualified(file);
 
-            if (!file.getName().endsWith(".java") || !lines.contains("package unit;")
+            if (!file.getName().endsWith(".java") || !lines.contains("package " + q.replaceAll("\\.[^.]*$", "") + ";")
                 || !lines.toString().contains("@Test")) wrong.add(file.getName() + " (not a unit test class)");
 
             for (String line : String.join("\n", lines).replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("//[^\\n]*", "")
@@ -183,13 +184,7 @@ public class testEveryTestIsInTheBattery
 
         for (File folder : new File("test").listFiles())
         {
-            if (!folder.isDirectory()) continue;
-
-            File[] files = folder.listFiles();
-
-            if (files == null) continue;
-
-            for (File file : files)
+            for (File file : filesIn(folder))
             {
                 if (!file.getName().endsWith(".java")) continue;
 
@@ -271,13 +266,7 @@ public class testEveryTestIsInTheBattery
 
         for (File folder : new File("test").listFiles())
         {
-            if (!folder.isDirectory()) continue;
-
-            File[] files = folder.listFiles();
-
-            if (files == null) continue;
-
-            for (File file : files)
+            for (File file : filesIn(folder))
             {
                 if (!file.getName().endsWith(".java")) continue;
 
@@ -381,12 +370,12 @@ public class testEveryTestIsInTheBattery
 
         for (String folder : new String[] {"core", "ui", "regression", "support", "unit"})
         {
-            for (File file : new File("test/" + folder).listFiles())
+            for (File file : filesIn(new File("test/" + folder)))
             {
                 String name = file.getName();
 
-                if (!name.endsWith(".java") || DESKTOP_WORDS_HARMLESS.contains(name)
-                    || lane.contains(folder + "." + name.substring(0, name.length() - 5))) continue;
+                if (!name.endsWith(".java") || DESKTOP_WORDS_HARMLESS.contains(name) || lane.contains(qualified(file)))
+                    continue;
 
                 for (String line : Files.readAllLines(file.toPath(), StandardCharsets.UTF_8))
                 {
@@ -410,7 +399,7 @@ public class testEveryTestIsInTheBattery
 
         for (String name : lane)
         {
-            assertTrue(exists(name.substring(name.indexOf('.') + 1)), "serial-lane.txt names " + name + ", which is not a test class");
+            assertTrue(exists(name.substring(name.lastIndexOf('.') + 1)), "serial-lane.txt names " + name + ", which is not a test class");
         }
     }
 
@@ -428,10 +417,31 @@ public class testEveryTestIsInTheBattery
     {
         for (String folder : new String[] {"core", "ui", "regression", "support", "unit"})
         {
-            if (new File("test/" + folder + "/" + name + ".java").exists()) return true;
+            for (File file : filesIn(new File("test/" + folder))) if (file.getName().equals(name + ".java")) return true;
         }
 
         return false;
+    }
+
+    /** The files in a folder of test/, and in test/unit those in its package folders too. */
+    private static List<File> filesIn(File folder)
+    {
+        List<File> out = new ArrayList<>();
+        File[] files = folder.listFiles();
+
+        for (File file : files == null ? new File[0] : files)
+        {
+            if (!file.isDirectory()) out.add(file);
+            else if (file.getPath().replace('\\', '/').startsWith("test/unit/")) out.addAll(filesIn(file));
+        }
+
+        return out;
+    }
+
+    /** A test file's class: test/core/testX.java is core.testX, and test/unit/org/x/testY.java is org.x.testY. */
+    private static String qualified(File file)
+    {
+        return file.getPath().replace('\\', '/').replaceAll("^test/(unit/(?=.*/))?|\\.java$", "").replace('/', '.');
     }
     /**
      * The build file with everything between comment delimiters removed, deliberately crude (blanking spans rather than
