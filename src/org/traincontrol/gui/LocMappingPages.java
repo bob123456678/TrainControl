@@ -29,16 +29,16 @@ final class LocMappingPages
     /** FlatLightLaf's accent blue, written down because the UIManager key has changed name between FlatLaf releases. */
     private static final Color PAGE_BADGE_BLUE = new Color(0x26, 0x75, 0xBF);
 
-    /** What the pages read and change of the main window: the keyboard's pages, their tabs and label, the menu. */
+    /** What the pages read and change of the main window. */
     interface Keyboard
     {
         /** How many pages there are. */
         int getNumLocMappings();
         /** The page showing, from 1. */
         int getLocMappingNumber();
-        /** The page showing: each key's locomotive, null for none. */
+        /** The page showing: each key's locomotive or null. */
         Map<JButton, Locomotive> currentLocMapping();
-        /** The pages' names by number; `saveState` keeps two sentinels in it under negative keys. */
+        /** The pages' names by number. */
         Map<Integer, String> pageNames();
         /** The locomotive the keyboard drives, or null. */
         Locomotive getActiveLoc();
@@ -50,9 +50,9 @@ final class LocMappingPages
         JTabbedPane locKeyTabs();
         /** The menu holding the page items. */
         JMenu locomotiveControlMenu();
-        /** "Show Page Tabs", which "Show Page Numbers" follows in the menu. */
+        /** "Show Page Tabs", which "Show Page Numbers" follows. */
         JCheckBoxMenuItem showPageTabsPreference();
-        /** Redraws the active locomotive's controls, all of them when `force`. */
+        /** Redraws the active locomotive's controls. */
         void repaintLoc(boolean force, List<Locomotive> updatedLocs);
         /** Redraws the keys. */
         void repaintMappings();
@@ -72,7 +72,6 @@ final class LocMappingPages
     boolean canDeleteCurrentPage()
     {
         if (ui.getNumLocMappings() <= MIN_LOC_MAPPINGS) return false;
-
         // Empty means no locomotive on it: clearing a page nulls the values but keeps the keys, so isEmpty() is false.
         for (Locomotive on : ui.currentLocMapping().values())
         {
@@ -114,7 +113,6 @@ final class LocMappingPages
 
         JMenu menu = ui.locomotiveControlMenu();
         int at = menu.getMenuComponentCount();
-
         for (int i = 0; i < menu.getMenuComponentCount(); i++)
         {
             if (menu.getMenuComponent(i) == ui.showPageTabsPreference())
@@ -181,7 +179,6 @@ final class LocMappingPages
     Set<String> namesOfPages()
     {
         Set<String> names = new HashSet<>();
-
         for (Map.Entry<Integer, String> page : ui.pageNames().entrySet())
         {
             if (page.getKey() == null || page.getKey() < 1) continue;
@@ -190,7 +187,7 @@ final class LocMappingPages
         return names;
     }
 
-    /** Prompts the user, over `over`, for the name of the current page. */
+    /** Asks over `over` for the current page's name. */
     void renameCurrentPage(Component over)
     {
         int page = ui.getLocMappingNumber();
@@ -211,7 +208,7 @@ final class LocMappingPages
         }
     }
 
-    /** Resets the mappings on the current page, once the user says Yes over `over`. */
+    /** Empties the current page once the user says Yes over `over`. */
     void clearCurrentPage(Component over)
     {
         javax.swing.SwingUtilities.invokeLater(() ->
@@ -255,7 +252,6 @@ final class LocMappingPages
         String text = Integer.toString(page);
         BufferedImage out = new BufferedImage(icon.getWidth(), icon.getHeight(), BufferedImage.TYPE_INT_ARGB);
         java.awt.Graphics2D g = out.createGraphics();
-
         ImageUtil.antialias(g);
         g.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
             java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
@@ -284,7 +280,6 @@ final class LocMappingPages
             (float) (x + (wide - ink.getWidth()) / 2 - ink.getX()),
             (float) (y + (tall - ink.getHeight()) / 2 - ink.getY()));
         g.dispose();
-
         return out;
     }
 }

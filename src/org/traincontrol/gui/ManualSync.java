@@ -195,8 +195,7 @@ public final class ManualSync
     }
 
     /**
-     * Applies the answers over c, renames first, and leaves a row changed since asked; the counts pressedSync reads, the
-     * by-hand rows `only`'s alone when given.
+     * Applies the answers over c, renames first, and leaves a row changed since asked; the counts pressedSync reads.
      */
     static int[] apply(Main ui, Locomotive only, Component c, RenameProposals asked, RenameProposals now,
         Map<RenameProposals.Row, Answer> answers, Map<Locomotive, String> names, List<RenameProposals.Row> taken)
