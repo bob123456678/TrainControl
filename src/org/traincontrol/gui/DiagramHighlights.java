@@ -21,18 +21,14 @@ public final class DiagramHighlights
     private static final int HOLD_MS = 30 * 60 * 1000;
 
     /**
-     * What an address names, since every tile carries a number (MT-462): a page link's address is a page, a route
-     * tile's the route's id, an s88's the sensor.  Three values because a route can command another route
-     * (`RouteCommand.isRoute`), and its tile must not be lit by an accessory of the same number.
+     * What an address names, as every tile carries a number (MT-462): a route can command a route
+     * (`RouteCommand.isRoute`), whose tile an accessory of the same number must not light.
      */
     public enum AddressedAs
     {
         /** A switch, a signal or an uncoupler - anything the railway throws. */
         ACCESSORY,
-
-        /** An s88 contact. */
         FEEDBACK,
-
         ROUTE
     }
 
@@ -41,7 +37,6 @@ public final class DiagramHighlights
     {
         /** The railway whose pages are searched. */
         ViewListener getModel();
-
         /** The labels on screen for each square. */
         DiagramTileRegistry getDiagramTileRegistry();
     }
@@ -74,10 +69,8 @@ public final class DiagramHighlights
         {
             case FEEDBACK:
                 return tile.isFeedback();
-
             case ROUTE:
                 return tile.isRoute();
-
             default:
                 return tile.isAccessory();
         }
