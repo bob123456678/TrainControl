@@ -89,7 +89,7 @@ public final class StationCaptions
      * The station's own name for a caption when no train is standing there; null when the square is not a Point of this
      * setup.
      */
-    String autonomyStationNameAt(TileGraph.TileKey station)
+    public String autonomyStationNameAt(TileGraph.TileKey station)
     {
         AutonomySession session = this.ui.getAutonomySession();
 
@@ -100,7 +100,7 @@ public final class StationCaptions
      * The running Point on a square, preferring one with a train on it (a square is several Points, only one holds the
      * locomotive).  By square, not caption text, which fails for a renamed or split station.  Null if nothing is there.
      */
-    Point getAutonomyPointForTile(
+    public Point getAutonomyPointForTile(
         TileGraph.TileKey station)
     {
         // Asked once, not built: asking whether there is a railway and then for it builds an empty one where Unload
@@ -224,7 +224,7 @@ public final class StationCaptions
             : AutonomyCompanionStore.parseTileKey(point.getSquare());
 
         // Whichever copy holds a train speaks for the square; an empty sibling wrote "[---]" over an occupied platform.
-        final Point speaking = this.getAutonomyPointForTile(square);
+        final Point speaking = getAutonomyPointForTile(square);
 
         final Point p = speaking == null ? point : speaking;
 

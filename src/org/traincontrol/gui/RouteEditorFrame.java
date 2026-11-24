@@ -2857,19 +2857,19 @@ public class RouteEditorFrame extends JFrame
         // the route's own trigger, always in checkedSensors.  The removal comes before the paint calls.
         checkedSensors.removeAll(commandedSensors);
 
-        int lit = parent.highlightAccessories(commanded, ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);
+        int lit = parent.diagramHighlights.highlightAccessories(commanded, ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS, null);
 
-        lit += parent.highlightAddresses(commandedRoutes, DiagramHighlights.AddressedAs.ROUTE,
+        lit += parent.diagramHighlights.highlightAddresses(commandedRoutes, DiagramHighlights.AddressedAs.ROUTE,
             ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);
 
         // And not a square already lit as commanded (OB-286): a three-way is commanded under one address and checked
         // under the other.
-        lit += parent.highlightAccessories(checked, ImageUtil.HIGHLIGHT_CONDITION, HIGHLIGHT_HOLD_MS, commanded);
+        lit += parent.diagramHighlights.highlightAccessories(checked, ImageUtil.HIGHLIGHT_CONDITION, HIGHLIGHT_HOLD_MS, commanded);
 
-        lit += parent.highlightAddresses(checkedSensors, DiagramHighlights.AddressedAs.FEEDBACK,
+        lit += parent.diagramHighlights.highlightAddresses(checkedSensors, DiagramHighlights.AddressedAs.FEEDBACK,
             ImageUtil.HIGHLIGHT_CONDITION, HIGHLIGHT_HOLD_MS);
 
-        lit += parent.highlightAddresses(commandedSensors, DiagramHighlights.AddressedAs.FEEDBACK,
+        lit += parent.diagramHighlights.highlightAddresses(commandedSensors, DiagramHighlights.AddressedAs.FEEDBACK,
             ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);
 
         // Nothing lit is an answer too: a route can name accessories that are not drawn anywhere on the diagram.

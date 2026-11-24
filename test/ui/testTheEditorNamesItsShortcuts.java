@@ -349,7 +349,7 @@ public class testTheEditorNamesItsShortcuts
 
         final boolean[] unloaded = new boolean[1];
 
-        SwingUtilities.invokeAndWait(() -> unloaded[0] = ui.unloadAutonomy());
+        SwingUtilities.invokeAndWait(() -> unloaded[0] = ui.autonomyLifecycle().unloadAutonomy());
 
         settleTheEditor();
 
@@ -2447,7 +2447,7 @@ public class testTheEditorNamesItsShortcuts
             String says = I18n.t("autosetup.ui.tooltipClickToChangeDirections");
 
             // OPENED AS THE MAIN WINDOW OPENS IT
-            a = openedBy(() -> ui.openAutonomyEditor(new TileKey(PAGE, 1, 1)), null);
+            a = openedBy(() -> ui.editorWindows().openAutonomyEditor(new TileKey(PAGE, 1, 1)), null);
 
             opened.add(a);
 
@@ -2530,7 +2530,7 @@ public class testTheEditorNamesItsShortcuts
 
             assertFalse(from.isDisplayable(), "precondition: the X did not close the editor");
 
-            LayoutEditor c = openedBy(() -> ui.openAutonomyEditor(new TileKey(PAGE, 1, 1)), from);
+            LayoutEditor c = openedBy(() -> ui.editorWindows().openAutonomyEditor(new TileKey(PAGE, 1, 1)), from);
 
             opened.add(c);
 
@@ -2623,7 +2623,7 @@ public class testTheEditorNamesItsShortcuts
 
             SwingUtilities.invokeAndWait(() -> ui.setAlwaysOnTop(true));
 
-            a = openedBy(() -> ui.openAutonomyEditor(new TileKey(PAGE, 1, 1)), null);
+            a = openedBy(() -> ui.editorWindows().openAutonomyEditor(new TileKey(PAGE, 1, 1)), null);
 
             assertFalse(ui.isAlwaysOnTop(), "precondition: opening the autonomy editor left the main window on top of it");
 

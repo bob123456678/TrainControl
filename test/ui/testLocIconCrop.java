@@ -68,24 +68,24 @@ public class testLocIconCrop
             try
             {
                 // Inside the try, so a failure here is tidied up like everything else.
-                assertNull(ui.cropSourceOf(crop.toPath().toUri().toString()),
+                assertNull(ui.locIconActions().cropSourceOf(crop.toPath().toUri().toString()),
                     "a file outside the application's own icon folder came back with a source, which "
                     + "would mean writing notes beside the user's own pictures");
 
                 write(ours, "not really a png either");
 
-                ui.rememberCropSource(ours, source);
+                ui.locIconActions().rememberCropSource(ours, source);
 
                 String url = ours.toPath().toUri().toString();
 
-                assertEquals(ui.cropSourceOf(url), source,
+                assertEquals(ui.locIconActions().cropSourceOf(url), source,
                     "what rememberCropSource wrote is not what cropSourceOf reads back, so re-cropping "
                     + "would silently fall back to cropping the crop");
 
                 // The photograph goes away, as the user's files may at any time.
                 assertTrue(source.delete(), "could not delete the test photograph");
 
-                assertNull(ui.cropSourceOf(url),
+                assertNull(ui.locIconActions().cropSourceOf(url),
                     "a note naming a photograph that is no longer there was believed. Re-cropping would "
                     + "then try to read a file that does not exist rather than falling back to the crop");
 
@@ -93,7 +93,7 @@ public class testLocIconCrop
                 File note = new File(ours.getAbsolutePath() + ".source");
 
                 write(source, "back again");
-                ui.rememberCropSource(ours, source);
+                ui.locIconActions().rememberCropSource(ours, source);
 
                 assertTrue(note.exists(), "the note was not written at all");
 
@@ -251,27 +251,27 @@ public class testLocIconCrop
                 String url = ours.toPath().toUri().toString();
 
                 // AN OLDER NOTE - a bare path, which is every note written before this.
-                ui.rememberCropSource(ours, source);
+                ui.locIconActions().rememberCropSource(ours, source);
 
-                assertEquals(ui.cropSourceOf(url), source,
+                assertEquals(ui.locIconActions().cropSourceOf(url), source,
                     "a note without a view no longer reads back as a path, so every crop made before "
                     + "this change has lost the photograph behind it");
 
-                assertNull(ui.cropViewOf(url),
+                assertNull(ui.locIconActions().cropViewOf(url),
                     "a note with no view line answered with one anyway, so the panel would be opened on "
                     + "numbers nobody wrote");
 
                 // AND ONE WITH A VIEW.
                 double[] view = { 250.5, 200.25, 0.4, 2.5, 0.7 };
 
-                ui.rememberCropSource(ours, source, view);
+                ui.locIconActions().rememberCropSource(ours, source, view);
 
-                assertEquals(ui.cropSourceOf(url), source,
+                assertEquals(ui.locIconActions().cropSourceOf(url), source,
                     "the path no longer reads back once a view is stored beside it - the whole file is "
                     + "being taken for a filename, so re-crop would look for a photograph whose name has "
                     + "the view appended to it");
 
-                double[] read = ui.cropViewOf(url);
+                double[] read = ui.locIconActions().cropViewOf(url);
 
                 assertNotNull(read, "the view was written and did not come back");
 
@@ -286,9 +286,9 @@ public class testLocIconCrop
                 // and in the array the crop dialog opens on and writes into
                 double[] six = { 250.5, 200.25, 0.4, 2.5, 0.7, 812.5 };
 
-                ui.rememberCropSource(ours, source, six);
+                ui.locIconActions().rememberCropSource(ours, source, six);
 
-                double[] readSix = ui.cropViewOf(url);
+                double[] readSix = ui.locIconActions().cropViewOf(url);
 
                 assertNotNull(readSix, "a note with the crop's width was not read back as a view at all, so re-crop opens"
                     + " on the covering crop (OB-257)");
@@ -315,9 +315,9 @@ public class testLocIconCrop
                 assertTrue(Double.isNaN(fromFive[5]), "an older note opens with a crop width nobody wrote");
 
                 // A note that says something else on its second line is not a view.
-                ui.rememberCropSource(ours, source);
+                ui.locIconActions().rememberCropSource(ours, source);
 
-                assertNull(ui.cropViewOf(url),
+                assertNull(ui.locIconActions().cropViewOf(url),
                     "re-recording the source without a view left the OLD view in place, so the panel "
                     + "would open on where a crop that no longer exists was taken");
             }
@@ -764,7 +764,7 @@ public class testLocIconCrop
             assertNull(loc.getLocalImageURL(), "precondition: the locomotive has a picture of this computer's already");
 
             // THE CROP MARK'S DOOR
-            ui.recropLocIcon(loc, ui);
+            ui.locIconActions().recropLocIcon(loc, ui);
 
             final javax.swing.JDialog window = awaitADialogTitled(org.traincontrol.util.I18n.t("loc.ui.cropTitle"), 15000);
 
@@ -786,7 +786,7 @@ public class testLocIconCrop
                 + crop);
 
             // AND THE STATION'S PICTURE KEPT TO CROP AGAIN FROM, outside the crops that are tidied away
-            kept = ui.cropSourceOf(crop);
+            kept = ui.locIconActions().cropSourceOf(crop);
 
             assertNotNull(kept, "the crop remembers no picture to crop again from, so a second crop could only go"
                 + " tighter");

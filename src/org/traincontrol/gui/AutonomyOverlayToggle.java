@@ -116,7 +116,7 @@ public class AutonomyOverlayToggle extends JPanel
         findings.setVisible(false);
         findings.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 0));
 
-        findings.addMouseListener(Listen.clicked(e -> ui.openAutonomyEditor(firstFinding)));
+        findings.addMouseListener(Listen.clicked(e -> ui.editorWindows().openAutonomyEditor(firstFinding)));
 
         left.add(findings);
 
@@ -141,7 +141,7 @@ public class AutonomyOverlayToggle extends JPanel
             // as the count beside it does.
             if (fixing)
             {
-                ui.openAutonomyEditor(firstFinding);
+                ui.editorWindows().openAutonomyEditor(firstFinding);
                 return;
             }
 

@@ -87,7 +87,7 @@ public class testTheAutonomyMenuLinksItsDocumentation
 
             open.set(ui, built[0]);
 
-            assertTrue(ui.isLayoutEditorOpen(), "precondition: the window does not see the editor as open");
+            assertTrue(ui.editorWindows().isLayoutEditorOpen(), "precondition: the window does not see the editor as open");
 
             JMenu menu = opened();
 

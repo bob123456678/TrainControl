@@ -78,7 +78,7 @@ final class LayoutMenus
 
             // The picture export needs loaded pages, not a local folder (a Central Station diagram works), and would be
             // handed the null page that activeLayoutPage returns when the selector is empty.
-            if (ui.exportDiagramItem != null) ui.exportDiagramItem.setEnabled(ui.isLayoutLoaded());
+            if (ui.exportDiagramItem != null) ui.exportDiagramItem.setEnabled(ui.editorWindows().isLayoutLoaded());
 
             // Its own question: excluded from the loop above, and its only other writer never re-enables it.
             if (ui.openCS3AppMenuItem() != null)
@@ -419,7 +419,7 @@ final class LayoutMenus
     {
         if (localHeading == null) return;
 
-        boolean loaded = ui.getModel() != null && ui.isLayoutLoaded();
+        boolean loaded = ui.getModel() != null && ui.editorWindows().isLayoutLoaded();
 
         localHeading.setText(heading("ui.main.toolbar.headingLocalLayout", loaded && ui.isLocalLayout()));
         centralStationHeading.setText(heading("ui.main.toolbar.headingCentralStationLayout",
@@ -766,7 +766,7 @@ final class LayoutMenus
 
         JMenuItem folder = ui.showCurrentLayoutFolderMenuItem();
 
-        if (folder != null && ui.isLocalLayout() && ui.isLayoutLoaded())
+        if (folder != null && ui.isLocalLayout() && ui.editorWindows().isLayoutLoaded())
         {
             recentLayoutsMenu.addSeparator();
 

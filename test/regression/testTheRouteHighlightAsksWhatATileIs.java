@@ -205,9 +205,9 @@ public class testTheRouteHighlightAsksWhatATileIs
 
         final int[] lit = new int[2];
 
-        SwingUtilities.invokeAndWait(() -> lit[0] = ui.highlightAccessories(
+        SwingUtilities.invokeAndWait(() -> lit[0] = ui.diagramHighlights().highlightAccessories(
             Collections.singletonMap(ACCESSORY_OF_THE_TURNOUT, Collections.singleton(DCC)),
-            org.traincontrol.util.ImageUtil.HIGHLIGHT, 4000));
+            org.traincontrol.util.ImageUtil.HIGHLIGHT, 4000, null));
 
         Components.drain(3);
 
@@ -216,9 +216,9 @@ public class testTheRouteHighlightAsksWhatATileIs
 
         endEveryFlash();
 
-        SwingUtilities.invokeAndWait(() -> lit[1] = ui.highlightAccessories(
+        SwingUtilities.invokeAndWait(() -> lit[1] = ui.diagramHighlights().highlightAccessories(
             Collections.singletonMap(ACCESSORY_OF_THE_TURNOUT, Collections.singleton(MM2)),
-            org.traincontrol.util.ImageUtil.HIGHLIGHT, 4000));
+            org.traincontrol.util.ImageUtil.HIGHLIGHT, 4000, null));
 
         Components.drain(3);
 
@@ -245,7 +245,7 @@ public class testTheRouteHighlightAsksWhatATileIs
 
         final int[] lit = new int[1];
 
-        SwingUtilities.invokeAndWait(() -> lit[0] = ui.highlightAddresses(
+        SwingUtilities.invokeAndWait(() -> lit[0] = ui.diagramHighlights().highlightAddresses(
             Collections.singleton(address), kind, org.traincontrol.util.ImageUtil.HIGHLIGHT, 4000));
 
         Components.drain(3);

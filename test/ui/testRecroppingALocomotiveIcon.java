@@ -214,7 +214,7 @@ public class testRecroppingALocomotiveIcon
         assertTrue(isColor(kept.getRGB(4, kept.getHeight() / 2), Color.BLUE) && isColor(kept.getRGB(kept.getWidth() - 5,
             kept.getHeight() / 2), Color.BLUE), "the crop is not the blue half the operator moved the picture to");
 
-        assertEquals(ui.cropSourceOf(url), photograph, "the crop does not remember the photograph it was cut from");
+        assertEquals(ui.locIconActions().cropSourceOf(url), photograph, "the crop does not remember the photograph it was cut from");
         assertTrue(photograph.isFile(), "re-cropping deleted the operator's own photograph");
 
         assertTrue(Components.waitFor(() -> shownIs(url), WAIT), "the picture on screen is not the crop that was kept");
@@ -391,7 +391,7 @@ public class testRecroppingALocomotiveIcon
 
         assertFalse(firstFile.exists(), "the first crop was left in the icon folder after the second replaced it");
         assertFalse(noteOf(firstFile).exists(), "the first crop's note was left behind");
-        assertEquals(ui.cropSourceOf(loc.getLocalImageURL()), photograph, "the second crop lost the photograph it came from");
+        assertEquals(ui.locIconActions().cropSourceOf(loc.getLocalImageURL()), photograph, "the second crop lost the photograph it came from");
     }
 
     /**

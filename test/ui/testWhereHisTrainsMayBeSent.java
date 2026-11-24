@@ -743,7 +743,7 @@ public class testWhereHisTrainsMayBeSent
 
         final Point[] standing = new Point[1];
 
-        SwingUtilities.invokeAndWait(() -> standing[0] = ui.getAutonomyPointForTile(square));
+        SwingUtilities.invokeAndWait(() -> standing[0] = ui.stationCaptions().getAutonomyPointForTile(square));
 
         final Object options = gather.invoke(null, ui, standing[0]);
 
@@ -865,7 +865,7 @@ public class testWhereHisTrainsMayBeSent
 
         final Point[] standing = new Point[1];
 
-        SwingUtilities.invokeAndWait(() -> standing[0] = ui.getAutonomyPointForTile(square));
+        SwingUtilities.invokeAndWait(() -> standing[0] = ui.stationCaptions().getAutonomyPointForTile(square));
 
         Object options = gather.invoke(null, ui, standing[0]);
 
@@ -897,7 +897,7 @@ public class testWhereHisTrainsMayBeSent
 
         final Point[] standing = new Point[1];
 
-        SwingUtilities.invokeAndWait(() -> standing[0] = ui.getAutonomyPointForTile(square));
+        SwingUtilities.invokeAndWait(() -> standing[0] = ui.stationCaptions().getAutonomyPointForTile(square));
 
         final Object options = gather.invoke(null, ui, standing[0]);
 

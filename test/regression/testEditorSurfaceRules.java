@@ -867,7 +867,7 @@ public class testEditorSurfaceRules
     public void testTheFullEditorShortcutAsksTheEditorsOwnRefusals() throws Exception
     {
         // Gone, `SourceOf.declaration` fails: it is the one answer to 'would the editor open'.
-        String predicate = codeOf("    String whyAutonomyEditorCannotOpen()");
+        String predicate = codeOf("    public String whyAutonomyEditorCannotOpen()");
 
         // The five-argument form, which the others hand on to.  Not found, SourceOf fails rather than this test reading
         // nothing.
@@ -921,7 +921,7 @@ public class testEditorSurfaceRules
 
         // Asking is not enough: the answer has to decide.  The variable is read back rather than matched by a literal
         // name.
-        int assignment = setup.indexOf(" = ui.whyAutonomyEditorCannotOpen()");
+        int assignment = setup.indexOf(" = ui.editorWindows().whyAutonomyEditorCannotOpen()");
         int names = setup.lastIndexOf(" ", assignment - 1);
 
         String answer = setup.substring(names + 1, assignment);
@@ -1194,7 +1194,7 @@ public class testEditorSurfaceRules
             + " records what it just overwrote or is overwritten by it");
 
         // AND THE THIRD SAVE MOMENT: exit, editor open and editor close all call captureRunningLayout.
-        String closed = codeOf("    void autonomyEditorClosed()");
+        String closed = codeOf("    public void autonomyEditorClosed()");
 
         assertTrue(closed.contains("captureRunningLayout()"),
             "closing the editor no longer writes the setup file, so where the trains are is lost until"
@@ -1884,7 +1884,7 @@ public class testEditorSurfaceRules
         String exit = codeOf("private void WindowClosed(")
             .replace("everyOpenWindowMaySettle()", "maySettleBeforeExit()");
 
-        String asksBoth = codeOf("    boolean everyOpenWindowMaySettle()");
+        String asksBoth = codeOf("    public boolean everyOpenWindowMaySettle()");
 
         // BOTH WINDOWS, NAMED: the route editor's call alone satisfied "contains maySettleBeforeExit" (OB-070).
         assertTrue(asksBoth.contains("openEditor") && asksBoth.contains("maySettleBeforeExit()"),
@@ -2284,7 +2284,7 @@ public class testEditorSurfaceRules
     {
         String label = codeOf("public void openAutonomyEditorIfItCan()");
 
-        String ui = codeOf("    void refreshAutonomyPrompt()");
+        String ui = codeOf("    public void refreshAutonomyPrompt()");
 
         assertTrue(label.contains("openAutonomyEditor(null)"), "the label no longer opens the editor");
 
@@ -2350,7 +2350,7 @@ public class testEditorSurfaceRules
     @Test
     public void testWhetherAnEditorIsOpenIsAskedOfTheEditor() throws Exception
     {
-        String open = codeOf("    boolean isLayoutEditorOpen()");
+        String open = codeOf("    public boolean isLayoutEditorOpen()");
 
         // AND INTO anEditorWindow, which asks the editor windows
         if (open.contains("anEditorWindow()"))
@@ -2612,7 +2612,7 @@ public class testEditorSurfaceRules
 
         // THE EXPLANATION covers every branch of the RULE.
         String rule = SourceOf.withoutComments(memberOf("final class EditorWindows", "boolean layoutCanBeEdited()"));
-        String why = codeOf("    String whyLayoutCannotBeEdited()");
+        String why = codeOf("    public String whyLayoutCannotBeEdited()");
 
         // THE FLAG, not an inference (Adam: "we just need a layout loaded flag in the TrainControlUI class,
         // rather than something that infers").

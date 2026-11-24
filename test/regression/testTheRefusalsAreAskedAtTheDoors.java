@@ -161,7 +161,7 @@ public class testTheRefusalsAreAskedAtTheDoors
             "deleting resets the session, and the editor's Cancel recreates the configuration"},
         {"    private static void deleteEverything(", EDITOR,
             "deleting the whole setup under an open editor"},
-        {"    boolean unloadAutonomy()", EDITOR,
+        {"    public boolean unloadAutonomy()", EDITOR,
             "Stop Using Autonomy resets the session under an open editor"},
         {"    public boolean refusedWhileRunning()", EDITOR,
             "every door that loads a configuration asks here, and a load saves the setup under an open editor"},
@@ -219,7 +219,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         // Not the excluded-page label (`openAutonomyEditorIfItCan`): opening with an editor already open is not refused
         // anywhere (`openLayoutEditor` brings that window forward), and asking the refusal first would show "Close the
         // editor first" in exactly the state that item handles.
-        {"    void refreshAutonomyPrompt(", EDITOR,
+        {"    public void refreshAutonomyPrompt(", EDITOR,
             "the banner is a single button drawn before the state it guards against is entered, so it "
             + "cannot grey itself the way the menu does - its Load button asks (loading saves the setup "
             + "under an open editor); its Fix Setup button opens the editor, which brings an open one "

@@ -176,7 +176,7 @@ public final class AutonomyLifecycle
 
         // Not while an editor holds the setup (OB-076): its Cancel restores autonomyAsOpened and saves it, silently
         // reverting an edit made here.  No menu rather than a grayed one: this menu IS the autonomy surface here.
-        if (ui.isLayoutEditorOpen()) return null;
+        if (ui.editorWindows().isLayoutEditorOpen()) return null;
 
         final AutonomySession session = ui.getAutonomySession();
 
@@ -216,10 +216,10 @@ public final class AutonomyLifecycle
             ui.autonomyTileMenus.setMainWindow(ui);
 
             // The two items that want a second click hand themselves to the editor instead.
-            ui.autonomyTileMenus.setOnJumpToPage(where -> ui.openAutonomyEditor(where));
+            ui.autonomyTileMenus.setOnJumpToPage(where -> ui.editorWindows().openAutonomyEditor(where));
 
             // A link's other end: no window is being left here, so nothing to ask; opens the editor on that page.
-            ui.autonomyTileMenus.setOnJumpToLink(where -> ui.openAutonomyEditor(where));
+            ui.autonomyTileMenus.setOnJumpToLink(where -> ui.editorWindows().openAutonomyEditor(where));
 
             // Asked for on every use, not held: loading a configuration replaces the Layout wholesale.
             ui.autonomyTileMenus.setLayoutSource(() -> ui.getModel().getAutoLayoutIfLoaded());
@@ -604,7 +604,7 @@ public final class AutonomyLifecycle
     }
 
     /** Offers to load this layout's setup when one is waiting; the strip below takes over once one is loaded. */
-    void refreshAutonomyPrompt()
+    public void refreshAutonomyPrompt()
     {
         // Which stations autonomy can choose has just changed, and the captions follow it (FR-023).
         ui.captionVisibility.refreshCaptionVisibility();
@@ -652,7 +652,7 @@ public final class AutonomyLifecycle
             // Opening is not refused with an editor open, unlike loading below: `openAutonomyEditor` brings it forward.
             ui.autonomyDiagramBanner.offer(I18n.t("autosetup.ui.bannerSetupCannotRun"),
                 I18n.t("autosetup.ui.btnFixSetup"),
-                () -> ui.openAutonomyEditor(null));
+                () -> ui.editorWindows().openAutonomyEditor(null));
         }
         else
         {
@@ -686,7 +686,7 @@ public final class AutonomyLifecycle
      * Stops using autonomy without deleting anything: the way back out of having loaded a configuration.
      * Returns false when the user declined to stop a run, which leaves everything alone.
      */
-    boolean unloadAutonomy()
+    public boolean unloadAutonomy()
     {
         if (ui.getModel() == null || ui.refuseWhileEditorOpen()) return false;
 

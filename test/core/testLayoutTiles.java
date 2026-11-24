@@ -586,7 +586,7 @@ public class testLayoutTiles
     {
         assertFalse(ui.editorWindows().routeEditorHasUnsavedWork(), "precondition: something is already holding unsaved work");
 
-        assertTrue(ui.everyOpenWindowMaySettle(), "precondition: the exit is already blocked by something else");
+        assertTrue(ui.editorWindows().everyOpenWindowMaySettle(), "precondition: the exit is already blocked by something else");
 
         final AtomicReference<RouteEditorFrame> ref = new AtomicReference<>();
 
@@ -605,7 +605,7 @@ public class testLayoutTiles
             field.set(ui, editor);
 
             assertFalse(editor.hasUnsavedWork(), "a window nobody has typed into has nothing to lose");
-            assertTrue(ui.everyOpenWindowMaySettle(), "an untouched route editor stopped the exit");
+            assertTrue(ui.editorWindows().everyOpenWindowMaySettle(), "an untouched route editor stopped the exit");
 
             // WHAT TYPING LOOKS LIKE from outside: the capture door appends a command row, which is one of the six
             // things `stateSignature` covers.
@@ -616,13 +616,13 @@ public class testLayoutTiles
 
             RouteEditorFrame.discardAnswerForTest = Boolean.FALSE;
 
-            assertFalse(ui.everyOpenWindowMaySettle(),
+            assertFalse(ui.editorWindows().everyOpenWindowMaySettle(),
                 "the exit carries on although the route editor was asked and said no, so the typing goes with the"
                 + " process");
 
             RouteEditorFrame.discardAnswerForTest = Boolean.TRUE;
 
-            assertTrue(ui.everyOpenWindowMaySettle(), "the exit is refused although the route editor said yes");
+            assertTrue(ui.editorWindows().everyOpenWindowMaySettle(), "the exit is refused although the route editor said yes");
         }
         finally
         {

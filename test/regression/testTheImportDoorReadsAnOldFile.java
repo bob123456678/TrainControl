@@ -1898,7 +1898,7 @@ public class testTheImportDoorReadsAnOldFile
 
             assertTrue(unloaded.isCurrentLayout(), "precondition: the railway running is not the current one");
 
-            List<String> asked = answeringYes(() -> ui[0].unloadAutonomy());
+            List<String> asked = answeringYes(() -> ui[0].autonomyLifecycle().unloadAutonomy());
 
             assertTrue(asked.contains(I18n.t("autolayout.ui.confirmReloadJsonStopsRunningLocomotives")), "precondition:"
                 + " Unload did not ask to stop the trains: " + asked);
@@ -1989,7 +1989,7 @@ public class testTheImportDoorReadsAnOldFile
 
             declined.set(ui, true);
 
-            answeringYes(() -> ui.unloadAutonomy());
+            answeringYes(() -> ui.autonomyLifecycle().unloadAutonomy());
 
             assertFalse(ui.getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
 
@@ -2107,7 +2107,7 @@ public class testTheImportDoorReadsAnOldFile
             final String train = (String) dispatched[0];
             final String from = (String) dispatched[1];
 
-            List<String> asked = answeringYes(() -> ui[0].unloadAutonomy());
+            List<String> asked = answeringYes(() -> ui[0].autonomyLifecycle().unloadAutonomy());
 
             assertTrue(asked.contains(I18n.t("autolayout.ui.confirmReloadJsonStopsRunningLocomotives")), "precondition:"
                 + " Unload did not ask to stop the trains: " + asked);
@@ -2324,7 +2324,7 @@ public class testTheImportDoorReadsAnOldFile
 
             declined.set(ui, true);
 
-            answeringYes(() -> ui.unloadAutonomy());
+            answeringYes(() -> ui.autonomyLifecycle().unloadAutonomy());
 
             assertFalse(ui.getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
 
@@ -2436,7 +2436,7 @@ public class testTheImportDoorReadsAnOldFile
 
             if (unload)
             {
-                answeringYes(() -> ui[0].unloadAutonomy());
+                answeringYes(() -> ui[0].autonomyLifecycle().unloadAutonomy());
 
                 assertFalse(ui[0].getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
             }
@@ -2731,7 +2731,7 @@ public class testTheImportDoorReadsAnOldFile
     static org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel openTheEditorFor(TrainControlUI ui, TileKey at,
         List<TileKey> related) throws Exception
     {
-        answeringYes(() -> ui.openAutonomyEditor(at, related));
+        answeringYes(() -> ui.editorWindows().openAutonomyEditor(at, related));
 
         java.lang.reflect.Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
@@ -2775,7 +2775,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             editor.dispose();
 
-            ui.autonomyEditorClosed();
+            ui.editorWindows().autonomyEditorClosed();
         });
 
         for (int turn = 0; turn < 10; turn++) SwingUtilities.invokeAndWait(() -> { });
@@ -3414,7 +3414,7 @@ public class testTheImportDoorReadsAnOldFile
             railway.setMinDelay(0);
             railway.setMaxDelay(0);
 
-            answeringYes(() -> ui.unloadAutonomy());
+            answeringYes(() -> ui.autonomyLifecycle().unloadAutonomy());
 
             assertFalse(ui.getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
 
@@ -3461,7 +3461,7 @@ public class testTheImportDoorReadsAnOldFile
             final org.traincontrol.automation.Point at = standing;
             final TileKey square = session.getStationIndex().squareOf(at.getName());
 
-            answeringYes(() -> ui.unloadAutonomy());
+            answeringYes(() -> ui.autonomyLifecycle().unloadAutonomy());
 
             assertFalse(ui.getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
 
@@ -3480,7 +3480,7 @@ public class testTheImportDoorReadsAnOldFile
                 {
                     labels.invoke(captions, at);
                     arrow.invoke(captions, at, square);
-                    ui.getAutonomyPointForTile(square);
+                    ui.stationCaptions().getAutonomyPointForTile(square);
                     ui.stationCaptions().getAutonomyOccupantsForTile(square);
                 }
                 catch (ReflectiveOperationException e)
@@ -3609,7 +3609,7 @@ public class testTheImportDoorReadsAnOldFile
 
             declined.set(ui, true);
 
-            answeringYes(() -> ui.unloadAutonomy());
+            answeringYes(() -> ui.autonomyLifecycle().unloadAutonomy());
 
             assertFalse(ui.getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
 

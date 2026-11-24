@@ -167,7 +167,7 @@ public class testNoSetupEditDuringARun
 
             openTheEditorFor(ui, square, Collections.<TileKey>emptyList());
 
-            assertTrue(ui.isLayoutEditorOpen(), "precondition: the editor did not open");
+            assertTrue(ui.editorWindows().isLayoutEditorOpen(), "precondition: the editor did not open");
 
             // THE AUTO TAB'S LIST OF PATHS for a standing train, as the window built it
             final Object[] offered = anAutoTabListOfPaths(ui);
@@ -983,7 +983,7 @@ public class testNoSetupEditDuringARun
             // THEN THE EDITOR OPENS
             openTheEditorFor(ui, square, Collections.<TileKey>emptyList());
 
-            assertTrue(ui.isLayoutEditorOpen(), "precondition: the editor did not open");
+            assertTrue(ui.editorWindows().isLayoutEditorOpen(), "precondition: the editor did not open");
 
             startAnsweringYes(asked, going);
 
@@ -1089,20 +1089,20 @@ public class testNoSetupEditDuringARun
             final TrainControlUI window = ui;
             final TileKey at = square;
 
-            SwingUtilities.invokeLater(() -> window.openAutonomyEditor(at, Collections.<TileKey>emptyList()));
+            SwingUtilities.invokeLater(() -> window.editorWindows().openAutonomyEditor(at, Collections.<TileKey>emptyList()));
 
             final org.traincontrol.automation.Layout railway = ui.getModel().getAutoLayout();
 
             long until = System.currentTimeMillis() + 10000;
 
-            while (!(ui.isLayoutEditorOpen() && railway.isAlreadyUnderway(sent)) && System.currentTimeMillis() < until)
+            while (!(ui.editorWindows().isLayoutEditorOpen() && railway.isAlreadyUnderway(sent)) && System.currentTimeMillis() < until)
             {
                 Thread.sleep(200);
             }
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 
-            assertFalse(ui.isLayoutEditorOpen() && railway.isAlreadyUnderway(sent), "a send queued ahead of the"
+            assertFalse(ui.editorWindows().isLayoutEditorOpen() && railway.isAlreadyUnderway(sent), "a send queued ahead of the"
                 + " editor's build sent " + sent.getName() + ", and the editor then opened over the run - a square"
                 + " clicked in it edits the setup under the trains (RLV13-C2): asked " + asked);
         }, ui ->
@@ -1227,13 +1227,13 @@ public class testNoSetupEditDuringARun
             final TrainControlUI window = ui[0];
             final TileKey at = square;
 
-            SwingUtilities.invokeLater(() -> window.openAutonomyEditor(at, Collections.<TileKey>emptyList()));
+            SwingUtilities.invokeLater(() -> window.editorWindows().openAutonomyEditor(at, Collections.<TileKey>emptyList()));
 
             final String refused = I18n.t("autosetup.ui.menuEditorOpen");
 
             long until = System.currentTimeMillis() + 15000;
 
-            while (!asked.contains(refused) && !(ui[0].isLayoutEditorOpen() && ui[0].getModel().isAutonomyRunning())
+            while (!asked.contains(refused) && !(ui[0].editorWindows().isLayoutEditorOpen() && ui[0].getModel().isAutonomyRunning())
                 && System.currentTimeMillis() < until)
             {
                 Thread.sleep(200);
@@ -1245,7 +1245,7 @@ public class testNoSetupEditDuringARun
                 + " worker did not ask about the armed route, so nothing held it while the editor was built: asked "
                 + asked);
 
-            assertTrue(ui[0].isLayoutEditorOpen(), "precondition: the editor was not built while Start's worker waited,"
+            assertTrue(ui[0].editorWindows().isLayoutEditorOpen(), "precondition: the editor was not built while Start's worker waited,"
                 + " so this claim did not reach the worker's own look: asked " + asked);
 
             assertFalse(ui[0].getModel().isAutonomyRunning(), "Start's worker came back to the event thread with the"
@@ -1312,7 +1312,7 @@ public class testNoSetupEditDuringARun
             final TrainControlUI window = ui;
             final TileKey at = square;
 
-            SwingUtilities.invokeLater(() -> window.openAutonomyEditor(at, Collections.<TileKey>emptyList()));
+            SwingUtilities.invokeLater(() -> window.editorWindows().openAutonomyEditor(at, Collections.<TileKey>emptyList()));
 
             // Start has decided once the trains run or the editor's refusal has been said; a hang ends at the bound
             final String editorsWords = I18n.t("autosetup.ui.menuEditorOpen");
@@ -1322,7 +1322,7 @@ public class testNoSetupEditDuringARun
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 
-            assertFalse(ui.isLayoutEditorOpen() && ui.getModel().isAutonomyRunning(), "Start, pressed ahead of an"
+            assertFalse(ui.editorWindows().isLayoutEditorOpen() && ui.getModel().isAutonomyRunning(), "Start, pressed ahead of an"
                 + " editor asked for in the same busy moment, started the trains under the editor (RLV13-C2): asked "
                 + asked);
         }, ui ->
@@ -1370,7 +1370,7 @@ public class testNoSetupEditDuringARun
             // THE REQUEST, and then - before its posted build runs - a run begins
             SwingUtilities.invokeAndWait(() ->
             {
-                window.openAutonomyEditor(at, Collections.<TileKey>emptyList());
+                window.editorWindows().openAutonomyEditor(at, Collections.<TileKey>emptyList());
 
                 try
                 {
@@ -1388,7 +1388,7 @@ public class testNoSetupEditDuringARun
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 
-            assertFalse(ui.isLayoutEditorOpen(), "an editor asked for at rest was built over a run that began before"
+            assertFalse(ui.editorWindows().isLayoutEditorOpen(), "an editor asked for at rest was built over a run that began before"
                 + " its build ran (RLV13-C2)");
 
             assertTrue(asked.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "the editor's build, refused"

@@ -319,7 +319,7 @@ public class AutonomyMenu extends JMenu
             // Documentation; this item asks the editor's own refusals as well, at rest, through
             // `whyAutonomyEditorCannotOpen` as LayoutRightclickAutonomyMenu.addSetupMenu does, rather than re-deriving
             // them by hand.
-            String editRefusal = ui.whyAutonomyEditorCannotOpen();
+            String editRefusal = ui.editorWindows().whyAutonomyEditorCannotOpen();
             boolean pagesAvailable = edit.getItemCount() > 0;
 
             edit.setEnabled(editRefusal == null && pagesAvailable);
@@ -405,7 +405,7 @@ public class AutonomyMenu extends JMenu
 
             if (session.getStore().getExcludedPages().contains(name)) continue;
 
-            edit.add(item(name, () -> ui.openAutonomyEditorOnPage(name)));
+            edit.add(item(name, () -> ui.editorWindows().openAutonomyEditorOnPage(name)));
         }
 
         return edit;
@@ -481,7 +481,7 @@ public class AutonomyMenu extends JMenu
 
         // Stopping without deleting, the smaller of the two things wanted here: every other path replaces one
         // configuration with another.
-        JMenuItem unload = item(I18n.t("autosetup.ui.menuUnloadAutonomy"), () -> ui.unloadAutonomy());
+        JMenuItem unload = item(I18n.t("autosetup.ui.menuUnloadAutonomy"), () -> ui.autonomyLifecycle().unloadAutonomy());
 
         unload.setEnabled(loaded);
         unload.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.hintUnloadAutonomy")));

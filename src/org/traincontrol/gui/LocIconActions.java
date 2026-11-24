@@ -467,14 +467,14 @@ public final class LocIconActions
         return target.toPath().toUri().toString();
     }
 
-    /** `TrainControlUI.rememberCropSource`'s body. */
-    void rememberCropSource(File crop, File source)
+    /** Notes a crop's source picture. */
+    public void rememberCropSource(File crop, File source)
     {
         rememberCropSource(crop, source, null);
     }
 
-    /** `TrainControlUI.rememberCropSource`'s body. */
-    void rememberCropSource(File crop, File source, double[] view)
+    /** Also notes the view the crop was taken at (OB-125); null notes only the source. */
+    public void rememberCropSource(File crop, File source, double[] view)
     {
         final String body = source.getAbsolutePath()
             + (LocIconCropDialog.CropPanel.viewIsUsable(view)
@@ -494,8 +494,8 @@ public final class LocIconActions
         }
     }
 
-    /** `TrainControlUI.cropViewOf`'s body. */
-    double[] cropViewOf(String url)
+    /** A crop's noted view, or null. */
+    public double[] cropViewOf(String url)
     {
         String line = cropNoteLine(url, TrainControlUI.CROP_VIEW_PREFIX);
 
@@ -555,8 +555,8 @@ public final class LocIconActions
         return null;
     }
 
-    /** `TrainControlUI.cropSourceOf`'s body. */
-    File cropSourceOf(String url)
+    /** A crop's noted source picture, or null. */
+    public File cropSourceOf(String url)
     {
         File note = cropSourceNoteOf(url);
 
@@ -601,8 +601,8 @@ public final class LocIconActions
         }
     }
 
-    /** `TrainControlUI.recropLocIcon`'s body. */
-    void recropLocIcon(Locomotive l, Component parent)
+    /** Re-crops a locomotive's icon from its source. */
+    public void recropLocIcon(Locomotive l, Component parent)
     {
         // THE CENTRAL STATION'S PICTURE, where there is none of this computer's (FR-104)
         if (l != null && l.getLocalImageURL() == null && TrainControlUI.offersACrop(l))

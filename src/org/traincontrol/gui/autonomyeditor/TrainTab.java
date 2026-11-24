@@ -220,7 +220,7 @@ final class TrainTab extends StationWindowBase.RoomyPanel
     {
         TrainControlUI main = editor.parentWindow();
 
-        return editor.menuOnly && main != null && !main.isLayoutEditorOpen() && main.aRunHoldsTheSetup();
+        return editor.menuOnly && main != null && !main.editorWindows().isLayoutEditorOpen() && main.aRunHoldsTheSetup();
     }
 
     private Locomotive train(String name)

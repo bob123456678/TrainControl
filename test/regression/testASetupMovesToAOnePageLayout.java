@@ -223,7 +223,7 @@ public class testASetupMovesToAOnePageLayout
     /** Autonomy > Edit Autonomy > the page, then the editor's own close box. */
     private static void openAndCloseTheEditor(TrainControlUI ui, String page) throws Exception
     {
-        SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(page));
+        SwingUtilities.invokeLater(() -> ui.editorWindows().openAutonomyEditorOnPage(page));
 
         Window editor = null;
 

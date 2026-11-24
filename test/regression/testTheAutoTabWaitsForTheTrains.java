@@ -476,7 +476,7 @@ public class testTheAutoTabWaitsForTheTrains
             assertEquals(editorWindows(ui), 1, "precondition: the switches left " + editorWindows(ui) + " editors");
 
             // THE GATE SHUT WHILE IT IS OPEN
-            assertTrue(ui.isLayoutEditorOpen(), "the gate does not see the editor that is open (RSA28-B1)");
+            assertTrue(ui.editorWindows().isLayoutEditorOpen(), "the gate does not see the editor that is open (RSA28-B1)");
 
             assertEquals(offered, new ArrayList<String>(), "Edit or Edit Autonomy Paths was offered while an editor was open"
                 + " (RSA28-B1)");
@@ -643,7 +643,7 @@ public class testTheAutoTabWaitsForTheTrains
 
             assertEquals(editorWindows(ui), 0, "an editor that failed to build left its frame (RSA29-C1)");
 
-            assertFalse(ui.isLayoutEditorOpen(), "the gate counts an editor that failed to build (RSA29-C1)");
+            assertFalse(ui.editorWindows().isLayoutEditorOpen(), "the gate counts an editor that failed to build (RSA29-C1)");
 
             assertTrue(control(ui, "editLayoutButton").isEnabled()
                 && control(ui, "editAutonomyFromSettings").isEnabled(), "Edit or Edit Autonomy Paths is greyed after an"
@@ -757,7 +757,7 @@ public class testTheAutoTabWaitsForTheTrains
             assertEquals(editorWindows(ui[0]), 0, "an editor whose drawing raised an Error left its frame, counted as open"
                 + " (RSA31-C3)");
 
-            assertFalse(ui[0].isLayoutEditorOpen(), "the gate counts an editor whose drawing raised an Error (RSA31-C3)");
+            assertFalse(ui[0].editorWindows().isLayoutEditorOpen(), "the gate counts an editor whose drawing raised an Error (RSA31-C3)");
 
             assertTrue(control(ui[0], "editLayoutButton").isEnabled()
                 && control(ui[0], "editAutonomyFromSettings").isEnabled(), "Edit or Edit Autonomy Paths is greyed after an"

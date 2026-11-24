@@ -26,7 +26,7 @@ public final class EditorWindows
      * Whether every window holding unsaved work is willing to be closed: the exit's first question; layout editor first
      * (OB-070).
      */
-    boolean everyOpenWindowMaySettle()
+    public boolean everyOpenWindowMaySettle()
     {
         if (ui.openEditor != null && ui.openEditor.isDisplayable() && !ui.openEditor.maySettleBeforeExit()) return false;
 
@@ -44,13 +44,13 @@ public final class EditorWindows
     }
 
     /** Opens the diagram editor in autonomy mode on a tile's page and reveals it; null opens the current page. */
-    void openAutonomyEditor(final TileGraph.TileKey tile)
+    public void openAutonomyEditor(final TileGraph.TileKey tile)
     {
         openAutonomyEditor(tile, null);
     }
 
     /** As above, also outlining {@code related}, the squares a finding names beside its own (MT-505); may be null. */
-    void openAutonomyEditor(final TileGraph.TileKey tile,
+    public void openAutonomyEditor(final TileGraph.TileKey tile,
         final List<TileGraph.TileKey> related)
     {
         openLayoutEditor(tile == null ? null : tile.getPage(), Boolean.TRUE, tile, false, related);
@@ -107,7 +107,7 @@ public final class EditorWindows
     private volatile boolean layoutLoaded = false;
 
     /** Whether a track diagram is loaded; the stored answer. */
-    boolean isLayoutLoaded()
+    public boolean isLayoutLoaded()
     {
         return this.layoutLoaded;
     }
@@ -128,7 +128,7 @@ public final class EditorWindows
         return why != null ? why : "autosetup.ui.errorEditorAlreadyOpen";
     }
 
-    String whyLayoutCannotBeEdited()
+    public String whyLayoutCannotBeEdited()
     {
         if (!isLayoutLoaded()) return "layout.ui.errorNoLayoutLoaded";
 
@@ -150,7 +150,7 @@ public final class EditorWindows
      * Why the autonomy editor would refuse to open, as a message key, or null (FR-026): openLayoutEditor's refusals in
      * its order.
      */
-    String whyAutonomyEditorCannotOpen()
+    public String whyAutonomyEditorCannotOpen()
     {
         if (!ui.isLocalLayout()) return "layout.ui.errorEditingOnlySupportedForLocalFiles";
 
@@ -356,7 +356,7 @@ public final class EditorWindows
         return session != null && session.getStore().getActiveConfiguration() != null ? session : null;
     }
 
-    boolean isLayoutEditorOpen()
+    public boolean isLayoutEditorOpen()
     {
         // The editor, not the button that opens it (OB-126): the button is also grayed for a Central Station layout.
         return anEditorWindow() != null;
@@ -485,7 +485,7 @@ public final class EditorWindows
         });
     }
 
-    void autonomyEditorClosed()
+    public void autonomyEditorClosed()
     {
         // reapplies the stored preference, which is what the diagram path does here too
         ui.windowAlwaysOnTopAsChosen();
@@ -496,7 +496,7 @@ public final class EditorWindows
 
         ui.refreshPopupsWhoseCaptionsChanged();
 
-        ui.refreshAutonomyPrompt();
+        ui.autonomyLifecycle().refreshAutonomyPrompt();
 
         // The running graph is rebuilt from the setup, as an edit can change how a square SPLITS; not while trains move
         ui.rebuildRunningLayoutFromSetup();
@@ -506,7 +506,7 @@ public final class EditorWindows
     }
 
     /** Opens the setup editor on a named page, switching the diagram to it first (a menu names no page). */
-    void openAutonomyEditorOnPage(String page)
+    public void openAutonomyEditorOnPage(String page)
     {
         // A menu item that names the setup editor is somebody saying which editor they want
         openLayoutEditor(page, Boolean.TRUE, null, true);
