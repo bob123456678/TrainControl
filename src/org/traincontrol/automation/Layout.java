@@ -8556,7 +8556,8 @@ public class Layout
                     I18n.f("autolayout.errorMaxLatencyInvalid"))
                 || !read(o, "maxActiveTrains", JSONObject::getInt, most ->
                 {
-                    layout.setMaxActiveTrains(most);
+                    if (most < 0) control.logf("autolayout.warnMaxActiveTrainsNegative", most);
+                    layout.setMaxActiveTrains(Math.max(most, 0));
                     if (most > 0) control.logf("autolayout.infoSetMaxActiveTrains", most);
                 }, I18n.f("autolayout.errorMaxActiveTrainsNotANumber"))
                 || !read(o, "maxLocInactiveSeconds", JSONObject::getInt, seconds ->

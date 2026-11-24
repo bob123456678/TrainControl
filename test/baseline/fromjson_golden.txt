@@ -715,6 +715,7 @@ json=d104261a12e9c549
 == maxActiveTrains=x + maxActiveTrains=-1
 valid=true reason=null
 run=[FJ one, FJ two]
+said: Auto layout warning: maxActiveTrains is negative (-1), so 0 is used and there is no limit
 said: Auto layout: trains will yield to other trains inactive longer than 60 seconds
 said: Paused locomotives: FJ two
 said: Auto layout notice: disabled atomic routes. Edges will be unlocked as trains pass them instead of at the end of the route.
@@ -728,6 +729,7 @@ json=8c4f0d3de0efcf0e
 == maxActiveTrains=-1
 valid=true reason=null
 run=[FJ one, FJ two]
+said: Auto layout warning: maxActiveTrains is negative (-1), so 0 is used and there is no limit
 said: Auto layout: trains will yield to other trains inactive longer than 60 seconds
 said: Paused locomotives: FJ two
 said: Auto layout notice: disabled atomic routes. Edges will be unlocked as trains pass them instead of at the end of the route.

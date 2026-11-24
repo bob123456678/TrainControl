@@ -476,6 +476,8 @@ Tab icons provided by Freepik.
             - Windows now remember where you left them, and page windows you had open reopen at start-up.  You can turn this off under `Preferences`, `Remember Window Locations`.
             - Long messages wrap onto several lines instead of making a popup wider than the screen, and many messages are shorter and clearer, in every language.
     - Bug Fixes
+        - Autonomy
+            - A setup file whose maximum number of active trains is negative now runs with no limit, and the log says so.
         - Locomotive Control
             - A locomotive that is already part of a multi-unit can no longer be made the head of another one.  If a saved database already has such a pair, the outer multi-unit keeps the locomotive, whatever the names, and the log says which list was not applied.
 * v3.1.1 [11/21/2026]

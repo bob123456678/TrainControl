@@ -345,10 +345,10 @@ public class testInvalidInput
     }
 
     /**
-     * OB-505: a maxActiveTrains that is not a number is refused as not a number; a negative one still loads, as it
-     * always has (the setter ignores it).
+     * OB-505, D214: a maxActiveTrains that is not a number is refused as not a number; a negative one loads as 0 (no
+     * limit) and the log says so once.
      *
-     * MUTATION: read maxActiveTrains with the "must not be negative" message again, and the reason is that one.
+     * MUTATION: skip a negative value again, and the value stays at its old one and nothing is logged.
      */
     @Test
     public void testAMaxActiveTrainsThatIsNotANumberSaysSo()
@@ -357,8 +357,32 @@ public class testInvalidInput
 
         assertFalse(layout.isValid(), "'many' was accepted");
         assertEquals(layout.getInvalidReason(), I18n.f("autolayout.errorMaxActiveTrainsNotANumber"));
-        assertTrue(Layout.fromJSON(config(POINT_A, "", ", 'maxActiveTrains': -1"), model).isValid(),
-            "a negative maxActiveTrains is ignored, not refused");
+
+        List<String> said = java.util.Collections.synchronizedList(new ArrayList<>());
+        java.util.logging.Handler tap = support.LogTap.messagesInto(said);
+        java.util.logging.Logger log = java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
+        log.addHandler(tap);
+
+        try
+        {
+            layout = Layout.fromJSON(config(POINT_A, "", ", 'maxActiveTrains': 4"), model);
+            assertEquals(layout.getMaxActiveTrains(), 4);
+            layout.setMaxActiveTrains(3);
+            assertEquals(layout.getMaxActiveTrains(), 3, "the setter must still take a value");
+            layout.setMaxActiveTrains(-1);
+            assertEquals(layout.getMaxActiveTrains(), 3, "the setter must still refuse a negative value");
+
+            said.clear();
+            layout = Layout.fromJSON(config(POINT_A, "", ", 'maxActiveTrains': -2"), model);
+            assertTrue(layout.isValid(), "a negative maxActiveTrains is read as 0, not refused");
+            assertEquals(layout.getMaxActiveTrains(), 0, "a negative maxActiveTrains is read as 0");
+            assertEquals(java.util.Collections.frequency(said, I18n.f("autolayout.warnMaxActiveTrainsNegative", -2)), 1,
+                "the negative value was not logged once: " + said);
+        }
+        finally
+        {
+            log.removeHandler(tap);
+        }
     }
 
     /**
