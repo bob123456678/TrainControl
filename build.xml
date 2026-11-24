@@ -140,7 +140,8 @@
     -->
     <property name="test-sys-prop.traincontrol.anyReceivePort" value="true"/>
     <!-- THE UNIT SUITE: test/unit builds no station and binds no port (test/README.md), so its classes share one JVM
-         and need no line each.  `ant test-unit` runs them alone in seconds; `ant test` runs them first. -->
+         and need no line each.  `ant test-unit` runs them alone in seconds; `ant test` runs them first, and a unit failure there
+         still lets the per-class list run: the build fails at the end. -->
     <target depends="init,compile-test,-init-test-run-module-properties,-pre-test-run" if="have.tests" name="-do-test-unit">
         <echo message="---------- unit/* ----------"/>
         <j2seproject3:test includes="${includes}" testincludes="unit/*.java"/>

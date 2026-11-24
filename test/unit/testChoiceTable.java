@@ -226,7 +226,8 @@ public class testChoiceTable
     /**
      * Rows past half the screen's height scroll: the table asks for half the screen, and room for the bar beside it.
      *
-     * MUTATION: in `getPreferredSize`, leave out the cap on the height, and the table asks for every row.
+     * MUTATION: in `getPreferredSize`, leave out the cap on the height, and the table asks for every row; leave out
+     * the `getVerticalScrollBar` width, and the table asks for no room for the bar.
      */
     @Test
     public void testATallTableAsksForHalfTheScreen()
@@ -237,14 +238,38 @@ public class testChoiceTable
             few.addRow(new JLabel("Row"));
             for (int i = 0; i < 200; i++) many.addRow(new JLabel("Row " + i));
             return new Dimension[] {few.getPreferredSize(), many.getPreferredSize(),
-                many.getViewport().getView().getPreferredSize()};
+                many.getViewport().getView().getPreferredSize(), many.getVerticalScrollBar().getPreferredSize()};
         });
         int half = Toolkit.getDefaultToolkit().getScreenSize().height / 2;
 
         assertTrue(sizes[2].height > half, "precondition: 200 rows fit in half the screen");
         assertEquals(sizes[1].height, half, "200 rows ask for " + sizes[1].height + " px, not half the screen");
-        assertTrue(sizes[1].width > sizes[2].width, "no room was asked for the scroll bar");
+        assertTrue(sizes[1].width - sizes[2].width >= sizes[3].width, "the table asks for " + (sizes[1].width
+            - sizes[2].width) + " px beside its rows, less than the " + sizes[3].width + " px scroll bar");
         assertTrue(sizes[0].height < half, "control: one row asks for half the screen");
+    }
+
+    /**
+     * A table wider than three quarters of the screen asks for three quarters, and a bar below it.
+     *
+     * MUTATION: in `getPreferredSize`, cap the width at `screen.width * 3 / 2`, and the table asks for more.
+     */
+    @Test
+    public void testAWideTableAsksForThreeQuartersOfTheScreen()
+    {
+        int screen = Toolkit.getDefaultToolkit().getScreenSize().width;
+        Dimension[] sizes = onTheEventThread(() ->
+        {
+            ChoiceTable table = new ChoiceTable(new JLabel("Name"));
+            JLabel wide = new JLabel("Row");
+            wide.setPreferredSize(new Dimension(screen * 2, 20));
+            table.addRow(wide);
+            return new Dimension[] {table.getPreferredSize(), table.getViewport().getView().getPreferredSize()};
+        });
+
+        assertTrue(sizes[1].width > screen * 3 / 4, "precondition: the row is wider than three quarters of the screen");
+        assertEquals(sizes[0].width, screen * 3 / 4, "the table asks for " + sizes[0].width + " px, not three quarters"
+            + " of the " + screen + " px screen");
     }
 
     /** A table with this many rows, laid out and painted, read down its right edge, clear of every cell. */

@@ -113,12 +113,18 @@ public class testEveryTestIsInTheBattery
     private static final java.util.regex.Pattern NOT_A_UNIT = java.util.regex.Pattern.compile(
         "\\b(TrainControlUI|MarklinControlStation|NetworkProxy|DatagramSocket|LayoutSandbox|Scenario)\\b");
 
+    /** The only support helpers a unit test may use: each builds no window, station or sandbox, and opens no layout. */
+    private static final List<String> UNIT_SUPPORT = java.util.Arrays.asList("Components", "Pixels");
+
+    private static final java.util.regex.Pattern SUPPORT_USE = java.util.regex.Pattern.compile("\\bsupport\\.(\\w+)");
+
     /**
      * The unit suite is test/unit, run in one JVM by `ant test-unit` and class by class by the battery: every file there
-     * is `package unit;` and a test, and its code names nothing that builds the window, a station or a railway.
+     * is `package unit;` and a test, its code (comments stripped) names nothing that builds the window, a station or a
+     * railway, and it uses only the `support` helpers in UNIT_SUPPORT.
      *
-     * MUTATION: put `Class<?> c = org.traincontrol.marklin.MarklinControlStation.class;` in a unit class, and this fails
-     * naming it.
+     * MUTATION: put `Class<?> c = org.traincontrol.marklin.MarklinControlStation.class;` or `support.StationRig.class`
+     * in a unit class, even after a one-line block comment, and this fails naming it.
      */
     @Test
     public void testTheUnitSuiteBuildsNoWindowOrStation() throws Exception
@@ -135,18 +141,23 @@ public class testEveryTestIsInTheBattery
             if (!file.getName().endsWith(".java") || !lines.contains("package unit;")
                 || !lines.toString().contains("@Test")) wrong.add(file.getName() + " (not a unit test class)");
 
-            for (String line : lines)
+            for (String line : String.join("\n", lines).replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("//[^\\n]*", "")
+                .split("\n"))
             {
                 String code = line.trim();
 
-                if (!code.startsWith("*") && !code.startsWith("//") && !code.startsWith("/*")
-                    && NOT_A_UNIT.matcher(code).find()) wrong.add(file.getName() + ": " + code);
+                if (NOT_A_UNIT.matcher(code).find()) wrong.add(file.getName() + ": " + code);
+
+                for (java.util.regex.Matcher use = SUPPORT_USE.matcher(code); use.find(); )
+                {
+                    if (!UNIT_SUPPORT.contains(use.group(1))) wrong.add(file.getName() + ": support." + use.group(1));
+                }
             }
         }
 
         assertEquals(wrong, new ArrayList<String>(), "test/unit holds unit tests only: one class, through its own API, "
             + "in a JVM shared with the others, so no window, station, port or railway. Move these to core/, ui/ or "
-            + "regression/: " + wrong);
+            + "regression/ (support helpers allowed: " + UNIT_SUPPORT + "): " + wrong);
     }
 
     /**

@@ -33,8 +33,11 @@ belongs in `core/`.
 **`unit/`**: one class on its own, through its own API.  It never builds `TrainControlUI` or a
 `MarklinControlStation`, binds no port and opens no layout; a Swing component built alone is fine, laid out and painted
 without a window.  `ant test-unit` runs the whole folder in one JVM in seconds, and the battery runs it class by class
-like every other folder.  `testEveryTestIsInTheBattery` refuses a file here that names the window, a station or a
-railway.
+like every other folder.  `testEveryTestIsInTheBattery` refuses a file here that, comments aside, names `TrainControlUI`,
+`MarklinControlStation`, `NetworkProxy`, `DatagramSocket`, `LayoutSandbox` or `Scenario`, or uses a `support` helper
+other than `Components` and `Pixels` (the list is in that class: add a helper there only after reading it and finding it
+builds no window, station or sandbox).  Under `ant test` a unit failure still lets the per-class list run, and the build
+fails at the end.
 
 **Unit or integration?**  Every test in `core/`, `ui/` and `regression/` that drives a window or a flow is an
 integration test.  A new class gets both: a unit test class of its own in `unit/` for its rules, and at least one

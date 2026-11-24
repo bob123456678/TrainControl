@@ -71,12 +71,48 @@ public class testWrappingOptionPaneUI
     /**
      * A line breaks after the last space that fits, and the space is dropped, so no line ends or begins with one.
      *
-     * MUTATION: in `wrap`, leave out `line.lastIndexOf(' ', end)` from the cut, and a word is cut in two.
+     * MUTATION: in `wrap`, leave out `line.lastIndexOf(' ', end)` from the cut, and a word is cut in two; leave out
+     * the `replaceAll(" +$", "")`, and a line ends with the spaces at the cut.
      */
     @Test
     public void testALineBreaksAfterASpace()
     {
         assertEquals(WrappingOptionPaneUI.wrap("alpha beta gamma delta", MONO, letters(14)), "alpha beta\ngamma delta");
+
+        String wrapped = WrappingOptionPaneUI.wrap("alpha beta   gamma delta", MONO, letters(14));
+
+        assertEquals(wrapped, "alpha beta\ngamma delta", "spaces doubled at the cut were not dropped");
+
+        for (String line : wrapped.split("\n"))
+        {
+            assertFalse(line.startsWith(" ") || line.endsWith(" "), "\"" + line + "\" begins or ends with a space");
+        }
+    }
+
+    /**
+     * A supplementary character (an emoji) is never split between its two chars, wherever the cut falls.
+     *
+     * MUTATION: in `wrap`, leave out the surrogate step after the inner loop, and a line ends on half an emoji.
+     */
+    @Test
+    public void testASurrogatePairIsNeverSplit()
+    {
+        String emoji = "\uD83D\uDE00";
+
+        for (int lead = 0; lead < 12; lead++)
+        {
+            String text = "abcdefghijkl".substring(0, lead) + emoji + emoji + emoji + "xyz";
+            String wrapped = WrappingOptionPaneUI.wrap(text, MONO, letters(10));
+
+            assertEquals(wrapped.replace("\n", ""), text, "letters were lost: " + wrapped);
+
+            for (String line : wrapped.split("\n"))
+            {
+                assertFalse(Character.isLowSurrogate(line.charAt(0))
+                    || Character.isHighSurrogate(line.charAt(line.length() - 1)),
+                    "an emoji was split, after " + lead + " letters: " + wrapped);
+            }
+        }
     }
 
     /**
