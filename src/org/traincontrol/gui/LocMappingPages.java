@@ -4,7 +4,9 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -15,9 +17,11 @@ import javax.swing.JMenu;
 import javax.swing.JPanel;
 import javax.swing.JOptionPane;
 import javax.swing.JTabbedPane;
+import javax.swing.SwingUtilities;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.locomotive.CurrentKeyRow;
+import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
 
@@ -65,6 +69,14 @@ public final class LocMappingPages
         void removePage(int number);
         /** Shows page `number`, its tab, label and arrows. */
         void switchLocMapping(int number);
+        /** The keys of the keyboard, in the order they lie on it. */
+        Set<JButton> keyButtons();
+        /** The railway's model: the locomotives by name. */
+        ViewListener getModel();
+        /** The keys, on any page, that hold `l`. */
+        List<String> getAllLocButtonMappings(Locomotive l);
+        /** Shows the locomotive on the Q key, the first. */
+        void showQKey();
     }
 
     private final Keyboard ui;
@@ -158,6 +170,63 @@ public final class LocMappingPages
         ui.switchLocMapping(Math.min(going, count - 1));
 
         ui.repaintMappings();
+    }
+
+    /** Fills the free keys of the page showing with the locomotives mapped nowhere, A to Z; event thread, later. */
+    void mapUnassignedLocomotives()
+    {
+        SwingUtilities.invokeLater(() ->
+        {
+            for (JButton key : ui.keyButtons())
+            {
+                // Is the key free?
+                if (ui.currentLocMapping().get(key) == null
+                    || ui.getModel().getLocByName(ui.currentLocMapping().get(key).getName()) == null)
+                {
+                    List<String> locs = ui.getModel().getLocList();
+                    Collections.sort(locs);
+
+                    for (String s : locs)
+                    {
+                        Locomotive l = ui.getModel().getLocByName(s);
+
+                        // Is the locomotive mapped anywhere?
+                        if (l != null && ui.getAllLocButtonMappings(l).isEmpty())
+                        {
+                            ui.currentLocMapping().put(key, l);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            ui.repaintMappings();
+        });
+    }
+
+    /** Clears page `pageNumber` and puts `locs` on its keys in keyboard order, skipping nulls; shows the Q key. */
+    void mapLocomotivesToPage(int pageNumber, List<Locomotive> locs)
+    {
+        SwingUtilities.invokeLater(() ->
+        {
+            ui.switchLocMapping(pageNumber);
+            doClearCurrentPage();
+
+            Iterator<Locomotive> iterator = locs.iterator();
+
+            for (JButton key : ui.keyButtons())
+            {
+                if (!iterator.hasNext()) break;
+
+                Locomotive l = iterator.next();
+
+                // Only assign if locomotive is valid
+                if (l != null && ui.currentLocMapping().get(key) == null) ui.currentLocMapping().put(key, l);
+            }
+
+            ui.repaintMappings();
+            ui.showQKey();
+        });
     }
 
     /** A page tab's caption by `CurrentKeyRow.pageWords` (FR-128); the name cut to MAX_PAGE_NAME_LENGTH_TAB. */

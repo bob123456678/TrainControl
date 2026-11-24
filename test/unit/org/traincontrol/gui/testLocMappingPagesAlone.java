@@ -1,11 +1,13 @@
 package org.traincontrol.gui;
 
 import java.awt.image.BufferedImage;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -19,6 +21,7 @@ import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinLocomotive;
+import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
@@ -311,6 +314,58 @@ public class testLocMappingPagesAlone
             "switch 2,repaintMappings"), "names, pages, tabs, the third tab, then deleting the last page");
     }
 
+    /**
+     * Mapping locomotives to a page switches to it, empties it, puts them on its keys in keyboard order (a null takes
+     * its key's turn but is not put; those beyond the last key are dropped), redraws and shows the Q key.
+     *
+     * MUTATION: in `LocMappingPages.mapLocomotivesToPage`, take out `doClearCurrentPage()`, and the page keeps its old
+     * train; test `l != null` away, and the null is put.
+     */
+    @Test
+    public void testLocomotivesAreMappedToAPageInKeyboardOrder() throws Exception
+    {
+        Fake ui = new Fake(3);
+        ui.put(3, train("Old"));
+        Locomotive first = train("A1"), second = train("B2");
+        onTheEventThread(() ->
+        {
+            new LocMappingPages(ui).mapLocomotivesToPage(3, Arrays.asList(first, null, second, train("C3")));
+            return null;
+        });
+        javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        assertEquals(Arrays.asList(name(ui.pages.get(2).get(ui.keys.get(0))), name(ui.pages.get(2).get(ui.keys.get(1))),
+            name(ui.pages.get(2).get(ui.keys.get(2)))), Arrays.asList("A1", "null", "B2"), "the page's three keys");
+        assertEquals(ui.showing + " " + ui.did, "3 [switch 3, repaintMappings, repaintLoc false, repaintMappings, showQ]",
+            "the page shown, and what the window was told");
+    }
+
+    /**
+     * Map Unassigned fills the free keys of the page showing, in keyboard order, with the locomotives mapped nowhere,
+     * A to Z; a key holding a locomotive the model no longer knows counts as free, one on another page is skipped.
+     *
+     * MUTATION: in `LocMappingPages.mapUnassignedLocomotives`, take out `Collections.sort(locs)`, and the first free
+     * key gets "Zed"; or the `isEmpty()` test, and "Mid", on page 2, is put on this page too.
+     */
+    @Test
+    public void testUnassignedLocomotivesFillTheFreeKeysAToZ() throws Exception
+    {
+        Fake ui = new Fake(2);
+        for (String name : new String[] {"Zed", "Alpha", "Mid"}) ui.known.put(name, train(name));
+        ui.put(2, ui.known.get("Mid"));
+        ui.put(1, train("Deleted"));
+        onTheEventThread(() ->
+        {
+            new LocMappingPages(ui).mapUnassignedLocomotives();
+            return null;
+        });
+        javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        assertEquals(Arrays.asList(name(ui.pages.get(0).get(ui.keys.get(0))), name(ui.pages.get(0).get(ui.keys.get(1))),
+            name(ui.pages.get(0).get(ui.keys.get(2)))), Arrays.asList("Alpha", "Zed", "null"), "the page's three keys");
+        assertEquals(ui.did, Arrays.asList("repaintMappings"), "what the window was told");
+    }
+
     /** A locomotive with no station behind it, at an address of its own. */
     private static Locomotive train(String name)
     {
@@ -359,16 +414,18 @@ public class testLocMappingPagesAlone
         final JMenu menu = new JMenu();
         final JCheckBoxMenuItem showTabs = new JCheckBoxMenuItem("Show Page Tabs");
         final List<String> did = new ArrayList<>();
+        final List<JButton> keys = new ArrayList<>();
+        /** The locomotives the railway's model knows, by name, in the order its list gives them. */
+        final Map<String, Locomotive> known = new LinkedHashMap<>();
         int showing = 1;
         Locomotive active;
 
         Fake(int count)
         {
+            for (String key : new String[] {"A", "S", "D"}) this.keys.add(new JButton(key));
             for (int page = 0; page < count; page++)
             {
-                Map<JButton, Locomotive> keys = new LinkedHashMap<>();
-                for (String key : new String[] {"A", "S", "D"}) keys.put(new JButton(key), null);
-                this.pages.add(keys);
+                this.appendPage();
                 this.tabs.addTab("?", new JPanel());
             }
         }
@@ -460,13 +517,45 @@ public class testLocMappingPagesAlone
         @Override
         public void appendPage()
         {
-            this.pages.add(new LinkedHashMap<>());
+            Map<JButton, Locomotive> keys = new LinkedHashMap<>();
+            for (JButton key : this.keys) keys.put(key, null);
+            this.pages.add(keys);
         }
 
         @Override
         public void removePage(int number)
         {
             this.pages.remove(number - 1);
+        }
+
+        @Override
+        public Set<JButton> keyButtons()
+        {
+            return new LinkedHashSet<>(this.keys);
+        }
+
+        @Override
+        public ViewListener getModel()
+        {
+            return (ViewListener) Proxy.newProxyInstance(ViewListener.class.getClassLoader(),
+                new Class<?>[] {ViewListener.class}, (proxy, method, args) ->
+                    method.getName().equals("getLocList") ? new ArrayList<>(this.known.keySet())
+                        : this.known.get((String) args[0]));
+        }
+
+        @Override
+        public List<String> getAllLocButtonMappings(Locomotive l)
+        {
+            List<String> on = new ArrayList<>();
+            for (Map<JButton, Locomotive> page : this.pages)
+                for (Locomotive held : page.values()) if (held == l) on.add(l.getName());
+            return on;
+        }
+
+        @Override
+        public void showQKey()
+        {
+            this.did.add("showQ");
         }
 
         @Override

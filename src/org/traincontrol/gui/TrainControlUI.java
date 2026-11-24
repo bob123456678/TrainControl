@@ -6281,68 +6281,31 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     
     public void mapUnassignedLocomotives()
     {
-        SwingUtilities.invokeLater(() -> 
-        {
-            for (JButton key : this.labelMapping.keySet())
-            {
-                // Is the key free?
-                if (this.currentLocMapping().get(key) == null || this.model.getLocByName(this.currentLocMapping().get(key).getName()) == null)
-                {
-                    List<String> locs = this.model.getLocList();
-                    Collections.sort(locs);
-                    
-                    for (String s : locs)
-                    {
-                        Locomotive l = this.model.getLocByName(s);
-                        
-                        // Is the locomotive mapped anywhere?
-                        if (l != null && this.getAllLocButtonMappings(l).isEmpty())
-                        {
-                            this.currentLocMapping().put(key, l);
-                            break;
-                        }
-                    }
-                }
-            }
-
-            repaintMappings();
-        });
+        this.locMappingPages.mapUnassignedLocomotives();
     }
-    
+
     /**
      * Maps a specific list of locomotives to a page
      */
     public void mapLocomotivesToPage(int pageNumber, List<Locomotive> locs)
     {
-        SwingUtilities.invokeLater(() ->
-        {
-            // Switch to the target page and clear it
-            this.switchLocMapping(pageNumber);
-            this.doClearCurrentPage();
-
-            Iterator<Locomotive> iterator = locs.iterator();
-
-            for (JButton key : this.labelMapping.keySet())
-            {
-                if (!iterator.hasNext())
-                {
-                    break; // no more locomotives to assign
-                }
-
-                Locomotive l = iterator.next();
-
-                // Only assign if locomotive is valid
-                if (l != null && this.currentLocMapping().get(key) == null)
-                {
-                    this.currentLocMapping().put(key, l);
-                }
-            }
-
-            repaintMappings();
-            displayCurrentButtonLoc(QButton);
-        });
+        this.locMappingPages.mapLocomotivesToPage(pageNumber, locs);
     }
-    
+
+    /** The keys of the locomotive keyboard, in the order they lie on it. */
+    @Override
+    public Set<JButton> keyButtons()
+    {
+        return this.labelMapping.keySet();
+    }
+
+    /** Shows the locomotive on the Q key. */
+    @Override
+    public void showQKey()
+    {
+        displayCurrentButtonLoc(QButton);
+    }
+
     @Override
     public void repaintSwitches()
     {
