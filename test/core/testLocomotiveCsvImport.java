@@ -1377,7 +1377,7 @@ public class testLocomotiveCsvImport
      * Replace as Keep Both, and this fails.
      */
     @Test
-    public void testKeepNewSaysWhyNotAndOnlyOneRowTakesALocomotive() throws Exception
+    public void testMergeAndReplaceSayWhyNotAndOnlyOneRowTakesALocomotive() throws Exception
     {
         make("FR249 s1", decoderType.MFX, 15021);
         make("FR249 s2", decoderType.MFX, 15021);
