@@ -37,9 +37,9 @@ public class testManualSync
 {
     /**
      * Each answer does what it says: Rename renames, Keep As Is keeps the station's name or address so it is not asked
-     * again, Change Address takes the station's address for this sync, Ignore ignores, Ask Again leaves it, and Keep
-     * Both adds the station's locomotive (or leaves it waiting when that is refused); any answer but Ignore lifts an
-     * Ignore.  The counts are added, renamed, kept, ignored, waiting and by hand.
+     * again, Change Address takes the station's address for this sync (forgetting a Keep of it), Ignore ignores, Ask
+     * Again leaves it, and Keep Both adds the station's locomotive (or leaves it waiting when that is refused); any
+     * answer but Ignore lifts an Ignore.  The counts are added, renamed, kept, ignored, waiting and by hand.
      *
      * MUTATION: in `ManualSync.apply`, leave out Keep's `setDeclinedStationAddress(r.stationAddress)`, and Uri's
      * address is asked again.
@@ -51,6 +51,7 @@ public class testManualSync
         Locomotive kept = ui.loco("Kept"), uri = ui.loco("Uri"), mover = ui.loco("Mover"), ign = ui.loco("Ign"),
             later = ui.loco("Later");
         kept.setSyncIgnored(true);
+        mover.setDeclinedStationAddress(31);
         ui.refusedAdds.add("W2");
         Map<Row, Answer> answers = new LinkedHashMap<>();
         answers.put(row(ui.loco("Shunter"), "V 60", null), Answer.RENAME);
@@ -66,8 +67,9 @@ public class testManualSync
         int[] n = ui.apply(null, answers, taken);
 
         assertEquals(n, new int[] {1, 1, 2, 1, 2, 0}, "added, renamed, kept, ignored, waiting, by hand: " + ui.said);
-        assertEquals(ui.said, Arrays.asList("asked whether a run refuses", "rename Shunter to V 60", "loc.renameApplied [Shunter, V 60]", "add T2",
-            "add W2", "loc.renameKept [Kept, K2]", "loc.syncIgnored [Ign]", "loc.syncLeftToAsk [Later]"));
+        assertEquals(ui.said, Arrays.asList("asked whether a run refuses", "rename Shunter to V 60",
+            "loc.renameApplied [Shunter, V 60]", "add T2", "add W2", "loc.renameKept [Kept, K2]",
+            "loc.syncIgnored [Ign]", "loc.syncLeftToAsk [Later]"));
         assertEquals(Arrays.asList(kept.getDeclinedStationName(), kept.isSyncIgnored(), uri.getDeclinedStationAddress(),
             ign.isSyncIgnored(), ui.byName.get("Twin").getDeclinedStationName(), ui.byName.get("Wall")
             .getDeclinedStationName()), Arrays.asList("K2", false, 22, true, "T2", null), "what each locomotive keeps");
@@ -104,9 +106,9 @@ public class testManualSync
         int[] n = ui.apply(null, answers, now.values(), new ArrayList<>());
 
         assertEquals(n, new int[] {0, 1, 0, 0, 4, 0}, "added, renamed, kept, ignored, waiting, by hand: " + ui.said);
-        assertEquals(ui.said, Arrays.asList("asked whether a run refuses", "loc.syncRowChanged [Moved]", "rename Taker to Held",
-            "loc.renameApplied [Taker, Held]", "loc.syncRowChanged [Away]", "loc.syncRowChanged [Gone]",
-            "loc.syncRowAnsweredAway [Held]", "loc.syncRowChanged [Readdr]"));
+        assertEquals(ui.said, Arrays.asList("asked whether a run refuses", "loc.syncRowChanged [Moved]",
+            "rename Taker to Held", "loc.renameApplied [Taker, Held]", "loc.syncRowChanged [Away]",
+            "loc.syncRowChanged [Gone]", "loc.syncRowAnsweredAway [Held]", "loc.syncRowChanged [Readdr]"));
         assertNull(away.getDeclinedStationName(), "Away's Keep was applied");
     }
 
@@ -130,8 +132,8 @@ public class testManualSync
 
         ui.apply(null, answers, new ArrayList<>());
 
-        assertEquals(ui.said, Arrays.asList("asked whether a run refuses", "rename B to B2", "loc.renameApplied [B, B2]", "rename A to A2",
-            "loc.renameApplied [A, A2]", "add T2", "loc.renameKept [Keepy, K2]"));
+        assertEquals(ui.said, Arrays.asList("asked whether a run refuses", "rename B to B2", "loc.renameApplied [B, B2]",
+            "rename A to A2", "loc.renameApplied [A, A2]", "add T2", "loc.renameKept [Keepy, K2]"));
     }
 
     /**
@@ -174,9 +176,11 @@ public class testManualSync
 
     /**
      * A Keep As Is the station no longer offers is forgotten, so nothing holds back a later offer, and one it still
-     * offers is said unless the locomotive is ignored; on a partial read a locomotive with no row keeps its Keep, as its record may be what did not read.
+     * offers is said unless the locomotive is ignored; on a partial read a locomotive with no row keeps its Keep, as its
+     * record may be what did not read.
      *
-     * MUTATION: in `ManualSync.apply`, leave out the `asked.partial` skip, and Old's Keep is forgotten on a partial read.
+     * MUTATION: in `ManualSync.apply`, leave out the `asked.partial` skip, and Old's Keep is forgotten on a partial
+     * read.
      */
     @Test
     public void testAKeepTheStationNoLongerOffersIsForgotten()
@@ -186,10 +190,12 @@ public class testManualSync
         {
             Fake ui = new Fake();
             ui.partial = partial;
-            Locomotive old = ui.loco("Old"), same = ui.loco("Same"), other = ui.loco("Other"), addressed = ui.loco("Adr");
+            Locomotive old = ui.loco("Old"), same = ui.loco("Same"), other = ui.loco("Other"),
+                addressed = ui.loco("Adr");
             old.setDeclinedStationName("O2");
             old.setDeclinedStationAddress(23);
             same.setDeclinedStationName("S2");
+            same.setDeclinedStationAddress(24);
             other.setDeclinedStationName("X2");
             addressed.setDeclinedStationAddress(22);
             Locomotive quiet = ui.loco("Quiet");
@@ -201,12 +207,13 @@ public class testManualSync
             ui.apply(null, new HashMap<>(), new ArrayList<>());
 
             kept.add(Arrays.asList(old.getDeclinedStationName(), old.getDeclinedStationAddress(), same
-                .getDeclinedStationName(), other.getDeclinedStationName(), addressed.getDeclinedStationAddress(),
+                .getDeclinedStationName(), same.getDeclinedStationAddress(), other.getDeclinedStationName(),
+                addressed.getDeclinedStationAddress(),
                 quiet.getDeclinedStationName()) + " " + ui.said);
         }
 
-        assertEquals(kept, Arrays.asList("[null, null, S2, null, 22, Q2] [loc.renameKeptAsAnswered [Same, S2]]",
-            "[O2, 23, S2, null, 22, Q2] [loc.renameKeptAsAnswered [Same, S2]]"), "a full read, then a partial one");
+        assertEquals(kept, Arrays.asList("[null, null, S2, null, null, 22, Q2] [loc.renameKeptAsAnswered [Same, S2]]",
+            "[O2, 23, S2, null, null, 22, Q2] [loc.renameKeptAsAnswered [Same, S2]]"), "a full read, then a partial one");
     }
 
     /**

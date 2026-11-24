@@ -3,7 +3,6 @@ package org.traincontrol.gui;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -51,7 +50,8 @@ public class testLocMappingPagesAlone
             Fake ui = new Fake(3);
             ui.showing = 2;
             ui.put(1, train("Elsewhere"));
-            List<Boolean> out = new ArrayList<>(Collections.singletonList(new LocMappingPages(ui).canDeleteCurrentPage()));
+            List<Boolean> out = new ArrayList<>();
+            out.add(new LocMappingPages(ui).canDeleteCurrentPage());
 
             ui.put(2, train("Shunter"));
             out.add(new LocMappingPages(ui).canDeleteCurrentPage());

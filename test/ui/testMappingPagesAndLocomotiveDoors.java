@@ -334,19 +334,24 @@ public class testMappingPagesAndLocomotiveDoors
     }
 
     /**
-     * Reset Mappings answered Yes empties the page showing and no other; answered No it empties nothing.
+     * Reset Mappings, asked over the main window, answered Yes empties the page showing and no other; answered No it
+     * empties nothing.
      *
      * MUTATION: clear whatever the answer in `clearCurrentPage`, and the No half fails; take `doClearCurrentPage()`
-     * out, and the Yes half fails.
+     * out, and the Yes half fails; ask over null, and the question hangs off no window.
      */
     @Test
     public void testResetMappingsEmptiesOnlyThisPageAndOnlyOnYes() throws Exception
     {
         AbstractButton reset = pageMenuItem(I18n.t("page.ui.menuResetCurrentMappings"));
 
-        List<String> no = answering(I18n.t("ui.no"), () -> SwingUtilities.invokeLater(reset::doClick));
+        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.no"))))
+        {
+            SwingUtilities.invokeLater(reset::doClick);
 
-        assertEquals(no.size(), 1, "Reset Mappings asked nothing: " + no);
+            assertTrue(answering.awaitAsked(1, WAIT), "Reset Mappings asked nothing");
+            assertSame(answering.questions().get(0).owner, ui, "Reset Mappings asks over another window");
+        }
 
         Components.settle();
 
@@ -1056,7 +1061,8 @@ public class testMappingPagesAndLocomotiveDoors
 
             Components.settle();
 
-            for (Answering.Question q : answering.questions()) assertSame(q.owner, ui, "\"" + q.message + "\" hangs off another window");
+            for (Answering.Question q : answering.questions())
+                assertSame(q.owner, ui, "\"" + q.message + "\" hangs off another window");
 
             return answering.asked();
         }
