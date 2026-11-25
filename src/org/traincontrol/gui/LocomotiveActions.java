@@ -150,6 +150,7 @@ public final class LocomotiveActions
             if (renaming) this.ui.getModel().renameLoc(l.getName(), newName);
 
             refreshAfterEdit(Collections.singletonList(l));
+            this.ui.autonomyLifecycle.sayAfterRenames(source, null, Collections.emptyList(), null);
 
             return true;
         }
@@ -163,10 +164,7 @@ public final class LocomotiveActions
         }
     }
 
-    /**
-     * Redraws every window that names locomotives after a rename or a new address, at each door that makes one;
-     * `changed` have their multi-units checked.
-     */
+    /** Redraws every window that names locomotives, after any door's rename or new address; checks `changed`'s units. */
     void refreshAfterEdit(List<? extends Locomotive> changed)
     {
         this.ui.clearCopyTarget();
@@ -174,9 +172,7 @@ public final class LocomotiveActions
         this.ui.repaintMappings(null, false);
         this.ui.routeListPanel.refreshRouteList();
         this.ui.getLocSelector().refreshLocSelectorList();
-
         if (!this.ui.getModel().hasAutoLayout()) return;
-
         for (Locomotive l : changed) this.ui.getModel().getAutoLayout().sanitizeMultiUnits(l);
         this.ui.getModel().getAutoLayout().refreshUI();
         // refreshUI leaves the station labels (OB-081) and the timetable (MT-149), which name locomotives too

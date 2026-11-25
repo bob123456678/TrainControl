@@ -89,6 +89,19 @@ public class AutonomyCompanionStore
         }
     }
 
+    /** A repair of a setup nothing has open that left these configurations as they were on disk. */
+    public static final class NotWritten extends IOException
+    {
+        private static final long serialVersionUID = 1L;
+        public final List<String> configurations;
+
+        NotWritten(List<String> configurations, IOException cause)
+        {
+            super(cause.getMessage(), cause);
+            this.configurations = configurations;
+        }
+    }
+
     private static final String FOLDER = "config/autonomy";
     private static final String SETUP_FILE = "setup.json";
     private static final String CONFIGURATION_PREFIX = "configuration-";
@@ -664,6 +677,8 @@ public class AutonomyCompanionStore
     /** Writes the setup and every configuration through Util.writeAtomically, so no half-written file is left. */
     public void save() throws IOException
     {
+        unwritten.clear();
+        unwritten.addAll(configurations.keySet());
         if (!isUsable()) throw new IOException(ERROR_NOT_LOCAL);
 
         folder().mkdirs();
@@ -681,7 +696,15 @@ public class AutonomyCompanionStore
             configuration.put("name", entry.getKey());
 
             writeJson(configurationFile(entry.getKey()), configuration);
+            unwritten.remove(entry.getKey());
         }
+    }
+
+    /** The configurations the last save left as they were on disk (it stops at the first write that fails). */
+    private final List<String> unwritten = new ArrayList<>();
+    public List<String> getUnwritten()
+    {
+        return new ArrayList<>(unwritten);
     }
 
     // shared data
@@ -991,26 +1014,41 @@ public class AutonomyCompanionStore
         // Nothing is created for a layout that has never had a setup.
         if (!store.exists()) return false;
 
-        store.load();
-
-        // Restore the numbering the FILE was written under, or saving replaces its id-to-name record with {}.
-        Map<String, String> nameToId = new LinkedHashMap<>();
-
-        for (Map.Entry<String, String> page : store.pageNamesWhenWritten.entrySet())
+        try
         {
-            nameToId.put(page.getValue(), page.getKey());
+            store.load();
+            // Restore the numbering the FILE was written under, or saving replaces its id-to-name record with {}.
+            Map<String, String> nameToId = new LinkedHashMap<>();
+            for (Map.Entry<String, String> page : store.pageNamesWhenWritten.entrySet())
+            {
+                nameToId.put(page.getValue(), page.getKey());
+            }
+            store.setPageIds(nameToId);
+            // Read AGAIN now that pages have names: the first read returned id-form keys that name-based edits ignore.
+            store.load();
+            what.apply(store);
+            store.save();
         }
-
-        store.setPageIds(nameToId);
-
-        // Read AGAIN now that pages have names: the first read returned id-form keys that name-based edits ignore.
-        store.load();
-
-        what.apply(store);
-
-        store.save();
-
+        catch (IOException e)
+        {
+            // A read that failed wrote nothing, so every configuration in the folder is left
+            throw new NotWritten(store.unwritten.isEmpty() ? store.namesOnDisk() : store.getUnwritten(), e);
+        }
         return true;
+    }
+
+    /** The configurations in the folder, by their file names. */
+    private List<String> namesOnDisk()
+    {
+        List<String> out = new ArrayList<>();
+        File[] files = folder().listFiles();
+        for (File file : files == null ? new File[0] : files)
+        {
+            String name = file.getName();
+            if (name.startsWith(CONFIGURATION_PREFIX) && name.endsWith(".json"))
+                out.add(name.substring(CONFIGURATION_PREFIX.length(), name.length() - 5));
+        }
+        return out;
     }
 
     /**

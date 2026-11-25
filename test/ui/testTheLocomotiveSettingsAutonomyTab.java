@@ -26,8 +26,8 @@ import support.SettingsWindow;
 /**
  * The Autonomy tab of Locomotive Settings (FR-048): train length, reversible, the departure and arrival functions and
  * Active, written at Save.  The setup of an old file keeps its own copy of a standing train, which a load copies back
- * onto the locomotive, so a Save reaches that copy too.  On the frozen copy of Adam's railway, with a train standing on
- * BottomMainB.
+ * onto the locomotive, so a Save reaches that copy too.  A rename the setup's file cannot take is said where it was
+ * made, at Save and at a CSV import.  On the frozen copy of Adam's railway, with a train standing on BottomMainB.
  */
 public class testTheLocomotiveSettingsAutonomyTab
 {
@@ -491,4 +491,229 @@ public class testTheLocomotiveSettingsAutonomyTab
             "the typing was lost while " + why);
     }
 
+    /**
+     * A rename at Save that the setup cannot write, because its configuration file is held, is said over the window,
+     * naming the configuration.  Retry while the file is still held says it again and leaves the file as it was; Retry
+     * once it is let go writes the new name.
+     *
+     * MUTATION: in `AutonomyLifecycle.repairAutonomyLocomotive`, only log the failed save again; or leave the repairs
+     * out of `sayAfterRenames`' Retry; and this fails.
+     */
+    @Test
+    public void testARenameTheHeldSetupCannotSaveIsSaidAndRetried() throws Exception
+    {
+        final String was = "AU held name", name = "AU held renamed";
+        final String configuration = session.getStore().getActiveConfiguration();
+        final java.io.File file = new java.io.File(ui.localLayoutPath(), "config/autonomy/configuration-" + configuration
+            + ".json");
+        final Object excluded = Components.onTheEventThread(() -> session.getPointProperty(square, "excludedLocs"));
+        final Locomotive loc = model.newMFXLocomotive(was, 0xCEA);
+        final String line = I18n.f("loc.ui.renameSetupNotUpdated", configuration, name);
+        final java.util.concurrent.atomic.AtomicInteger said = new java.util.concurrent.atomic.AtomicInteger();
+        final java.util.List<byte[]> whileHeld = new java.util.concurrent.CopyOnWriteArrayList<>();
+        java.io.FileInputStream held = null;
+
+        try
+        {
+            Components.onTheEventThread(() ->
+            {
+                session.setPointProperty(square, "excludedLocs", new org.json.JSONArray().put(was));
+                session.getStore().save();
+                return null;
+            });
+
+            final byte[] before = java.nio.file.Files.readAllBytes(file.toPath());
+            final java.io.FileInputStream holding = held = new java.io.FileInputStream(file);
+
+            assertTrue(new String(before, java.nio.charset.StandardCharsets.UTF_8).contains(was),
+                "precondition: the configuration does not name the train");
+
+            fixture.quiet();
+
+            try (Answering answering = Answering.start(message ->
+            {
+                if (!message.contains(line)) return null;
+
+                // The second time, the file is let go before Retry
+                if (said.incrementAndGet() == 2)
+                {
+                    try
+                    {
+                        whileHeld.add(java.nio.file.Files.readAllBytes(file.toPath()));
+                        holding.close();
+                    }
+                    catch (java.io.IOException e)
+                    {
+                        throw new java.io.UncheckedIOException(e);
+                    }
+                }
+
+                return Answering.press(I18n.t("loc.ui.renameSetupRetry"));
+            }))
+            {
+                assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsWindow.Tab.values()[0], null),
+                    "the window did not open");
+                assertNotNull(SettingsWindow.awaited(), "the window is not on screen");
+
+                SettingsWindow.type("settings.name", name);
+                SettingsWindow.press(SettingsWindow.save());
+
+                assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, 8000), "Save did not close the"
+                    + " window: " + answering.asked());
+                assertEquals(answering.asked(), java.util.Arrays.asList(line, line), "the held configuration was not"
+                    + " said once at Save and once at the Retry that met it still held");
+            }
+
+            assertEquals(whileHeld.get(0), before, "the held configuration was written");
+
+            String after = new String(java.nio.file.Files.readAllBytes(file.toPath()), java.nio.charset.StandardCharsets.UTF_8);
+
+            assertTrue(after.contains(name) && !after.contains(was), "Retry did not write the new name once the file"
+                + " was let go");
+        }
+        finally
+        {
+            if (held != null) held.close();
+
+            Components.onTheEventThread(() ->
+            {
+                session.setPointProperty(square, "excludedLocs", excluded);
+                return null;
+            });
+
+            for (String n : new String[] {was, name}) if (model.getLocByName(n) != null) model.deleteLoc(n);
+        }
+    }
+
+    /**
+     * A CSV import's Merge whose rename the setup cannot take, with no setup built and its configuration file locked,
+     * is said in the import's finishing message, naming the configuration, and the file is left as it was.  Closing
+     * the message forgets it: the next import that renames says nothing of it.
+     *
+     * MUTATION: in `AutonomyLifecycle.repairAutonomyLocomotive`, only log the no-session repair's failure again; or
+     * leave out the forgetting in `sayAfterRenames`; and this fails.
+     */
+    @Test
+    public void testAnImportsRenameTheLockedSetupCannotTakeIsSaidAtTheEnd() throws Exception
+    {
+        final String was = "AU import here", name = "AU import", was2 = "AU import two here", name2 = "AU import two";
+        final String configuration = session.getStore().getActiveConfiguration();
+        final java.io.File file = new java.io.File(ui.localLayoutPath(), "config/autonomy/configuration-" + configuration
+            + ".json");
+        final Object excluded = Components.onTheEventThread(() -> session.getPointProperty(square, "excludedLocs"));
+        final String line = I18n.f("loc.ui.renameSetupNotUpdated", configuration, name);
+        final String start = I18n.t("loc.ui.renameSetupNotUpdated").substring(0, I18n.t("loc.ui.renameSetupNotUpdated")
+            .indexOf("{0}"));
+        final int address = freeAddress(13000), address2 = freeAddress(address - 1);
+        final java.io.File csv = rows(name, address), csv2 = rows(name2, address2);
+
+        model.newMFXLocomotive(was, address);
+        model.newMFXLocomotive(was2, address2);
+
+        try
+        {
+            Components.onTheEventThread(() ->
+            {
+                session.setPointProperty(square, "excludedLocs", new org.json.JSONArray().put(was));
+                session.getStore().save();
+                return null;
+            });
+
+            final byte[] before = java.nio.file.Files.readAllBytes(file.toPath());
+            java.util.List<String> said;
+
+            fixture.quiet();
+
+            try (java.io.RandomAccessFile held = new java.io.RandomAccessFile(file, "rw");
+                java.nio.channels.FileLock lock = held.getChannel().lock())
+            {
+                // As before autonomy is first opened; with the file locked, none can be built meanwhile
+                setupBuilt(null);
+                said = importThroughTheMenu(csv, start);
+            }
+
+            assertTrue(said.stream().anyMatch(message -> message.contains(line)), "the finishing message does not say"
+                + " the configuration kept the old name: " + said);
+            assertEquals(java.nio.file.Files.readAllBytes(file.toPath()), before, "the locked configuration was written");
+
+            setupBuilt(session);
+
+            java.util.List<String> next = importThroughTheMenu(csv2, start);
+
+            assertNotNull(model.getLocByName(name2), "precondition: the second import's Merge did not rename");
+            assertFalse(next.stream().anyMatch(message -> message.contains(start)), "a closed message's configuration"
+                + " was said again at the next import: " + next);
+        }
+        finally
+        {
+            setupBuilt(session);
+
+            Components.onTheEventThread(() ->
+            {
+                session.setPointProperty(square, "excludedLocs", excluded);
+                return null;
+            });
+
+            csv.delete();
+            csv2.delete();
+
+            for (String n : new String[] {was, name, was2, name2}) if (model.getLocByName(n) != null) model.deleteLoc(n);
+        }
+    }
+
+    /** Puts `built` in the window as the setup it has built, null as none, as a user's first opening would. */
+    private static void setupBuilt(AutonomySession built)
+    {
+        Components.onTheEventThread(() ->
+        {
+            support.Reflect.set(TrainControlUI.class, ui, "autonomySession", built);
+            return null;
+        });
+    }
+
+    /** Imports `file` through Locomotives > Import from CSV, Import pressed and the finishing message closed; what was said. */
+    private static java.util.List<String> importThroughTheMenu(java.io.File file, String unrepaired) throws Exception
+    {
+        try (Answering answering = Answering.start(message -> message.contains(unrepaired) ? Answering.pressAt(1) : null))
+        {
+            answering.choosing(file);
+
+            javax.swing.JMenuItem door = (javax.swing.JMenuItem) support.Reflect.get(TrainControlUI.class, ui,
+                "importLocsFromCSVMenuItem");
+
+            SwingUtilities.invokeLater(door::doClick);
+
+            assertTrue(answering.awaitAsked(2, 30000), "the import did not finish: " + answering.asked());
+
+            Components.settle();
+
+            return answering.asked();
+        }
+    }
+
+    /** A file of one mfx locomotive row, as Export to CSV writes it. */
+    private static java.io.File rows(String name, int address) throws Exception
+    {
+        java.io.File file = java.io.File.createTempFile("tc-locs", ".csv");
+
+        java.nio.file.Files.write(file.toPath(), ("Name,ButtonMappings,DecoderType,Address,PreferredSpeed,TotalRuntime,"
+            + "Start Year,End Year,RailwayName,Notes\n" + name + ",,MFX," + address + ",0,0:00:00,0,0,,\n")
+            .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        return file;
+    }
+
+    /** An address no locomotive holds, counting down from `from`. */
+    private static int freeAddress(int from)
+    {
+        java.util.Set<Integer> held = new java.util.HashSet<>();
+
+        for (Locomotive l : model.getLocomotives()) held.add(l.getAddress());
+
+        int address = from;
+
+        while (held.contains(address)) address--;
+
+        return address;
+    }
 }

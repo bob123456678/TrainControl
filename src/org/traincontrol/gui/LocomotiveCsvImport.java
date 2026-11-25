@@ -200,7 +200,7 @@ final class LocomotiveCsvImport
 
         if (!result.skipped.isEmpty()) said += "\n\n" + I18n.f("loc.ui.infoImportCsvSkipped", result.skipped.size());
 
-        JOptionPane.showMessageDialog(ui, lines.isEmpty() ? said : DetailsArea.message(said, lines));
+        ui.autonomyLifecycle.sayAfterRenames(ui, said, lines, null);
     }
 
     /** `n` of something, in the singular key when it is 1. */

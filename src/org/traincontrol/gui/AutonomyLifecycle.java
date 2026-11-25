@@ -6,8 +6,17 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import org.traincontrol.gui.widgets.DetailsArea;
 import org.traincontrol.gui.widgets.RestoreAction;
+import java.awt.Component;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import javax.swing.JOptionPane;
+import javax.swing.UIManager;
 import javax.swing.GroupLayout;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
@@ -482,6 +491,8 @@ public final class AutonomyLifecycle
             catch (Exception e)
             {
                 ui.getModel().log(e);
+                if (e instanceof AutonomyCompanionStore.NotWritten) leftUnrepaired(from, to,
+                    ((AutonomyCompanionStore.NotWritten) e).configurations);
             }
 
             return;
@@ -522,9 +533,46 @@ public final class AutonomyLifecycle
         }
         catch (Exception e)
         {
-            // Quiet: the rename has already happened and a failed sidecar write must not turn it into an error.
+            // The rename has already happened; the door that made it says which configurations kept the old name.
             ui.getModel().log(e);
+            leftUnrepaired(from, to, session.getStore().getUnwritten());
         }
+    }
+
+    /** Renames whose setup repair failed since a door last said so, old name to new, and the configurations left. */
+    private final Map<String, String> unrepaired = new LinkedHashMap<>();
+    private final Set<String> unrepairedIn = new LinkedHashSet<>();
+
+    /** Keeps a failed rename repair for its door to say; a deletion's is not, as a load drops that name anyway. */
+    private void leftUnrepaired(String from, String to, List<String> configurations)
+    {
+        if (to == null || configurations.isEmpty()) return;
+        unrepaired.put(from, to);
+        unrepairedIn.addAll(configurations);
+    }
+
+    /** Says `said` (null: nothing) and `lines` over c, with the configurations renames left; Retry repeats them. */
+    void sayAfterRenames(Component c, String said, List<String> lines, String title)
+    {
+        String heading = title != null ? title : UIManager.getString("OptionPane.messageDialogTitle");
+        while (!unrepaired.isEmpty())
+        {
+            String text = I18n.f("loc.ui.renameSetupNotUpdated", String.join(", ", unrepairedIn),
+                String.join(", ", unrepaired.values()));
+            Map<String, String> again = new LinkedHashMap<>(unrepaired);
+            Object[] options = {I18n.t("loc.ui.renameSetupRetry"), I18n.t("ui.ok")};
+            // Forgotten once said, so a message closed is not said again at the next door
+            unrepaired.clear();
+            unrepairedIn.clear();
+            if (said != null) text = said + "\n\n" + text;
+            if (JOptionPane.showOptionDialog(c, lines.isEmpty() ? text : DetailsArea.message(text, lines), heading,
+                JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]) != 0) return;
+            again.forEach(this::repairAutonomyLocomotive);
+            said = null;
+            lines = Collections.emptyList();
+        }
+        if (said != null) JOptionPane.showMessageDialog(c, lines.isEmpty() ? said : DetailsArea.message(said, lines),
+            heading, JOptionPane.INFORMATION_MESSAGE);
     }
 
     /** Re-runs the checks and shows the result beside the overlay checkbox; cheap enough for every autonomy action. */

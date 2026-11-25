@@ -2140,6 +2140,57 @@ public class testAutonomyDiagramStore
     }
 
     /**
+     * A repair of a setup nothing has open that cannot write a configuration names the ones it left as they were on
+     * disk: those from the first write that failed on, or every one when a read failed.
+     *
+     * MUTATION: in `repairOnDisk`, name `getUnwritten()` alone, or leave `unwritten.remove` out of `save`, and this
+     * fails.
+     */
+    @Test
+    public void testARepairThatCannotWriteNamesTheConfigurationsItLeft() throws Exception
+    {
+        for (String name : new String[] {"Day", "Night"})
+        {
+            store.createConfiguration(name, null);
+            place(store.getConfiguration(name), "1:4,4", "Old Name");
+        }
+
+        store.setActiveConfiguration("Day");
+        store.save();
+
+        File night = new File(layout, "config/autonomy/configuration-Night.json");
+        byte[] before = Files.readAllBytes(night.toPath());
+        java.util.List<String> left = null;
+
+        try (java.io.FileInputStream held = new java.io.FileInputStream(night))
+        {
+            AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name");
+        }
+        catch (AutonomyCompanionStore.NotWritten e)
+        {
+            left = e.configurations;
+        }
+
+        assertEquals(left, java.util.Arrays.asList("Night"), "a write held at Night did not name Night alone");
+        assertEquals(Files.readAllBytes(night.toPath()), before, "the held configuration was written");
+
+        left = null;
+
+        try (java.io.RandomAccessFile held = new java.io.RandomAccessFile(night, "rw");
+            java.nio.channels.FileLock lock = held.getChannel().lock())
+        {
+            AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name");
+        }
+        catch (AutonomyCompanionStore.NotWritten e)
+        {
+            left = e.configurations;
+        }
+
+        assertEquals(left, java.util.Arrays.asList("Day", "Night"), "a read that failed did not name every"
+            + " configuration");
+    }
+
+    /**
      * And a delete reaches it the same way.
      */
     @Test

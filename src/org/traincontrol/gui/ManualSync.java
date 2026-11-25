@@ -57,8 +57,8 @@ public final class ManualSync
     {
         String text = syncSummary(synced - model.getLastSyncRoutes(), model.getLastSyncRoutes(),
             model.wasLastSyncPartial(), answers);
-        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(c, text, I18n.t("sync.ui.title"),
-            JOptionPane.INFORMATION_MESSAGE));
+        SwingUtilities.invokeLater(() -> ui.autonomyLifecycle.sayAfterRenames(c, text, java.util.Collections.emptyList(),
+            I18n.t("sync.ui.title")));
     }
 
     /**
