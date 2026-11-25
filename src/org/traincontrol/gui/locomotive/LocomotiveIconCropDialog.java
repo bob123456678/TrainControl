@@ -40,7 +40,7 @@ import org.traincontrol.util.ImageUtil;
  *
  * @author Adam
  */
-public class LocIconCropDialog extends JDialog
+public class LocomotiveIconCropDialog extends JDialog
 {
     // The application's look and feel, before this class can be instantiated: `JDialog`'s constructor builds the root
     // pane from whatever look and feel is installed then.  Headless-guarded: a static initializer that throws leaves
@@ -71,7 +71,7 @@ public class LocIconCropDialog extends JDialog
     private final CropPanel cropPanel;
 
     /** Builds the dialog.  Private: callers go through {@link #crop}, which owns the modal show-and-read sequence. */
-    private LocIconCropDialog(Window owner, String title, BufferedImage source, int outWidth,
+    private LocomotiveIconCropDialog(Window owner, String title, BufferedImage source, int outWidth,
         int outHeight)
     {
         super(owner, title, ModalityType.APPLICATION_MODAL);
@@ -169,7 +169,7 @@ public class LocIconCropDialog extends JDialog
             @Override
             public void actionPerformed(ActionEvent e)
             {
-                LocIconCropDialog.this.result = null;
+                LocomotiveIconCropDialog.this.result = null;
                 dispose();
             }
         });
@@ -220,7 +220,7 @@ public class LocIconCropDialog extends JDialog
 
         Window owner = ownerOf(parent);
 
-        LocIconCropDialog dialog = new LocIconCropDialog(owner, I18n.t("loc.ui.cropTitle"), source,
+        LocomotiveIconCropDialog dialog = new LocomotiveIconCropDialog(owner, I18n.t("loc.ui.cropTitle"), source,
             outWidth, outHeight);
 
         dialog.cropPanel.setView(view);

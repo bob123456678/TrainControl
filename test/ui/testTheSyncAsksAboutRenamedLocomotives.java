@@ -1053,7 +1053,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
             SyncTable.Shown shown = settingsSync(rig, ui, old, SyncTable.answer(old, "RENAME", AT_3, "ADDRESS"));
 
             assertEquals(shown.heading, I18n.t("sync.ui.headingOne"));
-            assertTrue(shown.dialog.getOwner() instanceof org.traincontrol.gui.LocomotiveSettingsFrame,
+            assertTrue(shown.dialog.getOwner() instanceof org.traincontrol.gui.LocomotiveSettingsWindow,
                 "not asked over Locomotive Settings");
             assertEquals(rig.model.getLocByName(AT_3).getAddress(), 4, "the other locomotive took the station's address");
             assertTrue(rig.model.getLocByName(old) == null && rig.model.getLocByName(STATION_NAME) != null,
@@ -1200,7 +1200,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
             final CountDownLatch synced = new CountDownLatch(1);
             long blocked;
 
-            assertTrue(SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null),
+            assertTrue(SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null),
                 "precondition: Locomotive Settings did not open");
 
             try (Answering answering = Answering.start(m -> Answering.pressAt(0));
@@ -1244,7 +1244,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
         final org.traincontrol.base.Locomotive loc = rig.model.getLocByName(name);
 
         rig.model.setNetworkCommState(true);
-        assertTrue(SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null),
+        assertTrue(SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null),
             "precondition: Locomotive Settings did not open");
 
         try (Answering answering = Answering.start(m -> Answering.pressAt(0));

@@ -7,7 +7,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.locomotive.RightClickPageMenu;
+import org.traincontrol.gui.locomotive.KeyboardPageContextMenu;
 import org.traincontrol.gui.TrainControlUI;
 import support.Display;
 import support.Reflect;
@@ -16,7 +16,7 @@ import static support.SandboxedWindow.build;
 
 /**
  * A ceiling of fifty locomotive mapping pages, with an error message if exceeded.  The predicate is tested, and so is
- * the menu that offers the action, which must actually gray.  The refusal inside `LocMappingPages.addLocMappingPage`
+ * the menu that offers the action, which must actually gray.  The refusal inside `LocomotiveKeyboardPages.addLocMappingPage`
  * is a modal dialog (a hang in a test), so that one is read rather than run.
  *
  * @author Adam
@@ -559,7 +559,7 @@ public class testLocMappingPages
          */
         void renameTheShownPage(String name) throws Exception
         {
-            java.lang.reflect.Method rename = Reflect.method(org.traincontrol.gui.LocMappingPages.class, "setPageName",
+            java.lang.reflect.Method rename = Reflect.method(org.traincontrol.gui.LocomotiveKeyboardPages.class, "setPageName",
                 String.class);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
@@ -2149,9 +2149,9 @@ public class testLocMappingPages
      */
     private JMenuItem addItemOf(TrainControlUI ui) throws Exception
     {
-        RightClickPageMenu outer = new RightClickPageMenu(ui);
+        KeyboardPageContextMenu outer = new KeyboardPageContextMenu(ui);
 
-        Class<?> menuClass = Class.forName("org.traincontrol.gui.locomotive.RightClickPageMenu$RightClickMenu");
+        Class<?> menuClass = Class.forName("org.traincontrol.gui.locomotive.KeyboardPageContextMenu$RightClickMenu");
 
         Constructor<?> make = menuClass.getDeclaredConstructors()[0];
 

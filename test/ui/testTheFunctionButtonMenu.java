@@ -263,7 +263,7 @@ public class testTheFunctionButtonMenu
      * keeps what is on, Turn Off Functions switches them off, Apply puts the saved ones back, and the speed pair does
      * the same for the speed.
      *
-     * MUTATION: connect Turn Off Functions to `ui.applyPreferredFunctions` in `RightClickMenuListener`, and this fails.
+     * MUTATION: connect Turn Off Functions to `ui.applyPreferredFunctions` in `LocomotiveButtonContextMenu`, and this fails.
      */
     @Test
     public void testThePresetsActOnTheTrain() throws Exception
@@ -481,7 +481,7 @@ public class testTheFunctionButtonMenu
     /**
      * A train with no saved speed preset has nothing to apply: the menu item is grayed and says why.
      *
-     * MUTATION: drop the `getPreferredSpeed() < 1` test in `RightClickMenuListener`, and this fails.
+     * MUTATION: drop the `getPreferredSpeed() < 1` test in `LocomotiveButtonContextMenu`, and this fails.
      */
     @Test
     public void testApplyingNoSpeedPresetIsGrayedOut() throws Exception

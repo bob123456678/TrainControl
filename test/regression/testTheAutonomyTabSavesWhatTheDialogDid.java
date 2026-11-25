@@ -10,7 +10,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import support.Components;
@@ -136,7 +136,7 @@ public class testTheAutonomyTabSavesWhatTheDialogDid
     /** The edit through the Autonomy tab's Save, opened as the station menus' Edit Locomotive opens it. */
     private static void throughTheDoor() throws Exception
     {
-        assertTrue(support.SettingsWindow.open(ui, train, LocomotiveSettingsFrame.Tab.AUTONOMY, null), "the window did not open");
+        assertTrue(support.SettingsWindow.open(ui, train, LocomotiveSettingsWindow.Tab.AUTONOMY, null), "the window did not open");
         assertNotNull(support.SettingsWindow.awaited(), "the window is not on screen");
 
         Components.onTheEventThread(() ->

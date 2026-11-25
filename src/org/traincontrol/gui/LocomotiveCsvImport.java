@@ -31,9 +31,9 @@ import org.traincontrol.util.I18n;
  * Locomotives > Import from CSV (FR-049): the door for a file `Export to CSV` wrote.  Reads the whole file, asks once
  * with the counts, and changes nothing until the answer is Import.  Event thread only.
  */
-final class LocomotiveCsvDoor
+final class LocomotiveCsvImport
 {
-    private LocomotiveCsvDoor()
+    private LocomotiveCsvImport()
     {
     }
 

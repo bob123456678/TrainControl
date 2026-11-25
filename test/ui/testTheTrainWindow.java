@@ -19,7 +19,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.autonomyeditor.StationSettingsWindow;
@@ -1106,14 +1106,14 @@ public class testTheTrainWindow
 
         Object was = StationDoors.step(list);
 
-        LocomotiveSettingsFrame frame = null;
+        LocomotiveSettingsWindow frame = null;
 
         try (support.Answering answering = support.Answering.start(message -> null))
         {
             StationDoors.press(window, "train.settings");
             StationDoors.toAnotherWindow(window, list);
 
-            frame = StationDoors.showing(LocomotiveSettingsFrame.class);
+            frame = StationDoors.showing(LocomotiveSettingsWindow.class);
 
             assertEquals(answering.asked(), java.util.Collections.emptyList(), "another window clicked asked");
         }
@@ -1336,13 +1336,13 @@ public class testTheTrainWindow
 
         StationDoors.press(window, "train.settings");
 
-        LocomotiveSettingsFrame frame = StationDoors.showing(LocomotiveSettingsFrame.class);
+        LocomotiveSettingsWindow frame = StationDoors.showing(LocomotiveSettingsWindow.class);
 
         assertNotNull(frame, "Locomotive Settings did not open");
 
         assertEquals(frame.getLocomotive(), model.getLocByName(session.getLocomotiveNameAt(square)),
             "Locomotive Settings opened on another locomotive");
-        assertEquals(support.SettingsWindow.tabShowing(), LocomotiveSettingsFrame.Tab.AUTONOMY.ordinal(),
+        assertEquals(support.SettingsWindow.tabShowing(), LocomotiveSettingsWindow.Tab.AUTONOMY.ordinal(),
             "Locomotive Settings did not open on the Autonomy tab");
 
         SwingUtilities.invokeAndWait(frame::dispose);
@@ -2556,13 +2556,13 @@ public class testTheTrainWindow
 
         Components.settle();
 
-        LocomotiveSettingsFrame frame = StationDoors.showing(LocomotiveSettingsFrame.class);
+        LocomotiveSettingsWindow frame = StationDoors.showing(LocomotiveSettingsWindow.class);
 
         try
         {
             assertNotNull(frame, "Edit Locomotive... opened no Locomotive Settings");
             assertEquals(frame.getLocomotive(), model.getLocByName(train), "Edit Locomotive... opened another locomotive");
-            assertEquals(support.SettingsWindow.tabShowing(), LocomotiveSettingsFrame.Tab.AUTONOMY.ordinal(),
+            assertEquals(support.SettingsWindow.tabShowing(), LocomotiveSettingsWindow.Tab.AUTONOMY.ordinal(),
                 "Edit Locomotive... did not open the Autonomy tab");
         }
         finally
@@ -2606,7 +2606,7 @@ public class testTheTrainWindow
 
             Components.settle();
 
-            LocomotiveSettingsFrame frame = StationDoors.showing(LocomotiveSettingsFrame.class);
+            LocomotiveSettingsWindow frame = StationDoors.showing(LocomotiveSettingsWindow.class);
 
             assertNotNull(frame, "Edit Locomotive... during a run opened no Locomotive Settings");
             assertEquals(frame.getLocomotive(), model.getLocByName(train), "Edit Locomotive... opened another locomotive");
@@ -5895,7 +5895,7 @@ public class testTheTrainWindow
     }
 
     /** Opens Locomotive Settings on this train's tab. */
-    private static void settingsOf(String name, LocomotiveSettingsFrame.Tab tab) throws Exception
+    private static void settingsOf(String name, LocomotiveSettingsWindow.Tab tab) throws Exception
     {
         assertTrue(support.SettingsWindow.open(ui, model.getLocByName(name), tab, null), "precondition: Settings did not open");
         assertNotNull(support.SettingsWindow.awaited(), "precondition: Settings is not on screen");
@@ -5932,7 +5932,7 @@ public class testTheTrainWindow
 
         try
         {
-            settingsOf(head, LocomotiveSettingsFrame.Tab.MULTI_UNIT);
+            settingsOf(head, LocomotiveSettingsWindow.Tab.MULTI_UNIT);
 
             support.SettingsWindow.tickMember(member);
 
@@ -5987,7 +5987,7 @@ public class testTheTrainWindow
 
         try
         {
-            settingsOf(name, LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
+            settingsOf(name, LocomotiveSettingsWindow.Tab.LOCOMOTIVE);
 
             support.SettingsWindow.type("settings.address", typed);
 
@@ -6033,7 +6033,7 @@ public class testTheTrainWindow
             Reflect.set(MarklinControlStation.class, model, "simulation", false);
             model.setNetworkCommState(true);
 
-            settingsOf(name, LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
+            settingsOf(name, LocomotiveSettingsWindow.Tab.LOCOMOTIVE);
 
             final javax.swing.JButton sync = support.SettingsWindow.part("settings.sync", javax.swing.JButton.class);
 

@@ -129,7 +129,7 @@ public final class LocomotiveActions
                     if (RunGates.refuseALinkOrSyncWhileEditorOpen(this.ui, source)) return false;
 
                     // A new address or decoder is not written under a train with a stored speed, power on or off
-                    if (LocomotiveSettings.hasSpeed(this.ui, l))
+                    if (LocomotiveEditRule.hasSpeed(this.ui, l))
                     {
                         JOptionPane.showMessageDialog(source, I18n.f("loc.ui.stopToEdit", l.getName()));
                         return false;
@@ -609,7 +609,7 @@ public final class LocomotiveActions
         this.answered = NOT_ASKED;
 
         // The moving rule, at every door (FR-048), and asked again at Yes.
-        if (LocomotiveSettings.refuseIfNotEditable(this.ui, this.ui.getModel().getLocByName(value), source)) return false;
+        if (LocomotiveEditRule.refuseIfNotEditable(this.ui, this.ui.getModel().getLocByName(value), source)) return false;
 
         if (this.ui.getModel().isAutonomyRunning())
         {
@@ -659,7 +659,7 @@ public final class LocomotiveActions
 
             Locomotive l = this.ui.getModel().getLocByName(value);
 
-            if (LocomotiveSettings.refuseIfNotEditable(this.ui, l, source)) return false;
+            if (LocomotiveEditRule.refuseIfNotEditable(this.ui, l, source)) return false;
 
             if (l != null)
             {

@@ -675,7 +675,7 @@ public class testASyncOwedWaitsForTheEditor
      * The locomotive CSV import that would change an address is refused with an editor open, with the editor's message,
      * and nothing is written.
      *
-     * MUTATION: leave the two `refuseALinkOrSyncWhileEditorOpen` asks out of `LocomotiveCsvDoor`, and the address changes.
+     * MUTATION: leave the two `refuseALinkOrSyncWhileEditorOpen` asks out of `LocomotiveCsvImport`, and the address changes.
      */
     @Test(timeOut = 180000)
     public void testTheCsvImportDoesNotReaddressUnderAnEditor() throws Exception

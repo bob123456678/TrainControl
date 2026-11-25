@@ -596,7 +596,7 @@ final class LocomotiveFunctionsTab extends JPanel
         if (blocked || r.function >= loc.getNumF()) return;
 
         // The cached flag is up to a second old: a train that has just started must not fire from Test
-        if (LocomotiveSettings.whyNotEditable(ui, loc) != null) return;
+        if (LocomotiveEditRule.whyNotEditable(ui, loc) != null) return;
 
         ui.fireFunction(loc, r.function, !loc.getF(r.function));
 
@@ -1127,7 +1127,7 @@ final class LocomotiveFunctionsTab extends JPanel
     private final class IconCell extends AbstractCellEditor implements TableCellRenderer, TableCellEditor
     {
         final JComboBox<Integer> combo = new JComboBox<>(new DefaultComboBoxModel<>(iconNumbers()));
-        final JButton wrench = new JButton(new LocIconActions.WrenchMark());
+        final JButton wrench = new JButton(new LocomotiveIconActions.WrenchMark());
         final JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         private Row row;
         private boolean filling;

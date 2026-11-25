@@ -228,7 +228,7 @@ public class testNoSetupEditDuringARun
      * whose Autonomy tab writes into the setup: it opens locked and says so, and a Save leaves the setup's copy of the
      * train as it was.  No factory builds the item, so the factories' refusal does not cover it.
      *
-     * MUTATION: have `LocomotiveSettings.why` ignore a run, and this fails.
+     * MUTATION: have `LocomotiveEditRule.why` ignore a run, and this fails.
      */
     @Test
     public void testTheDiagramsEditLocomotiveRefusesOnceTrainsRun() throws Exception
@@ -288,7 +288,7 @@ public class testNoSetupEditDuringARun
 
             assertNotNull(support.SettingsWindow.awaited(), "the diagram's Edit Locomotive, clicked during a run, opened"
                 + " no Locomotive Settings");
-            assertEquals(support.SettingsWindow.tabShowing(), org.traincontrol.gui.LocomotiveSettingsFrame.Tab.AUTONOMY.ordinal(),
+            assertEquals(support.SettingsWindow.tabShowing(), org.traincontrol.gui.LocomotiveSettingsWindow.Tab.AUTONOMY.ordinal(),
                 "the diagram's Edit Locomotive did not open the Autonomy tab");
 
             support.Components.onTheEventThread(() ->

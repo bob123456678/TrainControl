@@ -183,7 +183,7 @@ public class testEveryLanguageFitsThePopups
             String.class, Runnable.class);
         java.lang.reflect.Method backupAsks = Reflect.method(org.traincontrol.gui.widgets.BackupAction.class,
             "askOnEventThread", String.class);
-        java.lang.reflect.Method csvDoor = Reflect.method(Class.forName("org.traincontrol.gui.LocomotiveCsvDoor"), "open",
+        java.lang.reflect.Method csvDoor = Reflect.method(Class.forName("org.traincontrol.gui.LocomotiveCsvImport"), "open",
             TrainControlUI.class, java.awt.Component.class);
         java.lang.reflect.Method linkRefused = Reflect.method(org.traincontrol.gui.RunGates.class,
             "refuseALinkOrSyncWhileEditorOpen", TrainControlUI.class, java.awt.Component.class);
@@ -331,7 +331,7 @@ public class testEveryLanguageFitsThePopups
             + "Start Year,End Year,RailwayName,Notes,LastRun\n" + "Fit first" + row + "Fit second" + row).replace("{0}",
             held.getDecoderType().name()).replace("{1}", String.valueOf(held.getAddress())).getBytes("UTF-8"));
 
-        java.lang.reflect.Method csvDoor = Reflect.method(Class.forName("org.traincontrol.gui.LocomotiveCsvDoor"), "open",
+        java.lang.reflect.Method csvDoor = Reflect.method(Class.forName("org.traincontrol.gui.LocomotiveCsvImport"), "open",
             TrainControlUI.class, java.awt.Component.class);
 
         LanguageFit.assertNothingClipped("csv duplicates", LanguageFit.everyLanguage(language -> popup("popup-csv-duplicates",

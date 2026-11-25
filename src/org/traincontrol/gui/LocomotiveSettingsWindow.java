@@ -62,9 +62,9 @@ import org.traincontrol.util.I18n;
  * The Locomotive Settings window (FR-048): one non-modal window, reused, for a locomotive's name, address and picture,
  * its functions, its notes, its multi-unit and what autonomy needs of it; and Add Locomotive's (FR-179), the first tab
  * alone with Add for Save.  Everything waits for Save except the picture's overlay icons, which apply at once.  A
- * locomotive that cannot be edited now cannot be saved (see {@link LocomotiveSettings}).
+ * locomotive that cannot be edited now cannot be saved (see {@link LocomotiveEditRule}).
  */
-public class LocomotiveSettingsFrame extends javax.swing.JFrame
+public class LocomotiveSettingsWindow extends javax.swing.JFrame
 {
     // A static block, not the constructor: JFrame's constructor creates the root pane before any constructor body here.
     static
@@ -179,7 +179,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     /** Asks the rule again every second while the window is open: a run starting or stopping raises no single event. */
     private final Timer watch = new Timer(1000, e -> refresh());
 
-    LocomotiveSettingsFrame(TrainControlUI main)
+    LocomotiveSettingsWindow(TrainControlUI main)
     {
         this.main = main;
 
@@ -401,7 +401,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         setTitle(I18n.f("loc.ui.settingsTitle", loc.getName()));
 
         // The strip is up before the window is sized, so a locked window opens with its tabs whole
-        String reason = LocomotiveSettings.stripFor(main, loc);
+        String reason = LocomotiveEditRule.stripFor(main, loc);
 
         if (reason != null) strip.setText(reason);
 
@@ -535,7 +535,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         if (loc == null) return;
 
-        String reason = LocomotiveSettings.stripFor(main, loc);
+        String reason = LocomotiveEditRule.stripFor(main, loc);
 
         blocked = reason != null;
 
@@ -712,7 +712,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         stopEditing();
 
-        if (LocomotiveSettings.refuseIfNotEditable(main, loc, this))
+        if (LocomotiveEditRule.refuseIfNotEditable(main, loc, this))
         {
             refresh();
             return false;
@@ -886,9 +886,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         final JButton sync = new JButton(I18n.t("loc.ui.menuSyncCentralStation"));
         final JLabel picture = new JLabel("", JLabel.CENTER);
         final JButton trash = new JButton(RowIcons.trash(18));
-        final JLabel wrench = new JLabel(new LocIconActions.WrenchMark());
-        final JLabel crop = new JLabel(new LocIconActions.CropMark());
-        final JLabel revert = new JLabel(new LocIconActions.RevertMark());
+        final JLabel wrench = new JLabel(new LocomotiveIconActions.WrenchMark());
+        final JLabel crop = new JLabel(new LocomotiveIconActions.CropMark());
+        final JLabel revert = new JLabel(new LocomotiveIconActions.RevertMark());
         final CurrentKeyRow.Pill source = new CurrentKeyRow.Pill(new Color(208, 208, 208), new Color(64, 64, 64));
 
         private final String loadedName = adding ? "" : loc.getName();
@@ -1010,7 +1010,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             picture.add(corner, BorderLayout.NORTH);
 
             mark(wrench, noted(I18n.t("loc.ui.menuSetLocalLocomotiveIcon")), e -> main.locIconActions().setLocIcon(loc, e));
-            mark(crop, noted(I18n.t("loc.ui.tooltip.recrop")), e -> main.locIconActions().recropLocIcon(loc, LocomotiveSettingsFrame.this));
+            mark(crop, noted(I18n.t("loc.ui.tooltip.recrop")), e -> main.locIconActions().recropLocIcon(loc, LocomotiveSettingsWindow.this));
             mark(revert, noted(I18n.t("loc.ui.menuClearLocalLocomotiveIcon")), e -> main.clearLocIcon(loc));
 
             // They come with the first picture
@@ -1228,14 +1228,14 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         /** The rule for the picture's marks and the trash can, asked at the click. */
         boolean moveAllowed()
         {
-            return !LocomotiveSettings.refuseIfNotEditable(main, loc, LocomotiveSettingsFrame.this);
+            return !LocomotiveEditRule.refuseIfNotEditable(main, loc, LocomotiveSettingsWindow.this);
         }
 
         private void delete()
         {
             if (!moveAllowed()) return;
 
-            main.locomotiveActions.deleteLoc(loc.getName(), LocomotiveSettingsFrame.this);
+            main.locomotiveActions.deleteLoc(loc.getName(), LocomotiveSettingsWindow.this);
         }
 
         decoderType chosenDecoder()
@@ -1464,7 +1464,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     private final class NotesTab extends JPanel
     {
         final LocomotiveNotesPanel panel = new LocomotiveNotesPanel(loc,
-            LocomotiveNotesPanel.railwayNames(main.getModel().getLocomotives()), 8, 50, LocomotiveSettingsFrame.this::changed);
+            LocomotiveNotesPanel.railwayNames(main.getModel().getLocomotives()), 8, 50, LocomotiveSettingsWindow.this::changed);
 
         NotesTab()
         {
@@ -1478,7 +1478,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             find.setToolTipText(I18n.t("loc.ui.tooltip.findSimilarHint"));
             find.addActionListener(e -> main.locomotiveActions.findSimilarLocs(loc,
                 locomotiveTab.nameChanged() ? locomotiveTab.name.getText().trim() : loc.getName(), panel.asTyped(loc),
-                LocomotiveSettingsFrame.this));
+                LocomotiveSettingsWindow.this));
 
             panel.styleCaptions();
 
@@ -1522,7 +1522,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             }
             else
             {
-                members = new MultiUnitPanel(main, loc, LocomotiveSettingsFrame.this::changed);
+                members = new MultiUnitPanel(main, loc, LocomotiveSettingsWindow.this::changed);
 
                 members.setPreferredSize(new Dimension(560, 330));
 

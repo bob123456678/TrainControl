@@ -66,13 +66,13 @@ src/org/traincontrol/gui/LayoutLabel.java	334	20
 src/org/traincontrol/gui/LayoutMenus.java	-	11
 src/org/traincontrol/gui/LayoutPopupWindow.java	338	8
 src/org/traincontrol/gui/DiagramAutonomyContextMenu.java	403	24
-src/org/traincontrol/gui/LocIconActions.java	332	12
+src/org/traincontrol/gui/LocomotiveIconActions.java	332	12
 src/org/traincontrol/gui/LocomotiveActions.java	-	4
-src/org/traincontrol/gui/LocomotiveCsvDoor.java	-	1
+src/org/traincontrol/gui/LocomotiveCsvImport.java	-	1
 src/org/traincontrol/gui/LocomotiveFunctionsTab.java	-	7
 src/org/traincontrol/gui/LocomotiveNotesPanel.java	-	6
-src/org/traincontrol/gui/LocomotiveSettings.java	378	0
-src/org/traincontrol/gui/LocomotiveSettingsFrame.java	-	11
+src/org/traincontrol/gui/LocomotiveEditRule.java	378	0
+src/org/traincontrol/gui/LocomotiveSettingsWindow.java	-	11
 src/org/traincontrol/gui/MultiUnitPanel.java	-	3
 src/org/traincontrol/gui/ReturnHomeController.java	309	5
 src/org/traincontrol/gui/RightClickTips.java	260	0
@@ -119,7 +119,7 @@ src/org/traincontrol/gui/layouteditor/LayoutEditorSelection.java	373	16
 src/org/traincontrol/gui/layouteditor/LayoutEditorTrainDrag.java	-	3
 src/org/traincontrol/gui/layouteditor/LayoutEditorUndo.java	396	4
 src/org/traincontrol/gui/locomotive/CurrentKeyRow.java	354	3
-src/org/traincontrol/gui/locomotive/LocIconCropDialog.java	342	16
+src/org/traincontrol/gui/locomotive/LocomotiveIconCropDialog.java	342	16
 src/org/traincontrol/gui/locomotive/LocomotiveMenuItems.java	313	2
 src/org/traincontrol/gui/locomotive/LocomotivePlaceholder.java	358	3
 src/org/traincontrol/gui/locomotive/LocomotiveStats.java	-	1

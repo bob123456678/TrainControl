@@ -15,7 +15,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
@@ -112,9 +112,9 @@ public class testTheLocomotiveSettingsAutonomyTab
     {
         fixture.quiet();
 
-        assertTrue(SettingsWindow.open(ui, train, LocomotiveSettingsFrame.Tab.AUTONOMY, null), "the window did not open");
+        assertTrue(SettingsWindow.open(ui, train, LocomotiveSettingsWindow.Tab.AUTONOMY, null), "the window did not open");
         assertNotNull(SettingsWindow.awaited(), "the window is not on screen");
-        assertEquals(SettingsWindow.tabShowing(), LocomotiveSettingsFrame.Tab.AUTONOMY.ordinal(), "the Autonomy tab is not showing");
+        assertEquals(SettingsWindow.tabShowing(), LocomotiveSettingsWindow.Tab.AUTONOMY.ordinal(), "the Autonomy tab is not showing");
     }
 
     /** Sets the tab's fields as a click would; a function of -1 is None. */
@@ -338,7 +338,7 @@ public class testTheLocomotiveSettingsAutonomyTab
      * The tab opens locked as the others do, while the train moves with the power on and while autonomy runs: the strip
      * says why, and Save stays gray with the tab's changes kept.
      *
-     * MUTATION: drop `!blocked` from `LocomotiveSettingsFrame.changed`, and Save lights and this fails.
+     * MUTATION: drop `!blocked` from `LocomotiveSettingsWindow.changed`, and Save lights and this fails.
      */
     @Test
     public void testItOpensLockedWhileTheTrainMovesOrAutonomyRuns() throws Exception
@@ -394,7 +394,7 @@ public class testTheLocomotiveSettingsAutonomyTab
      * A running route holds the setup without locking the window: the tab's Save is refused and says so, and neither
      * the train nor the setup's copy of it changes, so no setup edit is made during a run.
      *
-     * MUTATION: take `refuseWhileARunHoldsTheSetup` out of `LocomotiveSettingsFrame.write`, and this fails.
+     * MUTATION: take `refuseWhileARunHoldsTheSetup` out of `LocomotiveSettingsWindow.write`, and this fails.
      */
     @Test
     public void testASaveWaitsForARunningRoute() throws Exception
@@ -452,7 +452,7 @@ public class testTheLocomotiveSettingsAutonomyTab
 
             fixture.quiet();
 
-            assertTrue(SettingsWindow.open(ui, train, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "the window did not open");
+            assertTrue(SettingsWindow.open(ui, train, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null), "the window did not open");
             assertNotNull(SettingsWindow.awaited(), "the window is not on screen");
 
             int speed = (Integer) Components.onTheEventThread(SettingsWindow.part("settings.speed", JSpinner.class)::getValue);

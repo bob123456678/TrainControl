@@ -230,7 +230,7 @@ public class testATypedAddressIsReadTheSameAtEveryDoor
      */
     private static List<String> edit(Locomotive loc, String address, int expected) throws Exception
     {
-        assertTrue(support.SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null),
+        assertTrue(support.SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null),
             "the door did not open the Locomotive Settings window");
 
         support.SettingsWindow.type("settings.address", address);

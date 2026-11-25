@@ -27,7 +27,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.locomotive.LocIconCropDialog;
+import org.traincontrol.gui.locomotive.LocomotiveIconCropDialog;
 import org.traincontrol.gui.widgets.QuickFileChooser;
 import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.util.I18n;
@@ -40,11 +40,11 @@ import org.traincontrol.util.Util;
  *
  * The hover tools over the picture, and every field, stay on the window.
  */
-public final class LocIconActions
+public final class LocomotiveIconActions
 {
     private final TrainControlUI ui;
 
-    LocIconActions(TrainControlUI ui)
+    LocomotiveIconActions(TrainControlUI ui)
     {
         this.ui = ui;
     }
@@ -415,7 +415,7 @@ public final class LocIconActions
             return null;
         }
 
-        BufferedImage cropped = LocIconCropDialog.crop(parent, picture, TrainControlUI.LOC_ICON_WIDTH,
+        BufferedImage cropped = LocomotiveIconCropDialog.crop(parent, picture, TrainControlUI.LOC_ICON_WIDTH,
             TrainControlUI.LOC_ICON_HEIGHT, view);
 
         // The dialog returns null only when the user said no (Cancel, Escape, or the close box), unlike the failures
@@ -477,7 +477,7 @@ public final class LocIconActions
     public void rememberCropSource(File crop, File source, double[] view)
     {
         final String body = source.getAbsolutePath()
-            + (LocIconCropDialog.CropPanel.viewIsUsable(view)
+            + (LocomotiveIconCropDialog.CropPanel.viewIsUsable(view)
                 ? "\n" + TrainControlUI.CROP_VIEW_PREFIX + view[0] + "," + view[1] + "," + view[2] + ","
                     + view[3] + "," + view[4]
                     + (view.length >= 6 && view[5] > 0 && !Double.isInfinite(view[5]) ? "," + view[5] : "")
@@ -517,7 +517,7 @@ public final class LocIconActions
             return null;
         }
 
-        return LocIconCropDialog.CropPanel.viewIsUsable(view) ? view : null;
+        return LocomotiveIconCropDialog.CropPanel.viewIsUsable(view) ? view : null;
     }
 
     /**

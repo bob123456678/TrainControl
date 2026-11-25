@@ -30,7 +30,7 @@ import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.RenameProposals;
-import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.SyncDifferencesWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.locomotive.LocomotiveSelector;
@@ -464,7 +464,7 @@ public class testTheSyncDifferencesWindow
             list.set(station("SW Open", 54, "SW Typed2", 55));
             try
             {
-                assertTrue(SettingsWindow.open(ui, rig.model.getLocByName("SW Open"), LocomotiveSettingsFrame.Tab.LOCOMOTIVE,
+                assertTrue(SettingsWindow.open(ui, rig.model.getLocByName("SW Open"), LocomotiveSettingsWindow.Tab.LOCOMOTIVE,
                     null), "precondition: Locomotive Settings did not open");
                 SettingsWindow.awaited();
                 assertNotNull(pressSync(rig, ui, SyncTable.answering(SyncTable.answer("SW Open", "ADDRESS")), null),
@@ -473,7 +473,7 @@ public class testTheSyncDifferencesWindow
                 assertTrue(Components.waitFor(() -> "54".equals(SettingsWindow.text("settings.address")), 10000),
                     "the open window still shows " + SettingsWindow.text("settings.address"));
 
-                assertTrue(SettingsWindow.open(ui, rig.model.getLocByName("SW Typed"), LocomotiveSettingsFrame.Tab.LOCOMOTIVE,
+                assertTrue(SettingsWindow.open(ui, rig.model.getLocByName("SW Typed"), LocomotiveSettingsWindow.Tab.LOCOMOTIVE,
                     null), "precondition: Locomotive Settings did not open");
                 SettingsWindow.awaited();
                 SettingsWindow.type("settings.name", "SW Mine");
@@ -1274,7 +1274,7 @@ public class testTheSyncDifferencesWindow
      * may differ from the station, until the next sync works it out.
      *
      * MUTATION: in `TrainControlUI.holdingTheSync`, leave out the `greyWhatARunRefuses` post, or in
-     * `LocomotiveCsvDoor.open`, leave out `ManualSync.imported`, and this fails.
+     * `LocomotiveCsvImport.open`, leave out `ManualSync.imported`, and this fails.
      */
     @Test(timeOut = 240000)
     public void testATypedAddressWaitsForTheNextSyncAndAnImportMarksAtOnce() throws Exception
@@ -1287,7 +1287,7 @@ public class testTheSyncDifferencesWindow
             autoSync(ui);
             try (Answering answering = Answering.start(m -> Answering.pressAt(0)))
             {
-                assertTrue(SettingsWindow.open(ui, typed, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null),
+                assertTrue(SettingsWindow.open(ui, typed, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null),
                     "precondition: Locomotive Settings did not open");
                 SettingsWindow.awaited();
                 SettingsWindow.type("settings.address", "46");

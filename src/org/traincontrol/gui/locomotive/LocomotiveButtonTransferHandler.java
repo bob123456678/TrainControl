@@ -30,7 +30,7 @@ import org.traincontrol.gui.TrainControlUI;
  * Hovering over a page tab, or over the previous/next page buttons, turns the page mid-drag.
  * @author Adam
  */
-public class LocButtonTransferHandler extends TransferHandler
+public class LocomotiveButtonTransferHandler extends TransferHandler
 {
     // Identifies a drag originating from a locomotive button.  Never leaves this JVM.
     private static final DataFlavor FLAVOR = createFlavor();
@@ -44,7 +44,7 @@ public class LocButtonTransferHandler extends TransferHandler
     private final TrainControlUI ui;
     private final JTabbedPane tabs;
 
-    private LocButtonTransferHandler(TrainControlUI ui, JTabbedPane tabs)
+    private LocomotiveButtonTransferHandler(TrainControlUI ui, JTabbedPane tabs)
     {
         this.ui = ui;
         this.tabs = tabs;
@@ -56,7 +56,7 @@ public class LocButtonTransferHandler extends TransferHandler
      */
     public static void enable(TrainControlUI ui, JButton button, JTabbedPane tabs)
     {
-        button.setTransferHandler(new LocButtonTransferHandler(ui, tabs));
+        button.setTransferHandler(new LocomotiveButtonTransferHandler(ui, tabs));
 
         MouseAdapter dragListener = new MouseAdapter()
         {

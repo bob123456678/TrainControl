@@ -515,7 +515,7 @@ final class DiagramAutonomyContextMenu extends JPopupMenu
     {
         JMenuItem edit = new JMenuItem(I18n.f("autolayout.ui.menuEditLocomotive", standing.getName()));
 
-        edit.addActionListener(event -> ui.openLocomotiveSettings(standing, LocomotiveSettingsFrame.Tab.AUTONOMY, null));
+        edit.addActionListener(event -> ui.openLocomotiveSettings(standing, LocomotiveSettingsWindow.Tab.AUTONOMY, null));
 
         return edit;
     }

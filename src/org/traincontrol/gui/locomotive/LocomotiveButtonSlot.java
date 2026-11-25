@@ -7,12 +7,12 @@ import org.traincontrol.util.I18n;
 /**
  * Helper class for main UI
  */
-public class LocomotiveKeyboardMapping
+public class LocomotiveButtonSlot
 {
     private final int page;
     private final JButton button;
     
-    public LocomotiveKeyboardMapping(int p, JButton b)
+    public LocomotiveButtonSlot(int p, JButton b)
     {
         this.button = b;
         this.page = p;
@@ -65,7 +65,7 @@ public class LocomotiveKeyboardMapping
             return false;
         }
         
-        final LocomotiveKeyboardMapping other = (LocomotiveKeyboardMapping) obj;
+        final LocomotiveButtonSlot other = (LocomotiveButtonSlot) obj;
         if (this.page != other.page)
         {
             return false;

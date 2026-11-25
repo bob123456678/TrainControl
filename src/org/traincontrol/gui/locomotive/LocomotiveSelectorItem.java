@@ -187,7 +187,7 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
         // Right-click menu
         if (evt.getButton() == java.awt.event.MouseEvent.BUTTON3)
         {    
-            (new RightClickSelectorMenu(this.selector.getUI(), evt, loc)).show(evt.getComponent(), evt.getX(), evt.getY());
+            (new LocomotiveSelectorContextMenu(this.selector.getUI(), evt, loc)).show(evt.getComponent(), evt.getX(), evt.getY());
             return;
         }
 

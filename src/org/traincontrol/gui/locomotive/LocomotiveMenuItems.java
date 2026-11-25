@@ -3,13 +3,13 @@ package org.traincontrol.gui.locomotive;
 import java.awt.event.MouseEvent;
 import javax.swing.JMenuItem;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 
 /**
  * The menu items that belong to a locomotive rather than to the place it was right-clicked, shared by
- * {@link RightClickMenuListener} and {@link RightClickSelectorMenu}.  The order is deliberately NOT consolidated: each
+ * {@link LocomotiveButtonContextMenu} and {@link LocomotiveSelectorContextMenu}.  The order is deliberately NOT consolidated: each
  * menu adds these among its own items and separators.
  *
  * @author Adam
@@ -26,7 +26,7 @@ final class LocomotiveMenuItems
         JMenuItem item = new JMenuItem(I18n.t("loc.ui.menuLocomotiveSettings"));
 
         item.setName("menu.locomotiveSettings");
-        item.addActionListener(event -> ui.openLocomotiveSettings(loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null));
+        item.addActionListener(event -> ui.openLocomotiveSettings(loc, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null));
 
         return item;
     }
@@ -58,7 +58,7 @@ final class LocomotiveMenuItems
         JMenuItem item = new JMenuItem(text);
 
         item.setName("menu.multiUnit");
-        item.addActionListener(event -> ui.openLocomotiveSettings(loc, LocomotiveSettingsFrame.Tab.MULTI_UNIT, null));
+        item.addActionListener(event -> ui.openLocomotiveSettings(loc, LocomotiveSettingsWindow.Tab.MULTI_UNIT, null));
 
         return item;
     }

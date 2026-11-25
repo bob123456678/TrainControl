@@ -11,9 +11,9 @@ import org.traincontrol.util.I18n;
  * strip, Save, trash can and picture marks, and every write and delete ask {@link #whyNotEditable}; the quick actions
  * (the presets) do not.
  */
-public final class LocomotiveSettings
+public final class LocomotiveEditRule
 {
-    private LocomotiveSettings()
+    private LocomotiveEditRule()
     {
     }
 

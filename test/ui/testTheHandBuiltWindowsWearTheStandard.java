@@ -3,7 +3,7 @@ package ui;
 import java.awt.image.BufferedImage;
 import javax.swing.JDialog;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.locomotive.UsageChart;
 import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.util.I18n;
@@ -33,7 +33,7 @@ public class testTheHandBuiltWindowsWearTheStandard extends support.SettingsClas
     @Test(timeOut = 120000)
     public void testTheMultiUnitColumnHeadingsAreItemLabels() throws Exception
     {
-        fixture.layDcc(NAME, 3811, LocomotiveSettingsFrame.Tab.MULTI_UNIT);
+        fixture.layDcc(NAME, 3811, LocomotiveSettingsWindow.Tab.MULTI_UNIT);
 
         java.awt.Container pane = SettingsWindow.showing().getContentPane();
 
@@ -76,7 +76,7 @@ public class testTheHandBuiltWindowsWearTheStandard extends support.SettingsClas
     {
         JDialog dialog = Components.onTheEventThread(() ->
         {
-            java.lang.reflect.Constructor<?> c = Class.forName("org.traincontrol.gui.locomotive.LocIconCropDialog")
+            java.lang.reflect.Constructor<?> c = Class.forName("org.traincontrol.gui.locomotive.LocomotiveIconCropDialog")
                 .getDeclaredConstructor(java.awt.Window.class, String.class, BufferedImage.class, int.class, int.class);
 
             c.setAccessible(true);

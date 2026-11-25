@@ -26,7 +26,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.LayoutPopupWindow;
-import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.locomotive.LocomotiveSelector;
 import org.traincontrol.gui.locomotive.LocomotiveSelectorItem;
@@ -287,11 +287,11 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
      * Presses a locomotive shortcut in a window and returns the Locomotive Settings window it opened, on this tab and for
      * this locomotive.
      */
-    private static LocomotiveSettingsFrame theKeyOpened(Window window, int key, Locomotive loc, int tab) throws Exception
+    private static LocomotiveSettingsWindow theKeyOpened(Window window, int key, Locomotive loc, int tab) throws Exception
     {
         pressKey(window, key);
 
-        LocomotiveSettingsFrame opened = SettingsWindow.awaited();
+        LocomotiveSettingsWindow opened = SettingsWindow.awaited();
 
         String name = "Control+" + KeyEvent.getKeyText(key);
 
@@ -332,9 +332,9 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     }
 
     /** The window the multi-unit door opened, on its Multi-Unit tab and for this locomotive. */
-    private static LocomotiveSettingsFrame theWindowFor(Locomotive loc) throws Exception
+    private static LocomotiveSettingsWindow theWindowFor(Locomotive loc) throws Exception
     {
-        LocomotiveSettingsFrame window = SettingsWindow.awaited();
+        LocomotiveSettingsWindow window = SettingsWindow.awaited();
 
         assertNotNull(window, "the door opened no Locomotive Settings window");
         assertSame(Components.onTheEventThread(window::getLocomotive), loc, "the window is for another locomotive");
@@ -356,7 +356,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     {
         chooseMultiUnit(ui, ONE);
 
-        LocomotiveSettingsFrame fromTheMain = theWindowFor(one);
+        LocomotiveSettingsWindow fromTheMain = theWindowFor(one);
 
         assertEquals((boolean) Components.onTheEventThread(fromTheMain::isAlwaysOnTop), ui.isAlwaysOnTop(), "the window is not as high as the main window");
 
@@ -375,7 +375,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
         SettingsWindow.selectTab(3);
 
-        LocomotiveSettingsFrame fromTheDatabase = theWindowFor(one);
+        LocomotiveSettingsWindow fromTheDatabase = theWindowFor(one);
 
         assertTrue(Components.onTheEventThread(fromTheDatabase::isShowing), "the window is not on screen");
         assertTrue(onTop, "the window stands lower than the database it was asked from: it opens behind it");
@@ -388,7 +388,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     /**
      * OK (Save) in the window opened from the database, with a locomotive ticked, links it.
      *
-     * MUTATION: leave `applyLinkedLocomotives` out of `LocomotiveSettingsFrame.write`, and this fails.
+     * MUTATION: leave `applyLinkedLocomotives` out of `LocomotiveSettingsWindow.write`, and this fails.
      */
     @Test
     public void testOKOverTheDatabaseLinksWhatIsTicked() throws Exception
@@ -408,7 +408,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
      * A locomotive already in another's multi-unit has its Multi-Unit tab say so, from the database, the main window
      * and Control+L over a page.
      *
-     * MUTATION: show the list instead of the sentence in `LocomotiveSettingsFrame.MultiUnitTab`, or open another tab in
+     * MUTATION: show the list instead of the sentence in `LocomotiveSettingsWindow.MultiUnitTab`, or open another tab in
      * the "linked locomotives" row of `TrainControlUI.KeyShortcuts`, and this fails.
      */
     @Test
@@ -441,7 +441,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
         try
         {
-            LocomotiveSettingsFrame fromThePage = theKeyOpened(page, KeyEvent.VK_L, two, 3);
+            LocomotiveSettingsWindow fromThePage = theKeyOpened(page, KeyEvent.VK_L, two, 3);
 
             assertTheTabSays(fromThePage, sentence, "Control+L over a page: the tab does not say " + TWO + " belongs to " + ONE);
 
@@ -468,7 +468,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
      * While autonomy is busy every door opens the window locked, with the strip saying so: the database's menu on the
      * Multi-Unit tab, the button's entry (lit), and Control+E, R, N and L from every window on their own tabs.
      *
-     * MUTATION: put `LocomotiveSettings.refuseIfNotEditable` back at the top of `TrainControlUI.openLocomotiveSettings`,
+     * MUTATION: put `LocomotiveEditRule.refuseIfNotEditable` back at the top of `TrainControlUI.openLocomotiveSettings`,
      * or gray the button's entry again, and this fails.
      */
     @Test
@@ -494,7 +494,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     /** What a door must have opened: the window for the first locomotive on this tab, with the strip up and Save gray. */
     private static void assertOpenedLocked(String strip, int tab, String door) throws Exception
     {
-        LocomotiveSettingsFrame window = SettingsWindow.awaited();
+        LocomotiveSettingsWindow window = SettingsWindow.awaited();
 
         assertNotNull(window, door + " opened no window");
         assertSame(Components.onTheEventThread(window::getLocomotive), one, door + " opened the window for another locomotive");
@@ -518,7 +518,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     }
 
     /** The window shows this sentence once. */
-    private static void assertTheTabSays(LocomotiveSettingsFrame window, String sentence, String message)
+    private static void assertTheTabSays(LocomotiveSettingsWindow window, String sentence, String message)
     {
         assertEquals(Components.all(window.getContentPane(), javax.swing.JLabel.class,
             label -> sentence.equals(label.getText())).size()
@@ -527,7 +527,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     }
 
     /** Presses Save and checks that the one thing said is this, over the Locomotive Settings window itself. */
-    private static void assertSaveSays(LocomotiveSettingsFrame window, String said)
+    private static void assertSaveSays(LocomotiveSettingsWindow window, String said)
     {
         try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
         {
@@ -562,7 +562,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
      * A route that drives the locomotive does not keep the window: it opens from both doors and from Control+R for the
      * stopped locomotive, and the route's refusal is said at Save over the window itself.
      *
-     * MUTATION: put a running route into `LocomotiveSettings.why`, and the window does not open and this fails.
+     * MUTATION: put a running route into `LocomotiveEditRule.why`, and the window does not open and this fails.
      */
     @Test
     public void testADrivingRouteIsSaidOverTheWindowThatAsked() throws Exception
@@ -573,7 +573,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
         chooseMultiUnit(database, ONE);
 
-        LocomotiveSettingsFrame window = theWindowFor(one);
+        LocomotiveSettingsWindow window = theWindowFor(one);
 
         SettingsWindow.tickMember(TWO);
 
@@ -583,7 +583,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
         for (Window pressed : new Window[] {page, ui})
         {
-            LocomotiveSettingsFrame fromTheKey = theKeyOpened(pressed, KeyEvent.VK_R, one, 0);
+            LocomotiveSettingsWindow fromTheKey = theKeyOpened(pressed, KeyEvent.VK_R, one, 0);
 
             SettingsWindow.type("settings.name", ONE + " renamed");
 
@@ -599,7 +599,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
      * With fewer than two locomotives the Multi-Unit tab says so, instead of a list, from the button's menu and from
      * Control+L.
      *
-     * MUTATION: show the list whatever the number of locomotives in `LocomotiveSettingsFrame.MultiUnitTab`, and this
+     * MUTATION: show the list whatever the number of locomotives in `LocomotiveSettingsWindow.MultiUnitTab`, and this
      * fails.
      */
     @Test
@@ -617,7 +617,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
             SettingsWindow.press(SettingsWindow.cancel());
 
-            LocomotiveSettingsFrame fromTheKey = theKeyOpened(ui, KeyEvent.VK_L, one, 3);
+            LocomotiveSettingsWindow fromTheKey = theKeyOpened(ui, KeyEvent.VK_L, one, 3);
 
             assertTheTabSays(fromTheKey, said, "Control+L: the tab does not say two are needed");
 
@@ -676,7 +676,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
      * A locomotive that is moving opens locked from the keyboard: each of the four shortcuts, in each window, opens the
      * window on its own tab with the strip saying to stop it, and Save gray.
      *
-     * MUTATION: leave `isMoving` out of `LocomotiveSettings.why`, or put `refuseIfNotEditable` back at the top of
+     * MUTATION: leave `isMoving` out of `LocomotiveEditRule.why`, or put `refuseIfNotEditable` back at the top of
      * `openLocomotiveSettings`, and this fails.
      */
     @Test
@@ -777,7 +777,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     /** Control+R in this window, a name typed in the window that opens and saved; what is said then, over that window. */
     private static void assertARefusedName(Window window, String name, String said) throws Exception
     {
-        LocomotiveSettingsFrame opened = theKeyOpened(window, KeyEvent.VK_R, one, 0);
+        LocomotiveSettingsWindow opened = theKeyOpened(window, KeyEvent.VK_R, one, 0);
 
         SettingsWindow.type("settings.name", name);
 
@@ -791,7 +791,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
      * database: empty, too long, another's, or with a comma.
      *
      * MUTATION: `this.ui` for `source` at the refusals in `LocomotiveActions.writeNameAndAddress`, or `this` for the
-     * asking window in `LocomotiveSettingsFrame.write`, and they hang off the main window.
+     * asking window in `LocomotiveSettingsWindow.write`, and they hang off the main window.
      */
     @Test
     public void testARefusedNameIsSaidOverTheWindowThatAsked() throws Exception

@@ -15,7 +15,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive.decoderType;
-import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
@@ -74,7 +74,7 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
 
         loc = fixture.model.newDCCLocomotive(NAME, 1931);
 
-        fixture.show(loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
+        fixture.show(loc, LocomotiveSettingsWindow.Tab.LOCOMOTIVE);
     }
 
     @AfterMethod(alwaysRun = true)
@@ -118,7 +118,7 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
      * it, and not in Add; the key menu has no Sync.  Gray with its reason as the tooltip while no Central Station is
      * connected, lit when one is.
      *
-     * MUTATION: leave `refreshSync` out of `LocomotiveSettingsFrame.refresh`, or enable the button whatever the station,
+     * MUTATION: leave `refreshSync` out of `LocomotiveSettingsWindow.refresh`, or enable the button whatever the station,
      * or move `syncRow` out of `pictureColumn`, and this fails.
      */
     @Test
@@ -200,7 +200,7 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
      * Pressing it syncs this locomotive at once (the log says so) and the window then shows what the locomotive now
      * holds: an untouched address field, the Functions tab rebuilt.  Nothing waits for Save.
      *
-     * MUTATION: leave `afterSync` out of `LocomotiveSettingsFrame.syncNow`'s call, or `takeLocomotive` empty, and this
+     * MUTATION: leave `afterSync` out of `LocomotiveSettingsWindow.syncNow`'s call, or `takeLocomotive` empty, and this
      * fails.
      */
     @Test
@@ -247,7 +247,7 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
      * Sync over typing not saved asks first, as Close does: Cancel syncs nothing and keeps the typing, the Notes
      * included, which only TrainControl holds.
      *
-     * MUTATION: drop the `settleUnsaved` from `LocomotiveSettingsFrame.syncNow`, and this fails.
+     * MUTATION: drop the `settleUnsaved` from `LocomotiveSettingsWindow.syncNow`, and this fails.
      */
     @Test
     public void testSyncAsksBeforeItDropsTheTyping() throws Exception
@@ -271,7 +271,7 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
 
         assertTrue(loc.setAddress(address + 1, decoderType.DCC), "precondition: the address was refused");
 
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = 2;
 
         try
         {
@@ -287,7 +287,7 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
         }
         finally
         {
-            LocomotiveSettingsFrame.unsavedAnswerForTest = null;
+            LocomotiveSettingsWindow.unsavedAnswerForTest = null;
         }
     }
 
@@ -307,7 +307,7 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
 
         awaitLook(() -> Components.onTheEventThread(button::isEnabled));
 
-        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        LocomotiveSettingsWindow window = SettingsWindow.showing();
         String failed = I18n.f("ui.syncFailedRetry", "").split("\n")[0];
         java.util.concurrent.atomic.AtomicInteger failures = new java.util.concurrent.atomic.AtomicInteger();
 
@@ -433,12 +433,12 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
      * the question: the typed name and the edited Functions table are replaced by the synced values, Save goes gray,
      * and the tab selected and the window's place stay.
      *
-     * MUTATION: keep dirty fields and tabs in `LocomotiveSettingsFrame.afterSync` (rebuild nothing), and this fails.
+     * MUTATION: keep dirty fields and tabs in `LocomotiveSettingsWindow.afterSync` (rebuild nothing), and this fails.
      */
     @Test
     public void testSyncReloadsTheWholeWindowOverTheTyping() throws Exception
     {
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 1;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = 1;
 
         try
         {
@@ -446,7 +446,7 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
         }
         finally
         {
-            LocomotiveSettingsFrame.unsavedAnswerForTest = null;
+            LocomotiveSettingsWindow.unsavedAnswerForTest = null;
         }
     }
 
@@ -486,7 +486,7 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
      * Another locomotive at the address and decoder: the triangle's strip stacks under the lock strip and neither
      * hides the other, in a locked window.
      *
-     * MUTATION: put the shared strip where the lock strip is, in the `top` panel of `LocomotiveSettingsFrame`, and this
+     * MUTATION: put the shared strip where the lock strip is, in the `top` panel of `LocomotiveSettingsWindow`, and this
      * fails.
      */
     @Test
@@ -585,7 +585,7 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
 
         loc.setPreferredSpeed(30);
         fixture.quiet();
-        fixture.show(loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
+        fixture.show(loc, LocomotiveSettingsWindow.Tab.LOCOMOTIVE);
 
         javax.swing.JSpinner speed = SettingsWindow.part("settings.speed", javax.swing.JSpinner.class);
 

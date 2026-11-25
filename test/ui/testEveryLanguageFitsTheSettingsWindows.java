@@ -8,7 +8,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomyeditor.StationSettingsWindow;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
@@ -76,9 +76,9 @@ public class testEveryLanguageFitsTheSettingsWindows
 
         Map<String, List<String>> clipped = LanguageFit.everyLanguage(language ->
         {
-            assertTrue(SettingsWindow.open(railway.ui, train, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "the window did not open");
+            assertTrue(SettingsWindow.open(railway.ui, train, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null), "the window did not open");
 
-            LocomotiveSettingsFrame window = SettingsWindow.awaited();
+            LocomotiveSettingsWindow window = SettingsWindow.awaited();
 
             assertNotNull(window, "Locomotive Settings is not on screen");
 
@@ -96,7 +96,7 @@ public class testEveryLanguageFitsTheSettingsWindows
 
             Components.press((javax.swing.AbstractButton) Reflect.get(TrainControlUI.class, railway.ui, "addLocomotiveMenuItem"));
 
-            LocomotiveSettingsFrame adding = SettingsWindow.awaited();
+            LocomotiveSettingsWindow adding = SettingsWindow.awaited();
 
             assertNotNull(adding, "Add Locomotive opened no window");
 
@@ -190,7 +190,7 @@ public class testEveryLanguageFitsTheSettingsWindows
 
         SettingsWindow.power(railway.ui, railway.model, false);
 
-        assertTrue(SettingsWindow.open(railway.ui, train, LocomotiveSettingsFrame.Tab.MULTI_UNIT, null), "the window did not open");
+        assertTrue(SettingsWindow.open(railway.ui, train, LocomotiveSettingsWindow.Tab.MULTI_UNIT, null), "the window did not open");
         assertNotNull(SettingsWindow.awaited(), "the window is not on screen");
 
         SettingsWindow.tickMember(MEMBER);
@@ -205,7 +205,7 @@ public class testEveryLanguageFitsTheSettingsWindows
     }
 
     /** The Functions table's right-click menu for its first row, as a right-click builds it. */
-    private static JPopupMenu rowMenu(LocomotiveSettingsFrame window) throws Exception
+    private static JPopupMenu rowMenu(LocomotiveSettingsWindow window) throws Exception
     {
         Class<?> tab = Class.forName("org.traincontrol.gui.LocomotiveFunctionsTab");
         Object functions = Components.find(window.getContentPane(), java.awt.Component.class, tab::isInstance);

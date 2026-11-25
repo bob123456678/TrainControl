@@ -29,7 +29,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
-import org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel;
+import org.traincontrol.gui.locomotive.LocomotiveIconCropDialog.CropPanel;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
@@ -269,7 +269,7 @@ public class testRecroppingALocomotiveIcon
      * Cancel keeps the icon the train had: the same file, no new crop in the icon folder, and the same picture on
      * screen, though the view had been moved first.
      *
-     * MUTATION: in `LocIconCropDialog`, have the Cancel button keep `this.cropPanel.getCroppedImage()`, and this fails.
+     * MUTATION: in `LocomotiveIconCropDialog`, have the Cancel button keep `this.cropPanel.getCroppedImage()`, and this fails.
      */
     @Test
     public void testCancelKeepsTheIconTheTrainHad() throws Exception
@@ -287,7 +287,7 @@ public class testRecroppingALocomotiveIcon
     /**
      * Escape in the crop window is a Cancel.
      *
-     * MUTATION: in the Escape action of `LocIconCropDialog`, keep `this.cropPanel.getCroppedImage()`, and this fails.
+     * MUTATION: in the Escape action of `LocomotiveIconCropDialog`, keep `this.cropPanel.getCroppedImage()`, and this fails.
      */
     @Test
     public void testEscapeKeepsTheIconTheTrainHad() throws Exception
@@ -316,7 +316,7 @@ public class testRecroppingALocomotiveIcon
     /**
      * The close box of the crop window is a Cancel as well.
      *
-     * MUTATION: in `LocIconCropDialog`, make closing do nothing (`DO_NOTHING_ON_CLOSE`), and this fails.
+     * MUTATION: in `LocomotiveIconCropDialog`, make closing do nothing (`DO_NOTHING_ON_CLOSE`), and this fails.
      */
     @Test
     public void testTheCloseBoxKeepsTheIconTheTrainHad() throws Exception
@@ -453,7 +453,7 @@ public class testRecroppingALocomotiveIcon
     {
         support.SettingsWindow.closeIfOpen();
 
-        assertTrue(support.SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null),
+        assertTrue(support.SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null),
             "the settings window did not open");
         assertNotNull(support.SettingsWindow.awaited(), "the settings window is not on screen");
 

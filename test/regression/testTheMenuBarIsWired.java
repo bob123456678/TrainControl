@@ -494,7 +494,7 @@ public class testTheMenuBarIsWired
             {
                 for (java.awt.Window each : java.awt.Window.getWindows())
                 {
-                    if (each instanceof org.traincontrol.gui.LocomotiveSettingsFrame && each.isShowing()) return true;
+                    if (each instanceof org.traincontrol.gui.LocomotiveSettingsWindow && each.isShowing()) return true;
                 }
 
                 return false;

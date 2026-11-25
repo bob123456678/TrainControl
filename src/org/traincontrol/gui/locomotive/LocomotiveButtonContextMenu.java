@@ -13,12 +13,12 @@ import org.traincontrol.util.I18n;
  * This class represents a right-click menu with various utility functions displayed when any locomotive button is right-clicked
  * @author Adam
  */
-public class RightClickMenuListener extends PopupListener
+public class LocomotiveButtonContextMenu extends PopupListener
 {    
     protected TrainControlUI ui;
     protected JButton source;
     
-    public RightClickMenuListener(TrainControlUI u, JButton source)
+    public LocomotiveButtonContextMenu(TrainControlUI u, JButton source)
     {
         this.ui = u;
         this.source = source;

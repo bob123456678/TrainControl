@@ -59,7 +59,7 @@ import org.traincontrol.base.RemoteDeviceCollection;
 import org.traincontrol.base.RenameProposals;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.RouteCommand;
-import org.traincontrol.gui.LocomotiveSettings;
+import org.traincontrol.gui.LocomotiveEditRule;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.app.LogPanel;
 import org.traincontrol.marklin.file.CS2File;
@@ -2230,7 +2230,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         MarklinRoute driving = this.runningRouteDriving(here.getName());
         return this.isAutonomyRunning() ? I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning")
             : driving != null ? I18n.f("sync.ui.whyRouteDriving", here.getName(), driving.getName())
-            : LocomotiveSettings.hasSpeed(this, here) ? I18n.f("loc.syncLeftMoving", here.getName()) : null;
+            : LocomotiveEditRule.hasSpeed(this, here) ? I18n.f("loc.syncLeftMoving", here.getName()) : null;
     }
 
     /** The locomotive here by l's name, when it has l's decoder type at another address; else null. */

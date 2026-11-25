@@ -12,11 +12,11 @@ import org.traincontrol.util.I18n;
  * This class represents a right-click menu with various utility functions displayed when any locomotive DB tile is right-clicked
  * @author Adam
  */
-public class RightClickSelectorMenu extends JPopupMenu
+public class LocomotiveSelectorContextMenu extends JPopupMenu
 {
     JMenuItem menuItem;
 
-    public RightClickSelectorMenu(TrainControlUI ui, MouseEvent e, Locomotive loc)
+    public LocomotiveSelectorContextMenu(TrainControlUI ui, MouseEvent e, Locomotive loc)
     {
         menuItem = new JMenuItem(loc.getName());
         menuItem.setEnabled(false);

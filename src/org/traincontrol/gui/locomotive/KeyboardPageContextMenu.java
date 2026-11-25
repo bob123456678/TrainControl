@@ -12,11 +12,11 @@ import org.traincontrol.util.I18n;
  * This class represents a right-click menu with various utility functions for locomotive mapping pages
  * @author Adam
  */
-public class RightClickPageMenu extends PopupListener
+public class KeyboardPageContextMenu extends PopupListener
 {    
     protected TrainControlUI ui;
     
-    public RightClickPageMenu(TrainControlUI u)
+    public KeyboardPageContextMenu(TrainControlUI u)
     {
         this.ui = u;
     }

@@ -26,7 +26,7 @@ import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
 
 /** The locomotive keyboard's pages: their names and how the tabs and label word them, clearing one, the tab badge. */
-public final class LocMappingPages
+public final class LocomotiveKeyboardPages
 {
     /** The fewest pages: next/previous, the tab strip and copying between pages mean nothing with one. */
     static final int MIN_LOC_MAPPINGS = 2;
@@ -89,7 +89,7 @@ public final class LocMappingPages
     /** "Show Page Numbers"; null until `installShowPageNumbersMenuItem` builds it. */
     private JCheckBoxMenuItem numbersItem;
 
-    LocMappingPages(Keyboard ui)
+    LocomotiveKeyboardPages(Keyboard ui)
     {
         this.ui = ui;
     }
