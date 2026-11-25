@@ -13,7 +13,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.LayoutGrid;
-import org.traincontrol.gui.widgets.StationCaption;
+import org.traincontrol.gui.layout.StationCaption;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;

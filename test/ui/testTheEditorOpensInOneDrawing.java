@@ -446,7 +446,7 @@ public class testTheEditorOpensInOneDrawing
                 @Override
                 public void componentAdded(ContainerEvent e)
                 {
-                    if (!(e.getChild() instanceof org.traincontrol.gui.widgets.LoadingSpinner)) built.add(e.getChild());
+                    if (!(e.getChild() instanceof org.traincontrol.gui.layout.LoadingSpinner)) built.add(e.getChild());
                 }
             });
 

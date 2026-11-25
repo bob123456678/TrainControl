@@ -33,7 +33,7 @@ belongs in `core/`.
 **`unit/`**: one class on its own, through its own API.  It never builds `TrainControlUI` or a
 `MarklinControlStation`, binds no port and opens no layout; a Swing component built alone is fine, laid out and painted
 without a window.  A class that tests package-private members lives in a package folder below `unit/`, in that package
-(`unit/org/traincontrol/gui/testDiagramHighlights.java` is `package org.traincontrol.gui;`); the others are `package
+(`unit/org/traincontrol/gui/layout/testDiagramHighlights.java` is `package org.traincontrol.gui.layout;`); the others are `package
 unit;`.  `ant test-unit` runs the whole folder and its package folders in one JVM in seconds, and the battery runs it
 class by class like every other folder.  `testEveryTestIsInTheBattery` refuses a file here that, comments aside, names `TrainControlUI`,
 `MarklinControlStation`, `NetworkProxy`, `DatagramSocket`, `LayoutSandbox` or `Scenario`, or uses a `support` helper

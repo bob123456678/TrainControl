@@ -7,7 +7,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
-import org.traincontrol.gui.widgets.LoadingSpinner;
+import org.traincontrol.gui.layout.LoadingSpinner;
 
 /**
  * Says the application is starting, during the part of start-up that has nothing to show yet (FR-041).  Not a window of

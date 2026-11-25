@@ -28,6 +28,7 @@ import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.layout.DiagramHighlights;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
 

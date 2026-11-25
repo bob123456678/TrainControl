@@ -13,7 +13,7 @@ import org.traincontrol.automationui.DiagramColours;
 import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.widgets.StationCaption;
+import org.traincontrol.gui.layout.StationCaption;
 
 /**
  * What the track diagram's station captions say: the station, train and home a square shows, asked of the setup, and

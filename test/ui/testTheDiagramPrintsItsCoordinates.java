@@ -2,7 +2,7 @@ package ui;
 
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.widgets.AxisRuler;
+import org.traincontrol.gui.layout.AxisRuler;
 
 /**
  * FR-057: the column and row numbers around a track diagram.

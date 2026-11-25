@@ -10,7 +10,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
-import org.traincontrol.gui.widgets.LoadingSpinner;
+import org.traincontrol.gui.layout.LoadingSpinner;
 import support.Display;
 import support.Reflect;
 import support.SourceOf;
@@ -596,7 +596,7 @@ public class testTheWaitMarkIsAnHourglass
                 says = true;
             }
 
-            if (c instanceof org.traincontrol.gui.widgets.LoadingSpinner)
+            if (c instanceof org.traincontrol.gui.layout.LoadingSpinner)
             {
                 spins = true;
             }

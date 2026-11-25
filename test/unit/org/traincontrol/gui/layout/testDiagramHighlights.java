@@ -1,4 +1,4 @@
-package org.traincontrol.gui;
+package org.traincontrol.gui.layout;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
@@ -17,8 +17,8 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
-import org.traincontrol.gui.DiagramHighlights.AddressedAs;
-import org.traincontrol.gui.autonomy.DiagramTileRegistry;
+import org.traincontrol.gui.LayoutLabel;
+import org.traincontrol.gui.layout.DiagramHighlights.AddressedAs;
 import org.traincontrol.model.ViewListener;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;

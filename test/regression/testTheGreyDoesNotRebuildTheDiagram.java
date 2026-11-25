@@ -449,7 +449,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
             {
                 for (javax.swing.JLabel c : ui.getLayoutStations(square))
                 {
-                    if (c instanceof org.traincontrol.gui.widgets.StationCaption) captions.add(c);
+                    if (c instanceof org.traincontrol.gui.layout.StationCaption) captions.add(c);
                 }
             }
 
@@ -505,7 +505,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
             // PRECONDITION: squares of the window's page wear a mark, so a clear would redraw them
             java.lang.reflect.Field tilesField =
-                Reflect.field(org.traincontrol.gui.autonomy.DiagramTileRegistry.class, "tiles");
+                Reflect.field(org.traincontrol.gui.layout.DiagramTileRegistry.class, "tiles");
 
             java.lang.reflect.Field markField = Reflect.field(LayoutLabel.class, "autonomyAnnotation");
 

@@ -179,7 +179,7 @@ DB_DUPLICATE_BRANCHES	org.traincontrol.marklin.MarklinControlStation	getLocAddre
 DB_DUPLICATE_SWITCH_CLAUSES	org.traincontrol.gui.route.RouteEditorWindow	settingWords		1
 DCN_NULLPOINTER_EXCEPTION	org.traincontrol.base.Accessory	stringToAccessoryDecoderType		1
 DCN_NULLPOINTER_EXCEPTION	org.traincontrol.marklin.file.CS2File	parseLocomotives		1
-DE_MIGHT_IGNORE	org.traincontrol.gui.autonomy.DiagramExport	awaitTiles		1
+DE_MIGHT_IGNORE	org.traincontrol.gui.layout.DiagramExport	awaitTiles		1
 DE_MIGHT_IGNORE	org.traincontrol.gui.app.AboutPanel	linkLabel1MouseClicked		2
 DE_MIGHT_IGNORE	org.traincontrol.gui.app.AboutPanel	linkLabelMouseClicked		2
 DLS_DEAD_LOCAL_STORE	org.traincontrol.automationui.TileGraph	exits		1
@@ -351,9 +351,9 @@ EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.JsonExportPanel	<init>	tcui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus	<init>	locomotive	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus	<init>	parent	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus	showOn	layout	1
-EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.DiagramMonitorDriver	<init>	registry	1
-EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.DiagramMonitorDriver	<init>	ui	1
-EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.DiagramMonitorDriver	bind	boundTo	1
+EI_EXPOSE_REP2	org.traincontrol.gui.layout.DiagramMonitorDriver	<init>	registry	1
+EI_EXPOSE_REP2	org.traincontrol.gui.layout.DiagramMonitorDriver	<init>	ui	1
+EI_EXPOSE_REP2	org.traincontrol.gui.layout.DiagramMonitorDriver	bind	boundTo	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.TimetableContextMenu	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	<init>	session	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	setBanner	messageBanner	1
@@ -376,7 +376,7 @@ EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocomotiveStats	<init>	tcui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocomotiveButtonContextMenu	<init>	source	1
 EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocomotiveButtonContextMenu	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.KeyboardPageContextMenu	<init>	ui	1
-EI_EXPOSE_REP2	org.traincontrol.gui.widgets.AddressLabel	answerOnlyOver	square	1
+EI_EXPOSE_REP2	org.traincontrol.gui.layout.AddressLabel	answerOnlyOver	square	1
 EI_EXPOSE_REP2	org.traincontrol.gui.app.BackupAction	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.util.DragToScroll	<init>	image	1
 EI_EXPOSE_REP2	org.traincontrol.gui.app.RestoreAction	<init>	ui	1
@@ -437,7 +437,7 @@ MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.layouteditor.Layo
 MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.locomotive.LocomotiveIconCropDialog	<init>		4
 MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.locomotive.LocomotiveSelectorContextMenu	<init>		1
 MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.locomotive.UsageChart	<init>		2
-MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.widgets.LoadingSpinner	<init>		1
+MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.layout.LoadingSpinner	<init>		1
 MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.widgets.PositionAwareJFrame	<init>		1
 MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.marklin.MarklinControlStation	<init>		2
 MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.marklin.MarklinRoute	<init>		2
@@ -455,7 +455,7 @@ MS_SHOULD_BE_FINAL	org.traincontrol.automation.Layout		PATH_VALIDATION_ALERT_THR
 MS_SHOULD_BE_FINAL	org.traincontrol.automation.Layout		PATH_VALIDATION_MS	1
 MS_SHOULD_BE_FINAL	org.traincontrol.gui.LocomotiveSettingsWindow		unsavedAnswerForTest	1
 MS_SHOULD_BE_FINAL	org.traincontrol.gui.route.RouteEditorWindow		discardAnswerForTest	1
-MS_SHOULD_BE_FINAL	org.traincontrol.gui.autonomy.DiagramExport		stumbleForTest	1
+MS_SHOULD_BE_FINAL	org.traincontrol.gui.layout.DiagramExport		stumbleForTest	1
 MS_SHOULD_BE_FINAL	org.traincontrol.marklin.MarklinControlStation		DEBUG_LOG_NETWORK	1
 MS_SHOULD_BE_FINAL	org.traincontrol.marklin.MarklinLocomotive		PULSE_FUNCTION_DURATION	1
 NM_CLASS_NAMING_CONVENTION	org.traincontrol.base.Accessory$accessoryDecoderType			1
@@ -557,7 +557,7 @@ REC_CATCH_EXCEPTION	org.traincontrol.gui.RunningLayoutSync	noteTheRailwaysSettin
 REC_CATCH_EXCEPTION	org.traincontrol.gui.RunningLayoutSync	rebuildRunningLayoutFromSetup		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.TailCrossedPrompt	reply		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.TailCrossedPrompt$DiagramPick	ask		1
-REC_CATCH_EXCEPTION	org.traincontrol.gui.autonomy.DiagramExport	awaitTiles		1
+REC_CATCH_EXCEPTION	org.traincontrol.gui.layout.DiagramExport	awaitTiles		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.autonomy.FacingPrompt	askAmong		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.autonomy.ManualReversalPrompt	ask		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.layouteditor.LayoutEditor	clear		1
@@ -571,7 +571,7 @@ REC_CATCH_EXCEPTION	org.traincontrol.marklin.file.CS2File	lambda$copyAtomically	
 REC_CATCH_EXCEPTION	org.traincontrol.marklin.file.CS2File	localLayoutFolder		1
 REC_CATCH_EXCEPTION	org.traincontrol.marklin.udp.CSDetect	askWebServer		1
 REC_CATCH_EXCEPTION	org.traincontrol.marklin.udp.CSDetect	isReachable		1
-RV_RETURN_VALUE_IGNORED	org.traincontrol.gui.autonomy.DiagramExport	awaitTiles		1
+RV_RETURN_VALUE_IGNORED	org.traincontrol.gui.layout.DiagramExport	awaitTiles		1
 RV_RETURN_VALUE_IGNORED	org.traincontrol.marklin.udp.NetworkProxy	awaitTheBacklog		1
 RV_RETURN_VALUE_IGNORED_BAD_PRACTICE	org.traincontrol.automationui.AutonomyCompanionStore	deleteEverything		1
 RV_RETURN_VALUE_IGNORED_BAD_PRACTICE	org.traincontrol.automationui.AutonomyCompanionStore	rememberBeforeEdit		1
@@ -786,7 +786,7 @@ THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.examples.FeedbackEv
 THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.gui.AutonomySettingsTab$Setting	write		1
 THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.gui.LayoutFileActions$PageEdit	write		1
 THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.gui.TrainControlUI$ExportText	generate		1
-THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.gui.autonomy.DiagramExport	render		1
+THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.gui.layout.DiagramExport	render		1
 THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.gui.layouteditor.LayoutEditorContextMenu$Action	run		1
 THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.marklin.MarklinControlStation	requireTheTypeKnown		1
 THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.marklin.MarklinControlStation	syncLayoutsFromConfiguredSource		1
@@ -840,7 +840,7 @@ UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR	org.traincontrol.marklin.MarklinLocomot
 UWF_NULL_FIELD	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel		pendingPortal	1
 UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD	org.traincontrol.gui.LocomotiveSettingsWindow		unsavedAnswerForTest	1
 UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD	org.traincontrol.gui.route.RouteEditorWindow		discardAnswerForTest	1
-UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD	org.traincontrol.gui.autonomy.DiagramExport		stumbleForTest	1
+UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD	org.traincontrol.gui.layout.DiagramExport		stumbleForTest	1
 UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD	org.traincontrol.marklin.MarklinControlStation		whileParsingForTest	1
 VA_FORMAT_STRING_USES_NEWLINE	org.traincontrol.marklin.MarklinControlStation	exportLocsToCSV		1
 VO_VOLATILE_INCREMENT	org.traincontrol.automationui.GraphReducer	buildPoints	isolatedFeedbackTiles	1

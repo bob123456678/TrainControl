@@ -1,4 +1,4 @@
-package org.traincontrol.gui.autonomy;
+package org.traincontrol.gui.layout;
 
 import java.util.ArrayList;
 import java.util.Collections;

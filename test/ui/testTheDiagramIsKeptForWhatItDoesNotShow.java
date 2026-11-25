@@ -31,7 +31,7 @@ import org.traincontrol.base.Route;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.LayoutPopupWindow;
 import org.traincontrol.gui.TrainControlUI;
-import org.traincontrol.gui.autonomy.DiagramMonitorDriver;
+import org.traincontrol.gui.layout.DiagramMonitorDriver;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
@@ -1659,7 +1659,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
     private static boolean showsAddresses(LayoutPopupWindow window)
     {
-        return !Components.all(window, org.traincontrol.gui.widgets.AddressLabel.class, null).isEmpty();
+        return !Components.all(window, org.traincontrol.gui.layout.AddressLabel.class, null).isEmpty();
     }
 
     /** The arrows in a window that lead to this page. */

@@ -18,7 +18,7 @@ import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.LayoutPopupWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
-import org.traincontrol.gui.widgets.AddressLabel;
+import org.traincontrol.gui.layout.AddressLabel;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;

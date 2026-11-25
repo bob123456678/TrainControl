@@ -11,6 +11,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.layout.LoadingSpinner;
 
 /**
  * Says that something slow is happening, and gets out of the way when it stops.  Loading or initializing a layout does

@@ -440,7 +440,7 @@ public final class LanguageFit
 
                 // The diagram's squares and captions draw the railway's own names across their neighbors by design.
                 if (child instanceof org.traincontrol.gui.LayoutLabel
-                    || child instanceof org.traincontrol.gui.widgets.StationCaption) continue;
+                    || child instanceof org.traincontrol.gui.layout.StationCaption) continue;
 
                 if (text != null && !text.trim().isEmpty() && child.getWidth() > 0)
                 {

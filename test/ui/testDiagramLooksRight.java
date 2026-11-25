@@ -7,7 +7,7 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.autonomy.DiagramExport;
+import org.traincontrol.gui.layout.DiagramExport;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -662,29 +662,29 @@ public class testDiagramLooksRight
             // GRAY WHEN NOTHING HAS BEEN CHOSEN, blue being the optional setting via the existing preference
             TrainControlUI.getPrefs().remove(TrainControlUI.STATION_LABELS_GREY);
 
-            assertEquals(org.traincontrol.gui.widgets.StationCaption.restingFill(),
-                org.traincontrol.gui.widgets.StationCaption.PILL_GREY,
+            assertEquals(org.traincontrol.gui.layout.StationCaption.restingFill(),
+                org.traincontrol.gui.layout.StationCaption.PILL_GREY,
                 "with nothing chosen the station labels are not grey, which is the default now");
 
             TrainControlUI.getPrefs().putBoolean(TrainControlUI.STATION_LABELS_GREY, false);
 
-            assertEquals(org.traincontrol.gui.widgets.StationCaption.restingFill(),
-                org.traincontrol.gui.widgets.StationCaption.PILL_AT_REST,
+            assertEquals(org.traincontrol.gui.layout.StationCaption.restingFill(),
+                org.traincontrol.gui.layout.StationCaption.PILL_AT_REST,
                 "the preference switched off and the captions are not blue, so blue cannot be chosen");
 
-            assertEquals(org.traincontrol.gui.widgets.StationCaption.readableOn(
-                org.traincontrol.gui.widgets.StationCaption.restingFill()), java.awt.Color.WHITE,
+            assertEquals(org.traincontrol.gui.layout.StationCaption.readableOn(
+                org.traincontrol.gui.layout.StationCaption.restingFill()), java.awt.Color.WHITE,
                 "white text on the blue is the look that was asked for");
 
             TrainControlUI.getPrefs().putBoolean(TrainControlUI.STATION_LABELS_GREY, true);
 
-            assertEquals(org.traincontrol.gui.widgets.StationCaption.restingFill(),
-                org.traincontrol.gui.widgets.StationCaption.PILL_GREY,
+            assertEquals(org.traincontrol.gui.layout.StationCaption.restingFill(),
+                org.traincontrol.gui.layout.StationCaption.PILL_GREY,
                 "the preference was set and the captions are still blue, so the menu switch changes a "
                 + "stored value and nothing on the diagram");
 
-            assertEquals(org.traincontrol.gui.widgets.StationCaption.readableOn(
-                org.traincontrol.gui.widgets.StationCaption.restingFill()), java.awt.Color.BLACK,
+            assertEquals(org.traincontrol.gui.layout.StationCaption.readableOn(
+                org.traincontrol.gui.layout.StationCaption.restingFill()), java.awt.Color.BLACK,
                 "white text on the light grey, which cannot be read. The text colour is worked out "
                 + "from the fill for exactly this reason, and a grey this light has to take black");
         }
@@ -713,13 +713,13 @@ public class testDiagramLooksRight
         java.awt.Color placeholder = new java.awt.Color(150, 150, 150);
 
         for (java.awt.Color fill : new java.awt.Color[] {
-            org.traincontrol.gui.widgets.StationCaption.PILL_AT_REST,
-            org.traincontrol.gui.widgets.StationCaption.PILL_GREY })
+            org.traincontrol.gui.layout.StationCaption.PILL_AT_REST,
+            org.traincontrol.gui.layout.StationCaption.PILL_GREY })
         {
-            java.awt.Color name = org.traincontrol.gui.widgets.StationCaption.onPill(
+            java.awt.Color name = org.traincontrol.gui.layout.StationCaption.onPill(
                 fill, java.awt.Color.BLACK);
 
-            java.awt.Color dim = org.traincontrol.gui.widgets.StationCaption.onPill(fill, placeholder);
+            java.awt.Color dim = org.traincontrol.gui.layout.StationCaption.onPill(fill, placeholder);
 
             assertNotEquals(dim, name,
                 "a placeholder and a name came back the same colour on " + fill + ", so the two "
@@ -739,15 +739,15 @@ public class testDiagramLooksRight
 
         // The ANSWER colors are not dimmed: a rule keyed on "all three channels equal" catches black and white too.
         assertEquals(
-            org.traincontrol.gui.widgets.StationCaption.onPill(
-                org.traincontrol.gui.widgets.StationCaption.PILL_AT_REST, java.awt.Color.BLACK),
-            org.traincontrol.gui.widgets.StationCaption.readableOn(
-                org.traincontrol.gui.widgets.StationCaption.PILL_AT_REST),
+            org.traincontrol.gui.layout.StationCaption.onPill(
+                org.traincontrol.gui.layout.StationCaption.PILL_AT_REST, java.awt.Color.BLACK),
+            org.traincontrol.gui.layout.StationCaption.readableOn(
+                org.traincontrol.gui.layout.StationCaption.PILL_AT_REST),
             "a plain caption was dimmed, so every station name on the diagram is now a placeholder");
 
         // And red still means red, which is the distinction that already worked.
-        java.awt.Color notReached = org.traincontrol.gui.widgets.StationCaption.onPill(
-            org.traincontrol.gui.widgets.StationCaption.PILL_AT_REST, new java.awt.Color(255, 0, 0));
+        java.awt.Color notReached = org.traincontrol.gui.layout.StationCaption.onPill(
+            org.traincontrol.gui.layout.StationCaption.PILL_AT_REST, new java.awt.Color(255, 0, 0));
 
         assertTrue(notReached.getRed() > notReached.getGreen() + 60,
             "red stopped being red on the pill - that is the timetable's \"not reached yet\", and it "
@@ -784,9 +784,9 @@ public class testDiagramLooksRight
 
         for (java.awt.Component one : box.getComponents())
         {
-            if (one instanceof org.traincontrol.gui.widgets.StationCaption)
+            if (one instanceof org.traincontrol.gui.layout.StationCaption)
             {
-                drawn.add(((org.traincontrol.gui.widgets.StationCaption) one).getText());
+                drawn.add(((org.traincontrol.gui.layout.StationCaption) one).getText());
             }
         }
 
@@ -820,22 +820,22 @@ public class testDiagramLooksRight
     @Test
     public void testTheFourFacingArrowsAreOneMatchedSet()
     {
-        if (!"Segoe UI Symbol".equals(org.traincontrol.gui.widgets.StationCaption.LABEL_FONT))
+        if (!"Segoe UI Symbol".equals(org.traincontrol.gui.layout.StationCaption.LABEL_FONT))
         {
             throw new SkipException("Segoe UI Symbol is not installed, so the pointers are correct "
                 + "here - the arrows only have to match on a machine that can draw the triangles");
         }
 
         java.awt.Font font = new java.awt.Font(
-            org.traincontrol.gui.widgets.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 100);
+            org.traincontrol.gui.layout.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 100);
 
         java.awt.font.FontRenderContext frc =
             new java.awt.font.FontRenderContext(null, true, true);
 
-        double up = height(font, frc, org.traincontrol.gui.widgets.StationCaption.ARROW_N);
-        double down = height(font, frc, org.traincontrol.gui.widgets.StationCaption.ARROW_S);
-        double east = height(font, frc, org.traincontrol.gui.widgets.StationCaption.ARROW_E);
-        double west = height(font, frc, org.traincontrol.gui.widgets.StationCaption.ARROW_W);
+        double up = height(font, frc, org.traincontrol.gui.layout.StationCaption.ARROW_N);
+        double down = height(font, frc, org.traincontrol.gui.layout.StationCaption.ARROW_S);
+        double east = height(font, frc, org.traincontrol.gui.layout.StationCaption.ARROW_E);
+        double west = height(font, frc, org.traincontrol.gui.layout.StationCaption.ARROW_W);
 
         assertTrue(up > 1 && down > 1 && east > 1 && west > 1,
             "one of the arrows has no shape at all, which is what an empty box measures as: "
@@ -908,9 +908,9 @@ public class testDiagramLooksRight
         javax.swing.JPanel grid = new javax.swing.JPanel(null);
 
         // THREE captions, so an order among them that changed would show
-        org.traincontrol.gui.widgets.StationCaption caption = new org.traincontrol.gui.widgets.StationCaption();
-        org.traincontrol.gui.widgets.StationCaption second = new org.traincontrol.gui.widgets.StationCaption();
-        org.traincontrol.gui.widgets.StationCaption third = new org.traincontrol.gui.widgets.StationCaption();
+        org.traincontrol.gui.layout.StationCaption caption = new org.traincontrol.gui.layout.StationCaption();
+        org.traincontrol.gui.layout.StationCaption second = new org.traincontrol.gui.layout.StationCaption();
+        org.traincontrol.gui.layout.StationCaption third = new org.traincontrol.gui.layout.StationCaption();
 
         org.traincontrol.gui.LayoutLabel tile = new org.traincontrol.gui.LayoutLabel(null, null, 30, null, false);
         javax.swing.JLabel address = new javax.swing.JLabel("86");
@@ -958,11 +958,11 @@ public class testDiagramLooksRight
         int tile = 60;
         int backShift = tile;
 
-        org.traincontrol.gui.widgets.StationCaption caption = new org.traincontrol.gui.widgets.StationCaption();
+        org.traincontrol.gui.layout.StationCaption caption = new org.traincontrol.gui.layout.StationCaption();
 
         caption.setPill(true);
         caption.setFont(new java.awt.Font(
-            org.traincontrol.gui.widgets.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, tile / 2));
+            org.traincontrol.gui.layout.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, tile / 2));
 
         caption.setText(org.traincontrol.gui.LayoutGrid.LAYOUT_STATION_EMPTY);
         caption.setTileGeometry(tile, backShift, 0, 0);
@@ -1616,9 +1616,9 @@ public class testDiagramLooksRight
     {
         for (java.awt.Component c : in.getComponents())
         {
-            if (c instanceof org.traincontrol.gui.widgets.StationCaption && ((org.traincontrol.gui.widgets.StationCaption) c).isPill())
+            if (c instanceof org.traincontrol.gui.layout.StationCaption && ((org.traincontrol.gui.layout.StationCaption) c).isPill())
             {
-                out.add(((org.traincontrol.gui.widgets.StationCaption) c).getText());
+                out.add(((org.traincontrol.gui.layout.StationCaption) c).getText());
             }
 
             if (c instanceof java.awt.Container) collectPills((java.awt.Container) c, out);
@@ -1639,7 +1639,7 @@ public class testDiagramLooksRight
         assertFalse(pages.isEmpty(), "no pages - is test/test_layout present?");
 
         java.awt.Container box = null;
-        org.traincontrol.gui.widgets.StationCaption caption = null;
+        org.traincontrol.gui.layout.StationCaption caption = null;
 
         // The first page that has a caption on it: a page with none cannot fail this.
         for (String name : pages)
@@ -1648,11 +1648,11 @@ public class testDiagramLooksRight
 
             for (java.awt.Component one : built.getComponents())
             {
-                if (one instanceof org.traincontrol.gui.widgets.StationCaption
-                    && ((org.traincontrol.gui.widgets.StationCaption) one).isPill())
+                if (one instanceof org.traincontrol.gui.layout.StationCaption
+                    && ((org.traincontrol.gui.layout.StationCaption) one).isPill())
                 {
                     box = built;
-                    caption = (org.traincontrol.gui.widgets.StationCaption) one;
+                    caption = (org.traincontrol.gui.layout.StationCaption) one;
                     break;
                 }
             }
@@ -1668,8 +1668,8 @@ public class testDiagramLooksRight
 
         for (java.awt.Component one : box.getComponents())
         {
-            if (one instanceof org.traincontrol.gui.widgets.StationCaption
-                && ((org.traincontrol.gui.widgets.StationCaption) one).isPill())
+            if (one instanceof org.traincontrol.gui.layout.StationCaption
+                && ((org.traincontrol.gui.layout.StationCaption) one).isPill())
             {
                 continue;
             }
@@ -1683,7 +1683,7 @@ public class testDiagramLooksRight
         // The dash becomes a train and the caption gets wide, and TALLER, which is the half that matters: OB-115 was a
         // caption whose HEIGHT changed, and with a baseline anchor a height is a vote on where the row sits.  Widening
         // alone passes with the old anchor, so the font changes too.
-        final org.traincontrol.gui.widgets.StationCaption changing = caption;
+        final org.traincontrol.gui.layout.StationCaption changing = caption;
         final java.awt.Container laid = box;
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
@@ -1922,9 +1922,9 @@ public class testDiagramLooksRight
 
         for (java.awt.Component one : box.getComponents())
         {
-            if (one instanceof org.traincontrol.gui.widgets.StationCaption && ui.getLayoutStations(station).contains(one))
+            if (one instanceof org.traincontrol.gui.layout.StationCaption && ui.getLayoutStations(station).contains(one))
             {
-                found.add(((org.traincontrol.gui.widgets.StationCaption) one).isRotated() ? "on end" : "flat");
+                found.add(((org.traincontrol.gui.layout.StationCaption) one).isRotated() ? "on end" : "flat");
             }
         }
 
@@ -1978,7 +1978,7 @@ public class testDiagramLooksRight
 
             int rail = tile / 2;
 
-            int offset = org.traincontrol.gui.widgets.StationCaption.captionOffset(tile, line);
+            int offset = org.traincontrol.gui.layout.StationCaption.captionOffset(tile, line);
 
             // PAST the rail, so the caption is beside the track rather than on it.
             assertTrue(offset > rail,
@@ -1996,7 +1996,7 @@ public class testDiagramLooksRight
         }
 
         // And the degenerate case: a caption whose font has not been set yet asks this.
-        assertEquals(org.traincontrol.gui.widgets.StationCaption.captionOffset(40, 0), 0,
+        assertEquals(org.traincontrol.gui.layout.StationCaption.captionOffset(40, 0), 0,
             "a caption with no line height is given an offset, which is an opinion about a label "
             + "whose size is not known yet");
     }
@@ -2011,19 +2011,19 @@ public class testDiagramLooksRight
     public void testCaptionArrowsCanBeDrawn()
     {
         java.awt.Font font = new java.awt.Font(
-            org.traincontrol.gui.widgets.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 20);
+            org.traincontrol.gui.layout.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 20);
 
         String[] arrows = {
-            org.traincontrol.gui.widgets.StationCaption.ARROW_N,
-            org.traincontrol.gui.widgets.StationCaption.ARROW_S,
-            org.traincontrol.gui.widgets.StationCaption.ARROW_E,
-            org.traincontrol.gui.widgets.StationCaption.ARROW_W
+            org.traincontrol.gui.layout.StationCaption.ARROW_N,
+            org.traincontrol.gui.layout.StationCaption.ARROW_S,
+            org.traincontrol.gui.layout.StationCaption.ARROW_E,
+            org.traincontrol.gui.layout.StationCaption.ARROW_W
         };
 
         for (String arrow : arrows)
         {
             assertTrue(font.canDisplay(arrow.codePointAt(0)),
-                "the caption font " + org.traincontrol.gui.widgets.StationCaption.LABEL_FONT + " has no glyph "
+                "the caption font " + org.traincontrol.gui.layout.StationCaption.LABEL_FONT + " has no glyph "
                 + "for U+" + Integer.toHexString(arrow.codePointAt(0)) + ", so every train facing that "
                 + "way draws a tofu box on the diagram");
         }
@@ -2038,8 +2038,8 @@ public class testDiagramLooksRight
     @Test
     public void testARotatedArrowStillPointsWhereTheTrainIsGoing() throws Exception
     {
-        int up = widestInkRow(org.traincontrol.gui.widgets.StationCaption.ARROW_N);
-        int down = widestInkRow(org.traincontrol.gui.widgets.StationCaption.ARROW_S);
+        int up = widestInkRow(org.traincontrol.gui.layout.StationCaption.ARROW_N);
+        int down = widestInkRow(org.traincontrol.gui.layout.StationCaption.ARROW_S);
 
         // 0 is the top of the ink, 100 the bottom.
         assertTrue(up > 55,
@@ -2067,7 +2067,7 @@ public class testDiagramLooksRight
     @Test
     public void testARotatedCaptionStandsOnEnd() throws Exception
     {
-        org.traincontrol.gui.widgets.StationCaption pill = onEnd("Ostbahnhof");
+        org.traincontrol.gui.layout.StationCaption pill = onEnd("Ostbahnhof");
 
         java.awt.Dimension size = pill.getPreferredSize();
 
@@ -2076,7 +2076,7 @@ public class testDiagramLooksRight
             + "wider than it is tall - it is being measured along its text as though it were flat, "
             + "and will draw itself straight out of the bottom of the room it was given");
 
-        org.traincontrol.gui.widgets.StationCaption flat = new org.traincontrol.gui.widgets.StationCaption();
+        org.traincontrol.gui.layout.StationCaption flat = new org.traincontrol.gui.layout.StationCaption();
 
         flat.setPill(true);
         flat.setFont(pill.getFont());
@@ -2107,7 +2107,7 @@ public class testDiagramLooksRight
      */
     private int widestInkRow(String arrow) throws Exception
     {
-        org.traincontrol.gui.widgets.StationCaption pill = onEnd(arrow);
+        org.traincontrol.gui.layout.StationCaption pill = onEnd(arrow);
 
         java.awt.Dimension size = pill.getPreferredSize();
 
@@ -2161,19 +2161,19 @@ public class testDiagramLooksRight
     }
 
     /** A caption stood on end, colored so its text can be told from its pill. */
-    private org.traincontrol.gui.widgets.StationCaption onEnd(String text)
+    private org.traincontrol.gui.layout.StationCaption onEnd(String text)
     {
-        org.traincontrol.gui.widgets.StationCaption pill = new org.traincontrol.gui.widgets.StationCaption();
+        org.traincontrol.gui.layout.StationCaption pill = new org.traincontrol.gui.layout.StationCaption();
 
         pill.setPill(true);
         pill.setRotated(true);
         pill.setFont(new java.awt.Font(
-            org.traincontrol.gui.widgets.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 24));
-        pill.setBackground(org.traincontrol.gui.widgets.StationCaption.PILL);
+            org.traincontrol.gui.layout.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 24));
+        pill.setBackground(org.traincontrol.gui.layout.StationCaption.PILL);
         pill.setForeground(java.awt.Color.WHITE);
         pill.setText(text);
         pill.setTileGeometry(60, 0, 60,
-            org.traincontrol.gui.widgets.StationCaption.captionOffset(60, pill.lineHeight()));
+            org.traincontrol.gui.layout.StationCaption.captionOffset(60, pill.lineHeight()));
 
         return pill;
     }
@@ -2187,12 +2187,12 @@ public class testDiagramLooksRight
     @Test
     public void testACaptionIsAnOval() throws Exception
     {
-        org.traincontrol.gui.widgets.StationCaption pill = new org.traincontrol.gui.widgets.StationCaption();
+        org.traincontrol.gui.layout.StationCaption pill = new org.traincontrol.gui.layout.StationCaption();
 
         pill.setPill(true);
         pill.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 20));
         pill.setText("EN57-203");
-        pill.setBackground(org.traincontrol.gui.widgets.StationCaption.PILL_AT_REST);
+        pill.setBackground(org.traincontrol.gui.layout.StationCaption.PILL_AT_REST);
         pill.setForeground(java.awt.Color.WHITE);
 
         java.awt.Dimension size = pill.getPreferredSize();
@@ -2586,7 +2586,7 @@ public class testDiagramLooksRight
         org.traincontrol.gui.LayoutLabel tile =
             new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
 
-        org.traincontrol.gui.widgets.StationCaption caption = new org.traincontrol.gui.widgets.StationCaption();
+        org.traincontrol.gui.layout.StationCaption caption = new org.traincontrol.gui.layout.StationCaption();
 
         caption.setText("Bottom Main C");
         caption.setOpaque(true);
@@ -2730,9 +2730,9 @@ public class testDiagramLooksRight
         java.awt.Color ahead = org.traincontrol.automationui.DiagramColours.PATH_AHEAD;
 
         for (java.awt.Color fill : new java.awt.Color[] {
-            org.traincontrol.gui.widgets.StationCaption.PILL_GREY, org.traincontrol.gui.widgets.StationCaption.PILL_AT_REST })
+            org.traincontrol.gui.layout.StationCaption.PILL_GREY, org.traincontrol.gui.layout.StationCaption.PILL_AT_REST })
         {
-            java.awt.Color drawn = org.traincontrol.gui.widgets.StationCaption.onPill(fill, ahead);
+            java.awt.Color drawn = org.traincontrol.gui.layout.StationCaption.onPill(fill, ahead);
 
             assertTrue(drawn.getBlue() > drawn.getRed() + 60 && drawn.getBlue() > drawn.getGreen() + 40,
                 "a caption the train has not reached yet is drawn in " + drawn + " on " + fill + ", not the route's blue");
@@ -2740,7 +2740,7 @@ public class testDiagramLooksRight
             assertTrue(distance(drawn, fill) > 90, "the route's blue cannot be read on " + fill + ": " + drawn);
         }
 
-        assertEquals(org.traincontrol.gui.widgets.StationCaption.onPill(org.traincontrol.gui.widgets.StationCaption.PILL_GREY, ahead),
+        assertEquals(org.traincontrol.gui.layout.StationCaption.onPill(org.traincontrol.gui.layout.StationCaption.PILL_GREY, ahead),
             ahead, "on the pale grey pill the caption is not the route's own blue but a cousin of it");
     }
 
@@ -2753,9 +2753,9 @@ public class testDiagramLooksRight
     @Test
     public void testTheCaptionsAreTheBadgesBlue()
     {
-        assertEquals(org.traincontrol.gui.widgets.StationCaption.PILL.getRGB() & 0xFFFFFF,
+        assertEquals(org.traincontrol.gui.layout.StationCaption.PILL.getRGB() & 0xFFFFFF,
             org.traincontrol.automationui.DiagramColours.STATION.getRGB() & 0xFFFFFF,
-            "the blue captions are " + org.traincontrol.gui.widgets.StationCaption.PILL + " beside badges of "
+            "the blue captions are " + org.traincontrol.gui.layout.StationCaption.PILL + " beside badges of "
             + org.traincontrol.automationui.DiagramColours.STATION + " - two blues a shade apart");
     }
 
@@ -2798,14 +2798,14 @@ public class testDiagramLooksRight
     /** A destination's pill with a name on it, painted. */
     private static java.awt.image.BufferedImage destinationPill()
     {
-        org.traincontrol.gui.widgets.StationCaption pill = new org.traincontrol.gui.widgets.StationCaption();
+        org.traincontrol.gui.layout.StationCaption pill = new org.traincontrol.gui.layout.StationCaption();
 
         pill.setPill(true);
-        pill.setFont(new java.awt.Font(org.traincontrol.gui.widgets.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 20));
-        pill.setBackground(org.traincontrol.gui.widgets.StationCaption.DESTINATION_FILL);
+        pill.setFont(new java.awt.Font(org.traincontrol.gui.layout.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 20));
+        pill.setBackground(org.traincontrol.gui.layout.StationCaption.DESTINATION_FILL);
         pill.setForeground(java.awt.Color.BLACK);
         pill.setText("Carlton");
-        pill.setTileGeometry(60, 0, 0, org.traincontrol.gui.widgets.StationCaption.captionOffset(60, pill.lineHeight()));
+        pill.setTileGeometry(60, 0, 0, org.traincontrol.gui.layout.StationCaption.captionOffset(60, pill.lineHeight()));
 
         java.awt.Dimension size = pill.getPreferredSize();
 
@@ -2834,8 +2834,8 @@ public class testDiagramLooksRight
     public void testAPillsTextSitsInTheMiddleOfIt()
     {
         String[] texts = {
-            org.traincontrol.gui.widgets.StationCaption.withArrow("ICE 3", " " + org.traincontrol.gui.widgets.StationCaption.ARROW_W),
-            org.traincontrol.gui.widgets.StationCaption.withArrow("ICE 3", " " + org.traincontrol.gui.widgets.StationCaption.ARROW_E),
+            org.traincontrol.gui.layout.StationCaption.withArrow("ICE 3", " " + org.traincontrol.gui.layout.StationCaption.ARROW_W),
+            org.traincontrol.gui.layout.StationCaption.withArrow("ICE 3", " " + org.traincontrol.gui.layout.StationCaption.ARROW_E),
             "Carlton", "75 407 DB" };
 
         for (double scale : new double[] {1.25, 1.5, 2.0})
@@ -2843,14 +2843,14 @@ public class testDiagramLooksRight
         {
             for (String text : texts)
             {
-                org.traincontrol.gui.widgets.StationCaption pill = new org.traincontrol.gui.widgets.StationCaption();
+                org.traincontrol.gui.layout.StationCaption pill = new org.traincontrol.gui.layout.StationCaption();
 
                 pill.setPill(true);
-                pill.setFont(new java.awt.Font(org.traincontrol.gui.widgets.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, points));
-                pill.setBackground(org.traincontrol.gui.widgets.StationCaption.PILL_GREY);
+                pill.setFont(new java.awt.Font(org.traincontrol.gui.layout.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, points));
+                pill.setBackground(org.traincontrol.gui.layout.StationCaption.PILL_GREY);
                 pill.setForeground(java.awt.Color.BLACK);
                 pill.setText(text);
-                pill.setTileGeometry(30, 0, 0, org.traincontrol.gui.widgets.StationCaption.captionOffset(30, pill.lineHeight()));
+                pill.setTileGeometry(30, 0, 0, org.traincontrol.gui.layout.StationCaption.captionOffset(30, pill.lineHeight()));
 
                 java.awt.Dimension size = pill.getPreferredSize();
 
@@ -2944,7 +2944,7 @@ public class testDiagramLooksRight
     @Test
     public void testANamedCaptionHasAnEdgeAndADashHasNone()
     {
-        java.awt.Color fill = org.traincontrol.gui.widgets.StationCaption.PILL_GREY;
+        java.awt.Color fill = org.traincontrol.gui.layout.StationCaption.PILL_GREY;
 
         int[] edge = new int[2];
 
@@ -2952,14 +2952,14 @@ public class testDiagramLooksRight
 
         for (int i = 0; i < texts.length; i++)
         {
-            org.traincontrol.gui.widgets.StationCaption pill = new org.traincontrol.gui.widgets.StationCaption();
+            org.traincontrol.gui.layout.StationCaption pill = new org.traincontrol.gui.layout.StationCaption();
 
             pill.setPill(true);
-            pill.setFont(new java.awt.Font(org.traincontrol.gui.widgets.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 15));
+            pill.setFont(new java.awt.Font(org.traincontrol.gui.layout.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 15));
             pill.setBackground(fill);
             pill.setForeground(java.awt.Color.BLACK);
             pill.setText(texts[i]);
-            pill.setTileGeometry(30, 0, 0, org.traincontrol.gui.widgets.StationCaption.captionOffset(30, pill.lineHeight()));
+            pill.setTileGeometry(30, 0, 0, org.traincontrol.gui.layout.StationCaption.captionOffset(30, pill.lineHeight()));
 
             java.awt.Dimension size = pill.getPreferredSize();
 
@@ -3117,18 +3117,18 @@ public class testDiagramLooksRight
     @Test
     public void testAPillsOutlineIsEvenAllRound()
     {
-        java.awt.Color[] fills = {org.traincontrol.gui.widgets.StationCaption.PILL_GREY, org.traincontrol.gui.widgets.StationCaption.DESTINATION_FILL};
+        java.awt.Color[] fills = {org.traincontrol.gui.layout.StationCaption.PILL_GREY, org.traincontrol.gui.layout.StationCaption.DESTINATION_FILL};
 
         for (java.awt.Color fill : fills)
         {
-            org.traincontrol.gui.widgets.StationCaption pill = new org.traincontrol.gui.widgets.StationCaption();
+            org.traincontrol.gui.layout.StationCaption pill = new org.traincontrol.gui.layout.StationCaption();
 
             pill.setPill(true);
-            pill.setFont(new java.awt.Font(org.traincontrol.gui.widgets.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 15));
+            pill.setFont(new java.awt.Font(org.traincontrol.gui.layout.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 15));
             pill.setBackground(fill);
             pill.setForeground(java.awt.Color.BLACK);
             pill.setText("Carlton");
-            pill.setTileGeometry(30, 0, 0, org.traincontrol.gui.widgets.StationCaption.captionOffset(30, pill.lineHeight()));
+            pill.setTileGeometry(30, 0, 0, org.traincontrol.gui.layout.StationCaption.captionOffset(30, pill.lineHeight()));
 
             java.awt.Dimension size = pill.getPreferredSize();
 
@@ -3301,7 +3301,7 @@ public class testDiagramLooksRight
 
                 for (java.awt.Component one : box.getComponents())
                 {
-                    if (!(one instanceof org.traincontrol.gui.widgets.AddressLabel) || one.getWidth() <= size) continue;
+                    if (!(one instanceof org.traincontrol.gui.layout.AddressLabel) || one.getWidth() <= size) continue;
 
                     wide++;
 
@@ -3377,7 +3377,7 @@ public class testDiagramLooksRight
                     {
                         java.awt.Rectangle over = one.getBounds().intersection(next);
 
-                        if (!(one instanceof org.traincontrol.gui.widgets.AddressLabel) || !square.contains(one.getLocation())
+                        if (!(one instanceof org.traincontrol.gui.layout.AddressLabel) || !square.contains(one.getLocation())
                             || over.isEmpty()) continue;
 
                         across++;
@@ -3435,7 +3435,7 @@ public class testDiagramLooksRight
         for (java.awt.Component c : under.getComponents())
         {
             if (c instanceof javax.swing.JLabel && !(c instanceof org.traincontrol.gui.LayoutLabel)
-                && !(c instanceof org.traincontrol.gui.widgets.StationCaption))
+                && !(c instanceof org.traincontrol.gui.layout.StationCaption))
             {
                 String text = ((javax.swing.JLabel) c).getText();
 
@@ -3547,7 +3547,7 @@ public class testDiagramLooksRight
     public void testAPillOnEndClearsTheStationsBesideIt()
     {
         String[] texts = {org.traincontrol.gui.LayoutGrid.LAYOUT_STATION_EMPTY, "75 407 DB",
-            org.traincontrol.gui.widgets.StationCaption.withArrow("EN57-947", " " + org.traincontrol.gui.widgets.StationCaption.ARROW_W)};
+            org.traincontrol.gui.layout.StationCaption.withArrow("EN57-947", " " + org.traincontrol.gui.layout.StationCaption.ARROW_W)};
 
         for (int tile : new int[] {30, 60})
         {
@@ -3575,17 +3575,17 @@ public class testDiagramLooksRight
 
             for (String text : texts)
             {
-                org.traincontrol.gui.widgets.StationCaption pill = new org.traincontrol.gui.widgets.StationCaption();
+                org.traincontrol.gui.layout.StationCaption pill = new org.traincontrol.gui.layout.StationCaption();
 
-                java.awt.Font font = new java.awt.Font(org.traincontrol.gui.widgets.StationCaption.LABEL_FONT, java.awt.Font.PLAIN,
+                java.awt.Font font = new java.awt.Font(org.traincontrol.gui.layout.StationCaption.LABEL_FONT, java.awt.Font.PLAIN,
                     tile / 2);
 
                 pill.setPill(true);
-                pill.setFont(font.deriveFont(font.getSize2D() * org.traincontrol.gui.widgets.StationCaption.FONT_SCALE));
-                pill.setBackground(org.traincontrol.gui.widgets.StationCaption.PILL_GREY);
+                pill.setFont(font.deriveFont(font.getSize2D() * org.traincontrol.gui.layout.StationCaption.FONT_SCALE));
+                pill.setBackground(org.traincontrol.gui.layout.StationCaption.PILL_GREY);
                 pill.setText(text);
                 pill.setRotated(true);
-                pill.setTileGeometry(tile, 0, 0, org.traincontrol.gui.widgets.StationCaption.captionOffset(tile, pill.lineHeight()));
+                pill.setTileGeometry(tile, 0, 0, org.traincontrol.gui.layout.StationCaption.captionOffset(tile, pill.lineHeight()));
 
                 java.awt.Dimension size = pill.getPreferredSize();
 
@@ -3630,17 +3630,17 @@ public class testDiagramLooksRight
     /** How many pixels across its line a caption's letters span, painted flat or stood on end, as the grid builds one. */
     private static int lettersAcross(int tile, boolean rotated)
     {
-        org.traincontrol.gui.widgets.StationCaption pill = new org.traincontrol.gui.widgets.StationCaption();
+        org.traincontrol.gui.layout.StationCaption pill = new org.traincontrol.gui.layout.StationCaption();
 
-        java.awt.Font font = new java.awt.Font(org.traincontrol.gui.widgets.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, tile / 2);
+        java.awt.Font font = new java.awt.Font(org.traincontrol.gui.layout.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, tile / 2);
 
         pill.setPill(true);
-        pill.setFont(font.deriveFont(font.getSize2D() * org.traincontrol.gui.widgets.StationCaption.FONT_SCALE));
-        pill.setBackground(org.traincontrol.gui.widgets.StationCaption.PILL_GREY);
+        pill.setFont(font.deriveFont(font.getSize2D() * org.traincontrol.gui.layout.StationCaption.FONT_SCALE));
+        pill.setBackground(org.traincontrol.gui.layout.StationCaption.PILL_GREY);
         pill.setForeground(java.awt.Color.BLACK);
         pill.setText("Hgjy Halt");
         pill.setRotated(rotated);
-        pill.setTileGeometry(tile, 0, 0, org.traincontrol.gui.widgets.StationCaption.captionOffset(tile, pill.lineHeight()));
+        pill.setTileGeometry(tile, 0, 0, org.traincontrol.gui.layout.StationCaption.captionOffset(tile, pill.lineHeight()));
 
         java.awt.Dimension size = pill.getPreferredSize();
 
@@ -3691,7 +3691,7 @@ public class testDiagramLooksRight
 
         org.traincontrol.gui.LayoutLabel tile = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
 
-        org.traincontrol.gui.widgets.AddressLabel address = new org.traincontrol.gui.widgets.AddressLabel();
+        org.traincontrol.gui.layout.AddressLabel address = new org.traincontrol.gui.layout.AddressLabel();
 
         address.setForeground(java.awt.Color.RED);
         address.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, size / 3));
@@ -3824,7 +3824,7 @@ public class testDiagramLooksRight
     @Test
     public void testADestinationIsTheLineAsItLooksOnWhite()
     {
-        java.awt.Color fill = org.traincontrol.gui.widgets.StationCaption.DESTINATION_FILL;
+        java.awt.Color fill = org.traincontrol.gui.layout.StationCaption.DESTINATION_FILL;
         java.awt.Color line = org.traincontrol.automationui.DiagramColours.TRAIN_SEE_THROUGH;
 
         double a = line.getAlpha() / 255.0;
@@ -3870,7 +3870,7 @@ public class testDiagramLooksRight
     }
 
     /** An address that counts its paints. */
-    public static final class CountingAddress extends org.traincontrol.gui.widgets.AddressLabel
+    public static final class CountingAddress extends org.traincontrol.gui.layout.AddressLabel
     {
         static int painted;
 
@@ -3953,11 +3953,11 @@ public class testDiagramLooksRight
     {
         for (int size : new int[] {30, 60})
         {
-            org.traincontrol.gui.widgets.StationCaption text = new org.traincontrol.gui.widgets.StationCaption();
+            org.traincontrol.gui.layout.StationCaption text = new org.traincontrol.gui.layout.StationCaption();
 
             text.setText("Yard");
             text.setForeground(java.awt.Color.BLACK);
-            text.setFont(new java.awt.Font(org.traincontrol.gui.widgets.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, size / 2));
+            text.setFont(new java.awt.Font(org.traincontrol.gui.layout.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, size / 2));
             text.setHalo(true);
             text.setSize(text.getPreferredSize());
 
@@ -4654,11 +4654,11 @@ public class testDiagramLooksRight
     {
         for (int size : new int[] {30, 60})
         {
-            org.traincontrol.gui.widgets.StationCaption text = new org.traincontrol.gui.widgets.StationCaption();
+            org.traincontrol.gui.layout.StationCaption text = new org.traincontrol.gui.layout.StationCaption();
 
             text.setText("<html><br>Yard&nbsp;Two</html>");
             text.setForeground(java.awt.Color.BLUE);
-            text.setFont(new java.awt.Font(org.traincontrol.gui.widgets.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, size / 2));
+            text.setFont(new java.awt.Font(org.traincontrol.gui.layout.StationCaption.LABEL_FONT, java.awt.Font.PLAIN, size / 2));
             text.setHalo(true);
             text.setSize(text.getPreferredSize());
 

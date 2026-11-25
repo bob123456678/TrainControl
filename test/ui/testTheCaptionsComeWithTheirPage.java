@@ -21,7 +21,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.TrainControlUI;
-import org.traincontrol.gui.widgets.StationCaption;
+import org.traincontrol.gui.layout.StationCaption;
 import org.traincontrol.marklin.MarklinControlStation;
 import support.AskingWindows;
 import support.Components;

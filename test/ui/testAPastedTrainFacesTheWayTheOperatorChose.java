@@ -331,7 +331,7 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
     @Test
     public void testAPastedTrainShowsItsLocomotiveOnTheStation() throws Exception
     {
-        final org.traincontrol.gui.autonomy.DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
+        final org.traincontrol.gui.layout.DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
 
         // THE DIAGRAM WATCHING THIS RAILWAY, whatever the overlay's tick box was left at
         SwingUtilities.invokeAndWait(() ->

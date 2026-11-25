@@ -1,4 +1,4 @@
-package org.traincontrol.gui;
+package org.traincontrol.gui.layout;
 
 import java.awt.Color;
 import java.util.Collection;
@@ -9,7 +9,7 @@ import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
-import org.traincontrol.gui.autonomy.DiagramTileRegistry;
+import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.model.ViewListener;
 
 /**
@@ -33,7 +33,7 @@ public final class DiagramHighlights
     }
 
     /** What the highlights read of the main window: its pages, and the squares on screen. */
-    interface Diagrams
+    public interface Diagrams
     {
         /** The railway whose pages are searched. */
         ViewListener getModel();
@@ -43,7 +43,7 @@ public final class DiagramHighlights
 
     private final Diagrams ui;
 
-    DiagramHighlights(Diagrams ui)
+    public DiagramHighlights(Diagrams ui)
     {
         this.ui = ui;
     }

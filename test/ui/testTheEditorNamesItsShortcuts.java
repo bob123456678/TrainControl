@@ -1926,7 +1926,7 @@ public class testTheEditorNamesItsShortcuts
             for (java.awt.Component c : squares.getComponents())
             {
                 // the address label itself
-                if (c instanceof org.traincontrol.gui.widgets.AddressLabel)
+                if (c instanceof org.traincontrol.gui.layout.AddressLabel)
                 {
                     for (java.awt.Component s : squares.getComponents())
                     {

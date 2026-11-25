@@ -1,4 +1,4 @@
-package org.traincontrol.gui.widgets;
+package org.traincontrol.gui.layout;
 
 import java.awt.BasicStroke;
 import java.awt.Color;

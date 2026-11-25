@@ -18,7 +18,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.DiagramColours;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus;
-import org.traincontrol.gui.widgets.StationCaption;
+import org.traincontrol.gui.layout.StationCaption;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;

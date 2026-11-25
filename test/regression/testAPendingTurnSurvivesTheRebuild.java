@@ -443,7 +443,7 @@ public class testAPendingTurnSurvivesTheRebuild
     private static int arrowPixels() throws Exception
     {
         java.lang.reflect.Field last =
-            Reflect.field(org.traincontrol.gui.autonomy.DiagramTileRegistry.class, "lastAnnotated");
+            Reflect.field(org.traincontrol.gui.layout.DiagramTileRegistry.class, "lastAnnotated");
 
         final java.util.Map<?, ?> marks = new java.util.HashMap<>((java.util.Map<?, ?>) last.get(ui.getDiagramTileRegistry()));
 
@@ -850,8 +850,8 @@ public class testAPendingTurnSurvivesTheRebuild
 
         final javax.swing.JPanel owner = new javax.swing.JPanel();
 
-        final org.traincontrol.gui.widgets.StationCaption onPageA = new org.traincontrol.gui.widgets.StationCaption();
-        final org.traincontrol.gui.widgets.StationCaption onPageB = new org.traincontrol.gui.widgets.StationCaption();
+        final org.traincontrol.gui.layout.StationCaption onPageA = new org.traincontrol.gui.layout.StationCaption();
+        final org.traincontrol.gui.layout.StationCaption onPageB = new org.traincontrol.gui.layout.StationCaption();
 
         onPageA.putClientProperty(TrainControlUI.LAYOUT_STATION_BUILD, new Object());
         onPageB.putClientProperty(TrainControlUI.LAYOUT_STATION_BUILD, new Object());

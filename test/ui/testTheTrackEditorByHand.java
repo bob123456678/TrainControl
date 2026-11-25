@@ -27,7 +27,7 @@ import org.traincontrol.gui.LayoutGrid;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.LayoutPopupWindow;
 import org.traincontrol.gui.TrainControlUI;
-import org.traincontrol.gui.widgets.StationCaption;
+import org.traincontrol.gui.layout.StationCaption;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.util.I18n;

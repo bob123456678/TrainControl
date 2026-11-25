@@ -72,7 +72,7 @@ import org.traincontrol.base.NodeExpression;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.ThreeWaySwitch;
-import org.traincontrol.gui.DiagramHighlights;
+import org.traincontrol.gui.layout.DiagramHighlights;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.util.OnMouse;

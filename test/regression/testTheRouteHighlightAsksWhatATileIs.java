@@ -5,7 +5,7 @@ import javax.swing.SwingUtilities;
 import static org.traincontrol.base.Accessory.accessoryDecoderType.DCC;
 import static org.traincontrol.base.Accessory.accessoryDecoderType.MM2;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.gui.DiagramHighlights.AddressedAs;
+import org.traincontrol.gui.layout.DiagramHighlights.AddressedAs;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;

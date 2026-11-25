@@ -592,7 +592,7 @@ public class testTheOverlayBoxDuringARun
 
         assertTrue(Components.waitFor(() -> trainSquare() != null, 10000), "precondition: the monitor draws no train");
 
-        org.traincontrol.gui.autonomy.DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
+        org.traincontrol.gui.layout.DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
 
         ((java.util.Timer) Reflect.get(driver.getClass(), driver, "timer")).cancel();
 
@@ -602,7 +602,7 @@ public class testTheOverlayBoxDuringARun
     /** Ends whichever timer the monitor holds and starts it looking again on its own. */
     private static void startTheMonitorLooking() throws Exception
     {
-        org.traincontrol.gui.autonomy.DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
+        org.traincontrol.gui.layout.DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
 
         java.util.Timer timer = (java.util.Timer) Reflect.get(driver.getClass(), driver, "timer");
 

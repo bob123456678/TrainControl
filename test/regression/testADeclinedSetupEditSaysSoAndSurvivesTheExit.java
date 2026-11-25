@@ -365,7 +365,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
         final String train = model.getLocList().get(0);
 
-        final org.traincontrol.gui.autonomy.DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
+        final org.traincontrol.gui.layout.DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
 
         final boolean[] stood = new boolean[1];
 

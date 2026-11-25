@@ -23,7 +23,7 @@ import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.locomotive.LocomotivePlaceholder;
-import org.traincontrol.gui.widgets.StationCaption;
+import org.traincontrol.gui.layout.StationCaption;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.ImageUtil;
 import support.Display;
@@ -172,7 +172,7 @@ public class testPicturesAreSharpOnAScaledScreen
         {
             for (String text : new String[] {"Yard 1030", "West Yard", "Yard 1", "Station 12", "Platform 4B", "Hbf"})
             {
-                org.traincontrol.gui.widgets.StationCaption caption = new org.traincontrol.gui.widgets.StationCaption();
+                org.traincontrol.gui.layout.StationCaption caption = new org.traincontrol.gui.layout.StationCaption();
 
                 caption.setHalo(true);
                 caption.setFont(new java.awt.Font(font[0], java.awt.Font.PLAIN, Integer.parseInt(font[1])));
@@ -879,8 +879,8 @@ public class testPicturesAreSharpOnAScaledScreen
 
                     SwingUtilities.invokeAndWait(() ->
                     {
-                        org.traincontrol.gui.widgets.AddressLabel address =
-                            new org.traincontrol.gui.widgets.AddressLabel();
+                        org.traincontrol.gui.layout.AddressLabel address =
+                            new org.traincontrol.gui.layout.AddressLabel();
 
                         // As LayoutGrid makes one, in a third of a 30 or 40 pixel square
                         address.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, size));

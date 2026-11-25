@@ -12,7 +12,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
-import org.traincontrol.gui.autonomy.DiagramExport;
+import org.traincontrol.gui.layout.DiagramExport;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import support.Display;
@@ -355,7 +355,7 @@ public class testDiagramExport
 
                 if (on)
                 {
-                    assertTrue(border instanceof org.traincontrol.gui.widgets.AxisRuler,
+                    assertTrue(border instanceof org.traincontrol.gui.layout.AxisRuler,
                         "the grid is on and the editor's diagram carries " + border + ", so the "
                         + "numbers are drawn nowhere.  Adam: \"coordinates should always be on with "
                         + "the grid\" - and the only other setting in play here is the retired "
@@ -364,7 +364,7 @@ public class testDiagramExport
                 }
                 else
                 {
-                    assertFalse(border instanceof org.traincontrol.gui.widgets.AxisRuler,
+                    assertFalse(border instanceof org.traincontrol.gui.layout.AxisRuler,
                         "the grid is off and the editor's diagram still carries a ruler, so the "
                         + "numbers outlived the thing they number");
                 }
@@ -378,7 +378,7 @@ public class testDiagramExport
                     new org.traincontrol.gui.LayoutGrid(page, 30, forViewer, null, true, ui));
 
                 assertFalse(inViewer[0].getContainer().getBorder()
-                        instanceof org.traincontrol.gui.widgets.AxisRuler,
+                        instanceof org.traincontrol.gui.layout.AxisRuler,
                     "the running diagram carries the coordinate ruler with the grid " + on + " - "
                     + "Adam: \"they are visible in the track diagram viewer when they shouldn't be\"");
             }
@@ -396,7 +396,7 @@ public class testDiagramExport
                 new org.traincontrol.gui.LayoutGrid(page, 30, fresh, editor[0], true, ui));
 
             assertTrue(outOfTheBox[0].getContainer().getBorder()
-                    instanceof org.traincontrol.gui.widgets.AxisRuler,
+                    instanceof org.traincontrol.gui.layout.AxisRuler,
                 "with nothing stored for either setting the editor's diagram carries no ruler, so the "
                 + "numbers are off out of the box - and the grid, whose default is on, is what they "
                 + "are supposed to follow");

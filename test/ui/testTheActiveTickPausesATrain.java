@@ -3163,7 +3163,7 @@ public class testTheActiveTickPausesATrain
     @SuppressWarnings("unchecked")
     private static java.util.Set<TileKey> pausedOnNoPointOnTheDiagram() throws Exception
     {
-        java.lang.reflect.Field monitorField = org.traincontrol.gui.autonomy.DiagramMonitorDriver.class.getDeclaredField("monitor");
+        java.lang.reflect.Field monitorField = org.traincontrol.gui.layout.DiagramMonitorDriver.class.getDeclaredField("monitor");
 
         monitorField.setAccessible(true);
 

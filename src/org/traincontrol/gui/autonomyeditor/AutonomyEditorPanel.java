@@ -6153,7 +6153,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (menuOnly && parentWindow() != null)
         {
-            org.traincontrol.gui.DiagramHighlights.hold(parentWindow(), squares, on);
+            org.traincontrol.gui.layout.DiagramHighlights.hold(parentWindow(), squares, on);
             return;
         }
         noticeOutline.clear();

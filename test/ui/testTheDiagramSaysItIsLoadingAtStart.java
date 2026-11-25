@@ -20,7 +20,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
-import org.traincontrol.gui.widgets.LoadingSpinner;
+import org.traincontrol.gui.layout.LoadingSpinner;
 import org.traincontrol.marklin.MarklinControlStation;
 import support.Components;
 import support.Settle;
