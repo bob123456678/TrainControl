@@ -1798,7 +1798,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             {
                 File kept = Util.keepUnreadableCopy(TrainControlUI.DATA_FILE_NAME);
 
-                if (kept != null) this.model.logf("ui.uiStateUnreadableKept", kept.getAbsolutePath());
+                if (kept != null) this.model.log(I18n.f("ui.uiStateUnreadableKept", kept.getAbsolutePath()), java.util.logging.Level.WARNING);
 
                 // Kept - or nothing is left to keep
                 this.uiStateLoadFailed = false;

@@ -596,7 +596,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     // The folder is tried again at the next sync, by when the type may be known
                     requireTheTypeKnown();
                    
-                    this.logf("layout.revertToDefaultSource", !debug ? " Enable debug mode for details." : "");
+                    this.logf(java.util.logging.Level.SEVERE, "layout.revertToDefaultSource", !debug ? " Enable debug mode for details." : "");
                     TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
                     fileParser.setDefaultLayoutDataLoc();
                     syncLayouts();
@@ -830,7 +830,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // sensors seen only on it, and the autonomy points watching them, out of LocDB.data for good.
         if (couldNotBeRead > 0)
         {
-            this.logf("layout.pruningSkippedPageUnreadable", couldNotBeRead);
+            this.logf(java.util.logging.Level.WARNING, "layout.pruningSkippedPageUnreadable", couldNotBeRead);
         }
         else if (!feedbackAddresses.isEmpty())
         {
@@ -1814,7 +1814,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
                 catch (UnreadableAnswerException e)
                 {
-                    this.logf("route.importSkippedUnreadable");
+                    this.logf(java.util.logging.Level.WARNING, "route.importSkippedUnreadable");
                     this.lastSyncPartial = true;
                     parsedRoutes = null;
                 }
@@ -1854,7 +1854,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
                 catch (UnreadableAnswerException e)
                 {
-                    this.logf("loc.importSkippedUnreadable");
+                    this.logf(java.util.logging.Level.WARNING, "loc.importSkippedUnreadable");
                     this.lastSyncPartial = true;
                     parsedLocs = new ArrayList<>();
                 }
@@ -1957,7 +1957,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             this.lastSyncError = describe(e);
 
-            this.logf("loc.dbSyncFailed");
+            this.logf(java.util.logging.Level.SEVERE, "loc.dbSyncFailed");
             this.log(e);
              
             return -1;
@@ -2406,7 +2406,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 File kept = Util.keepUnreadableCopy(MarklinControlStation.DATA_FILE_NAME);
 
-                if (kept != null) this.logf("log.databaseUnreadableKept", kept.getAbsolutePath());
+                if (kept != null) this.logf(java.util.logging.Level.WARNING, "log.databaseUnreadableKept", kept.getAbsolutePath());
 
                 // Kept - or nothing is left to keep
                 this.databaseLoadFailed = false;

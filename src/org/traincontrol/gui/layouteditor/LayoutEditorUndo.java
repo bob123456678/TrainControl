@@ -70,7 +70,7 @@ final class LayoutEditorUndo
         // undo not stick, silently.
         if (!autonomy.saveQuietly() && this.editor.parent.getModel() != null)
         {
-            this.editor.parent.getModel().logf("autosetup.log.saveFailedAfterUndo");
+            this.editor.parent.getModel().logf(java.util.logging.Level.SEVERE, "autosetup.log.saveFailedAfterUndo");
         }
     }
 

@@ -556,7 +556,7 @@ final class RunningLayoutSync
         if (sayIfDeclined && this.ui.getActiveDiagramConfiguration() != null && this.ui.isAutonomyBusy()
             && this.ui.getAutonomyViewerPanel() != null)
         {
-            this.ui.getModel().logf("autosetup.log.setupEditNotApplied");
+            this.ui.getModel().logf(java.util.logging.Level.SEVERE, "autosetup.log.setupEditNotApplied");
         }
 
         // A declined edit is recorded so the exit does not delete it: the save on the way out folds the RUNNING layout

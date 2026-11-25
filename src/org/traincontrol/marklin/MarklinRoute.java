@@ -204,6 +204,7 @@ public class MarklinRoute extends Route
                         // silently end the monitor thread - naming the wrong cause defeats the point of
                         // logging it.
                         this.network.logf(
+                            java.util.logging.Level.SEVERE,
                             "route.s88MonitorFailed",
                             this.getName()
                         );
@@ -909,7 +910,7 @@ public class MarklinRoute extends Route
             }
         }
 
-        this.network.logf("route.keyNotFound", key);
+        this.network.logf(java.util.logging.Level.SEVERE, "route.keyNotFound", key);
     }
     
     /**

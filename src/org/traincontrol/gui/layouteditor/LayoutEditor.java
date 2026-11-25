@@ -437,7 +437,7 @@ public class LayoutEditor extends PositionAwareJFrame
         if (live != null && !live.beginEditSession() && live.getStore().hasUnfinishedEditNote()
             && live.getStore().forgetTheNote() == AutonomyCompanionStore.Note.STALE)
         {
-            parent.getModel().logf("autosetup.log.noteRenewalFailed");
+            parent.getModel().logf(java.util.logging.Level.WARNING, "autosetup.log.noteRenewalFailed");
         }
 
         pictureTheRailway(live);
@@ -586,7 +586,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // Said when it fails (a sync client can win the delete); the note left is harmless.
             if (!this.autonomySessionForTheNote.endEditSession() && parent.getModel() != null)
             {
-                parent.getModel().logf("autosetup.log.editSessionNotCleared");
+                parent.getModel().logf(java.util.logging.Level.WARNING, "autosetup.log.editSessionNotCleared");
             }
 
             this.autonomySessionForTheNote = null;
@@ -671,7 +671,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (autonomy != null && !autonomy.restoreSetup(asOpenedKeepingTheTurns(autonomy)) && parent.getModel() != null)
         {
-            parent.getModel().logf("autosetup.log.restoreFailedAfterCancel");
+            parent.getModel().logf(java.util.logging.Level.SEVERE, "autosetup.log.restoreFailedAfterCancel");
         }
         else if (autonomy != null)
         {
@@ -703,7 +703,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (!autonomy.saveQuietly() && parent.getModel() != null)
         {
-            parent.getModel().logf("autosetup.log.saveFailedAfterEdit");
+            parent.getModel().logf(java.util.logging.Level.SEVERE, "autosetup.log.saveFailedAfterEdit");
         }
     }
 

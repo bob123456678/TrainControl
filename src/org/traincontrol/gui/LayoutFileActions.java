@@ -489,7 +489,7 @@ public final class LayoutFileActions
                     // memory and not on disk, so the next load offers it to autonomy.
                     if (session.exists() && !session.saveQuietly() && this.ui.getModel() != null)
                     {
-                        this.ui.getModel().logf("autosetup.log.saveFailedAfterCombine");
+                        this.ui.getModel().logf(java.util.logging.Level.SEVERE, "autosetup.log.saveFailedAfterCombine");
                     }
                 }
 

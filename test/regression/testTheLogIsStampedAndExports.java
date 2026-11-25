@@ -192,8 +192,8 @@ public class testTheLogIsStampedAndExports
      *
      * MUTATION: in `MarklinControlStation.logf`, `Level.INFO` for `LogPanel.levelOf(key)`; or in its `log(Exception)`
      * or `THREAD_ERRORS`, `Level.INFO` for `Level.SEVERE`; or `TrainControlUI.log(String, Level)` passes `Level.INFO`;
-     * or its `log(String)` passes `Level.SEVERE`; or in `powerOffOverload`'s or `databaseBadDataFile`'s `logf`, drop the
-     * level.
+     * or its `log(String)` passes `Level.SEVERE`; or in `powerOffOverload`'s, `databaseBadDataFile`'s or `MarklinRoute.setDelay`'s
+     * `logf`, drop the level.
      */
     @Test(timeOut = 180000)
     public void testWarningsAndErrorsShowTheirTriangles() throws Exception
@@ -205,7 +205,7 @@ public class testTheLogIsStampedAndExports
             String[] entries = {"FR190 notice", "FR190 model notice", I18n.f("layout.warnPowerNotConfirmed", "FR190"),
                 I18n.f("ui.errorSavingUiState", "FR190"), "FR190 exception",
                 I18n.f("error.uncaughtInThread", "fr190-task", failure), I18n.f("log.powerOffOverload", 3),
-                I18n.t("log.databaseBadDataFile")};
+                I18n.t("log.databaseBadDataFile"), I18n.f("route.keyNotFound", 999)};
 
             ui.log(entries[0]);
             ui.getModel().log(entries[1]);
@@ -219,6 +219,9 @@ public class testTheLogIsStampedAndExports
             org.traincontrol.marklin.MarklinControlStation model = (org.traincontrol.marklin.MarklinControlStation) ui.getModel();
 
             model.receiveMessage(support.Packets.overload(3));
+
+            // And a route asked to delay a command it does not have (error)
+            new org.traincontrol.marklin.MarklinRoute(model, "FR190 route", 0).setDelay(999, 1);
 
             File notADatabase = File.createTempFile("fr190", ".data");
 
@@ -240,8 +243,8 @@ public class testTheLogIsStampedAndExports
 
             for (String entry : entries) assertTrue(stamped(shown, entry).find(), "not shown plain: " + entry);
 
-            assertEquals(support.Components.onTheEventThread(() -> marks(ui, shown, entries)), "--YRRRYR",
-                "the marks beside notice, model notice, warning, error, exception, uncaught error, short circuit, bad data file");
+            assertEquals(support.Components.onTheEventThread(() -> marks(ui, shown, entries)), "--YRRRYRR",
+                "the marks beside notice, model notice, warning, error, exception, uncaught error, short circuit, bad data file, missing route command");
 
             exportedAsShown(ui, shown, "marked-log.txt", (file, answering) -> { });
         });

@@ -324,7 +324,7 @@ public final class AutonomyLifecycle
             else if (!editorOpen && session.unusableEditNote())
             {
                 // Logged: an unreadable note is kept for a newer build and refused at every start.
-                ui.getModel().logf("autosetup.log.unfinishedEditNoteUnusable");
+                ui.getModel().logf(java.util.logging.Level.WARNING, "autosetup.log.unfinishedEditNoteUnusable");
             }
 
             // The pages it rewrote are logged: captions leave the `.cs2` one-way (`saveChanges` keeps a `.cs2.bak`).
@@ -497,7 +497,7 @@ public final class AutonomyLifecycle
 
             // The note repair records its failure in a field; read it, or the next start's revert restores a deleted
             // locomotive.
-            if (session.getStore().didTheNoteRepairFail()) ui.getModel().logf("autosetup.log.noteRepairFailed");
+            if (session.getStore().didTheNoteRepairFail()) ui.getModel().logf(java.util.logging.Level.WARNING, "autosetup.log.noteRepairFailed");
 
             session.getStore().save();
 

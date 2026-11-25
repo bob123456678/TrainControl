@@ -290,7 +290,8 @@ public class NetworkProxy
         }
         catch (IOException e)
         {
-            model.logf("network.tcpUnavailable", reasonOf(e));
+            // A simulation has no station to reach: a notice there, a warning otherwise
+            model.logf(this.tcpPort == simulationTcpPort() ? Level.INFO : Level.WARNING, "network.tcpUnavailable", reasonOf(e));
             return;
         }
 

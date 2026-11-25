@@ -1634,7 +1634,7 @@ public class Layout
         this.takingPath.remove(loc);
 
         // A hand send answers a false with "check log".
-        this.control.logf(why, loc.getName());
+        this.control.logf(java.util.logging.Level.WARNING, why, loc.getName());
     }
 
     /**
@@ -6204,7 +6204,7 @@ public class Layout
         // A stop ordered already sends nothing, and says so.
         if (this.stopsOrdered.get() != stopsAtDispatch)
         {
-            this.control.logf("autolayout.log.notSentAfterTheStop", loc.getName());
+            this.control.logf(java.util.logging.Level.WARNING, "autolayout.log.notSentAfterTheStop", loc.getName());
 
             return false;
         }
@@ -6269,7 +6269,7 @@ public class Layout
         // No new route while the connection to the station is replaced; trains on their way carry on (FR-186).
         if (this.control.isReplacingConnection())
         {
-            this.control.logf("autolayout.log.notSentReconnecting", loc.getName());
+            this.control.logf(java.util.logging.Level.WARNING, "autolayout.log.notSentReconnecting", loc.getName());
             return false;
         }
 
