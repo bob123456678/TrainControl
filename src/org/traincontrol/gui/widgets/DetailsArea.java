@@ -48,7 +48,6 @@ public final class DetailsArea
         area.setBorder(BorderFactory.createEmptyBorder(INSET, INSET, INSET, INSET));
         area.setSize(WIDTH, Short.MAX_VALUE);
         area.setCaretPosition(0);
-
         JScrollPane scroll = new JScrollPane(area, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
             ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scroll.getViewport().setPreferredSize(new Dimension(WIDTH, Math.min(area.getPreferredSize().height,
