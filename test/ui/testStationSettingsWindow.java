@@ -2582,6 +2582,31 @@ public class testStationSettingsWindow
     }
 
     /**
+     * The Importance row's (i) says which way the number counts, in both states: at the default 0 and with a number typed.
+     *
+     * MUTATION: drop "A higher importance is preferred" from `flyPriorityNow` or `flyPriorityNoneNow`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testThePriorityMarkSaysAHigherImportanceIsPreferred() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        StationDoors.current(window);
+
+        String said = "A higher importance is preferred";
+
+        assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("priority")).contains(said),
+            "the Importance (i) at the default does not say which way the number counts");
+
+        StationDoors.typeAndEnter(window, "station.priority", "4");
+
+        assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("priority")).contains(said),
+            "the Importance (i) with a number typed does not say which way the number counts");
+
+        StationDoors.close(window);
+    }
+
+    /**
      * A click on a station opens its Station Settings and changes no arrow, even one an older version's setup left on it
      * (Adam: "have may depart just control the arrows on the station", OB-472); May depart shows that arrow, live.
      *

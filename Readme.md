@@ -209,7 +209,7 @@ The Log tab shows what TrainControl is doing.  To scroll it sideways, click in t
     * Send a train to a station by right-clicking it on the track diagram
     * Find a point by name, filter the list of things to look at, and drag a train from one station to another in the autonomy editor
     * The setup is checked before it runs, and each problem opens the editor on the square it is about
-    * Customize autonomous operation by setting station priority, maximum train lengths, track lengths, speed multipliers, and maximum train idle time
+    * Customize autonomous operation by setting station importance, maximum train lengths, track lengths, speed multipliers, and maximum train idle time
     * Choose how trains pick their route, such as over the shortest track or past the fewest stations
     * Pair a station with signals that turn red while a train is standing there, and back to green when it leaves
     * Restrict which directions a station will accept trains from, or make a station that trains must stop at and can't run through
