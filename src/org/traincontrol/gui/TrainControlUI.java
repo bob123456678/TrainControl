@@ -5609,20 +5609,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
                     String path = this.layoutFileActions.initializeEmptyLayout(folderName);
                     boolean read = false;
+                    boolean turnedAway = false;
 
                     if (path != null)
                     {
                         this.model.logf("layout.ui.infoLayoutInitializedAt", path);
                         java.util.function.BooleanSupplier sticks = this.layoutFileActions.switchTo(path);
 
-                        this.syncWithCS2();
+                        turnedAway = syncTurnedAway(this.syncWithCS2());
                         read = sticks.getAsBoolean();
 
                         // The editing controls follow whether there is a layout of the user's own to edit (OB-126).
                         this.editorWindows.applyLayoutEditingAvailability();
                         this.repaintLoc();
                     }
-
                     // A folder that did not unpack whole, or whose read failed, is not switched to, and said so
                     if (read && !this.model.getLayoutList().isEmpty())
                     {
@@ -5630,11 +5630,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
                     }
                     else
                     {
-                        this.model.logf("layout.ui.errorInitializeDemoLayout");
-                        JOptionPane.showMessageDialog(
-                            this,
-                            I18n.t("layout.ui.errorInitializeDemoLayout")
-                        );
+                        String why = turnedAway ? "layout.ui.errorNotSwitchedTryAgain" : "layout.ui.errorInitializeDemoLayout";
+                        this.model.logf(why);
+                        JOptionPane.showMessageDialog(this, I18n.t(why));
                     }
                 }
                 catch (Exception e)
@@ -6523,6 +6521,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         if (RunGates.refuseALinkOrSyncWhileEditorOpen(this, null)) return SYNC_REFUSED;
 
         return syncNow();
+    }
+
+    /** Whether a sync did not run at all (an editor on its way, or another sync): a switch waiting on it did not read. */
+    private static boolean syncTurnedAway(int synced)
+    {
+        return synced == SYNC_REFUSED || synced == SYNC_ALREADY_RUNNING;
     }
 
     /**
@@ -14648,6 +14652,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
         final java.util.function.BooleanSupplier read = this.layoutFileActions.switchTo(folder.getPath());
         final boolean[] opened = new boolean[1];
+        final boolean[] turnedAway = new boolean[1];
 
         this.editorWindows.applyLayoutEditingAvailability();
 
@@ -14656,7 +14661,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         // one-sync-at-a-time guard.  The second spinner (syncWithCS2 opens its own, OB-140) is left: the two do not
         // deadlock, and suppressing a nested one risks hiding EVERY spinner.
         BusyDialog.run(this, I18n.t("layout.ui.busyLoadingLayout"),
-            () -> this.syncWithCS2(),
+            () -> turnedAway[0] = syncTurnedAway(this.syncWithCS2()),
             () ->
             {
                 opened[0] = read.getAsBoolean() && !this.model.getLayoutList().isEmpty();
@@ -14678,8 +14683,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
                     this.repaintLoc();
                     this.repaintLayout();
 
-                    JOptionPane.showMessageDialog(this,
-                        I18n.t("layout.ui.errorInvalidPathOrCorruptData"));
+                    // The folder was fine: the sync that should read it was turned away, and the switch put back
+                    JOptionPane.showMessageDialog(this, I18n.t(turnedAway[0] ? "layout.ui.errorNotSwitchedTryAgain"
+                        : "layout.ui.errorInvalidPathOrCorruptData"));
                 }
             });
 
