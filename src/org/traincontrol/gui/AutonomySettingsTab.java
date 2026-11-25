@@ -347,8 +347,8 @@ final class AutonomySettingsTab
                         // Said aloud when it cannot be kept; true: a person just chose this.
                         if (!persistPathPreference(option, true))
                         {
-                            this.ui.getModel().log(I18n.f("autolayout.warnRoutingRuleNotStored",
-                                I18n.t("autolayout.ui.pathPreference" + option.name())));
+                            this.ui.getModel().logf(java.util.logging.Level.WARNING, "autolayout.warnRoutingRuleNotStored",
+                                I18n.t("autolayout.ui.pathPreference" + option.name()));
                         }
                     }
                 }

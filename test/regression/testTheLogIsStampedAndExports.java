@@ -36,6 +36,12 @@ public class testTheLogIsStampedAndExports
 
     private static void inAWindow(Claim claim) throws Exception
     {
+        inAWindow(testTheImportDoorReadsAnOldFile::openTheWindow, claim);
+    }
+
+    /** The same, in the window `open` builds. */
+    private static void inAWindow(java.util.concurrent.Callable<TrainControlUI> open, Claim claim) throws Exception
+    {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
         support.SandboxedWindow sandboxed = new support.SandboxedWindow();
@@ -44,7 +50,7 @@ public class testTheLogIsStampedAndExports
         {
             sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            claim.check(sandboxed.hold(testTheImportDoorReadsAnOldFile.openTheWindow()));
+            claim.check(sandboxed.hold(open.call()));
         }
         finally
         {
@@ -67,7 +73,7 @@ public class testTheLogIsStampedAndExports
     {
         try
         {
-            return (String) Reflect.method(TrainControlUI.class, "logText").invoke(ui);
+            return ((org.traincontrol.gui.app.LogPanel) Reflect.get(TrainControlUI.class, ui, "logView")).text();
         }
         catch (ReflectiveOperationException e)
         {
@@ -178,6 +184,154 @@ public class testTheLogIsStampedAndExports
         });
     }
 
+    /**
+     * In the Log tab a warning shows the yellow triangle beside its line, an error the red one and a notice none,
+     * however it reached the log: the window, the model, a key the model logs, an exception, a task's uncaught error
+     * (FR-190).  The text keeps
+     * no mark, and Export Log saves exactly it.
+     *
+     * MUTATION: in `MarklinControlStation.logf`, `Level.INFO` for `LogPanel.levelOf(key)`; or in its `log(Exception)`
+     * or `THREAD_ERRORS`, `Level.INFO` for `Level.SEVERE`; or `TrainControlUI.log(String, Level)` passes `Level.INFO`;
+     * or its `log(String)` passes `Level.SEVERE`; or in `powerOffOverload`'s, `databaseBadDataFile`'s or `MarklinRoute.setDelay`'s
+     * `logf`, drop the level.
+     */
+    @Test(timeOut = 180000)
+    public void testWarningsAndErrorsShowTheirTriangles() throws Exception
+    {
+        // The window its station logs to, as the application builds it
+        inAWindow(() -> (TrainControlUI) support.TestStation.simulatedWithWindowInDebug().getGUI(), ui ->
+        {
+            IllegalStateException failure = new IllegalStateException("FR190 uncaught");
+            String[] entries = {"FR190 notice", "FR190 model notice", I18n.f("layout.warnPowerNotConfirmed", "FR190"),
+                I18n.f("ui.errorSavingUiState", "FR190"), "FR190 exception",
+                I18n.f("error.uncaughtInThread", "fr190-task", failure), I18n.f("log.powerOffOverload", 3),
+                I18n.t("log.databaseBadDataFile"), I18n.f("route.keyNotFound", 999)};
+
+            ui.log(entries[0]);
+            ui.getModel().log(entries[1]);
+            ui.getModel().logf("layout.warnPowerNotConfirmed", "FR190");
+            ui.getModel().logf("ui.errorSavingUiState", "FR190");
+            ui.getModel().log(new Exception(entries[4]));
+            org.traincontrol.marklin.MarklinControlStation.THREAD_ERRORS.uncaughtException(new Thread("fr190-task"), failure);
+
+            // A station's own failure lines pass their level by hand: a short circuit (warning, on the station's
+            // thread) and a data file that is not a database (error)
+            org.traincontrol.marklin.MarklinControlStation model = (org.traincontrol.marklin.MarklinControlStation) ui.getModel();
+
+            model.receiveMessage(support.Packets.overload(3));
+
+            // And a route asked to delay a command it does not have (error)
+            new org.traincontrol.marklin.MarklinRoute(model, "FR190 route", 0).setDelay(999, 1);
+
+            File notADatabase = File.createTempFile("fr190", ".data");
+
+            try (java.io.ObjectOutputStream out = new java.io.ObjectOutputStream(new java.io.FileOutputStream(notADatabase)))
+            {
+                out.writeObject("not a list");
+            }
+
+            model.restoreState(notADatabase.getPath());
+            assertTrue(notADatabase.delete(), "the scratch file stayed");
+            model.restoreState(notADatabase.getPath());
+
+            assertTrue(support.Components.waitFor(() ->
+            {
+                try { return logOf(ui).contains(entries[6]); } catch (Exception e) { return false; }
+            }, 5000), "the short circuit was not logged");
+
+            String shown = logOf(ui);
+
+            for (String entry : entries) assertTrue(stamped(shown, entry).find(), "not shown plain: " + entry);
+
+            assertEquals(support.Components.onTheEventThread(() -> marks(ui, shown, entries)), "--YRRRYRR",
+                "the marks beside notice, model notice, warning, error, exception, uncaught error, short circuit, bad data file, missing route command");
+
+            exportedAsShown(ui, shown, "marked-log.txt", (file, answering) -> { });
+        });
+    }
+
+    /**
+     * A normal simulated start shows no triangle on a line it is expected to print: a simulation's first sync fails by
+     * design.  The data-driven "Failed to load image" and the simulation-mode warning keep theirs (FR-190).
+     *
+     * MUTATION: in `MarklinControlStation`, `unlessSimulating` returns its argument, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testASimulatedStartShowsNoTriangleOnItsOwnLines() throws Exception
+    {
+        inAWindow(() -> (TrainControlUI) support.TestStation.simulatedWithWindowInDebug().getGUI(), ui ->
+        {
+            String shown = logOf(ui);
+            java.util.List<String> entries = new java.util.ArrayList<>();
+            Matcher line = Pattern.compile("(?m)^\\d\\d:\\d\\d:\\d\\d (.*)$").matcher(shown);
+
+            while (line.find()) entries.add(line.group(1));
+
+            String marks = support.Components.onTheEventThread(() -> marks(ui, shown, entries.toArray(new String[0])));
+            StringBuilder marked = new StringBuilder();
+
+            for (int i = 0; i < entries.size(); i++)
+            {
+                String entry = entries.get(i);
+
+                if (marks.charAt(i) != '-' && !entry.startsWith("Failed to load image")
+                    && !entry.equals(I18n.t("autolayout.warningSimulationModeEnabled"))) marked.append(marks.charAt(i)).append(' ').append(entry).append('|');
+            }
+
+            assertEquals(marked.toString(), "", "start-up lines that show a triangle");
+        });
+    }
+
+    /**
+     * The mark painted beside each entry's line in the shown Log tab: Y for the yellow triangle, R for the red, - for
+     * none; event thread.
+     */
+    private static String marks(TrainControlUI ui, String shown, String[] entries) throws Exception
+    {
+        javax.swing.JTabbedPane tabs = (javax.swing.JTabbedPane) Reflect.get(TrainControlUI.class, ui, "KeyboardTab");
+        tabs.setSelectedComponent((java.awt.Component) Reflect.get(TrainControlUI.class, ui, "logPanel"));
+        ui.validate();
+
+        Object view = Reflect.get(TrainControlUI.class, ui, "logView");
+        javax.swing.JComponent gutter = (javax.swing.JComponent) Reflect.get(view.getClass(), view, "gutter");
+        javax.swing.JTextArea area = (javax.swing.JTextArea) Reflect.get(view.getClass(), view, "area");
+        StringBuilder said = new StringBuilder();
+
+        for (String entry : entries)
+        {
+            Matcher at = stamped(shown, entry);
+            at.find();
+
+            java.awt.Rectangle line = area.modelToView(at.start());
+            java.awt.image.BufferedImage band = new java.awt.image.BufferedImage(gutter.getWidth(), line.height,
+                java.awt.image.BufferedImage.TYPE_INT_RGB);
+            java.awt.Graphics2D g = band.createGraphics();
+
+            g.translate(0, -line.y);
+            g.setClip(0, line.y, gutter.getWidth(), line.height);
+            gutter.paint(g);
+            g.dispose();
+
+            char mark = '-';
+
+            for (int x = 0; x < band.getWidth(); x++)
+            {
+                for (int y = 0; y < band.getHeight(); y++)
+                {
+                    int rgb = band.getRGB(x, y) & 0xffffff;
+
+                    // The triangles' fills
+                    if (rgb == 0xfabe28) mark = 'Y';
+                    if (rgb == 0xd22323) mark = 'R';
+                }
+            }
+
+            said.append(mark);
+        }
+
+        return said.toString();
+    }
+
     /** Cancels the save chooser that has come back after a failed write. */
     private static boolean cancelTheChooserThatCameBack() throws Exception
     {
@@ -232,31 +386,43 @@ public class testTheLogIsStampedAndExports
             ui.log("FR051 export one");
             ui.log("FR051 export two\nFR051 export tail");
 
-            String shown = logOf(ui);
-
-            File file = new File(temporaryFolder(), "chosen-log.txt");
-
-            try (support.Answering answering = support.Answering.start(message -> null).choosing(file))
+            exportedAsShown(ui, logOf(ui), "chosen-log.txt", (file, answering) ->
             {
-                SwingUtilities.invokeLater(item(ui)::doClick);
-
-                assertTrue(support.Components.waitFor(file::isFile, 60000), "no file was written where the chooser was told to save");
-
-                support.Components.settle();
-
-                assertEquals(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8),
-                    shown.replace("\n", System.lineSeparator()), "the file is not the log as it showed");
-
                 assertTrue(logOf(ui).contains(I18n.f("ui.infoLogSaved", file.getAbsolutePath())),
                     "the log does not say where it was saved");
 
                 assertTrue(answering.asked().isEmpty(), "a message came up on a good save: " + answering.asked());
-            }
-            finally
-            {
-                file.delete();
-            }
+            });
         });
+    }
+
+    private interface AfterTheSave
+    {
+        void check(File file, support.Answering answering) throws Exception;
+    }
+
+    /** Presses File > Export Log, chooses a new file of that name, checks it holds `shown`, then `after`. */
+    private static void exportedAsShown(TrainControlUI ui, String shown, String name, AfterTheSave after) throws Exception
+    {
+        File file = new File(temporaryFolder(), name);
+
+        try (support.Answering answering = support.Answering.start(message -> null).choosing(file))
+        {
+            SwingUtilities.invokeLater(item(ui)::doClick);
+
+            assertTrue(support.Components.waitFor(file::isFile, 60000), "no file was written where the chooser was told to save");
+
+            support.Components.settle();
+
+            assertEquals(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8),
+                shown.replace("\n", System.lineSeparator()), "the file is not the log as it showed");
+
+            after.check(file, answering);
+        }
+        finally
+        {
+            file.delete();
+        }
     }
 
     /** What the door said when the chooser was told to save to `target`, which it cannot write. */

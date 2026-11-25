@@ -17,7 +17,7 @@ final class LogExportDoor
 
     static void save(TrainControlUI ui)
     {
-        String text = ui.logText().replace("\n", System.lineSeparator());
+        String text = ui.logView.text().replace("\n", System.lineSeparator());
 
         String name = "TrainControl-log-" + new SimpleDateFormat("yyyy-MM-dd-HHmm").format(new Date()) + ".txt";
 

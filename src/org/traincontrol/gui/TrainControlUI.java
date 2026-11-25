@@ -47,7 +47,6 @@ import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -498,12 +497,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     // Number of keys per page
     private static final int KEYBOARD_KEYS = AccessoryKeyboard.KEYS;
 
-    /**
-     * How much of the debug log is kept.  Roughly a thousand lines - far more than anyone scrolls back
-     * through, and small enough that inserting at the front stays cheap for the life of a session.
-     */
-    private static final int DEBUG_LOG_MAX_CHARS = 100000;
-        
     // Maximum number of functions
     private static final int NUM_FN = 32;
         
@@ -864,9 +857,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         // tab is `KeyboardTabStateChanged`.  A card's pause button sorts nothing, so the card stays under the pointer.
         this.locCommandPanels.addChangeListener(change -> sortTheCommandsTabIfShown());
 
-        // Read-only (MT-362): a JTextArea is editable by default and typed text would sit among the program's messages.
-        // Set here because `debugArea` belongs to the generated block.
-        this.debugArea.setEditable(false);
+        // The Log tab shows `logView` in the generated scroll pane's place (FR-190).
+        ((javax.swing.GroupLayout) this.logPanel.getLayout()).replace(this.jScrollPane3, this.logView);
 
         // Wrapped where a line will not hold them (FR-112): the generated block sets the tooltips and Swing draws one
         // on a single line.  Before the hand-built items join the bar; they wrap their own.
@@ -1806,7 +1798,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             {
                 File kept = Util.keepUnreadableCopy(TrainControlUI.DATA_FILE_NAME);
 
-                if (kept != null) this.model.logf("ui.uiStateUnreadableKept", kept.getAbsolutePath());
+                if (kept != null) this.model.log(I18n.f("ui.uiStateUnreadableKept", kept.getAbsolutePath()), java.util.logging.Level.WARNING);
 
                 // Kept - or nothing is left to keep
                 this.uiStateLoadFailed = false;
@@ -3274,11 +3266,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         if (layout == settingsBuiltFor && settingsAsBuilt != null) settingsAsBuilt.put("atomicRoutes", true);
 
         // Two log lines when both hold, not one reason at a time.
-        if (!track.isEmpty()) this.model.logf("autolayout.warnAtomicRoutesKeptOn", track.size(), someOf(track));
+        if (!track.isEmpty()) this.model.logf(java.util.logging.Level.INFO, "autolayout.warnAtomicRoutesKeptOn", track.size(), someOf(track));
 
         if (!trains.isEmpty())
         {
-            this.model.logf("autolayout.warnAtomicRoutesKeptOnTrains", trains.size(), someOf(trains));
+            this.model.logf(java.util.logging.Level.INFO, "autolayout.warnAtomicRoutesKeptOnTrains", trains.size(), someOf(trains));
         }
 
         this.autonomySettingsTab.loadAutoLayoutSettings();
@@ -4130,49 +4122,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         return imageCache;
     }
     
+    /** The Log tab; Export Log reads its text. */
+    final org.traincontrol.gui.app.LogPanel logView = new org.traincontrol.gui.app.LogPanel();
+
     /**
      * Logs a message
      */
     @Override
     public void log(String message)
     {
-        // Stamped when logged, not when the event thread gets to it (FR-051); one stamp however many lines it has.
-        final String stamp = LOG_STAMP.format(java.time.LocalTime.now()) + " ";
+        this.logView.log(message, java.util.logging.Level.INFO);
+    }
 
-        SwingUtilities.invokeLater(() ->
-        {
-            // The newest line shows at the top, but a sideways position the reader chose stays (OB-471)
-            int across = this.jScrollPane3.getHorizontalScrollBar().getValue();
-
-            this.debugArea.insert(stamp + message + "\n", 0);
-            this.debugArea.setCaretPosition(0);
-            // After the caret's own scroll, which is queued by the insert
-            SwingUtilities.invokeLater(() -> this.jScrollPane3.getHorizontalScrollBar().setValue(across));
-
-            // Capped, because every insert at position 0 shifts the whole document, and the cost rose with session age.
-            int length = this.debugArea.getDocument().getLength();
-
-            if (length > DEBUG_LOG_MAX_CHARS)
-            {
-                try
-                {
-                    this.debugArea.getDocument().remove(DEBUG_LOG_MAX_CHARS, length - DEBUG_LOG_MAX_CHARS);
-                }
-                catch (javax.swing.text.BadLocationException e)
-                {
-                    // Only reachable if the offsets disagree with the document, which cannot happen
-                    // when both come from the document itself one statement earlier
-                }
-            }
-        });
-    }             
-    
-    private static final DateTimeFormatter LOG_STAMP = DateTimeFormatter.ofPattern("HH:mm:ss");
-
-    /** The log as it shows, newest first, stamps included; event thread. */
-    String logText()
+    @Override
+    public void log(String message, java.util.logging.Level level)
     {
-        return this.debugArea.getText();
+        this.logView.log(message, level);
     }
 
     /** "Export Log..." in the File menu (FR-051), built here because the menu belongs to the generated block. */

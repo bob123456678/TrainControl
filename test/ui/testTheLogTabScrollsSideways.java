@@ -39,12 +39,13 @@ public class testTheLogTabScrollsSideways
         sandbox = frozen.sandbox;
         model = frozen.model;
         ui = frozen.ui;
-        pane = (JScrollPane) Reflect.get(TrainControlUI.class, ui, "jScrollPane3");
+        Object view = Reflect.get(TrainControlUI.class, ui, "logView");
+        pane = (JScrollPane) Reflect.get(view.getClass(), view, "scroll");
 
         // Lines wider and more numerous than the pane, laid out as a shown pane would be
         Components.onTheEventThread(() ->
         {
-            JTextArea log = (JTextArea) Reflect.get(TrainControlUI.class, ui, "debugArea");
+            JTextArea log = (JTextArea) Reflect.get(view.getClass(), view, "area");
             StringBuilder text = new StringBuilder();
 
             for (int i = 0; i < 80; i++) text.append(new String(new char[400]).replace('\0', 'x')).append('\n');

@@ -132,7 +132,7 @@ public final class DiagramLocGestures
         // A route too (`aRunHoldsTheSetup`): these keys write a placement into the setup.
         if (ui.aRunHoldsTheSetup())
         {
-            ui.getModel().log(RunGates.whyTheSetupIsHeld(ui, "layout.warnDiagramKeyWhileBusy"));
+            ui.getModel().log(RunGates.whyTheSetupIsHeld(ui, "layout.warnDiagramKeyWhileBusy"), java.util.logging.Level.WARNING);
 
             return true;
         }

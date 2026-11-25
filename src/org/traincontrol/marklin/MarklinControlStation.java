@@ -41,6 +41,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
+import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -60,6 +61,7 @@ import org.traincontrol.base.Route;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.LocomotiveSettings;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.app.LogPanel;
 import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.marklin.file.UnreadableAnswerException;
 import org.traincontrol.base.udp.CANMessage;
@@ -171,6 +173,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * succeeded: a local layout folder syncs happily, so a simulation would report itself connected (OB-098).
      */
     private boolean simulation = false;
+    /** The constructor's simulate, known before `simulation` is set: a simulation's first sync is expected to fail. */
+    private boolean simulatedStart = false;
     
     // Do we print out packets in debug mode?
     public static boolean DEBUG_LOG_NETWORK = true;
@@ -332,18 +336,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
         System.err.print("Exception in thread \"" + thread.getName() + "\" ");
         error.printStackTrace();
 
-        logThroughLatest(I18n.f("error.uncaughtInThread", thread.getName(), error));
+        logThroughLatest(I18n.f("error.uncaughtInThread", thread.getName(), error), Level.SEVERE);
     };
 
     /** The station started last, which `THREAD_ERRORS` and `logThroughLatest` report through. */
     private static volatile MarklinControlStation reporter;
 
     /** Writes a line to the log of the station started last, or to the Logger alone when none has started. */
-    public static void logThroughLatest(String message)
+    public static void logThroughLatest(String message, Level level)
     {
         MarklinControlStation station = reporter;
 
-        if (station != null) station.log(message);
+        if (station != null) station.log(message, level);
         else log.warning(message);
     }
 
@@ -426,6 +430,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Set references
         this.on = false;
         this.NetworkInterface = network;
+        this.simulatedStart = simulate;
         this.view = view;
         
         // Set debug mode
@@ -497,7 +502,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         else
         {
-            this.logf("log.csNotConnected");
+            // A simulation never connects: a notice there, a warning with a real station
+            this.logf(unlessSimulating(Level.WARNING), "log.csNotConnected");
         } 
         
         this.linkSavedConsists();
@@ -593,7 +599,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     // The folder is tried again at the next sync, by when the type may be known
                     requireTheTypeKnown();
                    
-                    this.logf("layout.revertToDefaultSource", !debug ? " Enable debug mode for details." : "");
+                    this.logf(java.util.logging.Level.SEVERE, "layout.revertToDefaultSource", !debug ? " Enable debug mode for details." : "");
                     TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
                     fileParser.setDefaultLayoutDataLoc();
                     syncLayouts();
@@ -827,7 +833,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // sensors seen only on it, and the autonomy points watching them, out of LocDB.data for good.
         if (couldNotBeRead > 0)
         {
-            this.logf("layout.pruningSkippedPageUnreadable", couldNotBeRead);
+            this.logf(java.util.logging.Level.WARNING, "layout.pruningSkippedPageUnreadable", couldNotBeRead);
         }
         else if (!feedbackAddresses.isEmpty())
         {
@@ -1085,7 +1091,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         }
                         else
                         {
-                            this.logf("route.ui.autolayoutErrorS88RequiredForAutoFire", r.getId());
+                            this.logf(Level.SEVERE, "route.ui.autolayoutErrorS88RequiredForAutoFire", r.getId());
                         }
                     }
                 }
@@ -1784,7 +1790,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
             catch (Exception e)
             {
-                this.logf("log.csTypeDetectionError", e.toString());
+                // No device file is ordinary for a local layout folder, so only another failure is an error
+                this.logf(e instanceof java.io.FileNotFoundException ? Level.INFO : unlessSimulating(Level.SEVERE), "log.csTypeDetectionError", e.toString());
 
                 if (!(e instanceof java.io.FileNotFoundException)) this.stationTypeUnknown = e;
             }
@@ -1810,7 +1817,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
                 catch (UnreadableAnswerException e)
                 {
-                    this.logf("route.importSkippedUnreadable");
+                    this.logf(java.util.logging.Level.WARNING, "route.importSkippedUnreadable");
                     this.lastSyncPartial = true;
                     parsedRoutes = null;
                 }
@@ -1850,7 +1857,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
                 catch (UnreadableAnswerException e)
                 {
-                    this.logf("loc.importSkippedUnreadable");
+                    this.logf(java.util.logging.Level.WARNING, "loc.importSkippedUnreadable");
                     this.lastSyncPartial = true;
                     parsedLocs = new ArrayList<>();
                 }
@@ -1953,8 +1960,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             this.lastSyncError = describe(e);
 
-            this.logf("loc.dbSyncFailed");
-            this.log(e);
+            this.logf(unlessSimulating(Level.SEVERE), "loc.dbSyncFailed");
+            this.log(e, unlessSimulating(Level.SEVERE));
              
             return -1;
         }
@@ -2402,7 +2409,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 File kept = Util.keepUnreadableCopy(MarklinControlStation.DATA_FILE_NAME);
 
-                if (kept != null) this.logf("log.databaseUnreadableKept", kept.getAbsolutePath());
+                if (kept != null) this.logf(java.util.logging.Level.WARNING, "log.databaseUnreadableKept", kept.getAbsolutePath());
 
                 // Kept - or nothing is left to keep
                 this.databaseLoadFailed = false;
@@ -2411,7 +2418,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 this.log(keepFailed);
 
-                this.logf("log.databaseSaveFailed", keepFailed.toString());
+                this.logf(Level.SEVERE, "log.databaseSaveFailed", keepFailed.toString());
 
                 return keepFailed.toString();
             }
@@ -2443,7 +2450,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         catch (IOException iOException)
         {
-            this.logf("log.databaseSaveFailed", iOException.getMessage());
+            this.logf(Level.SEVERE, "log.databaseSaveFailed", iOException.getMessage());
 
             return String.valueOf(iOException.getMessage());
         }
@@ -2569,7 +2576,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 // a copy.
                 this.databaseLoadFailed = true;
 
-                this.logf("log.databaseBadDataFile");
+                this.logf(Level.SEVERE, "log.databaseBadDataFile");
             }
         }
         catch (IOException iex)
@@ -2591,7 +2598,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // Present but unreadable, exactly as above
             this.databaseLoadFailed = true;
 
-            this.logf("log.databaseBadDataFile");   
+            this.logf(Level.SEVERE, "log.databaseBadDataFile");
             
             if (debug)
             {
@@ -3253,7 +3260,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     int channel = message.getLength() >= 6 ? message.getData()[5] & 0xFF : 0;
 
-                    this.logf("log.powerOffOverload", channel);
+                    this.logf(Level.WARNING, "log.powerOffOverload", channel);
 
                     // Once per cut, whether or not a Stop came first: a short repeats the message while it lasts
                     if (!this.powerCutWarned && this.view != null) this.view.showPowerCut(channel);
@@ -3417,21 +3424,34 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public final void logf(String key, Object... args)
     {
-        log(I18n.f(key, args));
+        log(I18n.f(key, args), LogPanel.levelOf(key));
     }
     
+    /** Formatted log message at a level the log window marks (FR-190). */
+    @Override
+    public final void logf(Level level, String key, Object... args)
+    {
+        log(I18n.f(key, args), level);
+    }
+
     /**
      * Logs a message
      */
     @Override
     public final void log(String message)
     {
+        log(message, Level.INFO);
+    }
+
+    /** Logs a message at a level the log window marks; the developer's log takes every level as info. */
+    public final void log(String message, Level level)
+    {
         if (message != null && !message.equals(this.lastMessage))
         {
             // TODO - write to file, suppress, etc.
             if (this.view != null)
             {
-                this.view.log(message);    
+                this.view.log(message, level);
             }
             
             log.info(message);
@@ -3446,13 +3466,22 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public final void log(Exception e)
     {
+        log(e, Level.SEVERE);
+    }
+
+    /** A level for a failure a simulation expects: a notice there, the given level with a real station. */
+    private Level unlessSimulating(Level level)
+    {
+        return this.simulatedStart || this.simulation ? Level.INFO : level;
+    }
+
+    private void log(Exception e, Level level)
+    {
         if (this.view != null)
         {
-            this.view.log(e.getMessage());    
+            this.view.log(e.getMessage(), level);
         }
-
         log.warning(e.getClass().getName() + " " + e.getMessage());
-        
         if (debug)
         {
             log.warning(String.join("\n", Arrays.stream(e.getStackTrace())

@@ -13,6 +13,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayDeque;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -289,7 +290,8 @@ public class NetworkProxy
         }
         catch (IOException e)
         {
-            model.logf("network.tcpUnavailable", reasonOf(e));
+            // A simulation has no station to reach: a notice there, a warning otherwise
+            model.logf(this.tcpPort == simulationTcpPort() ? Level.INFO : Level.WARNING, "network.tcpUnavailable", reasonOf(e));
             return;
         }
 
@@ -1022,7 +1024,7 @@ public class NetworkProxy
             // As recover does on its own move to UDP: what changed while UDP was set aside is asked again
             setUdpLive(true);
             resync(false, 2);
-            model.logf("network.tcpLostUsingUdp", reasonOf(e));
+            model.logf(Level.WARNING, "network.tcpLostUsingUdp", reasonOf(e));
 
             throw e;
         }
@@ -1118,9 +1120,9 @@ public class NetworkProxy
 
         setUdpLive(true);
 
-        model.logf(retry ? "network.tcpLostReconnecting" : "network.tcpLostUsingUdp", reason);
+        model.logf(retry ? Level.INFO : Level.WARNING, retry ? "network.tcpLostReconnecting" : "network.tcpLostUsingUdp", reason);
 
-        if (cutOff > 0) model.logf("network.framesMayNotHaveArrived", cutOff);
+        if (cutOff > 0) model.logf(Level.WARNING, "network.framesMayNotHaveArrived", cutOff);
 
         resync(false, 2);
 
@@ -1168,7 +1170,7 @@ public class NetworkProxy
             this.replacing = false;
         }
 
-        if (failed != null) model.logf("network.tcpReconnectFailed", reasonOf(failed));
+        if (failed != null) model.logf(Level.SEVERE, "network.tcpReconnectFailed", reasonOf(failed));
     }
 
     /** Waits before a reconnect; false when a stop came meanwhile. */

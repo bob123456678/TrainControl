@@ -189,7 +189,7 @@ public class testYourOwnRoutesToggleWithoutASync
             {
                 try
                 {
-                    text[0] = ((javax.swing.JTextArea) Reflect.get(TrainControlUI.class, ui, "debugArea")).getText();
+                    text[0] = ((org.traincontrol.gui.app.LogPanel) Reflect.get(TrainControlUI.class, ui, "logView")).text();
                 }
                 catch (ReflectiveOperationException e)
                 {

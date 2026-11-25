@@ -65,6 +65,12 @@ public interface View
      * Logs a message
      */
     public void log(String message);
+
+    /** Logs a message at a level: SEVERE an error, WARNING a warning, anything less a notice (FR-190). */
+    default void log(String message, java.util.logging.Level level)
+    {
+        log(message);
+    }
     
     /**
      * Callback with latency info

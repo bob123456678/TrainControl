@@ -759,7 +759,7 @@ public class AutonomyViewerPanel extends JPanel
             }
             else if (logAFailure && ui.getModel() != null)
             {
-                ui.getModel().log(I18n.f("autosetup.ui.infoResumeFailed", name));
+                ui.getModel().log(I18n.f("autosetup.ui.infoResumeFailed", name), java.util.logging.Level.WARNING);
             }
 
             revert(previous);

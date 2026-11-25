@@ -539,7 +539,7 @@ public final class CS2File
             if (last.bytes.length == 0) throw last.endedShort(url);
 
             MarklinControlStation.logThroughLatest(I18n.f("network.stationFileReadAsSent", url,
-                String.valueOf(last.bytes.length), String.valueOf(last.promised)));
+                String.valueOf(last.bytes.length), String.valueOf(last.promised)), java.util.logging.Level.WARNING);
         }
 
         return decode(last.bytes, url);
