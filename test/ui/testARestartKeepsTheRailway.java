@@ -86,6 +86,7 @@ public class testARestartKeepsTheRailway
         CHECKED_ELSEWHERE.put("declinedStationName", "testTheSyncAsksAboutRenamedLocomotives.testANoSurvivesARestart");
         CHECKED_ELSEWHERE.put("declinedStationAddress",
             "testTheSyncAsksAboutRenamedLocomotives.testAKeptAddressIsNotAskedAgainUntilTheStationsAddressChanges");
+        CHECKED_ELSEWHERE.put("syncIgnored", "testSyncDifferences.testAnIgnoreSurvivesARestart");
     }
 
     /** The saved form of each locomotive `addTheFullLocomotives` made, taken just before the close. */
