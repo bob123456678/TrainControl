@@ -721,7 +721,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     {
         settle();
 
-        return ((javax.swing.JTextArea) Reflect.get(org.traincontrol.gui.TrainControlUI.class, ui, "debugArea")).getText();
+        return ((org.traincontrol.gui.app.LogPanel) Reflect.get(org.traincontrol.gui.TrainControlUI.class, ui, "logView")).text();
     }
 
     /** Lets the event thread finish what is queued, twice: the dropdown's listener queues its work. */

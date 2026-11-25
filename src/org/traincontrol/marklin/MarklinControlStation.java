@@ -41,6 +41,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
+import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -60,6 +61,7 @@ import org.traincontrol.base.Route;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.LocomotiveSettings;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.app.LogPanel;
 import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.marklin.file.UnreadableAnswerException;
 import org.traincontrol.base.udp.CANMessage;
@@ -332,18 +334,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
         System.err.print("Exception in thread \"" + thread.getName() + "\" ");
         error.printStackTrace();
 
-        logThroughLatest(I18n.f("error.uncaughtInThread", thread.getName(), error));
+        logThroughLatest(I18n.f("error.uncaughtInThread", thread.getName(), error), Level.SEVERE);
     };
 
     /** The station started last, which `THREAD_ERRORS` and `logThroughLatest` report through. */
     private static volatile MarklinControlStation reporter;
 
     /** Writes a line to the log of the station started last, or to the Logger alone when none has started. */
-    public static void logThroughLatest(String message)
+    public static void logThroughLatest(String message, Level level)
     {
         MarklinControlStation station = reporter;
 
-        if (station != null) station.log(message);
+        if (station != null) station.log(message, level);
         else log.warning(message);
     }
 
@@ -3417,7 +3419,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public final void logf(String key, Object... args)
     {
-        log(I18n.f(key, args));
+        log(I18n.f(key, args), LogPanel.levelOf(key));
     }
     
     /**
@@ -3426,12 +3428,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public final void log(String message)
     {
+        log(message, Level.INFO);
+    }
+
+    /** Logs a message at a level the log window marks; the developer's log takes every level as info. */
+    private void log(String message, Level level)
+    {
         if (message != null && !message.equals(this.lastMessage))
         {
             // TODO - write to file, suppress, etc.
             if (this.view != null)
             {
-                this.view.log(message);    
+                this.view.log(message, level);
             }
             
             log.info(message);
@@ -3448,7 +3456,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         if (this.view != null)
         {
-            this.view.log(e.getMessage());    
+            this.view.log(e.getMessage(), Level.SEVERE);
         }
 
         log.warning(e.getClass().getName() + " " + e.getMessage());

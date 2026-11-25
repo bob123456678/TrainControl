@@ -2852,7 +2852,7 @@ public class testTheEditorNamesItsShortcuts
     /** The newest lines of the main window's log, for a failure to say what went wrong. */
     private static String logTop() throws Exception
     {
-        String text = ((javax.swing.JTextArea) Reflect.get(TrainControlUI.class, ui, "debugArea")).getText();
+        String text = ((org.traincontrol.gui.app.LogPanel) Reflect.get(TrainControlUI.class, ui, "logView")).text();
 
         return text.substring(0, Math.min(1500, text.length()));
     }

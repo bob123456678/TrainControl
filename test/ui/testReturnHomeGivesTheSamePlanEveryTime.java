@@ -87,8 +87,8 @@ public class testReturnHomeGivesTheSamePlanEveryTime
 
         try
         {
-            text = Components.onTheEventThread(() -> (String) Reflect.method(TrainControlUI.class, "logText")
-                .invoke(model().getGUI()));
+            text = Components.onTheEventThread(() -> ((org.traincontrol.gui.app.LogPanel) Reflect.get(TrainControlUI.class,
+                model().getGUI(), "logView")).text());
         }
         catch (Exception unread)
         {

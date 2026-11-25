@@ -561,7 +561,7 @@ public class testASyncOwedWaitsForTheEditor
     /** The main window's log as it shows. */
     private static String logText()
     {
-        return Components.onTheEventThread(() -> (String) Reflect.method(TrainControlUI.class, "logText").invoke(ui));
+        return Components.onTheEventThread(() -> ((org.traincontrol.gui.app.LogPanel) Reflect.get(TrainControlUI.class, ui, "logView")).text());
     }
 
     /**

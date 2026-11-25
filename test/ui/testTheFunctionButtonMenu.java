@@ -310,13 +310,13 @@ public class testTheFunctionButtonMenu
     @Test
     public void testAFailureInASensorTaskReachesTheLogWindow() throws Exception
     {
-        javax.swing.JTextArea area = support.WindowField.of(ui, "debugArea");
+        org.traincontrol.gui.app.LogPanel area = support.WindowField.of(ui, "logView");
 
         // A sensor frame with no payload: the task reads the sensor number from it and fails on the message thread.
         model.receiveMessage(new org.traincontrol.marklin.udp.CS2Message(
             org.traincontrol.marklin.udp.CS2Message.CMD_ACC_SENSOR, 0x7b34, true, new byte[0]));
 
-        assertTrue(Components.waitFor(() -> Components.onTheEventThread(area::getText).contains("cs2-feedback-messages"),
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(area::text).contains("cs2-feedback-messages"),
             30000), "an error thrown while a sensor message was handled never reached the log window: submit keeps it "
             + "in a Future nobody reads, and without the thread's handler nothing is written");
     }
@@ -329,11 +329,11 @@ public class testTheFunctionButtonMenu
     @Test
     public void testAnErrorInAPictureTaskReachesTheLogWindow() throws Exception
     {
-        javax.swing.JTextArea area = support.WindowField.of(ui, "debugArea");
+        org.traincontrol.gui.app.LogPanel area = support.WindowField.of(ui, "logView");
 
         ui.getImageLoader().execute(() -> { throw new IllegalStateException("picture task boom"); });
 
-        assertTrue(Components.waitFor(() -> Components.onTheEventThread(area::getText).contains("picture task boom"), WAIT),
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(area::text).contains("picture task boom"), WAIT),
             "an error that ended a picture task never reached the log window");
     }
 
@@ -346,7 +346,7 @@ public class testTheFunctionButtonMenu
     @Test
     public void testAPictureThatCannotBeLoadedIsSaidInTheLogWindow() throws Exception
     {
-        javax.swing.JTextArea area = support.WindowField.of(ui, "debugArea");
+        org.traincontrol.gui.app.LogPanel area = support.WindowField.of(ui, "logView");
 
         String missing = new File(folder, "no such picture.png").toURI().toString();
 
@@ -358,7 +358,7 @@ public class testTheFunctionButtonMenu
         {
             ui.repaintLoc(true, null);
 
-            assertTrue(Components.waitFor(() -> Components.onTheEventThread(area::getText).contains(I18n.f("loc.ui.errorImageLoad", missing)), WAIT),
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(area::text).contains(I18n.f("loc.ui.errorImageLoad", missing)), WAIT),
                 "a picture that could not be loaded was not said in the log window");
         }
         finally
@@ -378,7 +378,7 @@ public class testTheFunctionButtonMenu
     @Test
     public void testATrainDeselectedWhileItsPictureLoadsLeavesNoError() throws Exception
     {
-        javax.swing.JTextArea area = support.WindowField.of(ui, "debugArea");
+        org.traincontrol.gui.app.LogPanel area = support.WindowField.of(ui, "logView");
         final String missing = new File(folder, "deselected meanwhile.png").toURI().toString();
         final java.util.concurrent.atomic.AtomicBoolean deselected = new java.util.concurrent.atomic.AtomicBoolean();
         final Object shownWas = Reflect.get(TrainControlUI.class, ui, "activeLoc");
@@ -412,7 +412,7 @@ public class testTheFunctionButtonMenu
             ui.repaintLoc(true, null);
 
             // The window keeps only its latest lines, so the file's own line is looked for, not what came after a mark
-            boolean ended = Components.waitFor(() -> Components.onTheEventThread(area::getText)
+            boolean ended = Components.waitFor(() -> Components.onTheEventThread(area::text)
                 .contains(I18n.f("loc.ui.errorImageLoad", missing)), WAIT);
 
             assertTrue(deselected.get(), "precondition: the picture task never asked for the train's picture");

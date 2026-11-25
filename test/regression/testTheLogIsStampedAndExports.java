@@ -36,6 +36,12 @@ public class testTheLogIsStampedAndExports
 
     private static void inAWindow(Claim claim) throws Exception
     {
+        inAWindow(testTheImportDoorReadsAnOldFile::openTheWindow, claim);
+    }
+
+    /** The same, in the window `open` builds. */
+    private static void inAWindow(java.util.concurrent.Callable<TrainControlUI> open, Claim claim) throws Exception
+    {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
         support.SandboxedWindow sandboxed = new support.SandboxedWindow();
@@ -44,7 +50,7 @@ public class testTheLogIsStampedAndExports
         {
             sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
 
-            claim.check(sandboxed.hold(testTheImportDoorReadsAnOldFile.openTheWindow()));
+            claim.check(sandboxed.hold(open.call()));
         }
         finally
         {
@@ -67,7 +73,7 @@ public class testTheLogIsStampedAndExports
     {
         try
         {
-            return (String) Reflect.method(TrainControlUI.class, "logText").invoke(ui);
+            return ((org.traincontrol.gui.app.LogPanel) Reflect.get(TrainControlUI.class, ui, "logView")).text();
         }
         catch (ReflectiveOperationException e)
         {
@@ -176,6 +182,106 @@ public class testTheLogIsStampedAndExports
             assertFalse(Pattern.compile("(?m)^\\d\\d:\\d\\d:\\d\\d FR051 (second|third)").matcher(text).find(),
                 "a later line of the entry carries a stamp");
         });
+    }
+
+    /**
+     * In the Log tab a warning shows the yellow triangle beside its line, an error the red one and a notice none,
+     * however it reached the log: a key the model logs, an exception, a task's uncaught error (FR-190).  The text keeps
+     * no mark, and Export Log saves exactly it.
+     *
+     * MUTATION: in `MarklinControlStation.logf`, `Level.INFO` for `LogPanel.levelOf(key)`; or in its `log(Exception)`
+     * or `THREAD_ERRORS`, `Level.INFO` for `Level.SEVERE`; or `TrainControlUI.log(String, Level)` passes `Level.INFO`.
+     */
+    @Test(timeOut = 180000)
+    public void testWarningsAndErrorsShowTheirTriangles() throws Exception
+    {
+        // The window its station logs to, as the application builds it
+        inAWindow(() -> (TrainControlUI) support.TestStation.simulatedWithWindowInDebug().getGUI(), ui ->
+        {
+            IllegalStateException failure = new IllegalStateException("FR190 uncaught");
+            String[] entries = {"FR190 notice", I18n.f("layout.warnPowerNotConfirmed", "FR190"),
+                I18n.f("ui.errorSavingUiState", "FR190"), "FR190 exception",
+                I18n.f("error.uncaughtInThread", "fr190-task", failure)};
+
+            ui.log(entries[0]);
+            ui.getModel().logf("layout.warnPowerNotConfirmed", "FR190");
+            ui.getModel().logf("ui.errorSavingUiState", "FR190");
+            ui.getModel().log(new Exception(entries[3]));
+            org.traincontrol.marklin.MarklinControlStation.THREAD_ERRORS.uncaughtException(new Thread("fr190-task"), failure);
+
+            String shown = logOf(ui);
+
+            for (String entry : entries) assertTrue(stamped(shown, entry).find(), "not shown plain: " + entry);
+
+            assertEquals(support.Components.onTheEventThread(() -> marks(ui, shown, entries)), "-YRRR",
+                "the marks beside notice, warning, error, exception, uncaught error");
+
+            File file = new File(temporaryFolder(), "marked-log.txt");
+
+            try (support.Answering answering = support.Answering.start(message -> null).choosing(file))
+            {
+                SwingUtilities.invokeLater(item(ui)::doClick);
+
+                assertTrue(support.Components.waitFor(file::isFile, 60000), "Export Log wrote no file");
+                support.Components.settle();
+                assertEquals(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8),
+                    shown.replace("\n", System.lineSeparator()), "the file is not the log as it showed");
+            }
+            finally
+            {
+                file.delete();
+            }
+        });
+    }
+
+    /**
+     * The mark painted beside each entry's line in the shown Log tab: Y for the yellow triangle, R for the red, - for
+     * none; event thread.
+     */
+    private static String marks(TrainControlUI ui, String shown, String[] entries) throws Exception
+    {
+        javax.swing.JTabbedPane tabs = (javax.swing.JTabbedPane) Reflect.get(TrainControlUI.class, ui, "KeyboardTab");
+        tabs.setSelectedComponent((java.awt.Component) Reflect.get(TrainControlUI.class, ui, "logPanel"));
+        ui.validate();
+
+        Object view = Reflect.get(TrainControlUI.class, ui, "logView");
+        javax.swing.JComponent gutter = (javax.swing.JComponent) Reflect.get(view.getClass(), view, "gutter");
+        javax.swing.JTextArea area = (javax.swing.JTextArea) Reflect.get(view.getClass(), view, "area");
+        StringBuilder said = new StringBuilder();
+
+        for (String entry : entries)
+        {
+            Matcher at = stamped(shown, entry);
+            at.find();
+
+            java.awt.Rectangle line = area.modelToView(at.start());
+            java.awt.image.BufferedImage band = new java.awt.image.BufferedImage(gutter.getWidth(), line.height,
+                java.awt.image.BufferedImage.TYPE_INT_RGB);
+            java.awt.Graphics2D g = band.createGraphics();
+
+            g.translate(0, -line.y);
+            g.setClip(0, line.y, gutter.getWidth(), line.height);
+            gutter.paint(g);
+            g.dispose();
+
+            char mark = '-';
+
+            for (int x = 0; x < band.getWidth(); x++)
+            {
+                for (int y = 0; y < band.getHeight(); y++)
+                {
+                    int rgb = band.getRGB(x, y) & 0xffffff;
+
+                    // The triangles' fills
+                    if (rgb == 0xfabe28) mark = 'Y';
+                    if (rgb == 0xd22323) mark = 'R';
+                }
+            }
+
+            said.append(mark);
+        }
+
+        return said.toString();
     }
 
     /** Cancels the save chooser that has come back after a failed write. */
