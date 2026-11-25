@@ -324,8 +324,9 @@ public class testStartingAutonomyFromTheWindow
      * A page window open while the pages are read again after a diagram edit, which resets the session, shows the next
      * run's path.
      *
-     * MUTATION: with `tiles.clear()` in `DiagramTileRegistry.reset`, leave out `this.updatePopups(true)` in
-     * `TrainControlUI.layoutRefreshCompleteInternal`, and the page window shows no path.
+     * MUTATION: with `tiles.clear()` in `DiagramTileRegistry.reset`, leave out both `this.updatePopups(true)` in
+     * `TrainControlUI.layoutRefreshCompleteInternal` and `refreshPopupsWhosePagesWereReadAgain()` in `repaintLayout`, and
+     * the page window shows no path.
      */
     @Test
     public void testAPageWindowShowsTheRunAfterThePagesAreReadAgain() throws Exception
