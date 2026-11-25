@@ -237,20 +237,20 @@ public final class ChoiceTable extends JScrollPane
         for (JComponent l : lines) p.add(l);
         return p;
     }
-    /** Narrows the table to at most `width` pixels, the rest scrolling sideways, where the screen's allowance is more. */
+    /** Narrows the table to `width` pixels, the rest scrolling sideways; given, it replaces the screen's three quarters. */
     public void limitWidth(int width)
     {
         this.widest = width;
     }
 
-    /** Every row up to half the screen's height and three quarters of its width; the rest scrolls, beside its bars. */
+    /** Every row up to half the screen's height and the limited width, else three quarters of the screen's; the rest scrolls. */
     @Override
     public Dimension getPreferredSize()
     {
         Dimension d = super.getPreferredSize(), screen = Toolkit.getDefaultToolkit().getScreenSize();
         int most = screen.height / 2;
         if (d.height > most) d = new Dimension(d.width + getVerticalScrollBar().getPreferredSize().width, most);
-        int wide = Math.min(screen.width * 3 / 4, widest);
+        int wide = widest < Integer.MAX_VALUE ? widest : screen.width * 3 / 4;
         if (d.width > wide)
             d = new Dimension(wide, d.height + getHorizontalScrollBar().getPreferredSize().height);
         return d;

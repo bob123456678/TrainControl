@@ -272,6 +272,37 @@ public class testChoiceTable
             + " of the " + screen + " px screen");
     }
 
+    /**
+     * With a width limit given, it alone decides: rows wider than three quarters of the screen but inside the limit
+     * ask for their full width and no bar below; a limit narrower than the rows narrows to it, with the bar.
+     *
+     * MUTATION: in `getPreferredSize`, use `Math.min(screen.width * 3 / 4, widest)`, and the roomy limit is cut to three quarters.
+     */
+    @Test
+    public void testALimitAloneDecidesTheWidth()
+    {
+        int screen = Toolkit.getDefaultToolkit().getScreenSize().width, rows = screen * 7 / 8;
+        Dimension[] sizes = onTheEventThread(() ->
+        {
+            ChoiceTable table = new ChoiceTable(new JLabel("Name"));
+            JLabel wide = new JLabel("Row");
+            wide.setPreferredSize(new Dimension(rows, 20));
+            table.addRow(wide);
+            table.limitWidth(screen * 2);
+            Dimension roomy = table.getPreferredSize();
+            table.limitWidth(rows / 2);
+            return new Dimension[] {roomy, table.getPreferredSize(), table.getViewport().getView().getPreferredSize(),
+                table.getHorizontalScrollBar().getPreferredSize()};
+        });
+
+        assertTrue(sizes[2].width > screen * 3 / 4, "precondition: the rows are wider than three quarters of the screen");
+        assertTrue(sizes[0].width >= sizes[2].width, "inside the limit the table asks for " + sizes[0].width
+            + " px, less than its rows' " + sizes[2].width);
+        assertEquals(sizes[1].width, rows / 2, "past the limit the table asks for " + sizes[1].width + " px");
+        assertEquals(sizes[1].height - sizes[0].height, sizes[3].height, "the bar's room is off: " + sizes[0].height
+            + " px high inside the limit, " + sizes[1].height + " past it");
+    }
+
     /** A table with this many rows, laid out and painted, read down its right edge, clear of every cell. */
     private static final class Striped
     {
