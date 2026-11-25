@@ -166,7 +166,7 @@ public final class DiagramExport
                 // which would discard the cause the caller needs.  Logged rather than thrown: a stale registration is a
                 // leak, while losing the reason an export failed leaves nobody anywhere to start.
                 if (ui != null) ui.log(I18n.f("layout.errorExportGridNotRetired",
-                    String.valueOf(fromTheRetirement.getCause())));
+                    String.valueOf(fromTheRetirement.getCause())), java.util.logging.Level.SEVERE);
             }
         }
 

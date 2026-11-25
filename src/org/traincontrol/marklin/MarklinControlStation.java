@@ -499,7 +499,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         else
         {
-            this.logf("log.csNotConnected");
+            // A simulation never connects: a notice there, a warning with a real station
+            this.logf(simulate ? Level.INFO : Level.WARNING, "log.csNotConnected");
         } 
         
         this.linkSavedConsists();
@@ -1087,7 +1088,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         }
                         else
                         {
-                            this.logf("route.ui.autolayoutErrorS88RequiredForAutoFire", r.getId());
+                            this.logf(Level.SEVERE, "route.ui.autolayoutErrorS88RequiredForAutoFire", r.getId());
                         }
                     }
                 }
@@ -1786,7 +1787,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
             catch (Exception e)
             {
-                this.logf("log.csTypeDetectionError", e.toString());
+                // No device file is ordinary for a local layout folder, so only another failure is an error
+                this.logf(e instanceof java.io.FileNotFoundException ? Level.INFO : Level.SEVERE, "log.csTypeDetectionError", e.toString());
 
                 if (!(e instanceof java.io.FileNotFoundException)) this.stationTypeUnknown = e;
             }
@@ -2413,7 +2415,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 this.log(keepFailed);
 
-                this.logf("log.databaseSaveFailed", keepFailed.toString());
+                this.logf(Level.SEVERE, "log.databaseSaveFailed", keepFailed.toString());
 
                 return keepFailed.toString();
             }
@@ -2445,7 +2447,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         catch (IOException iOException)
         {
-            this.logf("log.databaseSaveFailed", iOException.getMessage());
+            this.logf(Level.SEVERE, "log.databaseSaveFailed", iOException.getMessage());
 
             return String.valueOf(iOException.getMessage());
         }
@@ -2571,7 +2573,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 // a copy.
                 this.databaseLoadFailed = true;
 
-                this.logf("log.databaseBadDataFile");
+                this.logf(Level.SEVERE, "log.databaseBadDataFile");
             }
         }
         catch (IOException iex)
@@ -2593,7 +2595,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // Present but unreadable, exactly as above
             this.databaseLoadFailed = true;
 
-            this.logf("log.databaseBadDataFile");   
+            this.logf(Level.SEVERE, "log.databaseBadDataFile");
             
             if (debug)
             {
@@ -3255,7 +3257,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     int channel = message.getLength() >= 6 ? message.getData()[5] & 0xFF : 0;
 
-                    this.logf("log.powerOffOverload", channel);
+                    this.logf(Level.WARNING, "log.powerOffOverload", channel);
 
                     // Once per cut, whether or not a Stop came first: a short repeats the message while it lasts
                     if (!this.powerCutWarned && this.view != null) this.view.showPowerCut(channel);
@@ -3422,6 +3424,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
         log(I18n.f(key, args), LogPanel.levelOf(key));
     }
     
+    /** Formatted log message at a level the log window marks (FR-190). */
+    @Override
+    public final void logf(Level level, String key, Object... args)
+    {
+        log(I18n.f(key, args), level);
+    }
+
     /**
      * Logs a message
      */
@@ -3432,7 +3441,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     /** Logs a message at a level the log window marks; the developer's log takes every level as info. */
-    private void log(String message, Level level)
+    public final void log(String message, Level level)
     {
         if (message != null && !message.equals(this.lastMessage))
         {

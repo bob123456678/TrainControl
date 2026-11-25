@@ -192,7 +192,8 @@ public class testTheLogIsStampedAndExports
      *
      * MUTATION: in `MarklinControlStation.logf`, `Level.INFO` for `LogPanel.levelOf(key)`; or in its `log(Exception)`
      * or `THREAD_ERRORS`, `Level.INFO` for `Level.SEVERE`; or `TrainControlUI.log(String, Level)` passes `Level.INFO`;
-     * or its `log(String)` passes `Level.SEVERE`.
+     * or its `log(String)` passes `Level.SEVERE`; or in `powerOffOverload`'s or `databaseBadDataFile`'s `logf`, drop the
+     * level.
      */
     @Test(timeOut = 180000)
     public void testWarningsAndErrorsShowTheirTriangles() throws Exception
@@ -203,7 +204,8 @@ public class testTheLogIsStampedAndExports
             IllegalStateException failure = new IllegalStateException("FR190 uncaught");
             String[] entries = {"FR190 notice", "FR190 model notice", I18n.f("layout.warnPowerNotConfirmed", "FR190"),
                 I18n.f("ui.errorSavingUiState", "FR190"), "FR190 exception",
-                I18n.f("error.uncaughtInThread", "fr190-task", failure)};
+                I18n.f("error.uncaughtInThread", "fr190-task", failure), I18n.f("log.powerOffOverload", 3),
+                I18n.t("log.databaseBadDataFile")};
 
             ui.log(entries[0]);
             ui.getModel().log(entries[1]);
@@ -212,12 +214,34 @@ public class testTheLogIsStampedAndExports
             ui.getModel().log(new Exception(entries[4]));
             org.traincontrol.marklin.MarklinControlStation.THREAD_ERRORS.uncaughtException(new Thread("fr190-task"), failure);
 
+            // A station's own failure lines pass their level by hand: a short circuit (warning, on the station's
+            // thread) and a data file that is not a database (error)
+            org.traincontrol.marklin.MarklinControlStation model = (org.traincontrol.marklin.MarklinControlStation) ui.getModel();
+
+            model.receiveMessage(support.Packets.overload(3));
+
+            File notADatabase = File.createTempFile("fr190", ".data");
+
+            try (java.io.ObjectOutputStream out = new java.io.ObjectOutputStream(new java.io.FileOutputStream(notADatabase)))
+            {
+                out.writeObject("not a list");
+            }
+
+            model.restoreState(notADatabase.getPath());
+            assertTrue(notADatabase.delete(), "the scratch file stayed");
+            model.restoreState(notADatabase.getPath());
+
+            assertTrue(support.Components.waitFor(() ->
+            {
+                try { return logOf(ui).contains(entries[6]); } catch (Exception e) { return false; }
+            }, 5000), "the short circuit was not logged");
+
             String shown = logOf(ui);
 
             for (String entry : entries) assertTrue(stamped(shown, entry).find(), "not shown plain: " + entry);
 
-            assertEquals(support.Components.onTheEventThread(() -> marks(ui, shown, entries)), "--YRRR",
-                "the marks beside notice, model notice, warning, error, exception, uncaught error");
+            assertEquals(support.Components.onTheEventThread(() -> marks(ui, shown, entries)), "--YRRRYR",
+                "the marks beside notice, model notice, warning, error, exception, uncaught error, short circuit, bad data file");
 
             exportedAsShown(ui, shown, "marked-log.txt", (file, answering) -> { });
         });

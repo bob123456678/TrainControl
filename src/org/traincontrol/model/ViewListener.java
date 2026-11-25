@@ -95,6 +95,11 @@ public interface ViewListener
     public void locFunctionsOff(Locomotive l);
     public void lightsOn(List<String> locomotives);
     public void log(String s);
+    /** As {@link #log(String)}, at a level the log window marks (FR-190). */
+    public default void log(String s, java.util.logging.Level level)
+    {
+        log(s);
+    }
     public void log(Exception e);
     public void stopAllLocs();
     public int syncWithCS2();
@@ -292,5 +297,10 @@ public interface ViewListener
      */
     public String exportAccessoryActuationsToCSV();
     public void logf(String key, Object... args);
+    /** As {@link #logf(String, Object...)}, at a level the log window marks. */
+    public default void logf(java.util.logging.Level level, String key, Object... args)
+    {
+        logf(key, args);
+    }
     public Feedback newFeedback(int id, CANMessage message);
 }
