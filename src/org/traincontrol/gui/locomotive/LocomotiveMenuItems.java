@@ -8,9 +8,8 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 
 /**
- * The menu items that belong to a locomotive rather than to the place it was right-clicked, shared by
- * {@link LocomotiveButtonContextMenu} and {@link LocomotiveSelectorContextMenu}.  The order is deliberately NOT consolidated: each
- * menu adds these among its own items and separators.
+ * The menu items of a locomotive rather than of the place it was right-clicked, shared by
+ * {@link LocomotiveButtonContextMenu} and {@link LocomotiveSelectorContextMenu}; each menu orders them among its own.
  *
  * @author Adam
  */

@@ -201,8 +201,8 @@ public class testEditorSurfaceRules
         // And project-wide, as a named LIST rather than a count, following testStuckTrainAdvisory: a list says what
         // is wrong, and adding a writer means saying here which file it is in and why it is allowed to be a second one.
         assertEquals(filesWriting("setFacing("),
-            Arrays.asList("AutonomyEditorPanel.java", "AutonomySession.java", "DiagramTrainKeys.java",
-                "DiagramAutonomyContextMenu.java",
+            Arrays.asList("AutonomyEditorPanel.java", "AutonomySession.java", "DiagramAutonomyContextMenu.java",
+                "DiagramTrainKeys.java",
                 // RunningLayoutSync records the facing of a train the rebuild could not put back
                 // (`recordTheTrainsNotPutBack`), and the put-back tells the diagram after.
                 "RunningLayoutSync.java",
