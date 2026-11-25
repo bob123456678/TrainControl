@@ -15,7 +15,7 @@ import org.traincontrol.gui.LayoutLabel;
  * Which on-screen tiles stand for which square of which page.
  *
  * The same square can be on screen more than once (the main window and a popup can show the same page, and the diagram
- * is redrawn on every page switch), so this is a set per square rather than a single label.  Monitoring publishes one
+ * is redrawn on every page switch), so this is a set per square, not one label.  Monitoring publishes one
  * picture and every copy of a tile shows it.
  *
  * Stale labels are pruned the way the accessory and feedback tile sets prune theirs: on iteration, by asking whether
