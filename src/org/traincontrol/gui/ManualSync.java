@@ -56,16 +56,17 @@ public final class ManualSync
     void saySynced(Component c, int synced, int... answers)
     {
         String text = syncSummary(synced - model.getLastSyncRoutes(), model.getLastSyncRoutes(),
-            model.wasLastSyncPartial(), answers);
+            model.wasLastSyncPartial(), model.getLayoutFolderUnread(), answers);
         SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(c, text, I18n.t("sync.ui.title"),
             JOptionPane.INFORMATION_MESSAGE));
     }
 
     /**
      * A sync's closing message: the locomotives and routes it added, then of the table's answers (renamed, re-addressed,
-     * kept, ignored, waiting) those not zero, and the partial read's sentence; with none of these, that all matches.
+     * kept, ignored, waiting) those not zero, the partial read's sentence and the unread layout folder's; with none of
+     * these, that all matches.
      */
-    public static String syncSummary(int locomotives, int routes, boolean partial, int... answers)
+    public static String syncSummary(int locomotives, int routes, boolean partial, String folderUnread, int... answers)
     {
         List<String> added = new ArrayList<>(), said = new ArrayList<>();
         if (locomotives > 0) added.add(I18n.f(locomotives == 1 ? "ui.infoSyncLocomotiveAdded"
@@ -74,11 +75,13 @@ public final class ManualSync
         String[] kinds = {"ui.infoSyncRenamed", "ui.infoSyncMoved", "ui.infoSyncKept", "ui.infoSyncIgnored",
             "ui.infoSyncWaiting", "ui.infoSyncByHand"};
         for (int i = 0; i < answers.length; i++) if (answers[i] > 0) said.add(I18n.f(kinds[i], answers[i]));
-        if (!partial && added.isEmpty() && said.isEmpty()) return I18n.t("ui.infoSyncNothingDiffers");
+        if (!partial && folderUnread == null && added.isEmpty() && said.isEmpty())
+            return I18n.t("ui.infoSyncNothingDiffers");
         List<String> parts = new ArrayList<>(Arrays.asList(I18n.t("ui.infoSyncComplete")));
         if (!added.isEmpty()) parts.add(String.join("\n", added));
         if (!said.isEmpty()) parts.add(String.join("\n", said));
         if (partial) parts.add(I18n.t("ui.infoSyncPartial"));
+        if (folderUnread != null) parts.add(I18n.f("layout.ui.errorFolderUnreadLayoutKept", folderUnread));
         return String.join("\n\n", parts);
     }
 

@@ -536,27 +536,7 @@ public class testDownloadingTheStationsLayout
 
         for (boolean fromLocal : new boolean[] {false, true})
         {
-            if (fromLocal)
-            {
-                java.lang.reflect.Method open = Reflect.method(TrainControlUI.class, "openLayoutFolder", File.class);
-
-                SwingUtilities.invokeAndWait(() ->
-                {
-                    try
-                    {
-                        open.invoke(ui, local);
-                    }
-                    catch (ReflectiveOperationException e)
-                    {
-                        throw new IllegalStateException(e);
-                    }
-                });
-
-                assertTrue(Components.waitFor(() -> rig.model.getLayoutList().contains("1 - Main"), 60000),
-                    "precondition: the folder of this computer's did not open");
-
-                Components.settle();
-            }
+            if (fromLocal) openTheFolder(local);
 
             final String from = fromLocal ? "from a folder" : "from the station's layout";
             final String was = withoutTheSession(testRecentLayouts.everythingAbout(ui));
@@ -578,6 +558,101 @@ public class testDownloadingTheStationsLayout
 
             Files.copy(new File("test/test_layout/config/gleisbild.cs2").toPath(),
                 new File(changing, "config/gleisbild.cs2").toPath());
+        }
+    }
+
+    /**
+     * A Sync while the layout folder in use will not read keeps the layout, its preference, pages, page window,
+     * autonomy and sensors, says so by the folder's name rather than that everything matches, and still syncs the
+     * locomotives; once the folder is back, the next Sync reads it (FR-245).
+     *
+     * MUTATION: in `MarklinControlStation.syncLayoutsFromConfiguredSource`, fall back to the station's pages while a
+     * layout is in use, and the Sync switches to the station's layout.
+     */
+    @Test(timeOut = 240000)
+    public void testASyncWhileTheFolderWillNotReadKeepsTheLayoutAndSaysSo() throws Exception
+    {
+        final File local = new File(root, "local");
+        final File away = new File(root, "away");
+
+        Trees.copyForTheRun(new File("test/test_layout"), local);
+        openTheFolder(local);
+        support.AskingWindows.openThePage(ui);
+        Components.settle();
+
+        final String folder = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+        final List<Integer> sensors = everySensorSet();
+        final String was = testRecentLayouts.everythingAbout(ui);
+        final Object page = rig.model.getLayout("1 - Main");
+
+        assertTrue(was.contains("page windows: 1 - Main") && ui.getAutonomySession() != null,
+            "precondition: no page window, or no autonomy configuration loaded: " + was);
+        assertTrue(rig.model.deleteLoc("ALCO UP"), "precondition: the station's locomotive is not here");
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+        {
+            assertTrue(local.renameTo(away), "precondition: the folder could not be taken away");
+            SwingUtilities.invokeLater(() -> ui.doSync(ui));
+            assertTrue(answering.awaitAsked(1, 60000), "the Sync said nothing");
+            Components.settle();
+
+            String said = answering.asked().get(0);
+
+            assertTrue(said.contains(I18n.f("layout.ui.errorFolderUnreadLayoutKept", folder)), "the Sync did not say the"
+                + " folder could not be read: " + said);
+            assertFalse(said.contains(I18n.t("ui.infoSyncNothingDiffers")), "the Sync said everything matches: " + said);
+            assertEquals(testRecentLayouts.everythingAbout(ui), was, "the Sync changed the layout in use");
+            assertSet(sensors, "the Sync cleared the sensor");
+            assertTrue(rig.model.getLocByName("ALCO UP") != null, "the Sync did not sync the locomotives");
+
+            assertTrue(away.renameTo(local), "precondition: the folder could not be put back");
+            SwingUtilities.invokeLater(() -> ui.doSync(ui));
+            assertTrue(answering.awaitAsked(2, 60000), "the second Sync said nothing");
+
+            assertEquals(answering.asked().get(1), I18n.t("ui.infoSyncNothingDiffers"), "the folder back, the Sync says");
+            assertTrue(rig.model.getLayout("1 - Main") != page, "the folder back, the Sync did not read it");
+        }
+    }
+
+    /** Layouts &gt; Open Layout's own method on `folder`, once its pages are in. */
+    private void openTheFolder(File folder) throws Exception
+    {
+        java.lang.reflect.Method open = Reflect.method(TrainControlUI.class, "openLayoutFolder", File.class);
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                open.invoke(ui, folder);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+
+        assertTrue(Components.waitFor(() -> rig.model.getLayoutList().contains("1 - Main"), 60000),
+            "precondition: the folder of this computer's did not open");
+
+        Components.settle();
+    }
+
+    /** Sets every sensor the model knows, and gives back their addresses. */
+    private List<Integer> everySensorSet()
+    {
+        List<Integer> sensors = new ArrayList<>(rig.model.knownSensors());
+
+        for (Integer id : sensors) rig.model.setFeedbackState(String.valueOf(id), true);
+
+        return sensors;
+    }
+
+    private void assertSet(List<Integer> sensors, String failure)
+    {
+        for (Integer id : sensors)
+        {
+            assertTrue(rig.model.knownSensors().contains(id) && rig.model.getFeedbackState(String.valueOf(id)),
+                failure + " " + id);
         }
     }
 

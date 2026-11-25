@@ -553,9 +553,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
        
     /**
      * Re-reads the track diagrams from wherever they are configured to come from - a local folder when
-     * one is set, the Central Station otherwise - reverting to the Central Station if the local folder
-     * cannot be read.  The station's diagram is not read while the station's type is unknown, as the type decides which
-     * protocol a CS3 tile at an address with two takes; a local folder is read either way.
+     * one is set, the Central Station otherwise - keeping the layout in use if the local folder cannot be read, or
+     * reverting to the Central Station when there is none.  The station's diagram is not read while the station's
+     * type is unknown, as the type decides which protocol a CS3 tile at an address with two takes; a local folder is
+     * read either way.
      *
      * Not a full sync, which also re-imports every route and locomotive: slow and side-effecting (routes are deleted
      * and re-added, addresses and function types adopted), none of it wanted after renaming a page.
@@ -595,10 +596,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 catch (Exception e)
                 {
                     this.log(e);
+                    // A layout in use is kept, the folder read again at the next sync; with none yet, at a start, the
+                    // station's layout stands in and the folder is let go (FR-245)
+                    if (!this.layoutDB.getItemNames().isEmpty())
+                    {
+                        this.layoutFolderUnread = overrideLayoutPath;
+                        this.logf(Level.SEVERE, "layout.ui.errorFolderUnreadLayoutKept", overrideLayoutPath);
+                        return;
+                    }
 
                     // The folder is tried again at the next sync, by when the type may be known
                     requireTheTypeKnown();
-                   
                     this.logf(java.util.logging.Level.SEVERE, "layout.revertToDefaultSource", !debug ? " Enable debug mode for details." : "");
                     TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
                     fileParser.setDefaultLayoutDataLoc();
@@ -1555,6 +1563,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /** Whether the last sync left part of the Central Station's data as it was because it could not be read (FR-169). */
     private volatile boolean lastSyncPartial = false;
+    private volatile String layoutFolderUnread;
     /** The routes the last sync added or replaced, which its count includes. */
     private volatile int lastSyncRoutes;
 
@@ -1583,6 +1592,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public boolean wasLastSyncPartial()
     {
         return this.lastSyncPartial;
+    }
+
+    @Override
+    public String getLayoutFolderUnread()
+    {
+        return this.layoutFolderUnread;
     }
 
     /**
@@ -1734,6 +1749,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {        
         this.lastSyncError = null;
         this.lastSyncPartial = false;
+        this.layoutFolderUnread = null;
         this.lastSyncRoutes = 0;
 
         // Read remote config files, each one once for the whole sync (FR-207)
