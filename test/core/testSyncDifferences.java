@@ -419,6 +419,47 @@ public class testSyncDifferences
         }
     }
 
+    /**
+     * A full sync that throws while it works out the differences keeps the station names the last one held back, so a
+     * station multi-unit still finds its member: no mark is cleared before its new value is known.  The throw comes
+     * from a locomotive here whose speed, asked by the second pass of `differences`, throws.
+     *
+     * MUTATION: in `MarklinControlStation.syncThroughTheNewParser`, clear every mark ahead of the second `differences`.
+     */
+    @Test(timeOut = 120000)
+    @SuppressWarnings("unchecked")
+    public void testASyncThatThrowsKeepsTheNamesHeldBack() throws Exception
+    {
+        try (StationRig rig = rig(station("SD Y", 10)))
+        {
+            here(rig, "SD X", 10);
+            sync(rig);
+            Locomotive x = rig.model.getLocByName("SD X");
+            assertTrue(x.keepsItsNameOver("SD Y"), "precondition: the sync held back no station name");
+
+            java.util.concurrent.atomic.AtomicInteger asked = new java.util.concurrent.atomic.AtomicInteger();
+            org.traincontrol.marklin.MarklinLocomotive throwing = new org.traincontrol.marklin.MarklinLocomotive(rig.model,
+                30, Locomotive.decoderType.MM2, "SD T")
+            {
+                @Override
+                public int getSpeed()
+                {
+                    if (Arrays.stream(Thread.currentThread().getStackTrace())
+                        .anyMatch(f -> "differences".equals(f.getMethodName())) && asked.incrementAndGet() == 2)
+                        throw new IllegalStateException("thrown by the claim");
+                    return super.getSpeed();
+                }
+            };
+            ((org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.marklin.MarklinLocomotive, String>)
+                support.Reflect.get(org.traincontrol.marklin.MarklinControlStation.class, rig.model, "locDB"))
+                .add(throwing, throwing.getName(), throwing.getUID());
+
+            assertEquals(rig.model.syncWithCS2(), -1, "precondition: the sync did not throw");
+            assertEquals(asked.get(), 2, "precondition: the throw was not in the second pass");
+            assertTrue(x.keepsItsNameOver("SD Y"), "a sync that threw cleared the station name held back");
+        }
+    }
+
     /** The row of the locomotive here by this name, which must differ. */
     private static Row row(StationRig rig, RenameProposals d, String name)
     {

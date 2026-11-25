@@ -1896,16 +1896,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
             // A station locomotive at the address of one here under another name is not added beside it, and the one
             // here stands for it as a multi-unit member, until a pressed Sync answers; a partial read can set the mark
-            // but never clear it, as the station's name may be in what did not read (FR-249)
-            if (!this.lastSyncPartial) for (MarklinLocomotive here : this.locDB.getItems()) here.setHeldBackStationName(null);
+            // but never clear it, as the station's name may be in what did not read (FR-249).  Each mark goes straight to
+            // its new value, so no reader, and no throw, finds every mark cleared.
             RenameProposals left = differences(parsedLocs, this.lastSyncPartial, false);
+            Map<Locomotive, String> marks = new HashMap<>();
+            for (RenameProposals.Row row : left.getRows()) if (row.stationName != null) marks.put(row.loco, row.stationName);
+            for (MarklinLocomotive here : this.locDB.getItems())
+                if (!this.lastSyncPartial || marks.containsKey(here)) here.setHeldBackStationName(marks.get(here));
             // The menu's count likewise: a partial read can raise it, never lower it
             this.unsettled = this.lastSyncPartial ? Math.max(this.unsettled, left.getUnsettledCount())
                 : left.getUnsettledCount();
             for (RenameProposals.Row row : left.getRows())
             {
                 if (row.stationName == null) continue;
-                row.loco.setHeldBackStationName(row.stationName);
                 if (row.byHand) this.logf("loc.syncByHand", row.loco.getName(), row.stationName,
                     row.loco.getAddress(), row.stationAddress);
                 else if (!this.locDB.hasName(row.stationName) && !row.isNameKept() && !row.loco.isSyncIgnored())
