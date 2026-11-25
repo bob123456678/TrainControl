@@ -518,12 +518,12 @@ public class testDownloadingTheStationsLayout
     }
 
     /**
-     * Open Layout on a folder that then fails in the sync's read, with a station that answers: the sync falls back to
-     * the station's pages, yet the layout in use stays, from the station's layout and from a folder of this computer's,
-     * whose own pages are read again (FR-245).  The session follows pages read again, so it is left out.
+     * Open Layout on a folder that then fails in the sync's read, with a station that answers: the layout in use stays,
+     * from the station's layout and from a folder of this computer's, with its sensors' states (FR-245).  The session
+     * follows pages read again, so it is left out.
      *
-     * MUTATION: in `LayoutFileActions.switchTo`, leave out `layoutEditingComplete`, and the station's pages stand under
-     * the folder's name.
+     * MUTATION: in `MarklinControlStation.syncLayoutsFromConfiguredSource`, fall back to the station's pages while a
+     * layout is in use, and the sensors only the folder draws come back clear.
      */
     @Test(timeOut = 240000)
     public void testAFolderThatFailsInTheSyncLeavesTheLayoutInUse() throws Exception
@@ -539,6 +539,7 @@ public class testDownloadingTheStationsLayout
             if (fromLocal) openTheFolder(local);
 
             final String from = fromLocal ? "from a folder" : "from the station's layout";
+            final List<Integer> sensors = everySensorSet();
             final String was = withoutTheSession(testRecentLayouts.everythingAbout(ui));
             final String filesWere = testRecentLayouts.filesIn(local);
 
@@ -555,6 +556,7 @@ public class testDownloadingTheStationsLayout
                 + " sync changed it, " + from);
             assertEquals(testRecentLayouts.filesIn(local), filesWere, "a folder that failed in the sync wrote the folder"
                 + " in use, " + from);
+            assertSet(sensors, "a folder that failed in the sync cleared the sensor, " + from);
 
             Files.copy(new File("test/test_layout/config/gleisbild.cs2").toPath(),
                 new File(changing, "config/gleisbild.cs2").toPath());
