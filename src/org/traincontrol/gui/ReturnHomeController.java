@@ -243,14 +243,14 @@ final class ReturnHomeController extends SettledQuestion
         askForReturnHomeTriage(layout);
     }
 
-    /** Puts one worker on "is there anything to send home" unless one is on it, coalesced (`CoalescedAsk`). */
+    /** Puts one worker on "is there anything to send home" unless one is on it, coalesced (`CoalescedWorker`). */
     private void askForReturnHomeTriage(final Layout railway)
     {
         this.ui.returnHomeTriageSubject = railway;
 
         this.ui.returnHomeTriageDirty.set(true);
 
-        CoalescedAsk.ask(this.ui.returnHomeTriageInFlight, this.ui.returnHomeTriageDirty, this.ui.ReturnHomeTriageRenderer,
+        CoalescedWorker.ask(this.ui.returnHomeTriageInFlight, this.ui.returnHomeTriageDirty, this.ui.ReturnHomeTriageRenderer,
             this::workOutReturnHomeTriage, this::settle, () ->
             {
                 if (this.ui.returnHomeTriageSubject != null) askForReturnHomeTriage(this.ui.returnHomeTriageSubject);
@@ -397,7 +397,7 @@ final class ReturnHomeController extends SettledQuestion
 
     void installMenu(javax.swing.JButton button)
     {
-        button.addMouseListener(Listen.pressed(e ->
+        button.addMouseListener(OnMouse.pressed(e ->
         {
             if (!SwingUtilities.isRightMouseButton(e)) return;
 

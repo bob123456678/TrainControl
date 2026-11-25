@@ -63,7 +63,7 @@ public class testTheDestinationDoorsAgree
     @Test
     public void testTheEllipsisMeansTheListWasCutShort() throws Exception
     {
-        Class<?> menu = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
+        Class<?> menu = Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu");
 
         Method rule = Reflect.method(menu, "theListWasCutShort", int.class, int.class, int.class);
 
@@ -97,7 +97,7 @@ public class testTheDestinationDoorsAgree
             + " destinations at all kept showing it after the rule was corrected");
 
         // AND THE NUMBER THAT CAUSED IT IS GONE.
-        Class<?> options = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions");
+        Class<?> options = Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu$PathOptions");
 
         for (java.lang.reflect.Field field : options.getDeclaredFields())
         {
@@ -166,7 +166,7 @@ public class testTheDestinationDoorsAgree
             + " hand-driven send's and give reasons that stop nothing one does (REG4, GUI3-C1; Adam, OB-225).  Name"
             + " the tier: " + untiered);
 
-        for (String door : new String[] {"gui/autonomyeditor/EditorWhy.java", "gui/autonomy/AutoLocomotiveStatus.java"})
+        for (String door : new String[] {"gui/autonomyeditor/EditorWhy.java", "gui/autonomy/AutonomyLocomotiveStatus.java"})
         {
             String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/org/traincontrol/"
                 + door)), java.nio.charset.StandardCharsets.UTF_8);

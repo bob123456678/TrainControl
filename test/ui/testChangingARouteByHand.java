@@ -24,7 +24,7 @@ import org.traincontrol.base.NodeRouteCommand;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.base.ThreeWaySwitch;
-import org.traincontrol.gui.RouteEditorFrame;
+import org.traincontrol.gui.RouteEditorWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
@@ -108,7 +108,7 @@ public class testChangingARouteByHand
         final int switch3 = switchAt(model, 14);
         final int switch4 = switchAt(model, 16);
 
-        RouteEditorFrame frame = edit(name);
+        RouteEditorWindow frame = edit(name);
 
         try
         {
@@ -181,7 +181,7 @@ public class testChangingARouteByHand
         final String name = aYardRoute("Undo yard");
         final int switch5 = switchAt(model, 18);
 
-        RouteEditorFrame frame = edit(name);
+        RouteEditorWindow frame = edit(name);
 
         try
         {
@@ -238,9 +238,9 @@ public class testChangingARouteByHand
      * typed over with 8 and left open: Cancel asks whether to throw that away, and No keeps the editor.  The first
      * switch is typed over with another address, also left open, and Save writes both.
      *
-     * MUTATION: in `RouteEditorFrame.closeIfThrowingNothingAway`, drop `commitOpenEdits()`, and Cancel closes without
+     * MUTATION: in `RouteEditorWindow.closeIfThrowingNothingAway`, drop `commitOpenEdits()`, and Cancel closes without
      * asking.
-     * MUTATION: in `RouteEditorFrame.onSave`, drop `commitOpenEdits()`, and the first switch is saved at its old address.
+     * MUTATION: in `RouteEditorWindow.onSave`, drop `commitOpenEdits()`, and the first switch is saved at its old address.
      */
     @Test
     public void testAnEditLeftOpenIsAskedAboutAndSaved() throws Exception
@@ -248,7 +248,7 @@ public class testChangingARouteByHand
         final String name = aYardRoute("Open edit yard");
         final int switch7 = switchAt(model, 22);
 
-        RouteEditorFrame frame = edit(name);
+        RouteEditorWindow frame = edit(name);
 
         try
         {
@@ -287,7 +287,7 @@ public class testChangingARouteByHand
      * again showing the original: its name, its sensor, Automatically Fire ticked, its commands' targets and its
      * conditions.  Cancel there closes without asking.
      *
-     * MUTATION: in `RouteEditorFrame.build`, give Cancel `this::onSave` rather than `this::closeIfThrowingNothingAway`,
+     * MUTATION: in `RouteEditorWindow.build`, give Cancel `this::onSave` rather than `this::closeIfThrowingNothingAway`,
      * and Cancel saves the edits.
      */
     @Test
@@ -296,7 +296,7 @@ public class testChangingARouteByHand
         final String name = aYardRoute("Cancel yard");
         final String before = everythingOf(model.getRoute(name));
 
-        RouteEditorFrame frame = edit(name);
+        RouteEditorWindow frame = edit(name);
 
         try
         {
@@ -331,7 +331,7 @@ public class testChangingARouteByHand
         assertEquals(everythingOf(model.getRoute(name)), before, "Cancel changed the saved route");
         assertNull(model.getRoute(name + " renamed"), "Cancel saved the route under its new name");
 
-        RouteEditorFrame again = edit(name);
+        RouteEditorWindow again = edit(name);
 
         try
         {
@@ -397,7 +397,7 @@ public class testChangingARouteByHand
             .getConditions()) + " / 7 false", "the copy before it is touched: the original's commands and conditions,"
             + " manual");
 
-        RouteEditorFrame frame = edit(copy);
+        RouteEditorWindow frame = edit(copy);
 
         try
         {
@@ -487,7 +487,7 @@ public class testChangingARouteByHand
     }
 
     /** Presses Cancel and answers its question with this button; gives back the question. */
-    private static String cancelAnswering(RouteEditorFrame frame, String answerKey)
+    private static String cancelAnswering(RouteEditorWindow frame, String answerKey)
     {
         try (Answering answering = Answering.start(message -> Answering.press(I18n.t(answerKey))))
         {
@@ -500,9 +500,9 @@ public class testChangingARouteByHand
     }
 
     /** Opens a route's editor from the route list's Edit Route. */
-    private static RouteEditorFrame edit(String name)
+    private static RouteEditorWindow edit(String name)
     {
-        RouteEditorFrame frame = (RouteEditorFrame) RouteListDoors.edit(ui, name);
+        RouteEditorWindow frame = (RouteEditorWindow) RouteListDoors.edit(ui, name);
 
         Components.settle();
 

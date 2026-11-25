@@ -508,7 +508,7 @@ public class testLocomotiveCsvImportDoor
      * MT-991 steps 1 to 3 as written: the file Export to CSV saves, its first row's Start Year made "c. 1950", imported
      * again.  The summary counts one skipped row and names line 2 with its cell, and every locomotive is as it was.
      *
-     * MUTATION: in `LocomotiveCsvDoor.tell`, leave out the `infoImportCsvSkipped` sentence, and this fails.
+     * MUTATION: in `LocomotiveCsvImport.tell`, leave out the `infoImportCsvSkipped` sentence, and this fails.
      */
     @Test
     public void testAnExportWithOneBadYearImportsTheRestAndNamesItsLine() throws Exception
@@ -620,7 +620,7 @@ public class testLocomotiveCsvImportDoor
     /**
      * MT-894 step 6: the same train, its speed still showing after the power is switched off, is still refused by name.
      *
-     * MUTATION: in `LocomotiveSettings.hasSpeed(ViewListener, Locomotive)`, add `&& model.getPowerState()`, and this fails.
+     * MUTATION: in `LocomotiveEditRule.hasSpeed(ViewListener, Locomotive)`, add `&& model.getPowerState()`, and this fails.
      */
     @Test
     public void testATrainWithASpeedIsRefusedWithThePowerOff() throws Exception
@@ -1327,7 +1327,7 @@ public class testLocomotiveCsvImportDoor
      * possible duplicate has no table, and Cancel imports nothing.
      *
      * MUTATION: make `MarklinLocomotiveCsv.duplicates` find none, or leave out `setAll(Choice.MERGE)` in the
-     * `LocomotiveCsvDoor.Duplicates` constructor, and this fails.
+     * `LocomotiveCsvImport.Duplicates` constructor, and this fails.
      */
     @Test
     public void testAPossibleDuplicateIsAskedInATableAndCancelImportsNothing() throws Exception
@@ -1471,7 +1471,7 @@ public class testLocomotiveCsvImportDoor
      * its rename marks the menu, as the station may now differ.
      *
      * MUTATION: in `MarklinLocomotiveCsv.apply`, leave out `clear` for a Replace row, or leave Replace's rename out of
-     * `result.renamed`; in `LocomotiveCsvDoor.tell`, leave out the Replace line, and this fails.
+     * `result.renamed`; in `LocomotiveCsvImport.tell`, leave out the Replace line, and this fails.
      */
     @Test
     public void testReplaceTakesTheFilesDetailsIsCountedAndMarksTheMenu() throws Exception
@@ -1526,7 +1526,7 @@ public class testLocomotiveCsvImportDoor
      * row for one locomotive here is grayed once the first takes it (FR-249).  A row whose Merge is grayed starts on
      * Keep Both.  The Replace heading skips every grayed row; Ignore's sets every row.
      *
-     * MUTATION: in `MarklinLocomotiveCsv.duplicates`, leave out the RUNNING reason; in `LocomotiveCsvDoor.Duplicates`,
+     * MUTATION: in `MarklinLocomotiveCsv.duplicates`, leave out the RUNNING reason; in `LocomotiveCsvImport.Duplicates`,
      * give Replace no reason, or let `setAll` pick a grayed choice, and this fails.
      */
     @Test
@@ -1645,7 +1645,7 @@ public class testLocomotiveCsvImportDoor
      * "(can't apply)" beside a row's file name, where another row takes its locomotive, leaves every Merge and Replace
      * in view: no scroll bar shows, as the dialog was sized with the mark (FR-249).
      *
-     * MUTATION: in `LocomotiveCsvDoor.Duplicates.addRow`, leave out the mark's reserved width, and this fails.
+     * MUTATION: in `LocomotiveCsvImport.Duplicates.addRow`, leave out the mark's reserved width, and this fails.
      */
     @Test
     public void testATakenMarkLeavesEveryKeepNewInView() throws Exception
@@ -1700,7 +1700,7 @@ public class testLocomotiveCsvImportDoor
      * An answer that can no longer be carried out is said in the finishing message: a Merge with nothing left to rename
      * is added beside it, and an Ignore on a row no longer a duplicate is added, each named with why (FR-249).
      *
-     * MUTATION: in `LocomotiveCsvDoor.tell`, leave out the two lines, and this fails.
+     * MUTATION: in `LocomotiveCsvImport.tell`, leave out the two lines, and this fails.
      */
     @Test
     public void testAnAnswerThatCannotBeCarriedOutIsSaidAtTheEnd() throws Exception

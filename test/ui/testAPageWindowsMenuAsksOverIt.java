@@ -27,7 +27,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.LayoutPopupUI;
+import org.traincontrol.gui.LayoutPopupWindow;
 import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomy.ArrivalSidePrompt;
@@ -61,7 +61,7 @@ public class testAPageWindowsMenuAsksOverIt
     private static MarklinControlStation model;
     private static TrainControlUI ui;
     private static AutonomySession session;
-    private static LayoutPopupUI page;
+    private static LayoutPopupWindow page;
     private static Locomotive train;
     private static boolean echoWas;
 
@@ -285,7 +285,7 @@ public class testAPageWindowsMenuAsksOverIt
     /**
      * Start on an open menu, grayed since, says why over the window the menu was in.
      *
-     * MUTATION: `ui` for `ui.dialogParent()` at Start's catch in `LayoutRightclickAutonomyMenu`, or leave the menu's
+     * MUTATION: `ui` for `ui.dialogParent()` at Start's catch in `DiagramAutonomyContextMenu`, or leave the menu's
      * items out of `itemsPressFromWindow`, and it hangs off the main window.
      */
     @Test
@@ -318,7 +318,7 @@ public class testAPageWindowsMenuAsksOverIt
     /**
      * Graceful Stop once a stop has been asked says so over the window the menu was in.
      *
-     * MUTATION: `ui` for `ui.dialogParent()` at Stop's catch in `LayoutRightclickAutonomyMenu`, and it hangs off the main
+     * MUTATION: `ui` for `ui.dialogParent()` at Stop's catch in `DiagramAutonomyContextMenu`, and it hangs off the main
      * window.
      */
     @Test
@@ -438,7 +438,7 @@ public class testAPageWindowsMenuAsksOverIt
 
         List<Locomotive> toRun = new ArrayList<>(railway().getLocomotivesToRun());
 
-        LayoutPopupUI going = AskingWindows.openThePage(ui);
+        LayoutPopupWindow going = AskingWindows.openThePage(ui);
 
         try
         {
@@ -1010,7 +1010,7 @@ public class testAPageWindowsMenuAsksOverIt
     /** A claim made on a square, from a page window of its page. */
     private interface OnTunnel
     {
-        void run(TileKey tunnel, LayoutPopupUI there) throws Exception;
+        void run(TileKey tunnel, LayoutPopupWindow there) throws Exception;
     }
 
     /** With a page window of the square's page, which is closed and the page before put back afterward. */
@@ -1020,7 +1020,7 @@ public class testAPageWindowsMenuAsksOverIt
 
         AskingWindows.showThePageOf(ui, tunnel);
 
-        LayoutPopupUI there = AskingWindows.openThePage(ui);
+        LayoutPopupWindow there = AskingWindows.openThePage(ui);
 
         try
         {

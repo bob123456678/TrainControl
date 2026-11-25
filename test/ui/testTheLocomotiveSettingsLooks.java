@@ -10,7 +10,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.InfoMark;
-import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -37,7 +37,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
 
     private static JTabbedPane opened() throws Exception
     {
-        fixture.layDcc(NAME, 3801, LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
+        fixture.layDcc(NAME, 3801, LocomotiveSettingsWindow.Tab.LOCOMOTIVE);
 
         return SettingsWindow.showing().tabsForTest();
     }
@@ -61,7 +61,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     /**
      * Each of the five tabs carries its own drawn icon, beside the title it keeps.
      *
-     * MUTATION: drop the icon from any `tabs.addTab` in `LocomotiveSettingsFrame.build`, or give two tabs the same
+     * MUTATION: drop the icon from any `tabs.addTab` in `LocomotiveSettingsWindow.build`, or give two tabs the same
      * icon, and this fails.
      */
     @Test
@@ -105,7 +105,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     public void testTheAutonomyTabShowsTheSidebarPicture() throws Exception
     {
         JTabbedPane tabs = opened();
-        Icon tab = Components.onTheEventThread(() -> tabs.getIconAt(LocomotiveSettingsFrame.Tab.AUTONOMY.ordinal()));
+        Icon tab = Components.onTheEventThread(() -> tabs.getIconAt(LocomotiveSettingsWindow.Tab.AUTONOMY.ordinal()));
         int w = tab.getIconWidth();
         int h = tab.getIconHeight();
 
@@ -240,14 +240,14 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
      * labels do.
      *
      * MUTATION: put the preset buttons back on a row of their own above the copy ones in
-     * `LocomotiveFunctionsTab.buttons`, or take the extra inset off `functionsTab` in `LocomotiveSettingsFrame.build`,
+     * `LocomotiveFunctionsTab.buttons`, or take the extra inset off `functionsTab` in `LocomotiveSettingsWindow.build`,
      * and this fails.
      */
     @Test
     public void testTheFunctionsButtonsAreOneRowWithThePresetOnTheRight() throws Exception
     {
         opened();
-        SettingsWindow.selectTab(LocomotiveSettingsFrame.Tab.FUNCTIONS.ordinal());
+        SettingsWindow.selectTab(LocomotiveSettingsWindow.Tab.FUNCTIONS.ordinal());
         Components.settle();
 
         java.awt.Container pane = SettingsWindow.showing().getContentPane();
@@ -278,7 +278,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         assertTrue(Math.abs(presetGroup.x + presetGroup.width - (t.x + t.width)) <= 1, "the preset buttons end at "
             + (presetGroup.x + presetGroup.width) + " and the table at " + (t.x + t.width));
 
-        SettingsWindow.selectTab(LocomotiveSettingsFrame.Tab.NOTES.ordinal());
+        SettingsWindow.selectTab(LocomotiveSettingsWindow.Tab.NOTES.ordinal());
         Components.settle();
 
         javax.swing.JLabel startYear = Components.find(pane, JLabel.class,
@@ -301,7 +301,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     @Test
     public void testTheMultiUnitTabAlignsWithTheOthers() throws Exception
     {
-        fixture.layDcc(NAME, 3805, LocomotiveSettingsFrame.Tab.NOTES);
+        fixture.layDcc(NAME, 3805, LocomotiveSettingsWindow.Tab.NOTES);
         Components.settle();
 
         java.awt.Container pane = SettingsWindow.showing().getContentPane();
@@ -309,7 +309,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
             l -> UiStyle.withoutColon(I18n.t("loc.ui.labelStartYear")).equals(l.getText()));
         int notes = Components.onTheEventThread(() -> bounds(startYear, pane).x);
 
-        SettingsWindow.selectTab(LocomotiveSettingsFrame.Tab.MULTI_UNIT.ordinal());
+        SettingsWindow.selectTab(LocomotiveSettingsWindow.Tab.MULTI_UNIT.ordinal());
         Components.settle();
 
         JLabel filter = Components.find(pane, JLabel.class,
@@ -352,7 +352,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     public void testThePresetMarkIsLeftOfItsButton() throws Exception
     {
         opened();
-        SettingsWindow.selectTab(LocomotiveSettingsFrame.Tab.FUNCTIONS.ordinal());
+        SettingsWindow.selectTab(LocomotiveSettingsWindow.Tab.FUNCTIONS.ordinal());
         Components.settle();
 
         java.awt.Container pane = SettingsWindow.showing().getContentPane();
@@ -374,7 +374,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
      * Dragged as narrow as the window lets it go, the Functions tab's two button groups still do not overlap, in each
      * language.
      *
-     * MUTATION: drop `keepTheRowsWhole` from `LocomotiveSettingsFrame.fit`, and this fails.
+     * MUTATION: drop `keepTheRowsWhole` from `LocomotiveSettingsWindow.fit`, and this fails.
      */
     @Test
     public void testTheFunctionsRowNeverOverlapsAtTheNarrowestWindow() throws Exception
@@ -386,10 +386,10 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
                 I18n.setLocale(new java.util.Locale(lang));
 
                 opened();
-                SettingsWindow.selectTab(LocomotiveSettingsFrame.Tab.FUNCTIONS.ordinal());
+                SettingsWindow.selectTab(LocomotiveSettingsWindow.Tab.FUNCTIONS.ordinal());
                 Components.settle();
 
-                LocomotiveSettingsFrame window = SettingsWindow.showing();
+                LocomotiveSettingsWindow window = SettingsWindow.showing();
 
                 // A drag to 400 pixels, as far as a minimum the window has set lets it go (an unset one stops nothing)
                 Components.onTheEventThread(() ->
@@ -422,7 +422,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
      * As it opens, and dragged as narrow as it lets itself go, the window keeps its five tabs on one row in every
      * language: each tab sits on the first one's y.
      *
-     * MUTATION: leave the tab strip out of `LocomotiveSettingsFrame.keepTheRowsWhole`, and this fails.
+     * MUTATION: leave the tab strip out of `LocomotiveSettingsWindow.keepTheRowsWhole`, and this fails.
      */
     @Test
     public void testTheTabsStayOnOneRowAtTheNarrowestWindow() throws Exception
@@ -434,7 +434,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
                 I18n.setLocale(new java.util.Locale(lang));
 
                 JTabbedPane tabs = opened();
-                LocomotiveSettingsFrame window = SettingsWindow.showing();
+                LocomotiveSettingsWindow window = SettingsWindow.showing();
 
                 for (boolean narrowed : new boolean[] {false, true})
                 {
@@ -469,7 +469,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
      * Opens the window on a tab, or as Add Locomotive for a null tab, in a language, and drags it as narrow as it lets
      * itself go (an unset minimum stops nothing: to 200).
      */
-    private static LocomotiveSettingsFrame narrowest(String lang, LocomotiveSettingsFrame.Tab tab) throws Exception
+    private static LocomotiveSettingsWindow narrowest(String lang, LocomotiveSettingsWindow.Tab tab) throws Exception
     {
         I18n.setLocale(new java.util.Locale(lang));
 
@@ -479,7 +479,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /** Drags the window as narrow as it lets itself go. */
-    private static LocomotiveSettingsFrame narrowed(LocomotiveSettingsFrame window)
+    private static LocomotiveSettingsWindow narrowed(LocomotiveSettingsWindow window)
     {
         Components.onTheEventThread(() ->
         {
@@ -494,7 +494,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     }
 
     /** Opens Add Locomotive, in the window already open if there is one, and gives it once it is on screen. */
-    private static LocomotiveSettingsFrame openAdd() throws Exception
+    private static LocomotiveSettingsWindow openAdd() throws Exception
     {
         assertTrue(Components.onTheEventThread(ui::openAddLocomotive), "Add did not open");
 
@@ -513,7 +513,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
      * At the narrowest window, in every language, the Multi-Unit list's Reverse column shows whole: its heading's text
      * uncut, and the heading and every Reverse box end inside the list's view, left of its scroll bar.
      *
-     * MUTATION: leave the Multi-Unit list out of `least` in `LocomotiveSettingsFrame.fit`, and this fails.
+     * MUTATION: leave the Multi-Unit list out of `least` in `LocomotiveSettingsWindow.fit`, and this fails.
      */
     @Test
     public void testTheReverseColumnIsWholeAtTheNarrowestWindow() throws Exception
@@ -522,7 +522,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         {
             for (String lang : LANGUAGES)
             {
-                java.awt.Container pane = narrowest(lang, LocomotiveSettingsFrame.Tab.MULTI_UNIT).getContentPane();
+                java.awt.Container pane = narrowest(lang, LocomotiveSettingsWindow.Tab.MULTI_UNIT).getContentPane();
                 javax.swing.JScrollPane list = Components.find(pane, javax.swing.JScrollPane.class,
                     s -> s.isShowing() && s.getViewport().getView() instanceof javax.swing.JPanel);
                 java.awt.Component view = list.getViewport().getView();
@@ -557,7 +557,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
      * At the narrowest window, in every language, no label on Basic Settings is cut short, nor on Add Locomotive, and the
      * footer's buttons and (i) are whole and inside the window.
      *
-     * MUTATION: leave Basic Settings, or the footer, out of `least` in `LocomotiveSettingsFrame.fit`, and this fails.
+     * MUTATION: leave Basic Settings, or the footer, out of `least` in `LocomotiveSettingsWindow.fit`, and this fails.
      */
     @Test
     public void testNoBasicSettingsLabelIsCutShortAtTheNarrowestWindow() throws Exception
@@ -566,9 +566,9 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
         {
             for (String lang : LANGUAGES)
             {
-                for (LocomotiveSettingsFrame.Tab tab : new LocomotiveSettingsFrame.Tab[] {LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null})
+                for (LocomotiveSettingsWindow.Tab tab : new LocomotiveSettingsWindow.Tab[] {LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null})
                 {
-                    LocomotiveSettingsFrame window = narrowest(lang, tab);
+                    LocomotiveSettingsWindow window = narrowest(lang, tab);
                     java.util.List<String> cut = Components.onTheEventThread(() -> Components.all(window.getContentPane(), JLabel.class,
                         l -> l.isShowing() && l.getText() != null && !l.getText().isEmpty() && !whole(l)).stream()
                         .map(l -> "'" + l.getText() + "' " + l.getWidth() + " wide").collect(java.util.stream.Collectors.toList()));
@@ -601,7 +601,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
      * thirty-letter name and while autonomy runs, in a window just opened: it wraps rather than ending in "...", and is
      * as tall as its lines.
      *
-     * MUTATION: drop the strip's own `getPreferredSize` in `LocomotiveSettingsFrame`, and this fails.
+     * MUTATION: drop the strip's own `getPreferredSize` in `LocomotiveSettingsWindow`, and this fails.
      */
     @Test
     public void testTheLockStripIsWholeAtTheNarrowestWindow() throws Exception
@@ -618,9 +618,9 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
                     SettingsWindow.closeIfOpen();
 
                     org.traincontrol.marklin.MarklinLocomotive train = fixture.layDcc(LONG, 3807,
-                        LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
+                        LocomotiveSettingsWindow.Tab.LOCOMOTIVE);
 
-                    LocomotiveSettingsFrame window = narrowed(SettingsWindow.showing());
+                    LocomotiveSettingsWindow window = narrowed(SettingsWindow.showing());
 
                     JLabel strip = SettingsWindow.part("settings.strip", JLabel.class);
 
@@ -683,7 +683,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
      * The lock strip never widens the window: opened while its train moves, its strip up from the start, the window is
      * as wide as it opens at rest, in every language, for a name as long as names go in its widest letter.
      *
-     * MUTATION: drop the strip's own `getPreferredSize` in `LocomotiveSettingsFrame`, and the window opens as wide as
+     * MUTATION: drop the strip's own `getPreferredSize` in `LocomotiveSettingsWindow`, and the window opens as wide as
      * the sentence and this fails.
      */
     @Test
@@ -696,7 +696,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
                 I18n.setLocale(new java.util.Locale(lang));
 
                 org.traincontrol.marklin.MarklinLocomotive train = fixture.layDcc(WIDEST, 3808,
-                    LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
+                    LocomotiveSettingsWindow.Tab.LOCOMOTIVE);
 
                 int atRest = Components.onTheEventThread(SettingsWindow.showing()::getWidth);
 
@@ -706,9 +706,9 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
                 {
                     SettingsWindow.power(ui, fixture.model, true);
                     train.setSpeed(40);
-                    fixture.show(train, LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
+                    fixture.show(train, LocomotiveSettingsWindow.Tab.LOCOMOTIVE);
 
-                    LocomotiveSettingsFrame locked = SettingsWindow.showing();
+                    LocomotiveSettingsWindow locked = SettingsWindow.showing();
                     JLabel strip = SettingsWindow.part("settings.strip", JLabel.class);
 
                     assertTrue(Components.onTheEventThread(strip::isVisible), lang + ": precondition: no strip at opening");
@@ -732,17 +732,17 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
      * The window's watch says the lock strip's sentence again every second: the strip keeps the HTML it drew for that
      * sentence, and draws it again only for a new one.
      *
-     * MUTATION: drop the early return for an unchanged sentence from the strip's `setText` in `LocomotiveSettingsFrame`,
+     * MUTATION: drop the early return for an unchanged sentence from the strip's `setText` in `LocomotiveSettingsWindow`,
      * and this fails.
      */
     @Test
     public void testTheWatchDrawsTheStripAgainOnlyForANewSentence() throws Exception
     {
-        fixture.layDcc(LONG, 3807, LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
+        fixture.layDcc(LONG, 3807, LocomotiveSettingsWindow.Tab.LOCOMOTIVE);
 
-        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        LocomotiveSettingsWindow window = SettingsWindow.showing();
         JLabel strip = SettingsWindow.part("settings.strip", JLabel.class);
-        java.lang.reflect.Method tick = support.Reflect.method(LocomotiveSettingsFrame.class, "refresh");
+        java.lang.reflect.Method tick = support.Reflect.method(LocomotiveSettingsWindow.class, "refresh");
 
         try
         {
@@ -768,7 +768,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
      * Add Locomotive opened in a window that was showing a locomotive opens as wide as Add opened on its own, not held at
      * the locomotive's least width.
      *
-     * MUTATION: drop `setMinimumSize(null)` from `LocomotiveSettingsFrame.fit`, and this fails.
+     * MUTATION: drop `setMinimumSize(null)` from `LocomotiveSettingsWindow.fit`, and this fails.
      */
     @Test
     public void testAddOpensAtItsOwnWidthInAWindowThatShowedALocomotive() throws Exception
@@ -787,7 +787,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     /**
      * The open window's once-a-second watch leaves the tab strip alone: over two of its ticks the strip is not resized.
      *
-     * MUTATION: measure the tab strip in `LocomotiveSettingsFrame.keepTheRowsWhole`, which the watch calls, instead of
+     * MUTATION: measure the tab strip in `LocomotiveSettingsWindow.keepTheRowsWhole`, which the watch calls, instead of
      * in `fit`, and this fails.
      */
     @Test
@@ -841,7 +841,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
      * tab, "Metadata" and "Notes" on the Notes tab, and the Autonomy tab's two are dark blue, and every item label there
      * and on the other tabs, and the Functions table's column headings, are black, all Semibold 13.
      *
-     * MUTATION: make `LocomotiveSettingsFrame.label` build a blue `UiStyle.heading`, or `UiStyle.style` blue, or the
+     * MUTATION: make `LocomotiveSettingsWindow.label` build a blue `UiStyle.heading`, or `UiStyle.style` blue, or the
      * Functions table header's foreground blue, or drop `styleHeading(notesCaption)` from
      * `LocomotiveNotesPanel.styleCaptions`, and this fails.
      */
@@ -898,7 +898,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     public void testTheMetadataHeadingSitsAboveStartYear() throws Exception
     {
         opened();
-        SettingsWindow.selectTab(LocomotiveSettingsFrame.Tab.NOTES.ordinal());
+        SettingsWindow.selectTab(LocomotiveSettingsWindow.Tab.NOTES.ordinal());
         Components.settle();
 
         JLabel heading = labelFor("loc.ui.settingsMetadata");
@@ -938,7 +938,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
      * The divider on the first tab sits midway between the Address row above it and the Customize Behavior heading
      * below it, within 2 pixels.
      *
-     * MUTATION: give the divider's row in `LocomotiveSettingsFrame.LocomotiveTab` a bottom inset of 20, and this fails.
+     * MUTATION: give the divider's row in `LocomotiveSettingsWindow.LocomotiveTab` a bottom inset of 20, and this fails.
      */
     @Test
     public void testTheDividerIsMidwayBetweenTheAddressRowAndTheNextHeading() throws Exception
@@ -960,7 +960,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
      * The Preset Speed label, its spinner, the % sign and the (i) share one vertical center, and the spinner is as tall
      * as the fields above.
      *
-     * MUTATION: add 10 to the spinner's preferred height in `LocomotiveSettingsFrame.LocomotiveTab`, or set the % label's
+     * MUTATION: add 10 to the spinner's preferred height in `LocomotiveSettingsWindow.LocomotiveTab`, or set the % label's
      * alignment so it sits on the top of the row, and this fails.
      */
     @Test
@@ -998,7 +998,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
      * left edge of the labels under it; the trash can is at the tab's lower left, under the divider and Customize Behavior,
      * level with the bottom of the tab.
      *
-     * MUTATION: put the picture back in the first column of `LocomotiveSettingsFrame.LocomotiveTab`, or the trash can
+     * MUTATION: put the picture back in the first column of `LocomotiveSettingsWindow.LocomotiveTab`, or the trash can
      * back under Address, or drop the label, and this fails.
      */
     @Test
@@ -1058,7 +1058,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
      * With no picture the box shows the application's stand-in locomotive at the box's width, not stretched.
      *
      * MUTATION: show a blank 10 by 10 image instead of `LocomotivePlaceholder.image` for a locomotive without a picture in
-     * `LocomotiveSettingsFrame.LocomotiveTab.refreshPicture`, and this fails.
+     * `LocomotiveSettingsWindow.LocomotiveTab.refreshPicture`, and this fails.
      */
     @Test
     public void testNoPictureShowsTheStandInLocomotive() throws Exception
@@ -1087,7 +1087,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     @Test
     public void testTheRevertIconsLightWhenThereIsSomethingToReset() throws Exception
     {
-        org.traincontrol.marklin.MarklinLocomotive loc = fixture.layDcc(NAME, 3802, LocomotiveSettingsFrame.Tab.FUNCTIONS);
+        org.traincontrol.marklin.MarklinLocomotive loc = fixture.layDcc(NAME, 3802, LocomotiveSettingsWindow.Tab.FUNCTIONS);
         javax.swing.JButton clear = SettingsWindow.part("functions.clearPreset", javax.swing.JButton.class);
         javax.swing.JButton reset = SettingsWindow.part("functions.resetAll", javax.swing.JButton.class);
         javax.swing.JTable table = SettingsWindow.part("functions.table", javax.swing.JTable.class);
@@ -1124,8 +1124,8 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
     @Test
     public void testTheFnColumnKeepsItsWidthWhenTheWindowResizes() throws Exception
     {
-        org.traincontrol.marklin.MarklinLocomotive loc = fixture.layDcc(NAME, 3803, LocomotiveSettingsFrame.Tab.FUNCTIONS);
-        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        org.traincontrol.marklin.MarklinLocomotive loc = fixture.layDcc(NAME, 3803, LocomotiveSettingsWindow.Tab.FUNCTIONS);
+        LocomotiveSettingsWindow window = SettingsWindow.showing();
         javax.swing.JTable table = SettingsWindow.part("functions.table", javax.swing.JTable.class);
 
         int before = Components.onTheEventThread(() -> table.getColumnModel().getColumn(0).getWidth());
@@ -1229,7 +1229,7 @@ public class testTheLocomotiveSettingsLooks extends support.SettingsClass
      * The Address number stands as far in from its field's left edge as the Name does (OB-442): the spinner's editor
      * is a text field of its own.
      *
-     * MUTATION: take the left inset off the address field's border in `LocomotiveSettingsFrame.LocomotiveTab`, and
+     * MUTATION: take the left inset off the address field's border in `LocomotiveSettingsWindow.LocomotiveTab`, and
      * this fails.
      */
     @Test

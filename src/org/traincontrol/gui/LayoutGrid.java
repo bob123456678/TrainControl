@@ -867,7 +867,7 @@ public class LayoutGrid
 
                                 if (e.getButton() == MouseEvent.BUTTON3)
                                 {
-                                    LayoutRightclickAutonomyMenu.showFor(ui, station, station,
+                                    DiagramAutonomyContextMenu.showFor(ui, station, station,
                                         e.getComponent(), e.getX(), e.getY());
                                 }
                                 // Left-clicking a station will activate its locomotive

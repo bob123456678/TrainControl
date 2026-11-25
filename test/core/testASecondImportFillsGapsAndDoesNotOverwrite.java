@@ -177,7 +177,7 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
         for (String sentence : new String[] {"sharedSquaresSentence", "leftBehindSentence"})
         {
             java.lang.reflect.Method say =
-                Reflect.method(org.traincontrol.gui.AutonomyViewerPanel.class, sentence, int.class);
+                Reflect.method(org.traincontrol.gui.AutonomyConfigurationsPanel.class, sentence, int.class);
 
             String one = (String) say.invoke(null, 1);
             String two = (String) say.invoke(null, 2);
@@ -210,7 +210,7 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
                 for (String[] key : keys)
                 {
                     java.lang.reflect.Method say =
-                        Reflect.method(org.traincontrol.gui.AutonomyViewerPanel.class, key[0], int.class);
+                        Reflect.method(org.traincontrol.gui.AutonomyConfigurationsPanel.class, key[0], int.class);
 
                     assertEquals((String) say.invoke(null, n), org.traincontrol.util.I18n.f(key[1] + form[2], n), key[0]
                         + " in " + form[0] + " for " + n + " is not the bundle's " + (((String) form[2]).isEmpty() ? "plain"
@@ -254,7 +254,7 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
 
         String before = fresh.getStore().getConfiguration(inUse).toString();
 
-        java.lang.reflect.Method choose = org.traincontrol.gui.AutonomyViewerPanel.class.getDeclaredMethod(
+        java.lang.reflect.Method choose = org.traincontrol.gui.AutonomyConfigurationsPanel.class.getDeclaredMethod(
             "activateTheConfigurationNamed", org.traincontrol.automationui.AutonomyCompanionStore.class, String.class,
             String.class);
 

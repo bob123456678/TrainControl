@@ -3,7 +3,7 @@ package ui;
 import javax.swing.SwingUtilities;
 
 import org.traincontrol.base.RouteCommand;
-import org.traincontrol.gui.RouteEditorFrame;
+import org.traincontrol.gui.RouteEditorWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -21,7 +21,7 @@ import support.Display;
 
 /**
  * The route editor refuses a function number the locomotive has not got (MT-464).  Not a claim in
- * `testRouteEditorValidation` (`new RouteEditorFrame(null, null)`: `problemsWith` returns before any per-row rule when
+ * `testRouteEditorValidation` (`new RouteEditorWindow(null, null)`: `problemsWith` returns before any per-row rule when
  * the parent is null); this pays for a real window and locomotive database and goes through the CELL.  The third claim
  * is about the command table's row mark (OB-246).
  *
@@ -149,15 +149,15 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     /** What a claim does with a route editor opened over the window. */
     private interface OnTheEditor
     {
-        void run(RouteEditorFrame frame) throws Exception;
+        void run(RouteEditorWindow frame) throws Exception;
     }
 
     /** Opens a route editor over the window on the event thread, runs the claim on it, and disposes it afterwards. */
     private static void withAnEditor(OnTheEditor claim) throws Exception
     {
-        final RouteEditorFrame[] frame = new RouteEditorFrame[1];
+        final RouteEditorWindow[] frame = new RouteEditorWindow[1];
 
-        SwingUtilities.invokeAndWait(() -> frame[0] = new RouteEditorFrame(ui, null, null));
+        SwingUtilities.invokeAndWait(() -> frame[0] = new RouteEditorWindow(ui, null, null));
 
         try
         {
@@ -199,7 +199,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
             assertNull(tooltipOf(frame, 0),
                 "a row Save accepts carries a reason it would be refused: " + tooltipOf(frame, 0));
 
-            assertNotEquals(inkOf(frame, 0), RouteEditorFrame.refusedInkForTest(),
+            assertNotEquals(inkOf(frame, 0), RouteEditorWindow.refusedInkForTest(),
                 "a row Save accepts is already drawn in the refusal ink, so the mark says nothing");
 
             // AND NOW THE NAME A ROUTE CANNOT STORE, chosen exactly as the dropdown offers it.
@@ -209,7 +209,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
                 frame.clearCommandSelectionForTest();
             });
 
-            assertEquals(inkOf(frame, 0), RouteEditorFrame.refusedInkForTest(),
+            assertEquals(inkOf(frame, 0), RouteEditorWindow.refusedInkForTest(),
                 "picking " + LOC_COMMA + " from the dropdown leaves the row drawn in ordinary ink,"
                 + " so the operator learns at Save that the only way out is to rename the locomotive"
                 + " (OB-246).  What Save would say: " + frame.problemsForTest());
@@ -251,7 +251,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
             assertNull(onAdded[0], "the row under it, just added, wears the refusal of the row drawn"
                 + " before it: " + onAdded[0] + " (GUI-C2)");
 
-            assertNotEquals(inkOf(frame, added), RouteEditorFrame.refusedInkForTest(),
+            assertNotEquals(inkOf(frame, added), RouteEditorWindow.refusedInkForTest(),
                 "a command row is red the moment it is added, before anybody has typed into it - a"
                 + " mark that is always there is a mark nobody reads");
         });
@@ -260,7 +260,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     /**
      * The ink the table draws a command row's target cell in.
      */
-    private static java.awt.Color inkOf(RouteEditorFrame frame, int row) throws Exception
+    private static java.awt.Color inkOf(RouteEditorWindow frame, int row) throws Exception
     {
         final java.awt.Color[] ink = new java.awt.Color[1];
 
@@ -272,7 +272,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     /**
      * The reason the table hangs on a command row's target cell, if any.
      */
-    private static String tooltipOf(RouteEditorFrame frame, int row) throws Exception
+    private static String tooltipOf(RouteEditorWindow frame, int row) throws Exception
     {
         final String[] why = new String[1];
 
@@ -434,11 +434,11 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
         assertTrue(model.newRoute(name, commands, 0, org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED,
             false, null), "precondition: the route could not be made");
 
-        final RouteEditorFrame[] frame = new RouteEditorFrame[1];
+        final RouteEditorWindow[] frame = new RouteEditorWindow[1];
 
         try
         {
-            SwingUtilities.invokeAndWait(() -> frame[0] = new RouteEditorFrame(ui, name));
+            SwingUtilities.invokeAndWait(() -> frame[0] = new RouteEditorWindow(ui, name));
 
             java.util.List<String> offered = frame[0].targetChoicesForTest(0);
 
@@ -474,9 +474,9 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
             "RSA56-C3 route", 9865, commands, 0, org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED,
             false, null);
 
-        final RouteEditorFrame[] frame = new RouteEditorFrame[1];
+        final RouteEditorWindow[] frame = new RouteEditorWindow[1];
 
-        SwingUtilities.invokeAndWait(() -> frame[0] = new RouteEditorFrame(ui, "RSA56-C3 route", route));
+        SwingUtilities.invokeAndWait(() -> frame[0] = new RouteEditorWindow(ui, "RSA56-C3 route", route));
 
         try
         {
@@ -496,7 +496,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     /**
      * Whether the editor's save gate names this problem.
      */
-    private static boolean complains(RouteEditorFrame editor, String problem)
+    private static boolean complains(RouteEditorWindow editor, String problem)
     {
         for (String line : editor.problemsForTest())
         {

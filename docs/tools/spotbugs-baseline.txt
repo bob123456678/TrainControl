@@ -79,7 +79,7 @@ AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.base.LayoutDiagram	setEditHi
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.base.LayoutDiagram	setShowAddress	showAddress	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.base.Locomotive	savePreferredSpeed	preferredSpeed	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.base.Locomotive	setPreferredSpeed	preferredSpeed	1
-AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.gui.DiagramLocGestures	dropByPaste	dropping	1
+AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.gui.DiagramTrainKeys	dropByPaste	dropping	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.gui.EditorWindows	openCarryingTheClick	clickCarried	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.gui.LayoutLabel	markSpacer	spacer	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.gui.LayoutLabel	setAutonomySquare	squareX	1
@@ -152,7 +152,7 @@ BC_UNCONFIRMED_CAST	org.traincontrol.gui.LayoutLabel$N	mouseExited	val$parent	1
 BC_UNCONFIRMED_CAST	org.traincontrol.gui.LayoutLabel$N	mousePressed	val$parent	1
 BC_UNCONFIRMED_CAST	org.traincontrol.gui.LayoutLabel$N	mouseReleased	val$parent	1
 BC_UNCONFIRMED_CAST	org.traincontrol.gui.layouteditor.LayoutEditor$PointerWatch	eventDispatched		1
-BC_UNCONFIRMED_CAST_OF_RETURN_VALUE	org.traincontrol.gui.RouteEditorFrame	narrowest		1
+BC_UNCONFIRMED_CAST_OF_RETURN_VALUE	org.traincontrol.gui.RouteEditorWindow	narrowest		1
 BC_VACUOUS_INSTANCEOF	org.traincontrol.gui.RunningLayoutSync	rebuildRunningLayoutFromSetup		1
 BC_VACUOUS_INSTANCEOF	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	parentWindow		1
 BC_VACUOUS_INSTANCEOF	org.traincontrol.marklin.MarklinLocomotive	applyLinkedLocomotives		1
@@ -166,9 +166,9 @@ BX_UNBOXING_IMMEDIATELY_REBOXED	org.traincontrol.automation.Point	setMaxTrainLen
 BX_UNBOXING_IMMEDIATELY_REBOXED	org.traincontrol.automation.Point	setPriority		1
 CT_CONSTRUCTOR_THROW	org.traincontrol.automation.Point	<init>		1
 CT_CONSTRUCTOR_THROW	org.traincontrol.base.LayoutDiagramComponent	<init>		2
-CT_CONSTRUCTOR_THROW	org.traincontrol.gui.LocomotiveSettingsFrame	<init>		1
-CT_CONSTRUCTOR_THROW	org.traincontrol.gui.RouteEditorFrame	<init>		2
-CT_CONSTRUCTOR_THROW	org.traincontrol.gui.autonomy.AutoJSONExport	<init>		1
+CT_CONSTRUCTOR_THROW	org.traincontrol.gui.LocomotiveSettingsWindow	<init>		1
+CT_CONSTRUCTOR_THROW	org.traincontrol.gui.RouteEditorWindow	<init>		2
+CT_CONSTRUCTOR_THROW	org.traincontrol.gui.autonomy.JsonExportPanel	<init>		1
 CT_CONSTRUCTOR_THROW	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	<init>		1
 CT_CONSTRUCTOR_THROW	org.traincontrol.gui.locomotive.UsageChart	<init>		1
 CT_CONSTRUCTOR_THROW	org.traincontrol.marklin.MarklinControlStation	<init>		2
@@ -176,12 +176,12 @@ CT_CONSTRUCTOR_THROW	org.traincontrol.marklin.MarklinControlStation$N	<init>		1
 CT_CONSTRUCTOR_THROW	org.traincontrol.marklin.MarklinLocomotive	<init>		2
 CT_CONSTRUCTOR_THROW	org.traincontrol.marklin.udp.NetworkProxy	<init>		1
 DB_DUPLICATE_BRANCHES	org.traincontrol.marklin.MarklinControlStation	getLocAddress		1
-DB_DUPLICATE_SWITCH_CLAUSES	org.traincontrol.gui.RouteEditorFrame	settingWords		1
+DB_DUPLICATE_SWITCH_CLAUSES	org.traincontrol.gui.RouteEditorWindow	settingWords		1
 DCN_NULLPOINTER_EXCEPTION	org.traincontrol.base.Accessory	stringToAccessoryDecoderType		1
 DCN_NULLPOINTER_EXCEPTION	org.traincontrol.marklin.file.CS2File	parseLocomotives		1
 DE_MIGHT_IGNORE	org.traincontrol.gui.autonomy.DiagramExport	awaitTiles		1
-DE_MIGHT_IGNORE	org.traincontrol.gui.widgets.About	linkLabel1MouseClicked		2
-DE_MIGHT_IGNORE	org.traincontrol.gui.widgets.About	linkLabelMouseClicked		2
+DE_MIGHT_IGNORE	org.traincontrol.gui.widgets.AboutPanel	linkLabel1MouseClicked		2
+DE_MIGHT_IGNORE	org.traincontrol.gui.widgets.AboutPanel	linkLabelMouseClicked		2
 DLS_DEAD_LOCAL_STORE	org.traincontrol.automationui.TileGraph	exits		1
 DLS_DEAD_LOCAL_STORE	org.traincontrol.gui.layouteditor.LayoutEditorSelection	fillSelection		1
 DM_BOXED_PRIMITIVE_FOR_COMPARE	org.traincontrol.gui.locomotive.LocomotiveStats	lambda$null		1
@@ -270,13 +270,13 @@ EI_EXPOSE_REP	org.traincontrol.base.RouteCommand	getCommandConfig	commandConfig	
 EI_EXPOSE_REP	org.traincontrol.base.udp.CANMessage	getRawMessage	rawMessage	1
 EI_EXPOSE_REP	org.traincontrol.gui.LayoutGrid	getContainer	container	1
 EI_EXPOSE_REP	org.traincontrol.gui.LayoutLabel	getComponent	component	1
-EI_EXPOSE_REP	org.traincontrol.gui.LocomotiveSettingsFrame	getLocomotive	loc	1
-EI_EXPOSE_REP	org.traincontrol.gui.LocomotiveSettingsFrame	tabsForTest	tabs	1
+EI_EXPOSE_REP	org.traincontrol.gui.LocomotiveSettingsWindow	getLocomotive	loc	1
+EI_EXPOSE_REP	org.traincontrol.gui.LocomotiveSettingsWindow	tabsForTest	tabs	1
 EI_EXPOSE_REP	org.traincontrol.gui.TailCrossedPrompt$Answer	getRoad	road	1
 EI_EXPOSE_REP	org.traincontrol.gui.TailCrossedPrompt$Answer	roadToRecord	road	1
 EI_EXPOSE_REP	org.traincontrol.gui.TailCrossedPrompt$Choice	getFarthest	farthest	1
-EI_EXPOSE_REP	org.traincontrol.gui.autonomy.AutoLocomotiveStatus	getLocomotive	locomotive	1
-EI_EXPOSE_REP	org.traincontrol.gui.autonomy.AutoLocomotiveStatus	getRunningLayout	layout	1
+EI_EXPOSE_REP	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus	getLocomotive	locomotive	1
+EI_EXPOSE_REP	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus	getRunningLayout	layout	1
 EI_EXPOSE_REP	org.traincontrol.gui.autonomy.AutonomyBanner	getActionButton	action	1
 EI_EXPOSE_REP	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	getBanner	banner	1
 EI_EXPOSE_REP	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	getExcludePage	excludePage	1
@@ -287,8 +287,8 @@ EI_EXPOSE_REP	org.traincontrol.gui.layouteditor.LayoutEditor	getMarklinLayout	la
 EI_EXPOSE_REP	org.traincontrol.gui.layouteditor.LayoutEditor	getSelection	selection	1
 EI_EXPOSE_REP	org.traincontrol.gui.layouteditor.LayoutEditorAddressPopup	getGreenButton	greenButton	1
 EI_EXPOSE_REP	org.traincontrol.gui.locomotive.CurrentKeyRow	getAccessibleContext	accessibleContext	1
-EI_EXPOSE_REP	org.traincontrol.gui.locomotive.LocIconCropDialog$CropPanel	source	source	1
-EI_EXPOSE_REP	org.traincontrol.gui.locomotive.LocomotiveKeyboardMapping	getButton	button	1
+EI_EXPOSE_REP	org.traincontrol.gui.locomotive.LocomotiveIconCropDialog$CropPanel	source	source	1
+EI_EXPOSE_REP	org.traincontrol.gui.locomotive.LocomotiveButtonSlot	getButton	button	1
 EI_EXPOSE_REP	org.traincontrol.gui.locomotive.LocomotiveSelector	getClickToAssign	clickToAssign	1
 EI_EXPOSE_REP	org.traincontrol.gui.locomotive.LocomotiveSelector	getMainLocList	MainLocList	1
 EI_EXPOSE_REP	org.traincontrol.gui.locomotive.LocomotiveSelector	getUI	parent	1
@@ -332,29 +332,29 @@ EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyMenu	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyOverlayToggle	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyOverlayToggle	bindRunButtons	start	1
 EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyOverlayToggle	bindRunButtons	stop	1
-EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyViewerPanel	<init>	initialSession	1
-EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyViewerPanel	<init>	ui	1
-EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyViewerPanel$FindingRenderer	<init>	severities	1
-EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyViewerPanel$FindingRenderer	<init>	tiles	1
+EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyConfigurationsPanel	<init>	initialSession	1
+EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyConfigurationsPanel	<init>	ui	1
+EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyConfigurationsPanel$FindingRenderer	<init>	severities	1
+EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyConfigurationsPanel$FindingRenderer	<init>	tiles	1
 EI_EXPOSE_REP2	org.traincontrol.gui.LayoutGrid	<init>	builtMaster	1
 EI_EXPOSE_REP2	org.traincontrol.gui.LayoutGrid	<init>	owner	1
 EI_EXPOSE_REP2	org.traincontrol.gui.LayoutGrid	<init>	window	1
 EI_EXPOSE_REP2	org.traincontrol.gui.LayoutLabel	<init>	component	1
 EI_EXPOSE_REP2	org.traincontrol.gui.LayoutLabel	<init>	parent	1
 EI_EXPOSE_REP2	org.traincontrol.gui.LayoutLabel	<init>	tcUI	1
-EI_EXPOSE_REP2	org.traincontrol.gui.LayoutPopupUI	<init>	layout	1
-EI_EXPOSE_REP2	org.traincontrol.gui.LayoutPopupUI	<init>	parent	1
-EI_EXPOSE_REP2	org.traincontrol.gui.RightClickRouteMenu	<init>	ui	1
-EI_EXPOSE_REP2	org.traincontrol.gui.RouteEditorFrame	<init>	parent	1
+EI_EXPOSE_REP2	org.traincontrol.gui.LayoutPopupWindow	<init>	layout	1
+EI_EXPOSE_REP2	org.traincontrol.gui.LayoutPopupWindow	<init>	parent	1
+EI_EXPOSE_REP2	org.traincontrol.gui.RouteContextMenu	<init>	ui	1
+EI_EXPOSE_REP2	org.traincontrol.gui.RouteEditorWindow	<init>	parent	1
 EI_EXPOSE_REP2	org.traincontrol.gui.TrainControlUI$CustomTableRenderer	<init>	this$0	1
-EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutoJSONExport	<init>	tcui	1
-EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutoLocomotiveStatus	<init>	locomotive	1
-EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutoLocomotiveStatus	<init>	parent	1
-EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutoLocomotiveStatus	showOn	layout	1
+EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.JsonExportPanel	<init>	tcui	1
+EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus	<init>	locomotive	1
+EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus	<init>	parent	1
+EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus	showOn	layout	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.DiagramMonitorDriver	<init>	registry	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.DiagramMonitorDriver	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.DiagramMonitorDriver	bind	boundTo	1
-EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.RightClickTimetableMenu	<init>	ui	1
+EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.TimetableContextMenu	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	<init>	session	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	setBanner	messageBanner	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	setDialogOwner	dialogOwner	1
@@ -366,19 +366,19 @@ EI_EXPOSE_REP2	org.traincontrol.gui.layouteditor.LayoutEditor	receiveMoveEvent	a
 EI_EXPOSE_REP2	org.traincontrol.gui.layouteditor.LayoutEditor	showCaptionDropTarget	captionDropTarget	1
 EI_EXPOSE_REP2	org.traincontrol.gui.layouteditor.LayoutEditorAddressPopup	<init>	lc	1
 EI_EXPOSE_REP2	org.traincontrol.gui.layouteditor.LayoutEditorAddressPopup	<init>	tcui	1
-EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocIconCropDialog$CropPanel	<init>	source	1
-EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocomotiveKeyboardMapping	<init>	button	1
+EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocomotiveIconCropDialog$CropPanel	<init>	source	1
+EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocomotiveButtonSlot	<init>	button	1
 EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocomotiveSelector	<init>	model	1
 EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocomotiveSelector	<init>	parent	1
 EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocomotiveSelectorItem	<init>	loc	1
 EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocomotiveSelectorItem	<init>	selector	1
 EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocomotiveStats	<init>	tcui	1
-EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.RightClickMenuListener	<init>	source	1
-EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.RightClickMenuListener	<init>	ui	1
-EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.RightClickPageMenu	<init>	ui	1
+EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocomotiveButtonContextMenu	<init>	source	1
+EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocomotiveButtonContextMenu	<init>	ui	1
+EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.KeyboardPageContextMenu	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.widgets.AddressLabel	answerOnlyOver	square	1
 EI_EXPOSE_REP2	org.traincontrol.gui.widgets.BackupAction	<init>	ui	1
-EI_EXPOSE_REP2	org.traincontrol.gui.widgets.HandScrollListener	<init>	image	1
+EI_EXPOSE_REP2	org.traincontrol.gui.widgets.DragToScroll	<init>	image	1
 EI_EXPOSE_REP2	org.traincontrol.gui.widgets.RestoreAction	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.widgets.UpdateFlow	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.marklin.MarklinAccessory	<init>	network	1
@@ -428,14 +428,14 @@ JLM_JSR166_UTILCONCURRENT_MONITORENTER	org.traincontrol.marklin.udp.NetworkProxy
 JLM_JSR166_UTILCONCURRENT_MONITORENTER	org.traincontrol.marklin.udp.NetworkProxy	syncSensors	overtaken	1
 LI_LAZY_INIT_STATIC	org.traincontrol.util.SelfUpdate	letGoOfTheExitLock	exitChannel	1
 LI_LAZY_INIT_STATIC	org.traincontrol.util.SelfUpdate	letGoOfTheExitLock	exitLock	1
-MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.LocomotiveSettingsFrame	<init>		4
-MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.RouteEditorFrame	<init>		2
+MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.LocomotiveSettingsWindow	<init>		4
+MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.RouteEditorWindow	<init>		2
 MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	<init>		2
 MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.autonomyeditor.StationWindowBase	<init>		2
 MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.autonomyeditor.StationWindowBase$Choice	<init>		2
 MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.layouteditor.LayoutEditor	<init>		4
-MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.locomotive.LocIconCropDialog	<init>		4
-MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.locomotive.RightClickSelectorMenu	<init>		1
+MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.locomotive.LocomotiveIconCropDialog	<init>		4
+MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.locomotive.LocomotiveSelectorContextMenu	<init>		1
 MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.locomotive.UsageChart	<init>		2
 MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.widgets.LoadingSpinner	<init>		1
 MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.widgets.PositionAwareJFrame	<init>		1
@@ -446,15 +446,15 @@ MS_CANNOT_BE_FINAL	org.traincontrol.base.Accessory		lastEchoed	1
 MS_CANNOT_BE_FINAL	org.traincontrol.marklin.MarklinControlStation		DEBUG_SIMULATE_PACKETS	1
 MS_EXPOSE_REP	org.traincontrol.base.LayoutDiagram	getUnreadableIndex	unreadableIndex	1
 MS_EXPOSE_REP	org.traincontrol.gui.InfoMark	icon	ICON	1
-MS_EXPOSE_REP	org.traincontrol.gui.locomotive.LocIconCropDialog	crop	result	1
+MS_EXPOSE_REP	org.traincontrol.gui.locomotive.LocomotiveIconCropDialog	crop	result	1
 MS_MUTABLE_COLLECTION_PKGPROTECT	org.traincontrol.util.ImageUtil		RenderingProperties	1
 MS_PKGPROTECT	org.traincontrol.marklin.MarklinLocomotive		COLOR_WHITE	1
 MS_PKGPROTECT	org.traincontrol.marklin.MarklinLocomotive		COLOR_YELLOW	1
 MS_SHOULD_BE_FINAL	org.traincontrol.automation.Layout		PATH_INTEGRITY_VALIDATION	1
 MS_SHOULD_BE_FINAL	org.traincontrol.automation.Layout		PATH_VALIDATION_ALERT_THRESHOLD	1
 MS_SHOULD_BE_FINAL	org.traincontrol.automation.Layout		PATH_VALIDATION_MS	1
-MS_SHOULD_BE_FINAL	org.traincontrol.gui.LocomotiveSettingsFrame		unsavedAnswerForTest	1
-MS_SHOULD_BE_FINAL	org.traincontrol.gui.RouteEditorFrame		discardAnswerForTest	1
+MS_SHOULD_BE_FINAL	org.traincontrol.gui.LocomotiveSettingsWindow		unsavedAnswerForTest	1
+MS_SHOULD_BE_FINAL	org.traincontrol.gui.RouteEditorWindow		discardAnswerForTest	1
 MS_SHOULD_BE_FINAL	org.traincontrol.gui.autonomy.DiagramExport		stumbleForTest	1
 MS_SHOULD_BE_FINAL	org.traincontrol.marklin.MarklinControlStation		DEBUG_LOG_NETWORK	1
 MS_SHOULD_BE_FINAL	org.traincontrol.marklin.MarklinLocomotive		PULSE_FUNCTION_DURATION	1
@@ -468,7 +468,7 @@ NM_CLASS_NAMING_CONVENTION	org.traincontrol.base.Route$s88Triggers			1
 NM_CLASS_NAMING_CONVENTION	org.traincontrol.base.RouteCommand$commandType			1
 NM_CLASS_NAMING_CONVENTION	org.traincontrol.gui.layouteditor.LayoutEditor$tool			1
 NM_CONFUSING	org.traincontrol.automation.Edge	toJSON		1
-NM_FIELD_NAMING_CONVENTION	org.traincontrol.gui.LayoutPopupUI		ExtLayoutPanel	1
+NM_FIELD_NAMING_CONVENTION	org.traincontrol.gui.LayoutPopupWindow		ExtLayoutPanel	1
 NM_FIELD_NAMING_CONVENTION	org.traincontrol.gui.layouteditor.LayoutEditor		ExtLayoutPanel	1
 NM_FIELD_NAMING_CONVENTION	org.traincontrol.gui.locomotive.LocomotiveSelector		LocFilterBox	1
 NM_FIELD_NAMING_CONVENTION	org.traincontrol.gui.locomotive.LocomotiveSelector		LocScroller	1
@@ -487,7 +487,7 @@ NM_METHOD_NAMING_CONVENTION	org.traincontrol.base.RouteCommand	RouteCommandLocom
 NM_METHOD_NAMING_CONVENTION	org.traincontrol.base.RouteCommand	RouteCommandLocomotiveSpeed		1
 NM_METHOD_NAMING_CONVENTION	org.traincontrol.base.RouteCommand	RouteCommandRoute		1
 NM_METHOD_NAMING_CONVENTION	org.traincontrol.base.RouteCommand	RouteCommandStop		1
-NM_METHOD_NAMING_CONVENTION	org.traincontrol.gui.LayoutPopupUI	ExtLayoutPanelMouseClicked		1
+NM_METHOD_NAMING_CONVENTION	org.traincontrol.gui.LayoutPopupWindow	ExtLayoutPanelMouseClicked		1
 NM_METHOD_NAMING_CONVENTION	org.traincontrol.gui.RouteListPanel	BulkEnableOrDisable		1
 NM_METHOD_NAMING_CONVENTION	org.traincontrol.gui.RouteListPanel	RouteListMouseClicked		1
 NM_METHOD_NAMING_CONVENTION	org.traincontrol.gui.layouteditor.LayoutEditor	ExtLayoutPanelMouseEntered		1
@@ -514,9 +514,9 @@ PZLA_PREFER_ZERO_LENGTH_ARRAYS	org.traincontrol.base.ConditionOutline	cut		1
 PZLA_PREFER_ZERO_LENGTH_ARRAYS	org.traincontrol.base.ConditionOutline	groupBeside		1
 PZLA_PREFER_ZERO_LENGTH_ARRAYS	org.traincontrol.base.ConditionOutline	run		1
 PZLA_PREFER_ZERO_LENGTH_ARRAYS	org.traincontrol.base.TileSelection	bounds		1
-PZLA_PREFER_ZERO_LENGTH_ARRAYS	org.traincontrol.gui.LocIconActions	cropViewOf		1
-PZLA_PREFER_ZERO_LENGTH_ARRAYS	org.traincontrol.gui.RouteEditorFrame	functionsOffered		1
-PZLA_PREFER_ZERO_LENGTH_ARRAYS	org.traincontrol.gui.RouteEditorFrame	settingWords		1
+PZLA_PREFER_ZERO_LENGTH_ARRAYS	org.traincontrol.gui.LocomotiveIconActions	cropViewOf		1
+PZLA_PREFER_ZERO_LENGTH_ARRAYS	org.traincontrol.gui.RouteEditorWindow	functionsOffered		1
+PZLA_PREFER_ZERO_LENGTH_ARRAYS	org.traincontrol.gui.RouteEditorWindow	settingWords		1
 PZLA_PREFER_ZERO_LENGTH_ARRAYS	org.traincontrol.gui.widgets.QuickFileChooser	theShellsPlaces		1
 PZLA_PREFER_ZERO_LENGTH_ARRAYS	org.traincontrol.marklin.MarklinRoute	accessoryHeldByAutonomy		1
 PZLA_PREFER_ZERO_LENGTH_ARRAYS	org.traincontrol.marklin.MarklinRoute	conflictingAccessoryAndReason		1
@@ -532,8 +532,8 @@ RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.automationui.AutonomyS
 RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.automationui.AutonomySession	stationRoad		1
 RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.automationui.AutonomySession	walkFrom		1
 RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.examples.FeedbackEvents	lambda$execCode		3
-RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.gui.LayoutRightclickAutonomyMenu	placeableCopies		1
-RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.gui.RouteEditorFrame	functionsOffered		1
+RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.gui.DiagramAutonomyContextMenu	placeableCopies		1
+RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.gui.RouteEditorWindow	functionsOffered		1
 RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.gui.layouteditor.LayoutEditor	setAutonomyMode		1
 RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.gui.widgets.QuickFileChooser	theDesktops		1
 RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.marklin.MarklinControlStation	init		1
@@ -546,12 +546,12 @@ RC_REF_COMPARISON_BAD_PRACTICE_BOOLEAN	org.traincontrol.gui.TrainControlUI$KeySh
 RC_REF_COMPARISON_BAD_PRACTICE_BOOLEAN	org.traincontrol.gui.TrainControlUI$KeyShortcuts$Row	stroke	control	1
 REC_CATCH_EXCEPTION	org.traincontrol.base.RouteCommand	parseLine		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.AutonomyLifecycle	getAutonomySession		1
-REC_CATCH_EXCEPTION	org.traincontrol.gui.AutonomyViewerPanel	importLegacyGraph		1
-REC_CATCH_EXCEPTION	org.traincontrol.gui.AutonomyViewerPanel	loadPrepared		1
+REC_CATCH_EXCEPTION	org.traincontrol.gui.AutonomyConfigurationsPanel	importLegacyGraph		1
+REC_CATCH_EXCEPTION	org.traincontrol.gui.AutonomyConfigurationsPanel	loadPrepared		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.CoveredTrackView	workOutCoveredTrack		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.LocomotiveActions	findSimilarLocs		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.LocomotiveFunctionsTab	imageKey		1
-REC_CATCH_EXCEPTION	org.traincontrol.gui.RouteEditorFrame	lambda$testAgainstTheRailway		1
+REC_CATCH_EXCEPTION	org.traincontrol.gui.RouteEditorWindow	lambda$testAgainstTheRailway		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.RunningLayoutSync	captureRunningLayout		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.RunningLayoutSync	noteTheRailwaysSettingsAsBuilt		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.RunningLayoutSync	rebuildRunningLayoutFromSetup		1
@@ -578,7 +578,7 @@ RV_RETURN_VALUE_IGNORED_BAD_PRACTICE	org.traincontrol.automationui.AutonomyCompa
 RV_RETURN_VALUE_IGNORED_BAD_PRACTICE	org.traincontrol.automationui.AutonomyCompanionStore	save		1
 RV_RETURN_VALUE_IGNORED_BAD_PRACTICE	org.traincontrol.base.LayoutDiagram	writeLayoutIndex		1
 RV_RETURN_VALUE_IGNORED_BAD_PRACTICE	org.traincontrol.gui.LayoutFileActions	initializeEmptyLayout		1
-RV_RETURN_VALUE_IGNORED_BAD_PRACTICE	org.traincontrol.gui.LocIconActions	deleteLocIconFile		1
+RV_RETURN_VALUE_IGNORED_BAD_PRACTICE	org.traincontrol.gui.LocomotiveIconActions	deleteLocIconFile		1
 RV_RETURN_VALUE_IGNORED_BAD_PRACTICE	org.traincontrol.gui.LocomotiveFunctionsTab	loadStandardIcons		1
 RV_RETURN_VALUE_IGNORED_BAD_PRACTICE	org.traincontrol.gui.TimetableTab	repaintTimetable		1
 RV_RETURN_VALUE_IGNORED_BAD_PRACTICE	org.traincontrol.gui.widgets.BackupAction	writeTheBackup		1
@@ -599,24 +599,24 @@ SBSC_USE_STRINGBUFFER_CONCATENATION	org.traincontrol.marklin.MarklinRoute	toCSV	
 SBSC_USE_STRINGBUFFER_CONCATENATION	org.traincontrol.util.Conversion	bytesToBin		1
 SBSC_USE_STRINGBUFFER_CONCATENATION	org.traincontrol.util.Conversion	bytesToHex		1
 SE_BAD_FIELD	org.traincontrol.gui.AutonomyOverlayToggle		firstFinding	1
-SE_BAD_FIELD	org.traincontrol.gui.AutonomyViewerPanel		findingRelatedRows	1
-SE_BAD_FIELD	org.traincontrol.gui.AutonomyViewerPanel		findingRows	1
-SE_BAD_FIELD	org.traincontrol.gui.AutonomyViewerPanel		initialSession	1
+SE_BAD_FIELD	org.traincontrol.gui.AutonomyConfigurationsPanel		findingRelatedRows	1
+SE_BAD_FIELD	org.traincontrol.gui.AutonomyConfigurationsPanel		findingRows	1
+SE_BAD_FIELD	org.traincontrol.gui.AutonomyConfigurationsPanel		initialSession	1
 SE_BAD_FIELD	org.traincontrol.gui.LayoutLabel		autonomyAnnotation	1
 SE_BAD_FIELD	org.traincontrol.gui.LayoutLabel		autonomyOverlay	1
 SE_BAD_FIELD	org.traincontrol.gui.LayoutLabel		component	1
 SE_BAD_FIELD	org.traincontrol.gui.LayoutLabel		square	1
-SE_BAD_FIELD	org.traincontrol.gui.LayoutPopupUI		grid	1
-SE_BAD_FIELD	org.traincontrol.gui.LayoutPopupUI		layout	1
-SE_BAD_FIELD	org.traincontrol.gui.LayoutRightclickAutonomyMenu		here	1
-SE_BAD_FIELD	org.traincontrol.gui.LayoutRightclickAutonomyMenu		session	1
-SE_BAD_FIELD	org.traincontrol.gui.LayoutRightclickAutonomyMenu		station	1
+SE_BAD_FIELD	org.traincontrol.gui.LayoutPopupWindow		grid	1
+SE_BAD_FIELD	org.traincontrol.gui.LayoutPopupWindow		layout	1
+SE_BAD_FIELD	org.traincontrol.gui.DiagramAutonomyContextMenu		here	1
+SE_BAD_FIELD	org.traincontrol.gui.DiagramAutonomyContextMenu		session	1
+SE_BAD_FIELD	org.traincontrol.gui.DiagramAutonomyContextMenu		station	1
 SE_BAD_FIELD	org.traincontrol.gui.LocomotiveFunctionsTab		copiedFrom	1
 SE_BAD_FIELD	org.traincontrol.gui.LocomotiveFunctionsTab		rows	1
 SE_BAD_FIELD	org.traincontrol.gui.LocomotiveFunctionsTab		setAside	1
-SE_BAD_FIELD	org.traincontrol.gui.autonomy.AutoLocomotiveStatus		gatheredTimetableStart	1
-SE_BAD_FIELD	org.traincontrol.gui.autonomy.AutoLocomotiveStatus		layout	1
-SE_BAD_FIELD	org.traincontrol.gui.autonomy.AutoLocomotiveStatus		paths	1
+SE_BAD_FIELD	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus		gatheredTimetableStart	1
+SE_BAD_FIELD	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus		layout	1
+SE_BAD_FIELD	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus		paths	1
 SE_BAD_FIELD	org.traincontrol.gui.autonomy.AutonomyBanner		followingViewport	1
 SE_BAD_FIELD	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel		WhyRenderer	1
 SE_BAD_FIELD	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel		blockingFor	1
@@ -680,8 +680,8 @@ SE_BAD_FIELD	org.traincontrol.gui.layouteditor.LayoutEditor		trainDrag	1
 SE_BAD_FIELD	org.traincontrol.gui.layouteditor.LayoutEditor		undoOps	1
 SE_BAD_FIELD	org.traincontrol.gui.layouteditor.LayoutEditorAddressPopup		lc	1
 SE_BAD_FIELD	org.traincontrol.gui.locomotive.CurrentKeyRow		content	1
-SE_BAD_FIELD	org.traincontrol.gui.locomotive.LocIconCropDialog		result	1
-SE_BAD_FIELD	org.traincontrol.gui.locomotive.LocIconCropDialog$CropPanel		source	1
+SE_BAD_FIELD	org.traincontrol.gui.locomotive.LocomotiveIconCropDialog		result	1
+SE_BAD_FIELD	org.traincontrol.gui.locomotive.LocomotiveIconCropDialog$CropPanel		source	1
 SE_BAD_FIELD	org.traincontrol.gui.locomotive.UsageChartPanel		bars	1
 SE_BAD_FIELD	org.traincontrol.marklin.MarklinAccessory		network	1
 SE_BAD_FIELD	org.traincontrol.marklin.MarklinFeedback		network	1
@@ -703,10 +703,10 @@ SE_TRANSIENT_FIELD_NOT_RESTORED	org.traincontrol.gui.autonomyeditor.StationPictu
 SIC_INNER_SHOULD_BE_STATIC	org.traincontrol.automation.Layout$EdgeConfigurationState			1
 SIC_INNER_SHOULD_BE_STATIC	org.traincontrol.automation.Layout$PointPath			1
 SIC_INNER_SHOULD_BE_STATIC	org.traincontrol.gui.LayoutLabel$EmptyIcon			1
-SIC_INNER_SHOULD_BE_STATIC	org.traincontrol.gui.RightClickRouteMenu$RightClickMenu			1
-SIC_INNER_SHOULD_BE_STATIC	org.traincontrol.gui.autonomy.RightClickTimetableMenu$RightClickMenu			1
+SIC_INNER_SHOULD_BE_STATIC	org.traincontrol.gui.RouteContextMenu$RightClickMenu			1
+SIC_INNER_SHOULD_BE_STATIC	org.traincontrol.gui.autonomy.TimetableContextMenu$RightClickMenu			1
 SIC_INNER_SHOULD_BE_STATIC	org.traincontrol.gui.locomotive.LocomotiveStats$TimestampString			1
-SIC_INNER_SHOULD_BE_STATIC	org.traincontrol.gui.locomotive.RightClickPageMenu$RightClickMenu			1
+SIC_INNER_SHOULD_BE_STATIC	org.traincontrol.gui.locomotive.KeyboardPageContextMenu$RightClickMenu			1
 SIC_INNER_SHOULD_BE_STATIC	org.traincontrol.marklin.MarklinControlStation$CustomObjectInputStream			1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.automation.Layout$N	playedBack		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.automationui.AutonomyBuilder$N	build		1
@@ -715,16 +715,16 @@ SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.automationui.AutonomyCompanionS
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.AccessoryKeyboard$N	buildKey		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.LayoutGrid$N	<init>		2
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.LayoutLabel$N	<init>		3
-SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.LayoutPopupUI$N	render		1
+SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.LayoutPopupWindow$N	render		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.LocomotiveNotesPanel$N	<init>		1
-SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.LocomotiveSettingsFrame$N	<init>	strip	1
+SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.LocomotiveSettingsWindow$N	<init>	strip	1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.MultiUnitPanel$N	buildRow		1
-SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.RouteEditorFrame$N	actOnRowMarks		1
-SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.RouteEditorFrame$N	build		1
-SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.RouteEditorFrame$N	greyWhatCannotBeEdited		1
+SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.RouteEditorWindow$N	actOnRowMarks		1
+SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.RouteEditorWindow$N	build		1
+SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.RouteEditorWindow$N	greyWhatCannotBeEdited		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.RouteListPanel$N	lambda$refreshRouteList		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.TrainControlUI$N			3
-SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.autonomy.AutoLocomotiveStatus$N	initComponents		1
+SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus$N	initComponents		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.autonomy.AutonomyBanner$N	floatOver		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.autonomy.AutonomyBanner$N	floatOver	followingViewport	1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel$N	<init>	banner	1
@@ -787,7 +787,7 @@ THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.gui.AutonomySetting
 THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.gui.LayoutFileActions$PageEdit	write		1
 THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.gui.TrainControlUI$ExportText	generate		1
 THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.gui.autonomy.DiagramExport	render		1
-THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.gui.layouteditor.LayoutEditorRightclickMenu$Action	run		1
+THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.gui.layouteditor.LayoutEditorContextMenu$Action	run		1
 THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.marklin.MarklinControlStation	requireTheTypeKnown		1
 THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.marklin.MarklinControlStation	syncLayoutsFromConfiguredSource		1
 THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.marklin.file.CS2File	copyAtomically		1
@@ -818,7 +818,7 @@ THROWS_METHOD_THROWS_RUNTIMEEXCEPTION	org.traincontrol.marklin.udp.NetworkProxy	
 UCF_USELESS_CONTROL_FLOW	org.traincontrol.marklin.file.CS2File	parseRoutes		1
 UC_USELESS_CONDITION	org.traincontrol.automation.Layout	bfs		1
 UC_USELESS_CONDITION	org.traincontrol.base.Feedback	readyForUpdate		1
-UC_USELESS_OBJECT	org.traincontrol.gui.LayoutRightclickAutonomyMenu	placeableCopies		1
+UC_USELESS_OBJECT	org.traincontrol.gui.DiagramAutonomyContextMenu	placeableCopies		1
 UC_USELESS_OBJECT_STACK	org.traincontrol.marklin.MarklinControlStation	wireComponents		1
 UG_SYNC_SET_UNSYNC_GET	org.traincontrol.marklin.MarklinLocomotive	getAccessoryState		1
 UG_SYNC_SET_UNSYNC_GET	org.traincontrol.marklin.MarklinLocomotive	getF		1
@@ -838,8 +838,8 @@ UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR	org.traincontrol.gui.LayoutMenus	lambda
 UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR	org.traincontrol.gui.LayoutMenus	refreshHeadings	centralStationHeading	1
 UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR	org.traincontrol.marklin.MarklinLocomotiveCsv$Row	merge	lastRun	1
 UWF_NULL_FIELD	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel		pendingPortal	1
-UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD	org.traincontrol.gui.LocomotiveSettingsFrame		unsavedAnswerForTest	1
-UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD	org.traincontrol.gui.RouteEditorFrame		discardAnswerForTest	1
+UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD	org.traincontrol.gui.LocomotiveSettingsWindow		unsavedAnswerForTest	1
+UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD	org.traincontrol.gui.RouteEditorWindow		discardAnswerForTest	1
 UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD	org.traincontrol.gui.autonomy.DiagramExport		stumbleForTest	1
 UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD	org.traincontrol.marklin.MarklinControlStation		whileParsingForTest	1
 VA_FORMAT_STRING_USES_NEWLINE	org.traincontrol.marklin.MarklinControlStation	exportLocsToCSV		1

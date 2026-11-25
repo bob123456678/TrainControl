@@ -27,7 +27,7 @@ import support.Teardown;
 
 /**
  * Cancel in the autonomy editor undoes the setup edits made in it (MT-406).  Every setup gesture rebuilds the running
- * layout through `AutonomyViewerPanel.load`, which SAVES the setup and clears the unsaved flag, so Cancel's `mayLeave`
+ * layout through `AutonomyConfigurationsPanel.load`, which SAVES the setup and clears the unsaved flag, so Cancel's `mayLeave`
  * must consult the snapshot `LayoutEditor` takes when it opens (`autonomyAsOpened`), not that flag.  On the frozen
  * railway, never `cs2_sample_layout` (OB-111); each claim puts the setup back as it found it.
  *

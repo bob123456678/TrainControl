@@ -255,7 +255,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     {
         List<String> said = new ArrayList<>();
 
-        for (Object[] row : org.traincontrol.gui.AutonomyViewerPanel.findingRows(session.check(), session::describeTile)
+        for (Object[] row : org.traincontrol.gui.AutonomyConfigurationsPanel.findingRows(session.check(), session::describeTile)
             .get(org.traincontrol.automationui.AutonomyChecks.Severity.ERROR))
         {
             if (String.valueOf(row[1]).contains(" s88 ")) said.add(String.valueOf(row[1]));

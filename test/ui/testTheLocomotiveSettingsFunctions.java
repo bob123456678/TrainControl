@@ -28,7 +28,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -1224,7 +1224,7 @@ public class testTheLocomotiveSettingsFunctions
     {
         SettingsWindow.closeIfOpen();
 
-        assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.FUNCTIONS, null), "the window did not open");
+        assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsWindow.Tab.FUNCTIONS, null), "the window did not open");
         assertNotNull(SettingsWindow.awaited(), "the window is not on screen");
 
         // The standard icons load after it opens

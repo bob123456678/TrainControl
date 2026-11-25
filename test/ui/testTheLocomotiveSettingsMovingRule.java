@@ -22,10 +22,10 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.LocomotiveSettings;
-import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.LocomotiveEditRule;
+import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.TrainControlUI;
-import org.traincontrol.gui.locomotive.RightClickSelectorMenu;
+import org.traincontrol.gui.locomotive.LocomotiveSelectorContextMenu;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
@@ -171,7 +171,7 @@ public class testTheLocomotiveSettingsMovingRule
     private static void everyDoorOpensLocked(String strip) throws Exception
     {
         String[] entries = { I18n.t("loc.ui.menuLocomotiveSettings"), I18n.t("loc.ui.menuSetAsMultiUnit") };
-        int[] tabs = { LocomotiveSettingsFrame.Tab.LOCOMOTIVE.ordinal(), LocomotiveSettingsFrame.Tab.MULTI_UNIT.ordinal() };
+        int[] tabs = { LocomotiveSettingsWindow.Tab.LOCOMOTIVE.ordinal(), LocomotiveSettingsWindow.Tab.MULTI_UNIT.ordinal() };
 
         for (int i = 0; i < entries.length; i++)
         {
@@ -197,7 +197,7 @@ public class testTheLocomotiveSettingsMovingRule
 
         Mouse.rightClick(name, 500);
 
-        assertOpenedLocked("the name", LocomotiveSettingsFrame.Tab.LOCOMOTIVE.ordinal(), strip);
+        assertOpenedLocked("the name", LocomotiveSettingsWindow.Tab.LOCOMOTIVE.ordinal(), strip);
 
         javax.swing.JToggleButton f3 = SettingsWindow.functionButton(ui, 3);
 
@@ -205,11 +205,11 @@ public class testTheLocomotiveSettingsMovingRule
 
         Mouse.rightClick(f3, 500);
 
-        assertOpenedLocked("a function button", LocomotiveSettingsFrame.Tab.FUNCTIONS.ordinal(), strip);
+        assertOpenedLocked("a function button", LocomotiveSettingsWindow.Tab.FUNCTIONS.ordinal(), strip);
 
         SettingsWindow.openFromTheTile(ui, loc);
 
-        assertOpenedLocked("the database tile", LocomotiveSettingsFrame.Tab.LOCOMOTIVE.ordinal(), strip);
+        assertOpenedLocked("the database tile", LocomotiveSettingsWindow.Tab.LOCOMOTIVE.ordinal(), strip);
     }
 
     // The doors
@@ -218,7 +218,7 @@ public class testTheLocomotiveSettingsMovingRule
      * A moving train opens the window from every door, locked: the key menu's two entries, the name, a function button
      * and the database tile each give the window on its tab with the strip saying to stop the train, and Save gray.
      *
-     * MUTATION: put `LocomotiveSettings.refuseIfNotEditable` back at the top of `openLocomotiveSettings`, or gray the
+     * MUTATION: put `LocomotiveEditRule.refuseIfNotEditable` back at the top of `openLocomotiveSettings`, or gray the
      * key menu's entries again while the train moves, and this fails.
      */
     @Test
@@ -242,7 +242,7 @@ public class testTheLocomotiveSettingsMovingRule
 
         final JPopupMenu[] tile = new JPopupMenu[1];
 
-        SwingUtilities.invokeAndWait(() -> tile[0] = new RightClickSelectorMenu(ui, null, loc));
+        SwingUtilities.invokeAndWait(() -> tile[0] = new LocomotiveSelectorContextMenu(ui, null, loc));
 
         AbstractButton delete = Components.withText(tile[0], I18n.t("loc.ui.menuDeleteFromDatabase"));
 
@@ -267,7 +267,7 @@ public class testTheLocomotiveSettingsMovingRule
      * The rule needs both halves: a train moving with the power off, or the power on and the train at rest, opens
      * free, without the strip.
      *
-     * MUTATION: test only the speed (drop `ui.powerIsOn()`) in `LocomotiveSettings.isMoving`, and this fails.
+     * MUTATION: test only the speed (drop `ui.powerIsOn()`) in `LocomotiveEditRule.isMoving`, and this fails.
      */
     @Test
     public void testPowerOffOrAtRestOpens() throws Exception
@@ -275,13 +275,13 @@ public class testTheLocomotiveSettingsMovingRule
         SettingsWindow.power(ui, model, false);
         loc.setSpeed(40);
 
-        assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "the power is off and it did not open");
+        assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null), "the power is off and it did not open");
         assertOpenedFree("the power is off");
 
         loc.setSpeed(0);
         SettingsWindow.power(ui, model, true);
 
-        assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "the train is at rest and it did not open");
+        assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null), "the train is at rest and it did not open");
         assertOpenedFree("the train is at rest");
     }
 
@@ -316,10 +316,10 @@ public class testTheLocomotiveSettingsMovingRule
 
         assertTrue(unit.getSpeed() > 0 && loc.getSpeed() == 0, "precondition: the unit is not the only one moving");
 
-        assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "the member of a moving multi-unit did not open");
-        assertOpenedLocked("a member of a moving multi-unit", LocomotiveSettingsFrame.Tab.LOCOMOTIVE.ordinal(), stripFor(NAME));
+        assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null), "the member of a moving multi-unit did not open");
+        assertOpenedLocked("a member of a moving multi-unit", LocomotiveSettingsWindow.Tab.LOCOMOTIVE.ordinal(), stripFor(NAME));
 
-        assertTrue(SettingsWindow.open(ui, third, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "a train outside the unit did not open");
+        assertTrue(SettingsWindow.open(ui, third, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null), "a train outside the unit did not open");
         assertFalse(Components.onTheEventThread(SettingsWindow.part("settings.strip", JLabel.class)::isVisible),
             "a train outside the unit opened locked");
     }
@@ -337,7 +337,7 @@ public class testTheLocomotiveSettingsMovingRule
     {
         loc.setLocalImageURL("file:/mr-nothing.png");
 
-        SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
+        SettingsWindow.open(ui, loc, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null);
         SettingsWindow.awaited();
 
         SettingsWindow.type("settings.name", "MR typed");
@@ -383,7 +383,7 @@ public class testTheLocomotiveSettingsMovingRule
      * A window opened locked keeps what is typed, Save is gray, a Save that is made anyway is refused and writes
      * nothing, and when the train stops (or the run ends) Save works.
      *
-     * MUTATION: let `LocomotiveSettingsFrame.refresh` leave `blocked` false for a window just opened, or drop the rule
+     * MUTATION: let `LocomotiveSettingsWindow.refresh` leave `blocked` false for a window just opened, or drop the rule
      * from `write`, and this fails.
      */
     @Test
@@ -409,9 +409,9 @@ public class testTheLocomotiveSettingsMovingRule
     /** Calls the open window's Save as a click would, whatever its gray, and gives what was said. */
     private static java.util.List<String> saveAnyway() throws Exception
     {
-        java.lang.reflect.Method save = Reflect.method(LocomotiveSettingsFrame.class, "save");
+        java.lang.reflect.Method save = Reflect.method(LocomotiveSettingsWindow.class, "save");
 
-        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        LocomotiveSettingsWindow window = SettingsWindow.showing();
 
         return SettingsWindow.asked(() -> Components.onTheEventThread(() ->
         {
@@ -438,7 +438,7 @@ public class testTheLocomotiveSettingsMovingRule
 
         lock.go();
 
-        assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "the door did not open the window");
+        assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null), "the door did not open the window");
         SettingsWindow.awaited();
 
         Components.onTheEventThread(() ->
@@ -473,12 +473,12 @@ public class testTheLocomotiveSettingsMovingRule
      * Save asks again at the click, so the graying is not the guard: with the window not yet told, Save still refuses
      * and writes nothing.
      *
-     * MUTATION: drop the moving test from `LocomotiveSettingsFrame.write`, and this fails.
+     * MUTATION: drop the moving test from `LocomotiveSettingsWindow.write`, and this fails.
      */
     @Test
     public void testSaveAsksAgainAtTheClick() throws Exception
     {
-        SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
+        SettingsWindow.open(ui, loc, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null);
         SettingsWindow.awaited();
 
         SettingsWindow.type("settings.name", "MR renamed");
@@ -515,7 +515,7 @@ public class testTheLocomotiveSettingsMovingRule
     {
         loc.setLocalImageURL("file:/mr-nothing.png");
 
-        SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
+        SettingsWindow.open(ui, loc, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null);
         SettingsWindow.awaited();
 
         // Not told: the click itself is where the rule is asked
@@ -541,15 +541,15 @@ public class testTheLocomotiveSettingsMovingRule
      * The strip takes its room from the tabs: the window keeps its size when a train starts, and the buttons at the
      * bottom stay inside it.
      *
-     * MUTATION: call `pack()` when the strip shows, in `LocomotiveSettingsFrame.refresh`, and this fails.
+     * MUTATION: call `pack()` when the strip shows, in `LocomotiveSettingsWindow.refresh`, and this fails.
      */
     @Test
     public void testTheStripDoesNotResizeTheWindow() throws Exception
     {
-        SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
+        SettingsWindow.open(ui, loc, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null);
         SettingsWindow.awaited();
 
-        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        LocomotiveSettingsWindow window = SettingsWindow.showing();
 
         java.awt.Dimension before = Components.onTheEventThread(window::getSize);
 
@@ -584,7 +584,7 @@ public class testTheLocomotiveSettingsMovingRule
      * While autonomy runs every door opens the window locked, for any locomotive, with the strip saying so, and Delete
      * refuses.
      *
-     * MUTATION: leave autonomy out of `LocomotiveSettings.why`, or put `refuseIfNotEditable` back at the top of
+     * MUTATION: leave autonomy out of `LocomotiveEditRule.why`, or put `refuseIfNotEditable` back at the top of
      * `openLocomotiveSettings`, and this fails.
      */
     @Test
@@ -617,12 +617,12 @@ public class testTheLocomotiveSettingsMovingRule
      * A window open when autonomy starts says why and grays Save, the trash can and the marks, keeps what was typed,
      * and Save asks again at the click; when the run ends the window is usable again.
      *
-     * MUTATION: stop asking the rule every second in `LocomotiveSettingsFrame` (drop `watch.start()`), and this fails.
+     * MUTATION: stop asking the rule every second in `LocomotiveSettingsWindow` (drop `watch.start()`), and this fails.
      */
     @Test
     public void testAWindowOpenWhenAutonomyStartsGraysAndComesBack() throws Exception
     {
-        SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
+        SettingsWindow.open(ui, loc, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null);
         SettingsWindow.awaited();
 
         SettingsWindow.type("settings.name", "MR typed");
@@ -658,7 +658,7 @@ public class testTheLocomotiveSettingsMovingRule
      * A stopped locomotive a running route drives opens the window, and so does another; the route's refusal comes at
      * Save for its name, address and multi-unit, and not for the preset speed.
      *
-     * MUTATION: put a running route into `LocomotiveSettings.why`, or leave the route question out of
+     * MUTATION: put a running route into `LocomotiveEditRule.why`, or leave the route question out of
      * `LocomotiveActions.writeNameAndAddress`, and this fails.
      */
     @Test
@@ -680,7 +680,7 @@ public class testTheLocomotiveSettingsMovingRule
         {
             assertTrue(Components.waitFor(() -> model.getRoute("MR route").isExecuting(), WAIT), "precondition: the route never started");
 
-            assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "a stopped locomotive a route drives did not open");
+            assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null), "a stopped locomotive a route drives did not open");
             SettingsWindow.awaited();
 
             assertFalse(Components.onTheEventThread(SettingsWindow.part("settings.strip", JLabel.class)::isVisible), "the strip is up for a route");
@@ -704,7 +704,7 @@ public class testTheLocomotiveSettingsMovingRule
 
             assertTrue(Components.waitFor(() -> loc.getPreferredSpeed() == 66, WAIT), "the preset speed of a driven locomotive was refused");
 
-            assertTrue(SettingsWindow.open(ui, third, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "another locomotive did not open");
+            assertTrue(SettingsWindow.open(ui, third, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null), "another locomotive did not open");
         }
         finally
         {
@@ -722,7 +722,7 @@ public class testTheLocomotiveSettingsMovingRule
      * The presets still save while autonomy runs, from the key menu and the hotkeys' own door: Save Current Speed and
      * Save Current Functions as Preset.
      *
-     * MUTATION: ask the rule in `RightClickMenuListener` for the two Save items (gray them while autonomy runs), and
+     * MUTATION: ask the rule in `LocomotiveButtonContextMenu` for the two Save items (gray them while autonomy runs), and
      * this fails.
      */
     @Test
@@ -849,13 +849,13 @@ public class testTheLocomotiveSettingsMovingRule
      * saves.  The strip is up for a moving train, for a window open when autonomy starts and for one opened during a run,
      * and goes when the train stops.
      *
-     * MUTATION: put a second label under the strip in `LocomotiveSettingsFrame` (the old preset line, shown with the
+     * MUTATION: put a second label under the strip in `LocomotiveSettingsWindow` (the old preset line, shown with the
      * strip), and this fails.
      */
     @Test
     public void testALockedWindowShowsOnlyTheLockStrip() throws Exception
     {
-        SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
+        SettingsWindow.open(ui, loc, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null);
         SettingsWindow.awaited();
 
         final JLabel strip = SettingsWindow.part("settings.strip", JLabel.class);
@@ -886,7 +886,7 @@ public class testTheLocomotiveSettingsMovingRule
 
             SettingsWindow.closeIfOpen();
 
-            SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
+            SettingsWindow.open(ui, loc, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null);
             SettingsWindow.awaited();
 
             assertTrue(Components.onTheEventThread(SettingsWindow.part("settings.strip", JLabel.class)::isVisible),
@@ -921,19 +921,19 @@ public class testTheLocomotiveSettingsMovingRule
     /**
      * The rule's own comment says what it asks: its reasons are the enum's, and a route is not one.
      *
-     * MUTATION: add a ROUTE reason to `LocomotiveSettings.Why`, and this fails.
+     * MUTATION: add a ROUTE reason to `LocomotiveEditRule.Why`, and this fails.
      */
     @Test
     public void testTheRulesCommentSaysWhatItAsks() throws Exception
     {
         String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/LocomotiveSettings.java")), java.nio.charset.StandardCharsets.UTF_8);
+            "src/org/traincontrol/gui/LocomotiveEditRule.java")), java.nio.charset.StandardCharsets.UTF_8);
 
-        String comment = source.substring(0, source.indexOf("public final class LocomotiveSettings"));
+        String comment = source.substring(0, source.indexOf("public final class LocomotiveEditRule"));
 
         java.util.Set<String> reasons = new java.util.TreeSet<>();
 
-        for (Object o : LocomotiveSettings.Why.class.getEnumConstants()) reasons.add(o.toString());
+        for (Object o : LocomotiveEditRule.Why.class.getEnumConstants()) reasons.add(o.toString());
 
         assertEquals(reasons, new java.util.TreeSet<>(Arrays.asList("MOVING", "AUTONOMY")), "the rule's reasons changed");
         assertTrue(comment.contains("moving") && comment.contains("autonomy runs"), "the comment does not name the reasons");
@@ -946,7 +946,7 @@ public class testTheLocomotiveSettingsMovingRule
      * The key menu's quick actions stay allowed for a moving train, the presets included: the speed preset applies
      * and saves.
      *
-     * MUTATION: gray the speed presets under the moving rule in `RightClickMenuListener`, and this fails.
+     * MUTATION: gray the speed presets under the moving rule in `LocomotiveButtonContextMenu`, and this fails.
      */
     @Test
     public void testQuickActionsStayAllowedWhileMoving() throws Exception

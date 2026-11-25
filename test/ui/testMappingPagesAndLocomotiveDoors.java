@@ -30,7 +30,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.RightClickTips;
+import org.traincontrol.gui.HoverTooltips;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -101,9 +101,9 @@ public class testMappingPagesAndLocomotiveDoors
         assertNotNull(ui, "the model has no window");
 
         // The key menu's keys are read while it is open, where a tick of Hide Hover Tooltips (FR-199) hides them.
-        tipsWere = TrainControlUI.getPrefs().get(RightClickTips.PREF, null);
+        tipsWere = TrainControlUI.getPrefs().get(HoverTooltips.PREF, null);
 
-        TrainControlUI.getPrefs().putBoolean(RightClickTips.PREF, false);
+        TrainControlUI.getPrefs().putBoolean(HoverTooltips.PREF, false);
 
         Components.settle();
 
@@ -166,8 +166,8 @@ public class testMappingPagesAndLocomotiveDoors
         }
         finally
         {
-            if (tipsWere == null) TrainControlUI.getPrefs().remove(RightClickTips.PREF);
-            else TrainControlUI.getPrefs().put(RightClickTips.PREF, tipsWere);
+            if (tipsWere == null) TrainControlUI.getPrefs().remove(HoverTooltips.PREF);
+            else TrainControlUI.getPrefs().put(HoverTooltips.PREF, tipsWere);
 
             if (sandbox != null) sandbox.close();
         }
@@ -376,7 +376,7 @@ public class testMappingPagesAndLocomotiveDoors
      * is not on leaves it active, clearing the page it is on releases it.
      *
      * MUTATION: `if (false) ui.releaseActiveLoc();` or `ui.releaseActiveLoc();` for the test in
-     * `LocMappingPages.doClearCurrentPage`, and this fails.
+     * `LocomotiveKeyboardPages.doClearCurrentPage`, and this fails.
      */
     @Test
     public void testResetMappingsReleasesTheActiveLocomotiveOnlyFromItsOwnPage() throws Exception
@@ -403,7 +403,7 @@ public class testMappingPagesAndLocomotiveDoors
      * Menus and dialogs word a page by "Page 5 (Example)", the name cut to MAX_PAGE_NAME_LENGTH_TOP letters and
      * "..."; shown in the paste confirmation.
      *
-     * MUTATION: cut at MAX_PAGE_NAME_LENGTH_TOP - 1 in `LocMappingPages.getPageName`, and this fails.
+     * MUTATION: cut at MAX_PAGE_NAME_LENGTH_TOP - 1 in `LocomotiveKeyboardPages.getPageName`, and this fails.
      */
     @Test
     public void testThePasteQuestionCutsALongPageName() throws Exception
@@ -440,7 +440,7 @@ public class testMappingPagesAndLocomotiveDoors
      * Rename Page asks, over the main window, for the page's name and names it, trimmed, in the label too; its own name
      * is taken again, and a name another page has is refused with a message and the page keeps its name.
      *
-     * MUTATION: in `LocMappingPages.renameCurrentPage`, leave out the `namesOfPages().contains(input)` test, and the
+     * MUTATION: in `LocomotiveKeyboardPages.renameCurrentPage`, leave out the `namesOfPages().contains(input)` test, and the
      * other page's name is taken.
      */
     @Test
@@ -506,7 +506,7 @@ public class testMappingPagesAndLocomotiveDoors
      * Control+Enter in the Locomotive Settings window is Save, pressed in the field typed into (FR-200): the year is kept
      * and the window closes.
      *
-     * MUTATION: drop the Control+Enter binding from `LocomotiveSettingsFrame`, and the year is not kept.
+     * MUTATION: drop the Control+Enter binding from `LocomotiveSettingsWindow`, and the year is not kept.
      */
     @Test
     public void testControlEnterSavesTheSettings() throws Exception
@@ -780,7 +780,7 @@ public class testMappingPagesAndLocomotiveDoors
      * tooltip that only named the key; the key is shown, not bound, so only the window's own key handling acts on it.
      * With no speed preset, the grayed Apply item keeps the tip that says why.
      *
-     * MUTATION: in `RightClickMenuListener.keyed`, a plain `setAccelerator` (the item binds its key); or swap two rows'
+     * MUTATION: in `LocomotiveButtonContextMenu.keyed`, a plain `setAccelerator` (the item binds its key); or swap two rows'
      * names there.
      */
     @Test

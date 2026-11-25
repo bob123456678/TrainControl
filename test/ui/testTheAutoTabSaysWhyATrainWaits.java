@@ -20,7 +20,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.TrainControlUI;
-import org.traincontrol.gui.autonomy.AutoLocomotiveStatus;
+import org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus;
 import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
@@ -116,7 +116,7 @@ public class testTheAutoTabSaysWhyATrainWaits
                 railway().getPoint(copy).setExcludedLocs(new HashSet<>(Arrays.asList(mover)));
             }
 
-            AutoLocomotiveStatus card = refreshedUntilNoPaths(mover);
+            AutonomyLocomotiveStatus card = refreshedUntilNoPaths(mover);
 
             String[] window = clickAndRead(secondLine(card));
 
@@ -162,7 +162,7 @@ public class testTheAutoTabSaysWhyATrainWaits
                 "precondition: Approach is not reachable by one copy and refused by the other: " + reasons);
 
             // The card is built once its search lands; read before then, there is no card to ask
-            AutoLocomotiveStatus card = refreshedUntil(mover, I18n.t("autolayout.ui.doubleClickExecute"));
+            AutonomyLocomotiveStatus card = refreshedUntil(mover, I18n.t("autolayout.ui.doubleClickExecute"));
 
             String window = (String) said(card, "whyNotReport");
             String tooltip = (String) said(card, "whyNotToolTip");
@@ -203,14 +203,14 @@ public class testTheAutoTabSaysWhyATrainWaits
             assertFalse(late.isEmpty(), "precondition: the train has no path to be late with");
 
             // The card the answer was asked for, before the train leaves.
-            final AutoLocomotiveStatus card = refreshedUntil(mover, I18n.t("autolayout.ui.doubleClickExecute"));
+            final AutonomyLocomotiveStatus card = refreshedUntil(mover, I18n.t("autolayout.ui.doubleClickExecute"));
 
             SwingUtilities.invokeAndWait(() -> railway().moveLocomotive(null,
                 railway().getLocomotiveLocation(mover).getName(), true));
 
             SwingUtilities.invokeAndWait(() -> card.updateState(mover, late, true));
 
-            Field list = Reflect.field(AutoLocomotiveStatus.class, "locAvailPaths");
+            Field list = Reflect.field(AutonomyLocomotiveStatus.class, "locAvailPaths");
 
             assertEquals(((javax.swing.JList<?>) list.get(card)).getModel().getSize(), 0,
                 "paths that arrived after the train left its square are offered to double-click");
@@ -240,9 +240,9 @@ public class testTheAutoTabSaysWhyATrainWaits
 
             assertFalse(railway().getPossiblePaths(mover, true).isEmpty(), "precondition: the train has nowhere to go");
 
-            final AutoLocomotiveStatus[] card = new AutoLocomotiveStatus[1];
+            final AutonomyLocomotiveStatus[] card = new AutonomyLocomotiveStatus[1];
 
-            SwingUtilities.invokeAndWait(() -> card[0] = new AutoLocomotiveStatus(mover, ui, true));
+            SwingUtilities.invokeAndWait(() -> card[0] = new AutonomyLocomotiveStatus(mover, ui, true));
 
             assertNotEquals(secondLine(card[0]).getText(), I18n.t("autolayout.ui.noAvailPaths"),
                 "a card waiting for its search says the train has no available paths, and it has some");
@@ -275,9 +275,9 @@ public class testTheAutoTabSaysWhyATrainWaits
     }
 
     /** What a card's private answer method says, asked on the event thread as the card asks it. */
-    private static Object said(final AutoLocomotiveStatus card, String method) throws Exception
+    private static Object said(final AutonomyLocomotiveStatus card, String method) throws Exception
     {
-        final java.lang.reflect.Method asked = Reflect.method(AutoLocomotiveStatus.class, method);
+        final java.lang.reflect.Method asked = Reflect.method(AutonomyLocomotiveStatus.class, method);
 
         final Object[] out = new Object[1];
 
@@ -309,7 +309,7 @@ public class testTheAutoTabSaysWhyATrainWaits
         {
             Locomotive mover = aMoverBlockedAtTheApproach();
 
-            AutoLocomotiveStatus card = refreshedUntilNoPaths(mover);
+            AutonomyLocomotiveStatus card = refreshedUntilNoPaths(mover);
 
             final java.awt.Rectangle[] at = new java.awt.Rectangle[3];
 
@@ -356,7 +356,7 @@ public class testTheAutoTabSaysWhyATrainWaits
 
             stand(MOVER, PLATFORM_X, PLATFORM_Y);
 
-            AutoLocomotiveStatus card = refreshedUntil(mover, I18n.t("autolayout.ui.doubleClickExecute"));
+            AutonomyLocomotiveStatus card = refreshedUntil(mover, I18n.t("autolayout.ui.doubleClickExecute"));
 
             assertSaysNothing(secondLine(card));
         });
@@ -377,7 +377,7 @@ public class testTheAutoTabSaysWhyATrainWaits
 
             SwingUtilities.invokeAndWait(() -> railway().getLocomotivesToRun().add(nowhere));
 
-            AutoLocomotiveStatus card = refreshedUntil(nowhere, I18n.t("autolayout.ui.locNotOnGraph"));
+            AutonomyLocomotiveStatus card = refreshedUntil(nowhere, I18n.t("autolayout.ui.locNotOnGraph"));
 
             assertSaysNothing(secondLine(card));
         });
@@ -403,7 +403,7 @@ public class testTheAutoTabSaysWhyATrainWaits
             SwingUtilities.invokeAndWait(() -> railway().moveLocomotive(null,
                 railway().getLocomotiveLocation(model.getLocByName(BLOCKER)).getName(), true));
 
-            AutoLocomotiveStatus card = redrawnUntil(mover, I18n.t("autolayout.ui.doubleClickExecute"), true);
+            AutonomyLocomotiveStatus card = redrawnUntil(mover, I18n.t("autolayout.ui.doubleClickExecute"), true);
 
             assertSame(secondLine(card), line, "precondition: the redraw built the card again, so the old line is gone");
 
@@ -454,7 +454,7 @@ public class testTheAutoTabSaysWhyATrainWaits
 
             assertTrue(Settle.until(started::isAutoRunning, PATIENCE_MS), "autonomy did not start");
 
-            AutoLocomotiveStatus card = redrawnUntil(mover, I18n.t("autolayout.ui.noActivePath"), true);
+            AutonomyLocomotiveStatus card = redrawnUntil(mover, I18n.t("autolayout.ui.noActivePath"), true);
 
             assertSame(secondLine(card), line, "precondition: the redraw built the card again, so the old line is gone");
 
@@ -552,7 +552,7 @@ public class testTheAutoTabSaysWhyATrainWaits
             assertEquals(support.DestinationRows.of(tip).size(), 12, "the tooltip does not stop at twelve stations: "
                 + tip);
 
-            AutoLocomotiveStatus card = refreshedUntilNoPaths(mover);
+            AutonomyLocomotiveStatus card = refreshedUntilNoPaths(mover);
 
             java.util.List<String[]> all = support.DestinationRows.of((String) said(card, "whyNotReport"));
 
@@ -948,7 +948,7 @@ public class testTheAutoTabSaysWhyATrainWaits
     // ---------------------------------------------------------------- the Auto tab
 
     /** Rebuilds the tab's cards, as a placement does, and waits until the train's new card says this. */
-    private static AutoLocomotiveStatus refreshedUntil(Locomotive who, String second) throws Exception
+    private static AutonomyLocomotiveStatus refreshedUntil(Locomotive who, String second) throws Exception
     {
         return redrawnUntil(who, second, false);
     }
@@ -957,13 +957,13 @@ public class testTheAutoTabSaysWhyATrainWaits
      * Redraws the tab and waits until the train's card says this.  A redraw "from outside" (a train arriving, a run
      * starting) updates the cards that are there, so the line the user is pointing at is the same label afterwards.
      */
-    private static AutoLocomotiveStatus redrawnUntil(Locomotive who, String second, boolean external) throws Exception
+    private static AutonomyLocomotiveStatus redrawnUntil(Locomotive who, String second, boolean external) throws Exception
     {
         SwingUtilities.invokeAndWait(() -> ui.repaintAutoLocList(external));
 
         assertTrue(Components.waitFor(() ->
         {
-            AutoLocomotiveStatus card = card(who);
+            AutonomyLocomotiveStatus card = card(who);
 
             try
             {
@@ -980,7 +980,7 @@ public class testTheAutoTabSaysWhyATrainWaits
         return card(who);
     }
 
-    private static AutoLocomotiveStatus refreshedUntilNoPaths(Locomotive who) throws Exception
+    private static AutonomyLocomotiveStatus refreshedUntilNoPaths(Locomotive who) throws Exception
     {
         return refreshedUntil(who, I18n.t("autolayout.ui.noAvailPaths"));
     }
@@ -989,7 +989,7 @@ public class testTheAutoTabSaysWhyATrainWaits
     {
         try
         {
-            AutoLocomotiveStatus card = card(who);
+            AutonomyLocomotiveStatus card = card(who);
 
             return card == null ? "(no card)" : secondLine(card).getText();
         }
@@ -1000,17 +1000,17 @@ public class testTheAutoTabSaysWhyATrainWaits
     }
 
     /** The train's card on the Auto tab as drawn now: the tab is rebuilt by a redraw, so it is looked for each time. */
-    private static AutoLocomotiveStatus card(Locomotive who)
+    private static AutonomyLocomotiveStatus card(Locomotive who)
     {
-        List<AutoLocomotiveStatus> all = Components.all(ui.getContentPane(), AutoLocomotiveStatus.class,
+        List<AutonomyLocomotiveStatus> all = Components.all(ui.getContentPane(), AutonomyLocomotiveStatus.class,
             c -> who.equals(c.getLocomotive()));
 
         return all.isEmpty() ? null : all.get(0);
     }
 
     /** The card's second line, the one the user hovers and clicks. */
-    private static JLabel secondLine(AutoLocomotiveStatus card) throws Exception
+    private static JLabel secondLine(AutonomyLocomotiveStatus card) throws Exception
     {
-        return (JLabel) Reflect.get(AutoLocomotiveStatus.class, card, "locDest");
+        return (JLabel) Reflect.get(AutonomyLocomotiveStatus.class, card, "locDest");
     }
 }

@@ -21,7 +21,7 @@ public final class DetailsArea
     /** The text's width in pixels: with the icon and the insets the popup stays under about 640. */
     public static final int WIDTH = 440;
 
-    /** The inset of a scrolling text, as `AutoLocomotiveStatus`'s text area has. */
+    /** The inset of a scrolling text, as `AutonomyLocomotiveStatus`'s text area has. */
     public static final int INSET = 6;
 
     /** Lines of the list shown before it scrolls. */

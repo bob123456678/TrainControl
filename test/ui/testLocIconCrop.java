@@ -109,7 +109,7 @@ public class testLocIconCrop
                     "a crop is saved without noting where it came from, so re-cropping it can never pan "
                     + "back out to anything the crop discarded");
 
-                String recrop = SourceOf.declarationIn(SourceOf.fileDeclaring("final class LocIconActions"), "void recropLocIcon(");
+                String recrop = SourceOf.declarationIn(SourceOf.fileDeclaring("final class LocomotiveIconActions"), "void recropLocIcon(");
 
                 assertTrue(recrop.contains("cropSourceOf("),
                     "re-crop no longer looks for the original picture, so it always crops the crop");
@@ -175,7 +175,7 @@ public class testLocIconCrop
     @Test
     public void testAnUnreadablePictureIsRefusedWithoutCropping() throws Exception
     {
-        String source = SourceOf.declarationIn(SourceOf.fileDeclaring("final class LocIconActions"),
+        String source = SourceOf.declarationIn(SourceOf.fileDeclaring("final class LocomotiveIconActions"),
             "void setLocIcon(Locomotive l, MouseEvent evt)");
 
         int asks = source.indexOf("pictureCanBeRead(f, source)");
@@ -300,7 +300,7 @@ public class testLocIconCrop
                     assertEquals(readSix[i], six[i], 1e-9, "the six-number view came back changed at position " + i);
                 }
 
-                java.lang.reflect.Method toOpenOn = Class.forName("org.traincontrol.gui.LocIconActions")
+                java.lang.reflect.Method toOpenOn = Class.forName("org.traincontrol.gui.LocomotiveIconActions")
                     .getDeclaredMethod("viewToOpenOn", double[].class);
 
                 toOpenOn.setAccessible(true);
@@ -349,8 +349,8 @@ public class testLocIconCrop
 
         double[] wanted = { 250.5, 200.25, 0.4, 2.5, 0.7 };
 
-        org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel restored =
-            new org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel(picture, 100, 50);
+        org.traincontrol.gui.locomotive.LocomotiveIconCropDialog.CropPanel restored =
+            new org.traincontrol.gui.locomotive.LocomotiveIconCropDialog.CropPanel(picture, 100, 50);
 
         restored.setSize(600, 420);
         restored.setView(wanted);
@@ -361,8 +361,8 @@ public class testLocIconCrop
         restored.copyViewInto(got);
 
         // THE CONTROL: what the same panel does with no view to open on.
-        org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel plain =
-            new org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel(picture, 100, 50);
+        org.traincontrol.gui.locomotive.LocomotiveIconCropDialog.CropPanel plain =
+            new org.traincontrol.gui.locomotive.LocomotiveIconCropDialog.CropPanel(picture, 100, 50);
 
         plain.setSize(600, 420);
         plain.getScale();
@@ -392,8 +392,8 @@ public class testLocIconCrop
         }
 
         // An unusable view is ignored rather than believed.
-        org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel nonsense =
-            new org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel(picture, 100, 50);
+        org.traincontrol.gui.locomotive.LocomotiveIconCropDialog.CropPanel nonsense =
+            new org.traincontrol.gui.locomotive.LocomotiveIconCropDialog.CropPanel(picture, 100, 50);
 
         nonsense.setSize(600, 420);
         nonsense.setView(new double[] { 1, 2, Double.NaN, 4, 5 });
@@ -424,8 +424,8 @@ public class testLocIconCrop
         java.awt.image.BufferedImage picture =
             new java.awt.image.BufferedImage(800, 600, java.awt.image.BufferedImage.TYPE_INT_RGB);
 
-        org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel first =
-            new org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel(picture, 100, 50);
+        org.traincontrol.gui.locomotive.LocomotiveIconCropDialog.CropPanel first =
+            new org.traincontrol.gui.locomotive.LocomotiveIconCropDialog.CropPanel(picture, 100, 50);
 
         first.setSize(600, 420);
         first.setView(new double[] { 250.5, 200.25, 0.4, 2.5, 0.7 });
@@ -438,8 +438,8 @@ public class testLocIconCrop
         first.copyViewInto(saved);
 
         // ANOTHER SHAPE OF DIALOG: tall rather than wide
-        org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel again =
-            new org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel(picture, 100, 50);
+        org.traincontrol.gui.locomotive.LocomotiveIconCropDialog.CropPanel again =
+            new org.traincontrol.gui.locomotive.LocomotiveIconCropDialog.CropPanel(picture, 100, 50);
 
         again.setSize(420, 640);
         again.setView(saved);
@@ -448,8 +448,8 @@ public class testLocIconCrop
         java.awt.Rectangle reopened = again.sourceRect();
 
         // THE CONTROL: the five numbers alone, in the same tall dialog
-        org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel byZoom =
-            new org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel(picture, 100, 50);
+        org.traincontrol.gui.locomotive.LocomotiveIconCropDialog.CropPanel byZoom =
+            new org.traincontrol.gui.locomotive.LocomotiveIconCropDialog.CropPanel(picture, 100, 50);
 
         byZoom.setSize(420, 640);
         byZoom.setView(java.util.Arrays.copyOf(saved, 5));
@@ -475,7 +475,7 @@ public class testLocIconCrop
     @Test
     public void testTheViewOnlyTravelsWithItsOwnPicture() throws Exception
     {
-        String recrop = SourceOf.declarationIn(SourceOf.fileDeclaring("final class LocIconActions"), "void recropLocIcon(");
+        String recrop = SourceOf.declarationIn(SourceOf.fileDeclaring("final class LocomotiveIconActions"), "void recropLocIcon(");
 
         assertTrue(recrop.contains("fromOriginal ? cropViewOf(l.getLocalImageURL()) : null)"),
             "re-crop no longer asks for the stored view, or asks for it whatever it is cropping - "
@@ -525,8 +525,8 @@ public class testLocIconCrop
             paint.dispose();
         }
 
-        org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel panel =
-            new org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel(source, OUT_WIDTH, OUT_HEIGHT);
+        org.traincontrol.gui.locomotive.LocomotiveIconCropDialog.CropPanel panel =
+            new org.traincontrol.gui.locomotive.LocomotiveIconCropDialog.CropPanel(source, OUT_WIDTH, OUT_HEIGHT);
 
         panel.setSize(600, 420);
         panel.setZoomFraction(0.0);
@@ -540,7 +540,7 @@ public class testLocIconCrop
             + "exercising the branch it is about: " + region);
 
         java.lang.reflect.Method contentOf =
-            Reflect.method(org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel.class,
+            Reflect.method(org.traincontrol.gui.locomotive.LocomotiveIconCropDialog.CropPanel.class,
                 "contentOf", java.awt.Rectangle.class);
 
         java.awt.image.BufferedImage cut =
@@ -1051,7 +1051,7 @@ public class testLocIconCrop
     @Test
     public void testTheWrenchHasAJawAtEachEnd() throws Exception
     {
-        java.lang.reflect.Constructor<?> made = Class.forName("org.traincontrol.gui.LocIconActions$WrenchMark")
+        java.lang.reflect.Constructor<?> made = Class.forName("org.traincontrol.gui.LocomotiveIconActions$WrenchMark")
             .getDeclaredConstructor();
 
         made.setAccessible(true);
@@ -1431,7 +1431,7 @@ public class testLocIconCrop
     @Test
     public void testTheRevertHasASolidArrowhead() throws Exception
     {
-        Class<?> mark = Class.forName("org.traincontrol.gui.LocIconActions$RevertMark");
+        Class<?> mark = Class.forName("org.traincontrol.gui.LocomotiveIconActions$RevertMark");
 
         java.lang.reflect.Constructor<?> made = mark.getDeclaredConstructor();
 
@@ -1487,7 +1487,7 @@ public class testLocIconCrop
     @Test
     public void testTheCropWindowIsOwnedByTheWindowItIsGiven() throws Exception
     {
-        java.lang.reflect.Method ownerOf = Reflect.method(org.traincontrol.gui.locomotive.LocIconCropDialog.class,
+        java.lang.reflect.Method ownerOf = Reflect.method(org.traincontrol.gui.locomotive.LocomotiveIconCropDialog.class,
             "ownerOf", java.awt.Component.class);
 
         final javax.swing.JFrame[] frame = new javax.swing.JFrame[1];

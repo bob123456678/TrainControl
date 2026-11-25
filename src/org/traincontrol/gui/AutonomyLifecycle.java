@@ -116,7 +116,7 @@ public final class AutonomyLifecycle
         // No local copy, no setup (OB-254): the menu above is what such a layout gets.
         if (session == null) return;
 
-        if (ui.autonomyViewerPanel == null) ui.autonomyViewerPanel = new AutonomyViewerPanel(session, ui);
+        if (ui.autonomyViewerPanel == null) ui.autonomyViewerPanel = new AutonomyConfigurationsPanel(session, ui);
 
         // Built but not shown: it stays as the home of the actions the Autonomy menu runs.
     }
@@ -261,7 +261,7 @@ public final class AutonomyLifecycle
         strip.add(ui.autonomyOverlayToggle, BorderLayout.CENTER);
 
         // Nothing in the main window may hold the keyboard: bare key presses drive locomotives
-        AutonomyViewerPanel.unfocusable(strip);
+        AutonomyConfigurationsPanel.unfocusable(strip);
 
         // Above the scroll pane, not inside it (OB-148): a column header scrolls with the view.  Swapped in at runtime
         // because the layout comes from the generated form.
@@ -663,7 +663,7 @@ public final class AutonomyLifecycle
                 {
                     if (ui.refuseWhileEditorOpen()) return;
 
-                    AutonomyViewerPanel actions = ui.getAutonomyViewerPanel();
+                    AutonomyConfigurationsPanel actions = ui.getAutonomyViewerPanel();
 
                     if (actions == null || actions.refusedWhileRunning()) return;
 

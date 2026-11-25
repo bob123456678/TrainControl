@@ -1372,8 +1372,8 @@ public class testNoSetupEditWhileARouteRuns
 
             Map<String, Runnable> edits = new java.util.LinkedHashMap<>();
 
-            edits.put("AutonomyViewerPanel: Rename", () -> call(panel, "rename"));
-            edits.put("AutonomyViewerPanel: Import", () -> call(panel, "importConfiguration"));
+            edits.put("AutonomyConfigurationsPanel: Rename", () -> call(panel, "rename"));
+            edits.put("AutonomyConfigurationsPanel: Import", () -> call(panel, "importConfiguration"));
             edits.put("AutonomyMenu: Delete Everything", () -> invoke(deleteEverything, autonomyMenu, window, session));
             edits.put("TimetableTab: Clear Timetable", window.timetableTab()::clearTimetable);
             edits.put("AutonomySettingsTab: Activate Routes", () -> callUi(window, "toggleSpecifiedRoutesMouseReleased",
@@ -1667,7 +1667,7 @@ public class testNoSetupEditWhileARouteRuns
 
             final TrainControlUI window = ui;
             final MarklinControlStation model = (MarklinControlStation) ui.getModel();
-            final org.traincontrol.gui.AutonomyViewerPanel panel = ui.getAutonomyViewerPanel();
+            final org.traincontrol.gui.AutonomyConfigurationsPanel panel = ui.getAutonomyViewerPanel();
             final String anyRun = I18n.t(WAIT);
             final String active = ui.getAutonomySession().getStore().getActiveConfiguration();
 
@@ -2205,10 +2205,10 @@ public class testNoSetupEditWhileARouteRuns
     {
         final List<javax.swing.JMenuItem> out = new ArrayList<>();
 
-        final Class<?> menuClass = Class.forName("org.traincontrol.gui.autonomy.RightClickTimetableMenu$RightClickMenu");
+        final Class<?> menuClass = Class.forName("org.traincontrol.gui.autonomy.TimetableContextMenu$RightClickMenu");
 
         final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(
-            org.traincontrol.gui.autonomy.RightClickTimetableMenu.class, TrainControlUI.class, java.awt.event.MouseEvent.class);
+            org.traincontrol.gui.autonomy.TimetableContextMenu.class, TrainControlUI.class, java.awt.event.MouseEvent.class);
 
         make.setAccessible(true);
 
@@ -2217,7 +2217,7 @@ public class testNoSetupEditWhileARouteRuns
             try
             {
                 javax.swing.JPopupMenu menu = (javax.swing.JPopupMenu) make.newInstance(
-                    new org.traincontrol.gui.autonomy.RightClickTimetableMenu(ui), ui, null);
+                    new org.traincontrol.gui.autonomy.TimetableContextMenu(ui), ui, null);
 
                 for (Component child : menu.getComponents())
                 {

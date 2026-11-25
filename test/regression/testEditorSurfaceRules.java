@@ -201,12 +201,12 @@ public class testEditorSurfaceRules
         // And project-wide, as a named LIST rather than a count, following testStuckTrainAdvisory: a list says what
         // is wrong, and adding a writer means saying here which file it is in and why it is allowed to be a second one.
         assertEquals(filesWriting("setFacing("),
-            Arrays.asList("AutonomyEditorPanel.java", "AutonomySession.java", "DiagramLocGestures.java",
-                "LayoutRightclickAutonomyMenu.java",
+            Arrays.asList("AutonomyEditorPanel.java", "AutonomySession.java", "DiagramAutonomyContextMenu.java",
+                "DiagramTrainKeys.java",
                 // RunningLayoutSync records the facing of a train the rebuild could not put back
                 // (`recordTheTrainsNotPutBack`), and the put-back tells the diagram after.
                 "RunningLayoutSync.java",
-                // SessionImport is the legacy import's facings, written behind AutonomyViewerPanel.importLegacyGraph,
+                // SessionImport is the legacy import's facings, written behind AutonomyConfigurationsPanel.importLegacyGraph,
                 // which reloads the railway after.
                 "SessionImport.java"),
             "a facing is written to the setup from a file this rule has not been told about. Each of "
@@ -217,7 +217,7 @@ public class testEditorSurfaceRules
 
         // THE FOURTH, SAYING WHICH OF THOSE IT IS (Adam, 2026-09-06).
         //
-        // `DiagramLocGestures.rememberPlacement` is the second half of the third one.  The rule already
+        // `DiagramTrainKeys.rememberPlacement` is the second half of the third one.  The rule already
         // knows about the track diagram's right-click menu; this is the same diagram's DRAG, which
         // moves a locomotive by hand and lands in a different class because the drop is handled by the
         // window rather than by the popup.  It redraws the same way - `updateVisiblePoints()` is
@@ -933,7 +933,7 @@ public class testEditorSurfaceRules
 
         assertTrue(setup.contains("setToolTipText(I18n.t(" + answer + "))"),
             "the disabled shortcut no longer says WHY. A greyed menu item with no reason on it is "
-            + "indistinguishable from a broken one, which is the note LayoutRightclickAutonomyMenu "
+            + "indistinguishable from a broken one, which is the note DiagramAutonomyContextMenu "
             + "already makes about the editor-open case above it");
 
         assertTrue(setup.contains("menuOpenFullEditor"),
@@ -2779,7 +2779,7 @@ public class testEditorSurfaceRules
     @Test
     public void testNoDialogIsShownOffTheEventThread() throws Exception
     {
-        // Everything that BLOCKS.  A message dialog is listed deliberately: it was used to show a whole AutoJSONExport
+        // Everything that BLOCKS.  A message dialog is listed deliberately: it was used to show a whole JsonExportPanel
         // panel built on the background thread.
         String[] needles =
         {
@@ -3387,7 +3387,7 @@ public class testEditorSurfaceRules
      * **A guard that reads only `Layout.java` and counts clauses on ONE PHYSICAL LINE cannot see the copies
      * it exists to find**:
      *
-     * - `AutoLocomotiveStatus.notChosenByAutonomy` lost two limbs and marked no parking berth;
+     * - `AutonomyLocomotiveStatus.notChosenByAutonomy` lost two limbs and marked no parking berth;
      * - `AutonomyEditorPanel.countDestinations` has three clauses of four, overcounting by every reversing
      *   station in the number an operator reads when nothing moves;
      * - the decomposed spelling in `barredFromAutonomy` is the rule as a list of reasons.
@@ -3435,7 +3435,7 @@ public class testEditorSurfaceRules
         excused.put("automationui/AutonomySession.java",
             "names the runtime rule in a comment, and narrows a set deliberately (MON-C1)");
 
-        excused.put("gui/autonomy/AutoLocomotiveStatus.java",
+        excused.put("gui/autonomy/AutonomyLocomotiveStatus.java",
             "a DELIBERATE lock-free copy - the rule is synchronized on the Layout and this runs on the"
             + " event thread three times per repaint. Kept honest by testWhyStuck"
             + " .testTheDashAgreesWithTheRule, which compares its answer with the rule's over every"

@@ -75,8 +75,8 @@ import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.gui.AutonomyViewerPanel;
-import org.traincontrol.gui.Listen;
+import org.traincontrol.gui.AutonomyConfigurationsPanel;
+import org.traincontrol.gui.OnMouse;
 import org.traincontrol.gui.RunGates;
 import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
@@ -567,7 +567,7 @@ public class AutonomyEditorPanel extends JPanel
         findingsPanel = buildFindings();
 
         // Nothing here is worked by keyboard, and a focusable control swallows the window's keys.
-        AutonomyViewerPanel.unfocusable(this);
+        AutonomyConfigurationsPanel.unfocusable(this);
 
         // After the sweep: the filter box is the one exception, and the window mounts it, not this panel.
         findingsBox = buildFindingsBox(findingsPanel);
@@ -1095,11 +1095,11 @@ public class AutonomyEditorPanel extends JPanel
         findings.setFont(FONT_CONTROL);
 
         // The Auto tab's colors: red must be fixed, amber worth checking, gray headings.
-        findings.setCellRenderer(new AutonomyViewerPanel.FindingRenderer(findingSeverity, findingTiles, FONT_CONTROL,
-            AutonomyViewerPanel.FONT_GROUP));
+        findings.setCellRenderer(new AutonomyConfigurationsPanel.FindingRenderer(findingSeverity, findingTiles, FONT_CONTROL,
+            AutonomyConfigurationsPanel.FONT_GROUP));
 
         // A double-click, or Control+O, opens the station's settings; one click stays as it is (FR-072).
-        findings.addMouseListener(Listen.clicked(e ->
+        findings.addMouseListener(OnMouse.clicked(e ->
         {
             if (e.getClickCount() == 2) openStationSettingsForTheFinding();
         }));
@@ -1197,7 +1197,7 @@ public class AutonomyEditorPanel extends JPanel
         javax.swing.border.TitledBorder titled =
             BorderFactory.createTitledBorder(I18n.t("autosetup.ui.colWarnings"));
 
-        titled.setTitleFont(AutonomyViewerPanel.FONT_GROUP);
+        titled.setTitleFont(AutonomyConfigurationsPanel.FONT_GROUP);
         titled.setTitleColor(new Color(0, 0, 155));
         whole.setBorder(titled);
         whole.add(list, BorderLayout.CENTER);
@@ -1254,7 +1254,7 @@ public class AutonomyEditorPanel extends JPanel
         {
             setFocusable(false);
 
-            addMouseListener(Listen.pressed(e ->
+            addMouseListener(OnMouse.pressed(e ->
             {
                 setFocusable(true);
                 requestFocusInWindow();
@@ -1311,7 +1311,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Everything that can be set on a tile, on one menu built like LayoutEditorRightclickMenu's, items in the graph
+     * Everything that can be set on a tile, on one menu built like LayoutEditorContextMenu's, items in the graph
      * window's order and wording.
      */
     public void tileRightClicked(TileKey tile, LayoutDiagramComponent component,
@@ -2681,7 +2681,7 @@ public class AutonomyEditorPanel extends JPanel
 
         List<String> said = new ArrayList<>();
 
-        for (List<Object[]> rows : AutonomyViewerPanel.findingRows(about, this::describeTile).values())
+        for (List<Object[]> rows : AutonomyConfigurationsPanel.findingRows(about, this::describeTile).values())
         {
             for (Object[] row : rows) said.add((String) row[1]);
         }
@@ -3287,7 +3287,7 @@ public class AutonomyEditorPanel extends JPanel
         if (row.getComponentCount() > 0) panel.add(row, BorderLayout.SOUTH);
 
         // Double-click chooses, as OK does.
-        list.addMouseListener(Listen.clicked(e ->
+        list.addMouseListener(OnMouse.clicked(e ->
         {
             if (e.getClickCount() == 2 && list.getSelectedValue() != null)
             {
@@ -6429,7 +6429,7 @@ public class AutonomyEditorPanel extends JPanel
         // graph's own problems are among the findings.  Warnings and notices apart: the diagram's count adds errors and
         // warnings only.
         Map<AutonomyChecks.Severity, List<Object[]>> sorted =
-            AutonomyViewerPanel.findingRows(session.check(), this::describeTile);
+            AutonomyConfigurationsPanel.findingRows(session.check(), this::describeTile);
 
         // Severity first everywhere, this page first within each, to agree with the count; rows elsewhere say where.
         for (List<Object[]> rows : sorted.values())
@@ -7272,7 +7272,7 @@ public class AutonomyEditorPanel extends JPanel
 
         int notice = probe.getPreferredSize().height;
 
-        probe.setFont(AutonomyViewerPanel.FONT_GROUP);
+        probe.setFont(AutonomyConfigurationsPanel.FONT_GROUP);
 
         return Math.max(notice, probe.getPreferredSize().height);
     }

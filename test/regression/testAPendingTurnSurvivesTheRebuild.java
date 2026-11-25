@@ -933,7 +933,7 @@ public class testAPendingTurnSurvivesTheRebuild
         final org.traincontrol.automationui.TileGraph.TileKey station = drawnOnce[0];
         final org.traincontrol.automationui.TileGraph.TileKey square = drawnOnce[1];
 
-        final org.traincontrol.gui.LayoutPopupUI popup = openAMediumPopUp();
+        final org.traincontrol.gui.LayoutPopupWindow popup = openAMediumPopUp();
 
         try
         {
@@ -991,14 +991,14 @@ public class testAPendingTurnSurvivesTheRebuild
 
         prefs.putBoolean(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, true);
 
-        org.traincontrol.gui.LayoutPopupUI popup = null;
+        org.traincontrol.gui.LayoutPopupWindow popup = null;
         String kept = null;
 
         try
         {
             popup = openAMediumPopUp();
 
-            final org.traincontrol.gui.LayoutPopupUI window = popup;
+            final org.traincontrol.gui.LayoutPopupWindow window = popup;
 
             kept = "LayoutPopupUI_" + window.getLayoutTitle() + "_" + window.getLayoutSize();
 
@@ -1092,7 +1092,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
             if (popup != null)
             {
-                final org.traincontrol.gui.LayoutPopupUI closing = popup;
+                final org.traincontrol.gui.LayoutPopupWindow closing = popup;
 
                 javax.swing.SwingUtilities.invokeAndWait(closing::dispose);
             }
@@ -1111,7 +1111,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
     /** How many of the station's registered caption labels sit inside this pop-up. */
     private static int labelsInPopup(final org.traincontrol.automationui.TileGraph.TileKey station,
-        final org.traincontrol.gui.LayoutPopupUI popup) throws Exception
+        final org.traincontrol.gui.LayoutPopupWindow popup) throws Exception
     {
         final int[] count = new int[1];
 
@@ -1127,7 +1127,7 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /** The Medium button's pop-up of the page shown, once it is up. */
-    private static org.traincontrol.gui.LayoutPopupUI openAMediumPopUp() throws Exception
+    private static org.traincontrol.gui.LayoutPopupWindow openAMediumPopUp() throws Exception
     {
         final javax.swing.JButton medium = (javax.swing.JButton) Reflect.get(TrainControlUI.class, ui, "mediumButton");
 
@@ -1141,13 +1141,13 @@ public class testAPendingTurnSurvivesTheRebuild
 
             for (java.awt.Window w : java.awt.Window.getWindows())
             {
-                if (w instanceof org.traincontrol.gui.LayoutPopupUI && w.isDisplayable() && !before.contains(w))
+                if (w instanceof org.traincontrol.gui.LayoutPopupWindow && w.isDisplayable() && !before.contains(w))
                 {
                     javax.swing.SwingUtilities.invokeAndWait(() -> { });
 
                     Thread.sleep(1500);
 
-                    return (org.traincontrol.gui.LayoutPopupUI) w;
+                    return (org.traincontrol.gui.LayoutPopupWindow) w;
                 }
             }
         }

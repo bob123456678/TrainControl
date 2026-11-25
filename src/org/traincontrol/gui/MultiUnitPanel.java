@@ -125,7 +125,7 @@ final class MultiUnitPanel extends JPanel
             }
         }
 
-        filterField.getDocument().addDocumentListener(Typing.tell(this::render));
+        filterField.getDocument().addDocumentListener(OnTextEdit.tell(this::render));
 
         render();
 
@@ -259,7 +259,7 @@ final class MultiUnitPanel extends JPanel
         });
 
         // Add mouse listener to reset to 100 on double-click
-        multiplierSlider.addMouseListener(Listen.clicked(e ->
+        multiplierSlider.addMouseListener(OnMouse.clicked(e ->
         {
             if (e.getClickCount() == 2) multiplierSlider.setValue(100);
         }));

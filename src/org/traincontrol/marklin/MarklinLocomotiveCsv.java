@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.LocomotiveNotes;
 import org.traincontrol.base.RouteCommand;
-import org.traincontrol.gui.LocomotiveSettings;
+import org.traincontrol.gui.LocomotiveEditRule;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.model.ViewListener;
 
@@ -405,7 +405,7 @@ public final class MarklinLocomotiveCsv
 
         for (Move move : plan.moves)
         {
-            if (LocomotiveSettings.hasSpeed(model, model.getLocByName(move.name))) moving.add(move.name);
+            if (LocomotiveEditRule.hasSpeed(model, model.getLocByName(move.name))) moving.add(move.name);
         }
 
         return moving;
@@ -438,7 +438,7 @@ public final class MarklinLocomotiveCsv
             d.here.sort((a, b) -> a.getName().compareTo(b.getName()));
             Locomotive old = d.here.get(0);
             d.whyNotNew = d.here.size() > 1 ? NotNew.SEVERAL : listed.contains(old.getName()) ? NotNew.LISTED
-                : LocomotiveSettings.hasSpeed(model, old) || model.runningRouteDriving(old.getName()) != null
+                : LocomotiveEditRule.hasSpeed(model, old) || model.runningRouteDriving(old.getName()) != null
                 ? NotNew.RUNNING : null;
             out.add(d);
         }
@@ -630,7 +630,7 @@ public final class MarklinLocomotiveCsv
                 return;
             }
 
-            if (LocomotiveSettings.hasSpeed(model, loc))
+            if (LocomotiveEditRule.hasSpeed(model, loc))
             {
                 held.add(label(loc.getDecoderType(), loc.getAddress()));
                 result.kept.add(late);

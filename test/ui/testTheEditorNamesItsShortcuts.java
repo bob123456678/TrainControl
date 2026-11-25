@@ -610,7 +610,7 @@ public class testTheEditorNamesItsShortcuts
     private static javax.swing.JPopupMenu theTrackMenu(LayoutEditor track, org.traincontrol.gui.LayoutLabel on,
         org.traincontrol.base.LayoutDiagramComponent what) throws Exception
     {
-        final java.lang.reflect.Constructor<?> make = Class.forName("org.traincontrol.gui.layouteditor.LayoutEditorRightclickMenu")
+        final java.lang.reflect.Constructor<?> make = Class.forName("org.traincontrol.gui.layouteditor.LayoutEditorContextMenu")
             .getConstructor(LayoutEditor.class, TrainControlUI.class, org.traincontrol.gui.LayoutLabel.class,
                 org.traincontrol.base.LayoutDiagramComponent.class);
 
@@ -658,7 +658,7 @@ public class testTheEditorNamesItsShortcuts
      * stroke the editor's key handler acts on, with no tooltip that only names it and no binding of its own;
      * every such key is shown somewhere on the menu.
      *
-     * MUTATION: a plain `setAccelerator` in `LayoutEditorRightclickMenu.keyed` (the items bind their keys), or
+     * MUTATION: a plain `setAccelerator` in `LayoutEditorContextMenu.keyed` (the items bind their keys), or
      * `LayoutEditor.REDO_KEY` on Undo, or no `showShortcut` on the Selection submenu's Rotate.
      */
     @Test

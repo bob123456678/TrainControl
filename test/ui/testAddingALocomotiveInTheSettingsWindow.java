@@ -12,7 +12,7 @@ import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.Locomotive.decoderType;
-import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
@@ -75,14 +75,14 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
      * fields, DCC chosen as the old window chose it, the three decoders it offered, and Add for Save.
      *
      * MUTATION: offer every decoder in Add, as Save does (`decoderType.values()` in `LocomotiveTab`), or show the tab
-     * strip in Add (`showInTheMiddle(tabs)` for `adding` in `LocomotiveSettingsFrame.build`), and this fails.
+     * strip in Add (`showInTheMiddle(tabs)` for `adding` in `LocomotiveSettingsWindow.build`), and this fails.
      */
     @Test
     public void testAddOpensBlankWithAddForSave() throws Exception
     {
         openAdd();
 
-        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        LocomotiveSettingsWindow window = SettingsWindow.showing();
 
         assertEquals(Components.onTheEventThread(window::getTitle), I18n.t("loc.ui.addLocomotive"));
         assertFalse(Components.onTheEventThread(() -> window.tabsForTest().isShowing()), "Add shows a tab strip");
@@ -105,7 +105,7 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
      * Add's labels and fields start at the window's left edge, as the other tabs' do, at the size it opens and when it is
      * widened: the spare width goes to the right of the fields, never around them (OB-470).
      *
-     * MUTATION: drop the spacer column in `LocomotiveSettingsFrame.LocomotiveTab` for `adding`, and the content centers
+     * MUTATION: drop the spacer column in `LocomotiveSettingsWindow.LocomotiveTab` for `adding`, and the content centers
      * in a wide window and this fails.
      */
     @Test
@@ -113,7 +113,7 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
     {
         openAdd();
 
-        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        LocomotiveSettingsWindow window = SettingsWindow.showing();
         javax.swing.JTextField name = SettingsWindow.part("settings.name", javax.swing.JTextField.class);
 
         int[] starts = new int[2];
@@ -189,7 +189,7 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
     /**
      * Add makes the locomotive, says so, and the window then shows it with all five tabs and Save.
      *
-     * MUTATION: answer true without `aim` in `LocomotiveSettingsFrame.add`, and the window stays on Add and this fails.
+     * MUTATION: answer true without `aim` in `LocomotiveSettingsWindow.add`, and the window stays on Add and this fails.
      */
     @Test
     public void testAddMakesTheLocomotiveAndShowsIt() throws Exception
@@ -207,7 +207,7 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
         assertEquals(made.getAddress(), 0xCE5, "Add gave the wrong address");
         assertEquals(made.getDecoderType(), decoderType.MFX, "Add gave the wrong decoder");
 
-        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        LocomotiveSettingsWindow window = SettingsWindow.showing();
 
         assertNotNull(window, "Add closed the window");
         assertEquals(window.getLocomotive(), made, "the window does not show the locomotive Add made");
@@ -443,7 +443,7 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
      * address's locomotives and its separator, under the other heading the rest's, then the summary.  Typing does not
      * write it again; the next opening does.
      *
-     * MUTATION: write the report on every keystroke, or never, from `LocomotiveSettingsFrame` (`reportDuplicatesOnce`),
+     * MUTATION: write the report on every keystroke, or never, from `LocomotiveSettingsWindow` (`reportDuplicatesOnce`),
      * and this fails.
      */
     @Test
@@ -492,7 +492,7 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
 
             // The next opening writes it once more
             fixture.quiet();
-            fixture.show(alone, LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
+            fixture.show(alone, LocomotiveSettingsWindow.Tab.LOCOMOTIVE);
 
             assertEquals(Collections.frequency(logged, I18n.t("loc.reportDuplicateSummary")), 2,
                 "the next opening did not write the report");

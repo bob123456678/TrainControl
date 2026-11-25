@@ -63,7 +63,7 @@ public final class SettingsFixture
      * A fresh DCC locomotive on key A with the power off and its Settings window open on a tab: what a claim starts from.
      */
     public org.traincontrol.marklin.MarklinLocomotive layDcc(String name, int address,
-        org.traincontrol.gui.LocomotiveSettingsFrame.Tab tab) throws Exception
+        org.traincontrol.gui.LocomotiveSettingsWindow.Tab tab) throws Exception
     {
         quiet();
         forget(name);
@@ -78,7 +78,7 @@ public final class SettingsFixture
 
     /** Opens the Settings window on a tab of this locomotive and waits for it to be on screen. */
     public org.traincontrol.base.Locomotive show(org.traincontrol.base.Locomotive loc,
-        org.traincontrol.gui.LocomotiveSettingsFrame.Tab tab)
+        org.traincontrol.gui.LocomotiveSettingsWindow.Tab tab)
     {
         if (!SettingsWindow.open(ui, loc, tab, null)) throw new AssertionError("the window did not open");
 

@@ -18,8 +18,8 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.LayoutLabel;
-import org.traincontrol.gui.LayoutPopupUI;
-import org.traincontrol.gui.RightClickTips;
+import org.traincontrol.gui.LayoutPopupWindow;
+import org.traincontrol.gui.HoverTooltips;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.util.I18n;
@@ -44,7 +44,7 @@ public class testRightClickMenuTipsCanBeHidden
 
     private static AskingWindows.Railway railway;
     private static TrainControlUI ui;
-    private static LayoutPopupUI page;
+    private static LayoutPopupWindow page;
     private static TileKey mainB;
     private static String wasStored;
 
@@ -63,7 +63,7 @@ public class testRightClickMenuTipsCanBeHidden
 
         page = AskingWindows.openThePage(ui);
 
-        wasStored = TrainControlUI.getPrefs().get(RightClickTips.PREF, null);
+        wasStored = TrainControlUI.getPrefs().get(HoverTooltips.PREF, null);
     }
 
     @AfterClass(alwaysRun = true)
@@ -97,13 +97,13 @@ public class testRightClickMenuTipsCanBeHidden
 
     private static void putBack()
     {
-        if (wasStored == null) TrainControlUI.getPrefs().remove(RightClickTips.PREF);
-        else TrainControlUI.getPrefs().put(RightClickTips.PREF, wasStored);
+        if (wasStored == null) TrainControlUI.getPrefs().remove(HoverTooltips.PREF);
+        else TrainControlUI.getPrefs().put(HoverTooltips.PREF, wasStored);
     }
 
     private static void hide(boolean on)
     {
-        TrainControlUI.getPrefs().putBoolean(RightClickTips.PREF, on);
+        TrainControlUI.getPrefs().putBoolean(HoverTooltips.PREF, on);
     }
 
     // ------------------------------------------------------------------------------------------ the menus
@@ -229,9 +229,9 @@ public class testRightClickMenuTipsCanBeHidden
     @Test
     public void testOffTheMenusKeepTheirTips() throws Exception
     {
-        TrainControlUI.getPrefs().remove(RightClickTips.PREF);
+        TrainControlUI.getPrefs().remove(HoverTooltips.PREF);
 
-        assertFalse(org.traincontrol.gui.RightClickTips.hidden(), "the setting is not off by default");
+        assertFalse(org.traincontrol.gui.HoverTooltips.hidden(), "the setting is not off by default");
 
         for (Door door : DIAGRAM_AND_BUTTON)
         {
@@ -426,7 +426,7 @@ public class testRightClickMenuTipsCanBeHidden
      * Ticked, a menu bar menu the keyboard opens (Right or Left arrow across an open bar sets the menu and its pop-up in
      * one step, so the pop-up is sized with its keys first) is as wide as its items without the key column (FR-199).
      *
-     * MUTATION: leave out `RightClickTips.apply`'s `pack()` of a showing pop-up, and it keeps the keys' width.
+     * MUTATION: leave out `HoverTooltips.apply`'s `pack()` of a showing pop-up, and it keeps the keys' width.
      */
     @Test(timeOut = 120000)
     public void testAMenuTheKeyboardOpensIsSizedWithoutItsKeys() throws Exception
@@ -540,7 +540,7 @@ public class testRightClickMenuTipsCanBeHidden
     @Test
     public void testTheSettingIsStoredByItsCheckbox() throws Exception
     {
-        TrainControlUI.getPrefs().remove(RightClickTips.PREF);
+        TrainControlUI.getPrefs().remove(HoverTooltips.PREF);
 
         AbstractButton item = Components.withText(ui, I18n.t("ui.main.toolbar.hideRightClickTips"));
 
@@ -550,14 +550,14 @@ public class testRightClickMenuTipsCanBeHidden
 
         SwingUtilities.invokeAndWait(item::doClick);
 
-        assertTrue(TrainControlUI.getPrefs().getBoolean(RightClickTips.PREF, false),
+        assertTrue(TrainControlUI.getPrefs().getBoolean(HoverTooltips.PREF, false),
             "ticking the item stored nothing");
 
-        assertTrue(org.traincontrol.gui.RightClickTips.hidden(), "ticked, the setting is not on");
+        assertTrue(org.traincontrol.gui.HoverTooltips.hidden(), "ticked, the setting is not on");
 
         SwingUtilities.invokeAndWait(item::doClick);
 
-        assertFalse(TrainControlUI.getPrefs().getBoolean(RightClickTips.PREF, true),
+        assertFalse(TrainControlUI.getPrefs().getBoolean(HoverTooltips.PREF, true),
             "clearing the item stored nothing");
     }
 

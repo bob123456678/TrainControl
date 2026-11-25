@@ -20,7 +20,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
-import org.traincontrol.gui.LayoutPopupUI;
+import org.traincontrol.gui.LayoutPopupWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
@@ -142,7 +142,7 @@ public class testRecentLayouts
         {
             record(b);
 
-            LayoutPopupUI window = support.AskingWindows.openThePage(ui);
+            LayoutPopupWindow window = support.AskingWindows.openThePage(ui);
 
             // Remembered as the application's exit remembers it
             SwingUtilities.invokeAndWait(() -> invoke("saveLayoutTitles"));
@@ -164,7 +164,7 @@ public class testRecentLayouts
 
             SwingUtilities.invokeAndWait(() ->
             {
-                for (java.awt.Window w : java.awt.Window.getWindows()) if (w instanceof LayoutPopupUI) w.dispose();
+                for (java.awt.Window w : java.awt.Window.getWindows()) if (w instanceof LayoutPopupWindow) w.dispose();
             });
 
             if (!a.equals(new File(String.valueOf(ui.localLayoutPath())).getAbsolutePath())) open(a);
@@ -180,7 +180,7 @@ public class testRecentLayouts
 
             for (java.awt.Window w : java.awt.Window.getWindows())
             {
-                if (w instanceof LayoutPopupUI && w.isShowing()) pages.add(((LayoutPopupUI) w).getLayoutTitle());
+                if (w instanceof LayoutPopupWindow && w.isShowing()) pages.add(((LayoutPopupWindow) w).getLayoutTitle());
             }
 
             return pages;
@@ -582,7 +582,7 @@ public class testRecentLayouts
         {
             SwingUtilities.invokeAndWait(() ->
             {
-                for (java.awt.Window w : java.awt.Window.getWindows()) if (w instanceof LayoutPopupUI) w.dispose();
+                for (java.awt.Window w : java.awt.Window.getWindows()) if (w instanceof LayoutPopupWindow) w.dispose();
             });
 
             if (!a.equals(new File(String.valueOf(ui.localLayoutPath())).getAbsolutePath()))
@@ -706,7 +706,7 @@ public class testRecentLayouts
 
             for (java.awt.Window w : java.awt.Window.getWindows())
             {
-                if (w instanceof LayoutPopupUI && w.isShowing()) s.append(" ").append(((LayoutPopupUI) w).getLayoutTitle());
+                if (w instanceof LayoutPopupWindow && w.isShowing()) s.append(" ").append(((LayoutPopupWindow) w).getLayoutTitle());
             }
 
             JMenu autonomy = (JMenu) Components.withText(window, I18n.t("autosetup.ui.menuAutonomy"));
@@ -869,7 +869,7 @@ public class testRecentLayouts
         {
             SwingUtilities.invokeAndWait(() ->
             {
-                for (java.awt.Window w : java.awt.Window.getWindows()) if (w instanceof LayoutPopupUI) w.dispose();
+                for (java.awt.Window w : java.awt.Window.getWindows()) if (w instanceof LayoutPopupWindow) w.dispose();
             });
 
             if (!a.equals(new File(String.valueOf(ui.localLayoutPath())).getAbsolutePath()))

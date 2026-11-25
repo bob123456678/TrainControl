@@ -664,7 +664,7 @@ public class testLocomotiveCsvImport
     /**
      * A member its moving head drives counts as having a speed even when its own is 0 (speed 1 times 0.5): the plan
      * names it and the import keeps its address, as Locomotive Settings refuses it.  Both ask
-     * `LocomotiveSettings.hasSpeed`.
+     * `LocomotiveEditRule.hasSpeed`.
      *
      * MUTATION: ask only the locomotive's own speed in `movingToReaddress` and `apply`, and this fails.
      */
@@ -1107,7 +1107,7 @@ public class testLocomotiveCsvImport
      * A member of a station multi-unit whose rename was answered No still counts as moving with its head, and the
      * import keeps its address.
      *
-     * MUTATION: in `LocomotiveSettings.hasSpeed`, look the member up in the head's names by `l.getName()` again.
+     * MUTATION: in `LocomotiveEditRule.hasSpeed`, look the member up in the head's names by `l.getName()` again.
      */
     @Test(timeOut = 60000)
     public void testAMemberWhoseRenameWasAnsweredNoIsMovingWithItsStationHead() throws Exception
@@ -1121,7 +1121,7 @@ public class testLocomotiveCsvImport
             head.setSpeed(1);
             head.waitForSpeedAtOrAbove(1);
 
-            assertTrue(org.traincontrol.gui.LocomotiveSettings.hasSpeed(model, member),
+            assertTrue(org.traincontrol.gui.LocomotiveEditRule.hasSpeed(model, member),
                 "Locomotive Settings does not see the member as moving with its head");
         }
         finally
@@ -1193,8 +1193,8 @@ public class testLocomotiveCsvImport
                 head.setSpeed(1);
                 head.waitForSpeedAtOrAbove(1);
 
-                List<Boolean> moving = Arrays.asList(org.traincontrol.gui.LocomotiveSettings.hasSpeed(model, holder),
-                    org.traincontrol.gui.LocomotiveSettings.hasSpeed(model, decliner));
+                List<Boolean> moving = Arrays.asList(org.traincontrol.gui.LocomotiveEditRule.hasSpeed(model, holder),
+                    org.traincontrol.gui.LocomotiveEditRule.hasSpeed(model, decliner));
 
                 if (!moving.equals(Arrays.asList(true, false))) wrong.add(order + "moving with the head " + moving);
 

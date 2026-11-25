@@ -125,7 +125,7 @@ public final class ManualSync
                 }
                 int synced = RunGates.refuseALinkOrSyncWhileEditorOpen(ui, null) ? TrainControlUI.SYNC_REFUSED
                     : ui.syncHolding();
-                final LocomotiveSettingsFrame open = ui.locomotiveSettings;
+                final LocomotiveSettingsWindow open = ui.locomotiveSettings;
                 if (open != null) SwingUtilities.invokeLater(open::followTheSync);
                 if (n.length == 0 || synced < 0) return synced;
                 int moved = (int) taken.stream().filter(r -> r.loco.getAddress() == r.stationAddress).count();

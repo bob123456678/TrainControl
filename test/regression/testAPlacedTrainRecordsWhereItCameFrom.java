@@ -326,7 +326,7 @@ public class testAPlacedTrainRecordsWhereItCameFrom
                 + " the locomotive menu's list did not give the train a length of 40 (MT-572)");
 
             // THE AUTONOMY TAB SHOWS IT (step 3), AND RUNS NO SHORTER (FR-048)
-            assertTrue(support.SettingsWindow.open(ui, train, org.traincontrol.gui.LocomotiveSettingsFrame.Tab.AUTONOMY,
+            assertTrue(support.SettingsWindow.open(ui, train, org.traincontrol.gui.LocomotiveSettingsWindow.Tab.AUTONOMY,
                 null), "the Locomotive Settings window did not open");
             assertNotNull(support.SettingsWindow.awaited(), "the Locomotive Settings window is not on screen");
 

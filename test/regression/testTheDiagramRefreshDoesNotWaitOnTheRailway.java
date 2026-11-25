@@ -231,7 +231,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     /**
      * The Return Home button is refreshed on the event thread while a driving thread holds the railway's monitor.  The
      * second door: `refreshReturnHomeButton` asks the `synchronized` `Layout.triageReturnToHome`, and `isAutonomyBusy`
-     * does not cover it (`AutoLocomotiveStatus.findPaths` holds the monitor with nothing running).
+     * does not cover it (`AutonomyLocomotiveStatus.findPaths` holds the monitor with nothing running).
      */
     @Test
     public void testTheReturnHomeButtonDoesNotWaitOnTheRailway() throws Exception
@@ -276,16 +276,16 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
     /**
      * The third door: the diagram's right-click menu asks the same question while it is being built, on the event
-     * thread (`HomeLocomotiveMenu.addReturnHomeItem`).
+     * thread (`ReturnHomeMenuItem.addReturnHomeItem`).
      */
     @Test
     public void testTheReturnHomeMenuDoesNotWaitOnTheRailway() throws Exception
     {
-        whileTheRailwayIsHeld("HomeLocomotiveMenu.addReturnHomeItem", () ->
+        whileTheRailwayIsHeld("ReturnHomeMenuItem.addReturnHomeItem", () ->
         {
             try
             {
-                Class<?> menu = Class.forName("org.traincontrol.gui.HomeLocomotiveMenu");
+                Class<?> menu = Class.forName("org.traincontrol.gui.ReturnHomeMenuItem");
 
                 // The sentence as the menu hands it where Start is offered: none.
                 java.lang.reflect.Method door = Reflect.method(menu,
@@ -369,7 +369,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     {
         final org.traincontrol.automationui.TileGraph.TileKey occupied = squareWithATrainOnIt();
 
-        Class<?> menu = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
+        Class<?> menu = Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu");
 
         final java.lang.reflect.Constructor<?> build = menu.getDeclaredConstructors()[0];
 
@@ -390,7 +390,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
             "the gather found nothing to offer for a square with a train standing on it, so the path"
             + " section would be absent and this test would measure the empty menu");
 
-        whileTheRailwayIsHeld("LayoutRightclickAutonomyMenu's constructor", () ->
+        whileTheRailwayIsHeld("DiagramAutonomyContextMenu's constructor", () ->
         {
             try
             {
@@ -988,7 +988,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
                     + " waiting more than " + PATIENCE_MS + "ms, purely because another thread is"
                     + " inside `synchronized (layout)`.  That thread is a dispatch inside"
                     + " `configureAndLockPath`, holding it across a CONFIGURE_SLEEP per accessory of"
-                    + " the path - or `AutoLocomotiveStatus.findPaths` inside `getPossiblePaths`,"
+                    + " the path - or `AutonomyLocomotiveStatus.findPaths` inside `getPossiblePaths`,"
                     + " searching the whole graph with nothing running at all.  Either way the window"
                     + " stops repainting and stops answering.  Where it is parked:\n"
                     + whereTheEventThreadIs());

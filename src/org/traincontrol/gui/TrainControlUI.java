@@ -138,30 +138,30 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.automation.TimetablePath;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.autonomy.AutoJSONExport;
-import org.traincontrol.gui.autonomy.AutoLocomotiveStatus;
+import org.traincontrol.gui.autonomy.JsonExportPanel;
+import org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
 import org.traincontrol.gui.autonomy.DiagramExport;
 import org.traincontrol.gui.autonomy.DiagramMonitorDriver;
 import org.traincontrol.gui.autonomy.DiagramTileRegistry;
 import org.traincontrol.gui.autonomy.ManualReversalPrompt;
-import org.traincontrol.gui.autonomy.RightClickTimetableMenu;
+import org.traincontrol.gui.autonomy.TimetableContextMenu;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.locomotive.CurrentKeyRow;
-import org.traincontrol.gui.locomotive.LocButtonTransferHandler;
-import org.traincontrol.gui.locomotive.LocomotiveKeyboardMapping;
+import org.traincontrol.gui.locomotive.LocomotiveButtonTransferHandler;
+import org.traincontrol.gui.locomotive.LocomotiveButtonSlot;
 import org.traincontrol.gui.locomotive.LocomotivePlaceholder;
 import org.traincontrol.gui.locomotive.LocomotiveSelector;
 import org.traincontrol.gui.locomotive.LocomotiveStats;
-import org.traincontrol.gui.locomotive.RightClickMenuListener;
-import org.traincontrol.gui.locomotive.RightClickPageMenu;
+import org.traincontrol.gui.locomotive.LocomotiveButtonContextMenu;
+import org.traincontrol.gui.locomotive.KeyboardPageContextMenu;
 import org.traincontrol.gui.locomotive.UsageChart;
-import org.traincontrol.gui.widgets.About;
+import org.traincontrol.gui.widgets.AboutPanel;
 import org.traincontrol.gui.widgets.BackupAction;
 import org.traincontrol.gui.widgets.BusyDialog;
 import org.traincontrol.gui.widgets.HandPointer;
-import org.traincontrol.gui.widgets.HandScrollListener;
+import org.traincontrol.gui.widgets.DragToScroll;
 import org.traincontrol.gui.widgets.LoadingSpinner;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.PositionAwareJFrame;
@@ -200,7 +200,7 @@ import org.traincontrol.marklin.file.CS2File;
  * UI for controlling trains and switches using the keyboard
  */
 public class TrainControlUI extends PositionAwareJFrame implements View, DiagramHighlights.Diagrams,
-    LocMappingPages.Keyboard, ManualSync.Main
+    LocomotiveKeyboardPages.Keyboard, ManualSync.Main
 {
     // Data save file name
     public static final String DATA_FILE_NAME = "UIState.data";
@@ -537,10 +537,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     // source can tell another railway from the same one chosen again.  Null until the window has its model.
     private String railwaySource;
 
-    RouteEditorFrame routeEditor;
+    RouteEditorWindow routeEditor;
 
     /** The Locomotive Settings window while it is open, or null (FR-048). */
-    volatile LocomotiveSettingsFrame locomotiveSettings;
+    volatile LocomotiveSettingsWindow locomotiveSettings;
 
     /**
      * Opens the Locomotive Settings window on a tab.  A locomotive that cannot be edited now opens locked (the window's
@@ -549,7 +549,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      * @param function the function to show on the Functions tab, or null
      * @return true when the window is open on the locomotive
      */
-    public boolean openLocomotiveSettings(Locomotive l, LocomotiveSettingsFrame.Tab tab, Integer function)
+    public boolean openLocomotiveSettings(Locomotive l, LocomotiveSettingsWindow.Tab tab, Integer function)
     {
         if (l == null) return false;
 
@@ -559,17 +559,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     /** Add Locomotive (FR-179): the Locomotive Settings window on its first tab with blank fields and Add for Save. */
     public boolean openAddLocomotive()
     {
-        return showLocomotiveSettings(LocomotiveSettingsFrame::aimAtANewLocomotive);
+        return showLocomotiveSettings(LocomotiveSettingsWindow::aimAtANewLocomotive);
     }
 
-    private boolean showLocomotiveSettings(Predicate<LocomotiveSettingsFrame> aim)
+    private boolean showLocomotiveSettings(Predicate<LocomotiveSettingsWindow> aim)
     {
         // Over the window whose door was pressed (OB-324), and the settings window stands as high as that one
         final Window asking = dialogParent();
 
         if (this.locomotiveSettings == null || !this.locomotiveSettings.isDisplayable())
         {
-            this.locomotiveSettings = new LocomotiveSettingsFrame(this);
+            this.locomotiveSettings = new LocomotiveSettingsWindow(this);
         }
 
         // Before aiming, which may ask about unsaved typing over it
@@ -635,13 +635,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     /** Tells the open Locomotive Settings window that the locomotive or the power may have changed. */
     private void tellLocomotiveSettings()
     {
-        final LocomotiveSettingsFrame window = this.locomotiveSettings;
+        final LocomotiveSettingsWindow window = this.locomotiveSettings;
 
         if (window != null) SwingUtilities.invokeLater(window::refresh);
     }
 
     // Popup references
-    private List<LayoutPopupUI> popups = new ArrayList<>();
+    private List<LayoutPopupWindow> popups = new ArrayList<>();
     
     // So we can track locomotive (autonomy) locations on track diagrams
     // The diagram labels showing each station, keyed by its SQUARE (what a caption points at).  Concurrent: written on
@@ -650,7 +650,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
          
     // Quick search cache
     private String lastSearch = "";
-    private LinkedHashSet<LocomotiveKeyboardMapping> lastResults = new LinkedHashSet<>();
+    private LinkedHashSet<LocomotiveButtonSlot> lastResults = new LinkedHashSet<>();
     
     // Cache timetable state to minimize repaining
     // Package-private for TimetableTab.repaintTimetable, which reads and writes it on the event thread only
@@ -891,7 +891,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         
         this.locMapping = new ArrayList<>();
     
-        this.numLocMappings = Math.max(LocMappingPages.MIN_LOC_MAPPINGS,
+        this.numLocMappings = Math.max(LocomotiveKeyboardPages.MIN_LOC_MAPPINGS,
             prefs.getInt(LOC_MAPPING_PAGES_PREF, DEFAULT_LOC_MAPPINGS));
 
         for (int i = 0; i < this.numLocMappings; i++)
@@ -1001,10 +1001,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         for (Entry<Integer, JButton> entry : this.buttonMapping.entrySet())
         {            
             // Add right click events
-            this.buttonMapping.get(entry.getKey()).addMouseListener(new RightClickMenuListener(this, entry.getValue()));
+            this.buttonMapping.get(entry.getKey()).addMouseListener(new LocomotiveButtonContextMenu(this, entry.getValue()));
 
             // Add drag and drop support
-            LocButtonTransferHandler.enable(this, entry.getValue(), locKeyTabs);
+            LocomotiveButtonTransferHandler.enable(this, entry.getValue(), locKeyTabs);
         }
         
         // Map buttons to labels
@@ -1080,10 +1080,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         this.sortByName.setSelected(prefs.getBoolean(ROUTE_SORT_PREF, false));
         
         // Right-clicks on the route list
-        this.RouteList.addMouseListener(new RightClickRouteMenu(this)); 
+        this.RouteList.addMouseListener(new RouteContextMenu(this)); 
         
         // Right-clicks on the timetable
-        this.timetable.addMouseListener(new RightClickTimetableMenu(this));  
+        this.timetable.addMouseListener(new TimetableContextMenu(this));  
         
         // Power at startup preference
         switch (prefs.getInt(TrainControlUI.AUTO_POWER_ON, 0))
@@ -1120,7 +1120,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         this.applyKeyboardType(TrainControlUI.KEYBOARD_TYPES[getSelectedKeyboardType() >= 0 ? getSelectedKeyboardType() : 0]);
         
         // Support for changing page names
-        RightClickPageMenu rcm = new RightClickPageMenu(this);
+        KeyboardPageContextMenu rcm = new KeyboardPageContextMenu(this);
         this.LocMappingNumberLabel.addMouseListener(rcm);
         this.PrevLocMapping.addMouseListener(rcm);
         this.NextLocMapping.addMouseListener(rcm);
@@ -1164,9 +1164,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         });
 
         // Hovering over the page controls during a drag turns the page, so locomotives can be dragged across pages
-        LocButtonTransferHandler.enablePageSwitching(this.locKeyTabs, this.locKeyTabs, 0);
-        LocButtonTransferHandler.enablePageSwitching(this.PrevLocMapping, this.locKeyTabs, -1);
-        LocButtonTransferHandler.enablePageSwitching(this.NextLocMapping, this.locKeyTabs, 1);
+        LocomotiveButtonTransferHandler.enablePageSwitching(this.locKeyTabs, this.locKeyTabs, 0);
+        LocomotiveButtonTransferHandler.enablePageSwitching(this.PrevLocMapping, this.locKeyTabs, -1);
+        LocomotiveButtonTransferHandler.enablePageSwitching(this.NextLocMapping, this.locKeyTabs, 1);
 
         toggleLocKeyTabs();
         
@@ -1371,10 +1371,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         return this.numLocMappings;
     }
 
-    private final LocMappingPages locMappingPages = new LocMappingPages(this);
+    private final LocomotiveKeyboardPages locMappingPages = new LocomotiveKeyboardPages(this);
 
-    /** The pages' window, from `LocMappingPages`: the menu's and the tests' door to add and delete pages. */
-    public LocMappingPages locMappingPages()
+    /** The pages' window, from `LocomotiveKeyboardPages`: the menu's and the tests' door to add and delete pages. */
+    public LocomotiveKeyboardPages locMappingPages()
     {
         return this.locMappingPages;
     }
@@ -1923,9 +1923,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     /**
      * Gets a map of all buttons mapped to the given locomotive name, prioritizing exact matches
      */
-    public LinkedHashSet<LocomotiveKeyboardMapping> getAllLocButtonMappingsMap(String s)
+    public LinkedHashSet<LocomotiveButtonSlot> getAllLocButtonMappingsMap(String s)
     {
-        LinkedHashSet<LocomotiveKeyboardMapping> out = new LinkedHashSet<>();
+        LinkedHashSet<LocomotiveButtonSlot> out = new LinkedHashSet<>();
         
         if (s != null)
         {
@@ -1936,7 +1936,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
                 {
                     if (entry.getValue() != null && entry.getValue().getName().trim().toLowerCase().equals(s.trim().toLowerCase()))
                     {
-                        out.add(new LocomotiveKeyboardMapping(i + 1, entry.getKey()));
+                        out.add(new LocomotiveButtonSlot(i + 1, entry.getKey()));
                     }
                 }
             }
@@ -1947,7 +1947,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
                 {
                     if (entry.getValue() != null && entry.getValue().getName().trim().toLowerCase().contains(s.trim().toLowerCase()))
                     {
-                        out.add(new LocomotiveKeyboardMapping(i + 1, entry.getKey()));
+                        out.add(new LocomotiveButtonSlot(i + 1, entry.getKey()));
                     }
                 }
             }
@@ -1981,7 +1981,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         }
         
         // Get all possible results
-        LinkedHashSet<LocomotiveKeyboardMapping> results = this.getAllLocButtonMappingsMap(s);
+        LinkedHashSet<LocomotiveButtonSlot> results = this.getAllLocButtonMappingsMap(s);
                 
         this.model.logf(
             "loc.ui.logLocomotiveMapped",
@@ -1995,8 +1995,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
         // The chosen key counts as seen when it holds a match, so a search from it, or from a key chosen by hand, moves
         // on to another one.  Its page is the one it was chosen on, which need not be the page in view.
-        LocomotiveKeyboardMapping here =
-            new LocomotiveKeyboardMapping(this.currentButtonlocMappingNumber, this.currentButton);
+        LocomotiveButtonSlot here =
+            new LocomotiveButtonSlot(this.currentButtonlocMappingNumber, this.currentButton);
 
         if (results.contains(here)) this.lastResults.add(here);
 
@@ -2007,7 +2007,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         }
         
         // Show first unseen result
-        for (LocomotiveKeyboardMapping e : results)
+        for (LocomotiveButtonSlot e : results)
         {
             if (!this.lastResults.contains(e))
             {
@@ -2375,7 +2375,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             return;
         }
 
-        for (LayoutPopupUI popup : new ArrayList<>(this.popups))
+        for (LayoutPopupWindow popup : new ArrayList<>(this.popups))
         {
             if (popup.isVisible() && !popup.captionsAreAsBuilt()) popup.refreshCaptions();
         }
@@ -2387,7 +2387,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         // Not while the pages are being read again, when one not read yet looks gone
         if (refreshesUnderWay.get() == 0 && !syncInFlight.get()) closePopupsWhosePagesAreGone();
 
-        for (LayoutPopupUI popup : new ArrayList<>(this.popups))
+        for (LayoutPopupWindow popup : new ArrayList<>(this.popups))
         {
             if (popup.isVisible() && popup.showsAPageReadAgain()) popup.refreshCaptions();
         }
@@ -2396,7 +2396,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     /** Closes the page windows whose page the layout no longer has (OB-466). */
     private void closePopupsWhosePagesAreGone()
     {
-        for (LayoutPopupUI popup : new ArrayList<>(this.popups))
+        for (LayoutPopupWindow popup : new ArrayList<>(this.popups))
         {
             if (popup.isVisible() && popup.showsAPageThatIsGone()) closePopup(popup);
         }
@@ -2405,12 +2405,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     /** Closes every page window and forgets those remembered for the next start: they show the layout left (OB-466). */
     private void closeThePageWindows()
     {
-        for (LayoutPopupUI popup : new ArrayList<>(this.popups)) closePopup(popup);
+        for (LayoutPopupWindow popup : new ArrayList<>(this.popups)) closePopup(popup);
 
         for (Integer size : layoutSizes.values()) prefs.remove(LAYOUT_TITLES_PREF + "_" + size);
     }
 
-    private void closePopup(LayoutPopupUI popup)
+    private void closePopup(LayoutPopupWindow popup)
     {
         popup.close();
 
@@ -3137,9 +3137,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         }
     }
 
-    final StationCaptions stationCaptions = new StationCaptions(this);
+    final StationCaptionText stationCaptions = new StationCaptionText(this);
 
-    public StationCaptions stationCaptions()
+    public StationCaptionText stationCaptions()
     {
         return this.stationCaptions;
     }
@@ -3644,8 +3644,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         {
             if (window == this || !window.isDisplayable()) continue;
 
-            if (window instanceof LayoutPopupUI || window instanceof RouteEditorFrame
-                || window instanceof LocomotiveSettingsFrame || window instanceof LocomotiveSelector
+            if (window instanceof LayoutPopupWindow || window instanceof RouteEditorWindow
+                || window instanceof LocomotiveSettingsWindow || window instanceof LocomotiveSelector
                 || window instanceof UsageChart)
             {
                 if (window.isAlwaysOnTop() != onTop) window.setAlwaysOnTop(onTop);
@@ -3676,9 +3676,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     }
 
     /** The diagram's keyboard gestures and the turns they write. */
-    final DiagramLocGestures diagramLocGestures = new DiagramLocGestures(this);
+    final DiagramTrainKeys diagramLocGestures = new DiagramTrainKeys(this);
 
-    public DiagramLocGestures diagramLocGestures()
+    public DiagramTrainKeys diagramLocGestures()
     {
         return this.diagramLocGestures;
     }
@@ -3721,7 +3721,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     }
 
     /**
-     * Delegates to `DiagramLocGestures.dropByPaste`: a train dragged in the autonomy editor lands as a paste (FR-160).
+     * Delegates to `DiagramTrainKeys.dropByPaste`: a train dragged in the autonomy editor lands as a paste (FR-160).
      *
      * @param locomotive the train's name
      * @param to the station square
@@ -4043,12 +4043,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         }
     }
 
-    public AutonomyViewerPanel getAutonomyViewerPanel()
+    public AutonomyConfigurationsPanel getAutonomyViewerPanel()
     {
         return autonomyViewerPanel;
     }
 
-    AutonomyViewerPanel autonomyViewerPanel;
+    AutonomyConfigurationsPanel autonomyViewerPanel;
 
     /** Tells the window the running configuration was renamed, since captures and reloads look it up by name. */
     public void autonomySetupRenamed(String from, String to)
@@ -4145,7 +4145,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     {
         JMenuItem item = new JMenuItem(I18n.t("ui.main.toolbar.exportLog"));
 
-        item.addActionListener(event -> LogExportDoor.save(this));
+        item.addActionListener(event -> LogExport.save(this));
 
         this.exportLogMenuItem = item;
 
@@ -4259,7 +4259,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
     /**
      * Shows these keys on a menu item, bound to nothing: the window's own key handling acts on them.  Hide Hover
-     * Tooltips takes them off while the menu is open ({@link RightClickTips}).
+     * Tooltips takes them off while the menu is open ({@link HoverTooltips}).
      */
     public static void showShortcut(JMenuItem item, KeyStroke keys)
     {
@@ -4499,7 +4499,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
             final int page = this.locMappingNumber;
             this.KeyboardTab.setIconAt(0, SharpIcon.map((ImageIcon) TAB_ICON_CONTROL,
-                tab -> LocMappingPages.withPageBadge(ImageUtil.toTransparentBufferedImage(tab), page)));
+                tab -> LocomotiveKeyboardPages.withPageBadge(ImageUtil.toTransparentBufferedImage(tab), page)));
        }
        else 
        {
@@ -4532,7 +4532,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     {
         this.importLocsFromCSVMenuItem = new JMenuItem(I18n.t("ui.main.toolbar.importFromCSV"));
 
-        this.importLocsFromCSVMenuItem.addActionListener(event -> LocomotiveCsvDoor.open(this, this));
+        this.importLocsFromCSVMenuItem.addActionListener(event -> LocomotiveCsvImport.open(this, this));
 
         this.locomotiveMenu.insert(this.importLocsFromCSVMenuItem,
             this.locomotiveMenu.getPopupMenu().getComponentIndex(this.exportLocsToCSVMenuItem) + 1);
@@ -4672,7 +4672,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         this.exportActuationsButton.setFont(new Font("Segoe UI", Font.BOLD, 12));
         this.exportActuationsButton.setToolTipText(I18n.t("acc.ui.tooltip.exportActuations"));
         this.exportActuationsButton.setFocusable(false);
-        this.exportActuationsButton.addActionListener(event -> ActuationCsvDoor.save(this));
+        this.exportActuationsButton.addActionListener(event -> AccessoryCountsExport.save(this));
 
         JPanel row = new JPanel(new BorderLayout());
         row.setOpaque(false);
@@ -4834,7 +4834,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         // Once the model says which mode this is.
         layoutMenus.mountDebugMenu();
                 
-        HandScrollListener scrollListener = new HandScrollListener(InnerLayoutPanel);
+        DragToScroll scrollListener = new DragToScroll(InnerLayoutPanel);
         LayoutArea.getViewport().addMouseMotionListener(scrollListener);
         LayoutArea.getViewport().addMouseListener(scrollListener);
         nameTheStation();
@@ -6872,7 +6872,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             return;
         }
 
-        for (LayoutPopupUI popup : this.popups) popup.refreshTitle();
+        for (LayoutPopupWindow popup : this.popups) popup.refreshTitle();
 
         for (Frame frame : Frame.getFrames())
         {
@@ -6960,7 +6960,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
                             // Display active locomotive in autonomy UI
                             String windowTitleString = getWindowTitleString();
                             
-                            for (LayoutPopupUI popup : this.popups)
+                            for (LayoutPopupWindow popup : this.popups)
                             {
                                 popup.setTitle(popup.titleWith(windowTitleString));
                             } 
@@ -7175,7 +7175,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
                         
                         // Clear locomotive from graph UI title
                         
-                        for (LayoutPopupUI popup : this.popups)
+                        for (LayoutPopupWindow popup : this.popups)
                         {
                             popup.setTitle(popup.titleWith("")); 
                         }
@@ -13369,11 +13369,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             row("add a locomotive", Held.CONTROL.on(KeyEvent.VK_D), key -> key.ui.addLocomotiveMenuItemActionPerformed(null));
             // The locomotive keys open the Locomotive Settings window, whose one rule covers them (FR-048).
             row("locomotive settings", Held.CONTROL.on(KeyEvent.VK_E), key -> key.ui.openLocomotiveSettings(
-                key.ui.getButtonLocomotive(key.ui.currentButton), LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null));
+                key.ui.getButtonLocomotive(key.ui.currentButton), LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null));
             row("locomotive notes", Held.CONTROL.on(KeyEvent.VK_N), key -> key.ui.openLocomotiveSettings(
-                key.ui.getButtonLocomotive(key.ui.currentButton), LocomotiveSettingsFrame.Tab.NOTES, null));
+                key.ui.getButtonLocomotive(key.ui.currentButton), LocomotiveSettingsWindow.Tab.NOTES, null));
             row("linked locomotives", Held.CONTROL.on(KeyEvent.VK_L), key -> key.ui.openLocomotiveSettings(
-                key.ui.getButtonLocomotive(key.ui.currentButton), LocomotiveSettingsFrame.Tab.MULTI_UNIT, null));
+                key.ui.getButtonLocomotive(key.ui.currentButton), LocomotiveSettingsWindow.Tab.MULTI_UNIT, null));
             // Only while its checkbox shows (OB-484).
             row("show or hide the menu bar", Held.CONTROL.on(KeyEvent.VK_M), key ->
             {
@@ -13387,7 +13387,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
                 }
             });
             row("change the address", Held.CONTROL.on(KeyEvent.VK_R), key -> key.ui.openLocomotiveSettings(
-                key.ui.getButtonLocomotive(key.ui.currentButton), LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null));
+                key.ui.getButtonLocomotive(key.ui.currentButton), LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null));
             row("paste onto the button", Held.CONTROL.on(KeyEvent.VK_V), key ->
             {
                 if (key.ui.hasCopyTarget())
@@ -14068,7 +14068,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         // A right-click on the active name edits the locomotive; a left-click still opens the database (FR-048).
         if (SwingUtilities.isRightMouseButton(evt))
         {
-            if (this.activeLoc != null) this.openLocomotiveSettings(this.activeLoc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
+            if (this.activeLoc != null) this.openLocomotiveSettings(this.activeLoc, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null);
 
             return;
         }
@@ -14305,11 +14305,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             if (PositionAwareJFrame.remembersWindowLocations())
             {
                 Map<String, Set<String>> layoutTitlesMap = new HashMap<>();
-                ListIterator<LayoutPopupUI> iter = this.popups.listIterator();
+                ListIterator<LayoutPopupWindow> iter = this.popups.listIterator();
 
                 while (iter.hasNext())
                 {
-                    LayoutPopupUI currentPopup = iter.next();
+                    LayoutPopupWindow currentPopup = iter.next();
                     if (currentPopup.isVisible())
                     {
                         String layoutTitle = currentPopup.getLayoutTitle();
@@ -14356,7 +14356,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     private void updatePopups(boolean doRefresh)
     {
         this.popups.removeIf(popup -> !popup.isVisible());
-        if (doRefresh) for (LayoutPopupUI popup : this.popups) popup.refreshDiagram();
+        if (doRefresh) for (LayoutPopupWindow popup : this.popups) popup.refreshDiagram();
         if (this.model.isDebug()) this.model.logf("layout.ui.infoCurrentlyActivePopups", this.popups.size());
     }
     
@@ -14372,7 +14372,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
                 {
                     Integer fNumber = this.functionMapping.get(b);
 
-                    this.openLocomotiveSettings(this.activeLoc, LocomotiveSettingsFrame.Tab.FUNCTIONS, fNumber);
+                    this.openLocomotiveSettings(this.activeLoc, LocomotiveSettingsWindow.Tab.FUNCTIONS, fNumber);
                 };
             });
         }
@@ -14541,7 +14541,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
     private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aboutMenuItemActionPerformed
         
-        JOptionPane.showMessageDialog(this, new About(), I18n.t("ui.about"), JOptionPane.PLAIN_MESSAGE);
+        JOptionPane.showMessageDialog(this, new AboutPanel(), I18n.t("ui.about"), JOptionPane.PLAIN_MESSAGE);
     }//GEN-LAST:event_aboutMenuItemActionPerformed
 
     private void switchCSLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_switchCSLayoutMenuItemActionPerformed
@@ -14945,7 +14945,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
                         return;
                     }
 
-                    routeEditor = new RouteEditorFrame(this, null, null);
+                    routeEditor = new RouteEditorWindow(this, null, null);
 
                     // Offered, not imposed: ordinary text in the box; Save refuses an empty name.
                     routeEditor.proposeName(newName);
@@ -15195,14 +15195,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             }
 
             // Each on its own: a window that cannot be drawn costs only itself, and is thrown once the others are up
-            List<LayoutPopupUI> built = new ArrayList<>();
+            List<LayoutPopupWindow> built = new ArrayList<>();
             RuntimeException failed = null;
             for (Map.Entry<String, Integer> page : asked)
             {
-                LayoutPopupUI popup = null;
+                LayoutPopupWindow popup = null;
                 try
                 {
-                    popup = new LayoutPopupUI(this.model.getLayout(page.getKey()), page.getValue(), this);
+                    popup = new LayoutPopupWindow(this.model.getLayout(page.getKey()), page.getValue(), this);
                     popup.render();
                     built.add(popup);
                 }
@@ -15215,7 +15215,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
             // Update auto layout station labels on the track diagram, then show the windows that have them
             updateVisiblePoints();
-            for (LayoutPopupUI popup : built) popup.setVisible(true);
+            for (LayoutPopupWindow popup : built) popup.setVisible(true);
             popups.addAll(built);
             updatePopups(false);
             repaintLoc();
@@ -16130,7 +16130,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
                 {
                     JOptionPane.showMessageDialog(
                         this,
-                        new AutoJSONExport(payload, this, type, extension),
+                        new JsonExportPanel(payload, this, type, extension),
                         I18n.t(titleKey),
                         JOptionPane.PLAIN_MESSAGE
                     );
@@ -16835,7 +16835,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         {
             // Not gated on there being an autonomy layout: this menu carries the setup itself, and an empty menu is not
             // shown.
-            LayoutRightclickAutonomyMenu.showFor(this, null, null,
+            DiagramAutonomyContextMenu.showFor(this, null, null,
                 evt.getComponent(), evt.getX(), evt.getY());
         }
     }//GEN-LAST:event_InnerLayoutPanelMouseClicked
@@ -17425,19 +17425,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      */
     private void buildIconWrench()
     {
-        iconWrench = new JLabel(new LocIconActions.WrenchMark());
+        iconWrench = new JLabel(new LocomotiveIconActions.WrenchMark());
 
         iconWrench.setToolTipText(I18n.t("loc.ui.tooltip.openSettingsFromPicture"));
         iconWrench.setVisible(false);
         iconWrench.setOpaque(false);
         iconWrench.setCursor(HandPointer.cursor());
 
-        iconWrench.addMouseListener(Listen.released(evt ->
+        iconWrench.addMouseListener(OnMouse.released(evt ->
         {
             // A right-click over the wrench is a right-click over the picture: it chooses the icon, with the power off.
             if (activeLoc == null) return;
 
-            if (SwingUtilities.isLeftMouseButton(evt)) openLocomotiveSettings(activeLoc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
+            if (SwingUtilities.isLeftMouseButton(evt)) openLocomotiveSettings(activeLoc, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null);
             else if (SwingUtilities.isRightMouseButton(evt) && offersTheIconTools()) locIconActions.setLocIcon(activeLoc, null);
         }));
 
@@ -17478,9 +17478,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     }
 
     /** Choosing, cropping and deleting locomotive icons (FR-022). */
-    private final LocIconActions locIconActions = new LocIconActions(this);
+    private final LocomotiveIconActions locIconActions = new LocomotiveIconActions(this);
 
-    public LocIconActions locIconActions()
+    public LocomotiveIconActions locIconActions()
     {
         return this.locIconActions;
     }
@@ -18104,11 +18104,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             refreshWhatWaitsForTheTrains();
 
             // The panel list is read here, on the EDT, because the component list belongs to Swing.
-            final java.util.List<AutoLocomotiveStatus> panels = new java.util.ArrayList<>();
+            final java.util.List<AutonomyLocomotiveStatus> panels = new java.util.ArrayList<>();
 
             for (Object o : this.autoLocPanel.getComponents())
             {
-                panels.add((AutoLocomotiveStatus) o);
+                panels.add((AutonomyLocomotiveStatus) o);
             }
 
             // updateState must draw on the EDT, but the search is synchronized on the Layout and walks the whole graph
@@ -18116,10 +18116,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             // thread holds.
             AutonomyRenderer.submit(() ->
             {
-                final java.util.Map<AutoLocomotiveStatus, java.util.List<java.util.List<Edge>>> found =
+                final java.util.Map<AutonomyLocomotiveStatus, java.util.List<java.util.List<Edge>>> found =
                     new java.util.LinkedHashMap<>();
-                final java.util.Map<AutoLocomotiveStatus, Layout> searchedOn = new java.util.IdentityHashMap<>();
-                for (AutoLocomotiveStatus panel : panels)
+                final java.util.Map<AutonomyLocomotiveStatus, Layout> searchedOn = new java.util.IdentityHashMap<>();
+                for (AutonomyLocomotiveStatus panel : panels)
                 {
                     try
                     {
@@ -18136,7 +18136,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
-                    for (AutoLocomotiveStatus panel : panels)
+                    for (AutonomyLocomotiveStatus panel : panels)
                     {
                         // null is "did not search", not "searched and found nothing": findPaths bails while the layout
                         // runs, and the run can have ended by now, so the panel would print "no available paths" with
@@ -18151,8 +18151,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     }
     
     /** A card's search, noting the running layout it searched on so a later landing can drop a stale answer. */
-    private static void searchCard(AutoLocomotiveStatus panel, java.util.Map<AutoLocomotiveStatus,
-        java.util.List<java.util.List<Edge>>> found, java.util.Map<AutoLocomotiveStatus, Layout> searchedOn)
+    private static void searchCard(AutonomyLocomotiveStatus panel, java.util.Map<AutonomyLocomotiveStatus,
+        java.util.List<java.util.List<Edge>>> found, java.util.Map<AutonomyLocomotiveStatus, Layout> searchedOn)
     {
         searchedOn.put(panel, panel.getRunningLayout());
         found.put(panel, panel.findPaths());
@@ -18179,14 +18179,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             List<Locomotive> locs = shown == null ? null : autoTabOrder(shown, shown.getLocomotivesToRun());
 
             // Kept when they are these trains in this order (OB-460), each shown afresh on the running layout.
-            // Otherwise built empty and filled in afterwards: AutoLocomotiveStatus's constructor would search paths
+            // Otherwise built empty and filled in afterwards: AutonomyLocomotiveStatus's constructor would search paths
             // (synchronized on the Layout, the whole graph, once per locomotive) on the EDT.
-            final java.util.List<AutoLocomotiveStatus> kept = theCardsOf(locs);
-            final java.util.List<AutoLocomotiveStatus> panels = kept != null ? kept : new java.util.LinkedList<>();
+            final java.util.List<AutonomyLocomotiveStatus> kept = theCardsOf(locs);
+            final java.util.List<AutonomyLocomotiveStatus> panels = kept != null ? kept : new java.util.LinkedList<>();
 
             if (kept != null)
             {
-                for (AutoLocomotiveStatus panel : kept) panel.showOn(shown);
+                for (AutonomyLocomotiveStatus panel : kept) panel.showOn(shown);
             }
             else
             {
@@ -18211,7 +18211,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
                 for (Locomotive loc : locs)
                 {
-                    AutoLocomotiveStatus panel = new AutoLocomotiveStatus(loc, this, true);
+                    AutonomyLocomotiveStatus panel = new AutonomyLocomotiveStatus(loc, this, true);
                     panels.add(panel);
                     this.autoLocPanel.add(panel);
                 }
@@ -18219,10 +18219,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
             AutonomyRenderer.submit(() ->
             {
-                final java.util.Map<AutoLocomotiveStatus, java.util.List<java.util.List<Edge>>> found
+                final java.util.Map<AutonomyLocomotiveStatus, java.util.List<java.util.List<Edge>>> found
                     = new java.util.LinkedHashMap<>();
-                final java.util.Map<AutoLocomotiveStatus, Layout> searchedOn = new java.util.IdentityHashMap<>();
-                for (AutoLocomotiveStatus panel : panels)
+                final java.util.Map<AutonomyLocomotiveStatus, Layout> searchedOn = new java.util.IdentityHashMap<>();
+                for (AutonomyLocomotiveStatus panel : panels)
                 {
                     try
                     {
@@ -18241,7 +18241,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
-                    for (java.util.Map.Entry<AutoLocomotiveStatus,
+                    for (java.util.Map.Entry<AutonomyLocomotiveStatus,
                         java.util.List<java.util.List<Edge>>> entry : found.entrySet())
                     {
                         entry.getKey().updateState(entry.getKey().getLocomotive(),
@@ -18284,17 +18284,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     }
 
     /** The Auto tab's cards when they are these trains, in this order; otherwise, or for none, null.  Event thread. */
-    private java.util.List<AutoLocomotiveStatus> theCardsOf(List<Locomotive> due)
+    private java.util.List<AutonomyLocomotiveStatus> theCardsOf(List<Locomotive> due)
     {
         final Component[] standing = this.autoLocPanel.getComponents();
         if (due == null || due.isEmpty() || standing.length != due.size()) return null;
 
-        final java.util.List<AutoLocomotiveStatus> cards = new java.util.ArrayList<>();
+        final java.util.List<AutonomyLocomotiveStatus> cards = new java.util.ArrayList<>();
         for (int i = 0; i < standing.length; i++)
         {
-            if (!(standing[i] instanceof AutoLocomotiveStatus)
-                || ((AutoLocomotiveStatus) standing[i]).getLocomotive() != due.get(i)) return null;
-            cards.add((AutoLocomotiveStatus) standing[i]);
+            if (!(standing[i] instanceof AutonomyLocomotiveStatus)
+                || ((AutonomyLocomotiveStatus) standing[i]).getLocomotive() != due.get(i)) return null;
+            cards.add((AutonomyLocomotiveStatus) standing[i]);
         }
         return cards;
     }
@@ -18306,15 +18306,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
         if (shown == null || this.autoLocPanel == null) return;
 
-        final java.util.Map<Locomotive, AutoLocomotiveStatus> cards = new java.util.IdentityHashMap<>();
+        final java.util.Map<Locomotive, AutonomyLocomotiveStatus> cards = new java.util.IdentityHashMap<>();
 
         final List<Component> standing = java.util.Arrays.asList(this.autoLocPanel.getComponents());
 
         for (Component card : standing)
         {
-            if (!(card instanceof AutoLocomotiveStatus)) return;
+            if (!(card instanceof AutonomyLocomotiveStatus)) return;
 
-            cards.put(((AutoLocomotiveStatus) card).getLocomotive(), (AutoLocomotiveStatus) card);
+            cards.put(((AutonomyLocomotiveStatus) card).getLocomotive(), (AutonomyLocomotiveStatus) card);
         }
 
         List<Locomotive> due = autoTabOrder(shown, cards.keySet());
@@ -19606,7 +19606,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
         for (JPanel page : this.layoutCache.values()) grids.add(LayoutGrid.of(page));
 
-        for (LayoutPopupUI popup : this.popups) if (popup.isVisible()) grids.add(popup.grid());
+        for (LayoutPopupWindow popup : this.popups) if (popup.isVisible()) grids.add(popup.grid());
 
         if (InnerLayoutPanel.getComponentCount() == 1) grids.add(LayoutGrid.of(InnerLayoutPanel.getComponent(0)));
 

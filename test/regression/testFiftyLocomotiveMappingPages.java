@@ -96,7 +96,7 @@ public class testFiftyLocomotiveMappingPages
     /**
      * The ceiling is refused by the menu's own question and by the method behind it.
      *
-     * MUTATION: delete the `canAddLocMappingPage()` guard from `LocMappingPages.addLocMappingPage` and the second
+     * MUTATION: delete the `canAddLocMappingPage()` guard from `LocomotiveKeyboardPages.addLocMappingPage` and the second
      * claim fails while the first still passes, which is the whole reason both are here.
      */
     @Test(timeOut = 120000)

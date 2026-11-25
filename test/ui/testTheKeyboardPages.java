@@ -193,7 +193,7 @@ public class testTheKeyboardPages
      * Delete Page, from the page menu, takes away an empty page: the pages after it move up with their trains and
      * their names, the page number that was deleted now shows what followed it, and the new count is what is stored.
      *
-     * MUTATION: loop `at < going` instead of `at < count` where `LocMappingPages.deleteCurrentLocMappingPage` moves
+     * MUTATION: loop `at < going` instead of `at < count` where `LocomotiveKeyboardPages.deleteCurrentLocMappingPage` moves
      * the names up, and the names stay on the wrong pages.
      */
     @Test
@@ -312,7 +312,7 @@ public class testTheKeyboardPages
     /**
      * The locomotive tab's icon wears the page showing as a blue badge from page 2 on; page 1 has the plain icon.
      *
-     * MUTATION: return `icon` at once in `LocMappingPages.withPageBadge`, and page 3 wears no badge.
+     * MUTATION: return `icon` at once in `LocomotiveKeyboardPages.withPageBadge`, and page 3 wears no badge.
      */
     @Test
     public void testThePageShowingIsBadgedOnTheLocomotiveTab() throws Exception
@@ -889,7 +889,7 @@ public class testTheKeyboardPages
      * A wiggle of a few pixels is a click, not a drag; the right button never drags; and an empty key has nothing to
      * drag.  None of them picks anything up.
      *
-     * MUTATION: `DRAG_THRESHOLD = 0` in `LocButtonTransferHandler`, and the wiggle picks the locomotive up.
+     * MUTATION: `DRAG_THRESHOLD = 0` in `LocomotiveButtonTransferHandler`, and the wiggle picks the locomotive up.
      */
     @Test
     public void testOnlyARealDragFromAFullKeyPicksAnythingUp() throws Exception
@@ -1361,7 +1361,7 @@ public class testTheKeyboardPages
     {
         try
         {
-            Reflect.method(org.traincontrol.gui.LocMappingPages.class, method).invoke(ui.locMappingPages());
+            Reflect.method(org.traincontrol.gui.LocomotiveKeyboardPages.class, method).invoke(ui.locMappingPages());
         }
         catch (ReflectiveOperationException e)
         {

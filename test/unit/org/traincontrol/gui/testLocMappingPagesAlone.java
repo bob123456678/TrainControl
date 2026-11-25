@@ -28,7 +28,7 @@ import org.testng.annotations.Test;
 import static support.Components.onTheEventThread;
 
 /**
- * `LocMappingPages` on its own: which page may be deleted, how a page is named and worded, clearing one, the tab badge,
+ * `LocomotiveKeyboardPages` on its own: which page may be deleted, how a page is named and worded, clearing one, the tab badge,
  * through a fake of what it reads of the main window.  Its integration tests are `ui.testLocMappingPages`,
  * `ui.testTheKeyboardPages` and `ui.testMappingPagesAndLocomotiveDoors`.
  */
@@ -43,7 +43,7 @@ public class testLocMappingPagesAlone
      * A page may be deleted only with no train on it, though clearing keeps its keys, and only above the fewest pages:
      * the empty page of three may go, the same page with a train may not, nor an empty one of two.
      *
-     * MUTATION: in `LocMappingPages.canDeleteCurrentPage`, compare with `<` in place of `<=`, and one of two pages may
+     * MUTATION: in `LocomotiveKeyboardPages.canDeleteCurrentPage`, compare with `<` in place of `<=`, and one of two pages may
      * be deleted; or leave out the `on != null` test, and the page with a train may.
      */
     @Test
@@ -55,11 +55,11 @@ public class testLocMappingPagesAlone
             ui.showing = 2;
             ui.put(1, train("Elsewhere"));
             List<Boolean> out = new ArrayList<>();
-            out.add(new LocMappingPages(ui).canDeleteCurrentPage());
+            out.add(new LocomotiveKeyboardPages(ui).canDeleteCurrentPage());
 
             ui.put(2, train("Shunter"));
-            out.add(new LocMappingPages(ui).canDeleteCurrentPage());
-            out.add(new LocMappingPages(new Fake(LocMappingPages.MIN_LOC_MAPPINGS)).canDeleteCurrentPage());
+            out.add(new LocomotiveKeyboardPages(ui).canDeleteCurrentPage());
+            out.add(new LocomotiveKeyboardPages(new Fake(LocomotiveKeyboardPages.MIN_LOC_MAPPINGS)).canDeleteCurrentPage());
             return out;
         });
 
@@ -70,7 +70,7 @@ public class testLocMappingPagesAlone
      * A page's name is as typed (`raw`, empty for none), or for menus and dialogs "Page 5 (Example)", the name cut to
      * MAX_PAGE_NAME_LENGTH_TOP letters and "..." only when longer, and "Page 8" for none.
      *
-     * MUTATION: in `LocMappingPages.getPageName`, cut at `>=` in place of `>`, and the name of exactly TOP letters is
+     * MUTATION: in `LocomotiveKeyboardPages.getPageName`, cut at `>=` in place of `>`, and the name of exactly TOP letters is
      * cut too.
      */
     @Test
@@ -80,7 +80,7 @@ public class testLocMappingPagesAlone
         ui.names.put(5, "Example");
         ui.names.put(6, LETTERS.substring(0, TOP + 1));
         ui.names.put(7, LETTERS.substring(0, TOP));
-        LocMappingPages pages = new LocMappingPages(ui);
+        LocomotiveKeyboardPages pages = new LocomotiveKeyboardPages(ui);
 
         assertEquals(Arrays.asList(pages.getPageName(5, true), pages.getPageName(8, true)), Arrays.asList("Example",
             ""), "raw");
@@ -95,7 +95,7 @@ public class testLocMappingPagesAlone
      * put right after "Show Page Tabs" (or last without it), puts "2. " before a name once ticked, and never before
      * "Page 3".
      *
-     * MUTATION: in `LocMappingPages.installShowPageNumbersMenuItem`, insert at `i` in place of `i + 1`, and the item
+     * MUTATION: in `LocomotiveKeyboardPages.installShowPageNumbersMenuItem`, insert at `i` in place of `i + 1`, and the item
      * goes before Show Page Tabs.
      */
     @Test
@@ -109,7 +109,7 @@ public class testLocMappingPagesAlone
             ui.menu.add(new JMenuItem("before"));
             ui.menu.add(ui.showTabs);
             ui.menu.add(new JMenuItem("after"));
-            LocMappingPages pages = new LocMappingPages(ui);
+            LocomotiveKeyboardPages pages = new LocomotiveKeyboardPages(ui);
             List<String> out = new ArrayList<>(words(pages));
 
             JCheckBoxMenuItem item = pages.installShowPageNumbersMenuItem();
@@ -120,7 +120,7 @@ public class testLocMappingPagesAlone
 
             Fake without = new Fake(2);
             without.menu.add(new JMenuItem("only"));
-            out.add(new LocMappingPages(without).installShowPageNumbersMenuItem() == without.menu.getMenuComponent(1)
+            out.add(new LocomotiveKeyboardPages(without).installShowPageNumbersMenuItem() == without.menu.getMenuComponent(1)
                 ? "last" : "elsewhere");
             return out;
         });
@@ -134,7 +134,7 @@ public class testLocMappingPagesAlone
      * Naming the page showing keeps the name trimmed, words the label by it and redraws the locomotive's controls in
      * full; a blank name takes the name away.
      *
-     * MUTATION: in `LocMappingPages.setPageName`, store the name untrimmed, and "  Yard " is kept with its spaces.
+     * MUTATION: in `LocomotiveKeyboardPages.setPageName`, store the name untrimmed, and "  Yard " is kept with its spaces.
      */
     @Test
     public void testNamingThePageShowingTrimsAndWordsTheLabel()
@@ -143,7 +143,7 @@ public class testLocMappingPagesAlone
         {
             Fake ui = new Fake(3);
             ui.showing = 2;
-            LocMappingPages pages = new LocMappingPages(ui);
+            LocomotiveKeyboardPages pages = new LocomotiveKeyboardPages(ui);
 
             pages.setPageName("  Yard ");
             List<String> out = new ArrayList<>(Arrays.asList(ui.names.toString(), ui.label.getText()));
@@ -159,7 +159,7 @@ public class testLocMappingPagesAlone
      * The names of the pages leave out the two sentinels `saveState` keeps under -1 and -2, and a page with no name;
      * each is trimmed.
      *
-     * MUTATION: in `LocMappingPages.namesOfPages`, leave out the `page.getKey() < 1` test, and the sentinels are names.
+     * MUTATION: in `LocomotiveKeyboardPages.namesOfPages`, leave out the `page.getKey() < 1` test, and the sentinels are names.
      */
     @Test
     public void testThePageNamesLeaveOutTheSentinels()
@@ -171,14 +171,14 @@ public class testLocMappingPagesAlone
         ui.names.put(-1, "4");
         ui.names.put(-2, "1");
 
-        assertEquals(new LocMappingPages(ui).namesOfPages(), new HashSet<>(Arrays.asList("Yard", "Shed")));
+        assertEquals(new LocomotiveKeyboardPages(ui).namesOfPages(), new HashSet<>(Arrays.asList("Yard", "Shed")));
     }
 
     /**
      * Clearing the page showing empties its keys and keeps them, and lets the active locomotive go only from its own
      * page; then redraws the keys and the controls.
      *
-     * MUTATION: in `LocMappingPages.doClearCurrentPage`, leave out `page.containsValue(...)`, and clearing another
+     * MUTATION: in `LocomotiveKeyboardPages.doClearCurrentPage`, leave out `page.containsValue(...)`, and clearing another
      * page lets the train go.
      */
     @Test
@@ -192,7 +192,7 @@ public class testLocMappingPagesAlone
             ui.put(2, train("Other"));
             ui.active = mine;
             ui.showing = 2;
-            LocMappingPages pages = new LocMappingPages(ui);
+            LocomotiveKeyboardPages pages = new LocomotiveKeyboardPages(ui);
 
             pages.doClearCurrentPage();
             List<String> out = new ArrayList<>(Arrays.asList(ui.pages.get(1).values().toString(), name(ui.active),
@@ -210,7 +210,7 @@ public class testLocMappingPagesAlone
     /**
      * The tabs are worded afresh, and the label too unless it says nothing.
      *
-     * MUTATION: in `LocMappingPages.retitlePages`, leave out the `isEmpty()` test, and an empty label is worded.
+     * MUTATION: in `LocomotiveKeyboardPages.retitlePages`, leave out the `isEmpty()` test, and an empty label is worded.
      */
     @Test
     public void testRetitlingWordsEveryTabAndALabelThatSaysSomething()
@@ -221,7 +221,7 @@ public class testLocMappingPagesAlone
             ui.names.put(2, "Yard");
             ui.showing = 2;
             ui.label.setText("old");
-            LocMappingPages pages = new LocMappingPages(ui);
+            LocomotiveKeyboardPages pages = new LocomotiveKeyboardPages(ui);
 
             pages.retitlePages();
             List<String> out = new ArrayList<>(Arrays.asList(ui.tabs.getTitleAt(0), ui.tabs.getTitleAt(1),
@@ -239,17 +239,17 @@ public class testLocMappingPagesAlone
      * Pages after the first wear their number as a blue badge on a copy of the icon, a circle for one digit and longer
      * for two; the first page and no icon get none.
      *
-     * MUTATION: in `LocMappingPages.withPageBadge`, make the badge `tall` wide whatever the number, and page 12's is a
+     * MUTATION: in `LocomotiveKeyboardPages.withPageBadge`, make the badge `tall` wide whatever the number, and page 12's is a
      * circle too.
      */
     @Test
     public void testThePageNumberIsABadgeOnACopy()
     {
         BufferedImage icon = new BufferedImage(30, 30, BufferedImage.TYPE_INT_ARGB);
-        BufferedImage three = LocMappingPages.withPageBadge(icon, 3), twelve = LocMappingPages.withPageBadge(icon, 12);
+        BufferedImage three = LocomotiveKeyboardPages.withPageBadge(icon, 3), twelve = LocomotiveKeyboardPages.withPageBadge(icon, 12);
 
-        assertSame(LocMappingPages.withPageBadge(icon, 1), icon, "page 1 wears a badge");
-        assertNull(LocMappingPages.withPageBadge(null, 3), "no icon");
+        assertSame(LocomotiveKeyboardPages.withPageBadge(icon, 1), icon, "page 1 wears a badge");
+        assertNull(LocomotiveKeyboardPages.withPageBadge(null, 3), "no icon");
         assertEquals(painted(icon, true), 0, "the shared icon was painted on");
         assertTrue(colors(three).contains(0xFF2675BF) && colors(three).contains(0xFFFFFFFF), "no blue badge with a "
             + "white number: " + colors(three));
@@ -261,7 +261,7 @@ public class testLocMappingPagesAlone
     /**
      * Adding a page appends it, gives it a tab named by the pages and goes to it, redrawing the keys.
      *
-     * MUTATION: in `LocMappingPages.addLocMappingPage`, take out `ui.switchLocMapping(...)`, and the new page is not
+     * MUTATION: in `LocomotiveKeyboardPages.addLocMappingPage`, take out `ui.switchLocMapping(...)`, and the new page is not
      * shown; or take out `ui.appendPage()`, and there is a tab with no page.
      */
     @Test
@@ -271,7 +271,7 @@ public class testLocMappingPagesAlone
         {
             Fake ui = new Fake(3);
             ui.names.put(4, "Yard");
-            new LocMappingPages(ui).addLocMappingPage(null);
+            new LocomotiveKeyboardPages(ui).addLocMappingPage(null);
             return Arrays.asList(String.valueOf(ui.pages.size()), String.valueOf(ui.tabs.getTabCount()),
                 ui.tabs.getTitleAt(3), String.join(",", ui.did));
         });
@@ -284,7 +284,7 @@ public class testLocMappingPagesAlone
      * Deleting the page showing takes its name and its tab, moves the later names up by one (a page with no name
      * leaves its successor's gap), and shows the page now in its place, or the last when it was the last.
      *
-     * MUTATION: in `LocMappingPages.deleteCurrentLocMappingPage`, loop `at < going` in place of `at < count`, and
+     * MUTATION: in `LocomotiveKeyboardPages.deleteCurrentLocMappingPage`, loop `at < going` in place of `at < count`, and
      * the names stay on the wrong pages; or show page `going` in place of `Math.min(going, count - 1)`, and deleting
      * the last page shows one that is gone.
      */
@@ -297,7 +297,7 @@ public class testLocMappingPagesAlone
             ui.showing = 2;
             ui.names.put(2, "Two");
             ui.names.put(4, "Four");
-            LocMappingPages pages = new LocMappingPages(ui);
+            LocomotiveKeyboardPages pages = new LocomotiveKeyboardPages(ui);
             pages.deleteCurrentLocMappingPage(null);
             List<String> out = new ArrayList<>(Arrays.asList(String.valueOf(new TreeMap<>(ui.names)),
                 String.valueOf(ui.pages.size()), String.valueOf(ui.tabs.getTabCount()), ui.tabs.getTitleAt(2),
@@ -318,7 +318,7 @@ public class testLocMappingPagesAlone
      * Mapping locomotives to a page switches to it, empties it, puts them on its keys in keyboard order (a null takes
      * its key's turn but is not put; those beyond the last key are dropped), redraws and shows the Q key.
      *
-     * MUTATION: in `LocMappingPages.mapLocomotivesToPage`, take out `doClearCurrentPage()`, and the page keeps its old
+     * MUTATION: in `LocomotiveKeyboardPages.mapLocomotivesToPage`, take out `doClearCurrentPage()`, and the page keeps its old
      * train; test `l != null` away, and the null is put.
      */
     @Test
@@ -329,7 +329,7 @@ public class testLocMappingPagesAlone
         Locomotive first = train("A1"), second = train("B2");
         onTheEventThread(() ->
         {
-            new LocMappingPages(ui).mapLocomotivesToPage(3, Arrays.asList(first, null, second, train("C3")));
+            new LocomotiveKeyboardPages(ui).mapLocomotivesToPage(3, Arrays.asList(first, null, second, train("C3")));
             return null;
         });
         javax.swing.SwingUtilities.invokeAndWait(() -> { });
@@ -344,7 +344,7 @@ public class testLocMappingPagesAlone
      * Map Unassigned fills the free keys of the page showing, in keyboard order, with the locomotives mapped nowhere,
      * A to Z; a key holding a locomotive the model no longer knows counts as free, one on another page is skipped.
      *
-     * MUTATION: in `LocMappingPages.mapUnassignedLocomotives`, take out `Collections.sort(locs)`, and the first free
+     * MUTATION: in `LocomotiveKeyboardPages.mapUnassignedLocomotives`, take out `Collections.sort(locs)`, and the first free
      * key gets "Zed"; or the `isEmpty()` test, and "Mid", on page 2, is put on this page too.
      */
     @Test
@@ -356,7 +356,7 @@ public class testLocMappingPagesAlone
         ui.put(1, train("Deleted"));
         onTheEventThread(() ->
         {
-            new LocMappingPages(ui).mapUnassignedLocomotives();
+            new LocomotiveKeyboardPages(ui).mapUnassignedLocomotives();
             return null;
         });
         javax.swing.SwingUtilities.invokeAndWait(() -> { });
@@ -370,7 +370,7 @@ public class testLocMappingPagesAlone
      * Copy Mappings puts the page showing on the clipboard; Paste asks nothing and changes nothing with nothing on it,
      * and on the page that was copied.  The Yes and No answers are `ui.testMappingPagesAndLocomotiveDoors`'s.
      *
-     * MUTATION: in `LocMappingPages.pasteCopiedPage`, take out `pageCopied() &&` and pasting with nothing copied
+     * MUTATION: in `LocomotiveKeyboardPages.pasteCopiedPage`, take out `pageCopied() &&` and pasting with nothing copied
      * throws; take out `ui.getLocMappingNumber() != this.pageToCopy &&` and the copied page is asked about.
      */
     @Test(timeOut = 30000)
@@ -380,7 +380,7 @@ public class testLocMappingPagesAlone
         {
             Fake ui = new Fake(3);
             ui.showing = 2;
-            LocMappingPages pages = new LocMappingPages(ui);
+            LocomotiveKeyboardPages pages = new LocomotiveKeyboardPages(ui);
             List<String> out = new ArrayList<>();
             out.add(String.valueOf(pages.pageCopied()));
             pages.pasteCopiedPage(null);
@@ -401,7 +401,7 @@ public class testLocMappingPagesAlone
      * dialog) puts the copied page's trains on the page showing, empties the clipboard, redraws the keys and shows
      * the current key's locomotive again.
      *
-     * MUTATION: in `LocMappingPages.pasteConfirmed`, take out `ui.redisplayCurrentKey()`, and the key keeps showing
+     * MUTATION: in `LocomotiveKeyboardPages.pasteConfirmed`, take out `ui.redisplayCurrentKey()`, and the key keeps showing
      * what it did before the paste; take out `ui.replacePage(...)`, and the page is not replaced.
      */
     @Test(timeOut = 30000)
@@ -410,7 +410,7 @@ public class testLocMappingPagesAlone
         Fake ui = new Fake(3);
         Locomotive copied = train("Copied");
         ui.put(1, copied);
-        LocMappingPages pages = new LocMappingPages(ui);
+        LocomotiveKeyboardPages pages = new LocomotiveKeyboardPages(ui);
         pages.copyCurrentPage();
         ui.showing = 2;
         pages.pasteConfirmed();
@@ -432,7 +432,7 @@ public class testLocMappingPagesAlone
     }
 
     /** Pages 2, 3 and 4's tab titles, then page 4's label, as the pages word them now. */
-    private static List<String> words(LocMappingPages pages)
+    private static List<String> words(LocomotiveKeyboardPages pages)
     {
         return Arrays.asList(pages.getLocMappingPageTabTitle(2), pages.getLocMappingPageTabTitle(3),
             pages.getLocMappingPageTabTitle(4), pages.getPageLabelText(4));
@@ -459,7 +459,7 @@ public class testLocMappingPagesAlone
     }
 
     /** The main window as the pages see it: pages of three keys, a tab each, the label, the menu; what it was told. */
-    private static final class Fake implements LocMappingPages.Keyboard
+    private static final class Fake implements LocomotiveKeyboardPages.Keyboard
     {
         final List<Map<JButton, Locomotive>> pages = new ArrayList<>();
         final Map<Integer, String> names = new HashMap<>();

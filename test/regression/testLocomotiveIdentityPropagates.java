@@ -443,7 +443,7 @@ public class testLocomotiveIdentityPropagates
         // The locomotive status panel's defect: a Locomotive handed to a combo box of names.
         assertTrue(isSuspectLine("combo.setSelectedItem(point.getHomeLoc());"),
             "the scan no longer flags getHomeLoc() handed to setSelectedItem() - the shape of the "
-            + "HomeLocomotiveMenu defect it was written for - so it would not have caught the original "
+            + "ReturnHomeMenuItem defect it was written for - so it would not have caught the original "
             + "bug either");
 
         // The permitted crossing: taking the name first must NOT be flagged.
@@ -459,7 +459,7 @@ public class testLocomotiveIdentityPropagates
     private boolean isSuspectLine(String line)
     {
         // An accessor that answers a LOCOMOTIVE, used anywhere a NAME is expected: a Locomotive handed to
-        // setSelectedItem on a combo box of names (gui/HomeLocomotiveMenu.java) compiles, Swing ignores it, and the
+        // setSelectedItem on a combo box of names (gui/ReturnHomeMenuItem.java) compiles, Swing ignores it, and the
         // dialog showed "(none)" for a station that had a home, so OK cleared the assignment.  No equals is involved.
         if (!line.contains("getHomeLoc()") && !line.contains("getCurrentLocomotive()")
             && !line.contains("getBlockLocomotive()")) return false;

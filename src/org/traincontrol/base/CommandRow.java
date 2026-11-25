@@ -211,7 +211,7 @@ public final class CommandRow
      * carrying one silently stops firing with no error anywhere - the condition editor offered all
      * seven kinds, which made that a two-click mistake.
      *
-     * AUTO_LOCOMOTIVE is offered: `RouteEditorFrame.conditionKindChanged` supplies its first locomotive and sensor 1.
+     * AUTO_LOCOMOTIVE is offered: `RouteEditorWindow.conditionKindChanged` supplies its first locomotive and sensor 1.
      * The other nine kinds are absent because a condition built from one is permanently false; one already in a route
      * is preserved read-only.
      */

@@ -27,7 +27,7 @@ import support.Reflect;
  * synchronized (this.activeLocomotives) { ... put / remove ... }, but the UI reads the
  * same map with NO lock via getActiveAccs() (iterates values()), getActiveLocomotives()
  * (leaks the live map; callers iterate keySet()) and getReachedMilestones()
- * - see LayoutLabel, AutoLocomotiveStatus, TrainControlUI.  Different lock on the writer
+ * - see LayoutLabel, AutonomyLocomotiveStatus, TrainControlUI.  Different lock on the writer
  * side, no lock on the reader side => a reader iterating the map can observe it
  * mid-structural-modification and throw ConcurrentModificationException.
  *
@@ -105,7 +105,7 @@ public class testAutoLayoutRace
                     // As in LayoutLabel repaint - iterates activeLocomotives.values() with no lock
                     layout.getActiveAccs();
 
-                    // As in AutoLocomotiveStatus / TrainControlUI - the copy constructor iterates
+                    // As in AutonomyLocomotiveStatus / TrainControlUI - the copy constructor iterates
                     // the live keySet of the leaked map with no lock
                     for (Locomotive l : new ArrayList<>(layout.getActiveLocomotives().keySet()))
                     {

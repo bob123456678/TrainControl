@@ -59,7 +59,7 @@ import org.traincontrol.base.RemoteDeviceCollection;
 import org.traincontrol.base.RenameProposals;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.RouteCommand;
-import org.traincontrol.gui.LocomotiveSettings;
+import org.traincontrol.gui.LocomotiveEditRule;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.app.LogPanel;
 import org.traincontrol.marklin.file.CS2File;
@@ -2230,7 +2230,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         MarklinRoute driving = this.runningRouteDriving(here.getName());
         return this.isAutonomyRunning() ? I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning")
             : driving != null ? I18n.f("sync.ui.whyRouteDriving", here.getName(), driving.getName())
-            : LocomotiveSettings.hasSpeed(this, here) ? I18n.f("loc.syncLeftMoving", here.getName()) : null;
+            : LocomotiveEditRule.hasSpeed(this, here) ? I18n.f("loc.syncLeftMoving", here.getName()) : null;
     }
 
     /** The locomotive here by l's name, when it has l's decoder type at another address; else null. */
@@ -2644,7 +2644,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         // Checked before anything is deleted: this method edits by delete-then-re-add, and newRoute refuses a name that
         // already belongs to another route, so a rename onto an existing name would delete the original and not add it
-        // back.  RouteEditorFrame checks too; the model should not depend on one dialog to protect its data.
+        // back.  RouteEditorWindow checks too; the model should not depend on one dialog to protect its data.
         if (!name.equals(trimmedNewName) && this.routeDB.hasName(trimmedNewName))
         {
             this.logf("route.notAdded", trimmedNewName);
@@ -2658,7 +2658,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         final boolean wasActivated = this.isRouteActivatedByAutonomy(id);
 
         // AND THE LOCK, FOR THE SAME REASON: `newRoute` builds a fresh MarklinRoute whose `locked` defaults to false
-        // (only the sync's import loop writes true), and the lock is what RightClickRouteMenu puts Change Route ID and
+        // (only the sync's import loop writes true), and the lock is what RouteContextMenu puts Change Route ID and
         // Delete behind.  Enable/Disable (via `writeRouteEnabledState`, also BulkEnableOrDisable) is deliberately not
         // gated on the lock, so without this an edit would unlock a Central Station route.
         final boolean wasLocked = existing.isLocked();

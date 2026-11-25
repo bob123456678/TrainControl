@@ -86,7 +86,7 @@ public class AutonomyMenu extends JMenu
     /** Autonomy Settings as last built, or null: the one item a run leaves live. */
     private JMenuItem settingsItem;
 
-    private AutonomyViewerPanel actions()
+    private AutonomyConfigurationsPanel actions()
     {
         return ui.getAutonomyViewerPanel();
     }
@@ -171,7 +171,7 @@ public class AutonomyMenu extends JMenu
         // pointed at a JMenu no longer in this popup.
         lastPagesMenu = null;
 
-        final AutonomyViewerPanel actions = actions();
+        final AutonomyConfigurationsPanel actions = actions();
         AutonomySession session = ui.getAutonomySession();
 
         if (actions == null || session == null)
@@ -317,7 +317,7 @@ public class AutonomyMenu extends JMenu
             // And not while trains are running (OB-045): a grayed item says before the click what a refusal says after.
             // While autonomy runs `guardWhileRunning` grays the rest of the menu with it, bar Autonomy Settings and
             // Documentation; this item asks the editor's own refusals as well, at rest, through
-            // `whyAutonomyEditorCannotOpen` as LayoutRightclickAutonomyMenu.addSetupMenu does, rather than re-deriving
+            // `whyAutonomyEditorCannotOpen` as DiagramAutonomyContextMenu.addSetupMenu does, rather than re-deriving
             // them by hand.
             String editRefusal = ui.editorWindows().whyAutonomyEditorCannotOpen();
             boolean pagesAvailable = edit.getItemCount() > 0;
@@ -363,7 +363,7 @@ public class AutonomyMenu extends JMenu
      * Adding a configuration, offered for the very first setup alone (Adam: "One door: do it").  Once one exists,
      * Manage's New Configuration copies it, so a station's rules, the settings and the speeds are never entered twice.
      */
-    private JMenuItem addConfigurationItem(final AutonomyViewerPanel actions)
+    private JMenuItem addConfigurationItem(final AutonomyConfigurationsPanel actions)
     {
         JMenuItem add = item(I18n.t("autosetup.ui.menuInitialize"), () ->
         {
@@ -415,7 +415,7 @@ public class AutonomyMenu extends JMenu
      * Fills the one Manage list, for the Autonomy menu and the Autonomy tab's Manage button.  Each door keeps its own
      * refusal; what acts on the configuration in use is grayed until one is, Delete (OB-319) only with none to delete.
      */
-    static void addManageItems(java.awt.Container into, final TrainControlUI ui, final AutonomyViewerPanel actions,
+    static void addManageItems(java.awt.Container into, final TrainControlUI ui, final AutonomyConfigurationsPanel actions,
         final AutonomySession session)
     {
         boolean loaded = ui.getActiveDiagramConfiguration() != null;

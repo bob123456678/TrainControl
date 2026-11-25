@@ -18,7 +18,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.LayoutLabel;
-import org.traincontrol.gui.LayoutPopupUI;
+import org.traincontrol.gui.LayoutPopupWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -62,7 +62,7 @@ public class testAPageWindowsSquaresAskOverIt
 
     private static final String PLATFORM = "MainPlatform";
 
-    private static LayoutPopupUI page;
+    private static LayoutPopupWindow page;
     private static boolean echoWas;
     private static TrainControlUI ui;
     private static MarklinControlStation model;

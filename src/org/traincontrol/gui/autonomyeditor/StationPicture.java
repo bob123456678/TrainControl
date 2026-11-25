@@ -40,7 +40,7 @@ import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.gui.InfoMark;
 import org.traincontrol.gui.LayoutLabel;
-import org.traincontrol.gui.Listen;
+import org.traincontrol.gui.OnMouse;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.gui.widgets.UiStyle;
@@ -563,7 +563,7 @@ final class StationPicture extends JPanel
 
             setToolTipText("");
 
-            addMouseListener(Listen.clicked(e ->
+            addMouseListener(OnMouse.clicked(e ->
             {
                 if (e.getButton() != MouseEvent.BUTTON1 || doors == null) return;
 

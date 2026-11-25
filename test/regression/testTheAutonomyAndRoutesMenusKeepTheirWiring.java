@@ -518,7 +518,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
      * "Close the editor first", before any question, and nothing changes: no configuration renamed or deleted, the
      * running one still loaded.  The menu bar grays the same doors; this list is not grayed.
      *
-     * MUTATION: drop `ui.refuseWhileEditorOpen()` from `AutonomyViewerPanel.rename` or `delete`, and this fails.
+     * MUTATION: drop `ui.refuseWhileEditorOpen()` from `AutonomyConfigurationsPanel.rename` or `delete`, and this fails.
      */
     @Test
     public void testManageRefusesWhileAnEditorIsOpen() throws Exception
@@ -754,7 +754,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
 
         assertNotNull(manage, "the Autonomy tab has no Manage button");
 
-        final java.lang.reflect.Method shown = Reflect.method(org.traincontrol.gui.AutonomyViewerPanel.class,
+        final java.lang.reflect.Method shown = Reflect.method(org.traincontrol.gui.AutonomyConfigurationsPanel.class,
             "manageMenu");
 
         return Components.onTheEventThread(() -> (JPopupMenu) shown.invoke(ui.getAutonomyViewerPanel()));
@@ -780,7 +780,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
         {
             for (java.awt.Window window : java.awt.Window.getWindows())
             {
-                if (window instanceof org.traincontrol.gui.RouteEditorFrame && window.isShowing()
+                if (window instanceof org.traincontrol.gui.RouteEditorWindow && window.isShowing()
                     && title.equals(((java.awt.Frame) window).getTitle())) return true;
             }
 

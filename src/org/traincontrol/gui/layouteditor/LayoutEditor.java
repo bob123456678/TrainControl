@@ -77,7 +77,7 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
-import org.traincontrol.gui.Listen;
+import org.traincontrol.gui.OnMouse;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.LayoutGrid;
 import org.traincontrol.gui.LayoutLabel;
@@ -724,7 +724,7 @@ public class LayoutEditor extends PositionAwareJFrame
     private boolean redrawStarted = false;
     
     // Reference to the right click menu
-    LayoutEditorRightclickMenu popup;
+    LayoutEditorContextMenu popup;
 
     /**
      * `FlowLayout`'s gap around the diagram, included in the panel's size, or a CENTER layout puts the diagram at a
@@ -3160,9 +3160,9 @@ public class LayoutEditor extends PositionAwareJFrame
      * @param lc what is drawn on it, or null
      * @return the menu, not yet shown
      */
-    LayoutEditorRightclickMenu menuFor(LayoutLabel label, LayoutDiagramComponent lc)
+    LayoutEditorContextMenu menuFor(LayoutLabel label, LayoutDiagramComponent lc)
     {
-        LayoutEditorRightclickMenu menu = new LayoutEditorRightclickMenu(this, parent, label, lc);
+        LayoutEditorContextMenu menu = new LayoutEditorContextMenu(this, parent, label, lc);
 
         menu.addPopupMenuListener(new javax.swing.event.PopupMenuListener()
         {
@@ -4924,7 +4924,7 @@ public class LayoutEditor extends PositionAwareJFrame
         });
 
         // On the click, not the selection change, which code and arrow keys fire too.
-        pageList.addMouseListener(Listen.clicked(e ->
+        pageList.addMouseListener(OnMouse.clicked(e ->
         {
             int row = pageRowAt(e.getPoint());
 

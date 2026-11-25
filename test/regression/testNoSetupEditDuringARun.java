@@ -228,7 +228,7 @@ public class testNoSetupEditDuringARun
      * whose Autonomy tab writes into the setup: it opens locked and says so, and a Save leaves the setup's copy of the
      * train as it was.  No factory builds the item, so the factories' refusal does not cover it.
      *
-     * MUTATION: have `LocomotiveSettings.why` ignore a run, and this fails.
+     * MUTATION: have `LocomotiveEditRule.why` ignore a run, and this fails.
      */
     @Test
     public void testTheDiagramsEditLocomotiveRefusesOnceTrainsRun() throws Exception
@@ -288,7 +288,7 @@ public class testNoSetupEditDuringARun
 
             assertNotNull(support.SettingsWindow.awaited(), "the diagram's Edit Locomotive, clicked during a run, opened"
                 + " no Locomotive Settings");
-            assertEquals(support.SettingsWindow.tabShowing(), org.traincontrol.gui.LocomotiveSettingsFrame.Tab.AUTONOMY.ordinal(),
+            assertEquals(support.SettingsWindow.tabShowing(), org.traincontrol.gui.LocomotiveSettingsWindow.Tab.AUTONOMY.ordinal(),
                 "the diagram's Edit Locomotive did not open the Autonomy tab");
 
             support.Components.onTheEventThread(() ->
@@ -927,7 +927,7 @@ public class testNoSetupEditDuringARun
 
             // A STANDING TRAIN WITH SOMEWHERE TO GO, and the diagram's menu for it - gathered and built at rest, as showFor
             // gathers and builds it
-            Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
+            Class<?> menuClass = Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu");
 
             java.lang.reflect.Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class,
                 org.traincontrol.automation.Point.class);
@@ -1451,7 +1451,7 @@ public class testNoSetupEditDuringARun
     private static javax.swing.JMenuItem theEditLocomotiveItem(final TrainControlUI ui, final TileKey square,
         org.traincontrol.automation.Point at) throws Exception
     {
-        java.lang.reflect.Constructor<?> make = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu")
+        java.lang.reflect.Constructor<?> make = Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu")
             .getDeclaredConstructors()[0];
 
         make.setAccessible(true);
@@ -1494,9 +1494,9 @@ public class testNoSetupEditDuringARun
     private static Object[] anAutoTabListOfPaths(TrainControlUI ui) throws Exception
     {
         java.lang.reflect.Field panelField = TrainControlUI.class.getDeclaredField("autoLocPanel");
-        java.lang.reflect.Field pathsField = org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredField("paths");
-        java.lang.reflect.Field listField = org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredField("locAvailPaths");
-        java.lang.reflect.Field locField = org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredField("locomotive");
+        java.lang.reflect.Field pathsField = org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus.class.getDeclaredField("paths");
+        java.lang.reflect.Field listField = org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus.class.getDeclaredField("locAvailPaths");
+        java.lang.reflect.Field locField = org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus.class.getDeclaredField("locomotive");
 
         panelField.setAccessible(true);
         pathsField.setAccessible(true);
@@ -1511,7 +1511,7 @@ public class testNoSetupEditDuringARun
 
             for (Component c : ((javax.swing.JPanel) panelField.get(ui)).getComponents())
             {
-                if (!(c instanceof org.traincontrol.gui.autonomy.AutoLocomotiveStatus)) continue;
+                if (!(c instanceof org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus)) continue;
 
                 List<?> paths = (List<?>) pathsField.get(c);
                 javax.swing.JList<?> list = (javax.swing.JList<?>) listField.get(c);
@@ -1806,7 +1806,7 @@ public class testNoSetupEditDuringARun
     private static boolean anAutoTabListIsShowing(final TrainControlUI ui) throws Exception
     {
         final java.lang.reflect.Field panelField = TrainControlUI.class.getDeclaredField("autoLocPanel");
-        final java.lang.reflect.Field listField = org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class
+        final java.lang.reflect.Field listField = org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus.class
             .getDeclaredField("locAvailPaths");
 
         panelField.setAccessible(true);
@@ -1821,7 +1821,7 @@ public class testNoSetupEditDuringARun
             {
                 for (Component c : ((javax.swing.JPanel) panelField.get(ui)).getComponents())
                 {
-                    if (c instanceof org.traincontrol.gui.autonomy.AutoLocomotiveStatus
+                    if (c instanceof org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus
                         && ((Component) listField.get(c)).isVisible()) showing[0] = true;
                 }
             }

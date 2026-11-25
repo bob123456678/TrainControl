@@ -19,7 +19,7 @@ comment rule"*).  The full plan, its measurements and phases are in git: `git sh
 `final class X { private final TrainControlUI ui; ... }`, built once by a field of the owner.  Fields stay on the owner
 unless no test reflects them.  Each moved method leaves a delegator with its name and visibility.  No superclass chain:
 it breaks `getDeclaredField` and hides where state lives.  Subclass only where several copies already share a shape.
-Done this way: LocIconActions, TimetableTab, AutonomySettingsTab, LayoutMenus, DiagramLocGestures, EditorWindows,
+Done this way: LocomotiveIconActions, TimetableTab, AutonomySettingsTab, LayoutMenus, DiagramTrainKeys, EditorWindows,
 AutonomyLifecycle.
 
 **What breaks if you do not look.**

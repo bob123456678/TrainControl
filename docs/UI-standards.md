@@ -21,7 +21,7 @@ window whose items need setting apart gets a blue heading over them, not blue it
 ## The parts to build with
 
 New hand-written windows take these rather than setting fonts and colors themselves. The 3.1.0 windows
-(`LocomotiveSettingsFrame`, `StationSettingsWindow` with its `TrainTab`) are built from them.
+(`LocomotiveSettingsWindow`, `StationSettingsWindow` with its `TrainTab`) are built from them.
 
 - **`widgets/UiStyle`** holds the table above: `UiStyle.heading(...)` for a section heading, `UiStyle.label(...)` or
   `blackLabel(...)` for an item label, `UiStyle.button(...)` to put a button in Bold 12, and `withoutColon(...)` for
@@ -42,7 +42,7 @@ New hand-written windows take these rather than setting fonts and colors themsel
 
 ## The reference screen
 
-**`RouteEditorFrame`** is the hand-written screen built to this standard, and is the thing to copy
+**`RouteEditorWindow`** is the hand-written screen built to this standard, and is the thing to copy
 rather than this table, with the parts above for anything it does not show.
 
 ## Where this does and does not reach

@@ -167,7 +167,7 @@ public class testEveryLanguageFitsThePopups
      * message, the editor-open refusals, Clear All's question and the Cancel question that names the trains going back.
      * No line of their text, a failed sync's exception text and path included, is wider than the cap (FR-254).
      *
-     * MUTATION: put a label of fixed preferred width 20 pixels into `About`'s form, and this fails in every language.
+     * MUTATION: put a label of fixed preferred width 20 pixels into `AboutPanel`'s form, and this fails in every language.
      */
     @Test(timeOut = 300000)
     public void testThePopupsFitInEveryLanguage() throws Exception
@@ -183,7 +183,7 @@ public class testEveryLanguageFitsThePopups
             String.class, Runnable.class);
         java.lang.reflect.Method backupAsks = Reflect.method(org.traincontrol.gui.widgets.BackupAction.class,
             "askOnEventThread", String.class);
-        java.lang.reflect.Method csvDoor = Reflect.method(Class.forName("org.traincontrol.gui.LocomotiveCsvDoor"), "open",
+        java.lang.reflect.Method csvDoor = Reflect.method(Class.forName("org.traincontrol.gui.LocomotiveCsvImport"), "open",
             TrainControlUI.class, java.awt.Component.class);
         java.lang.reflect.Method linkRefused = Reflect.method(org.traincontrol.gui.RunGates.class,
             "refuseALinkOrSyncWhileEditorOpen", TrainControlUI.class, java.awt.Component.class);
@@ -331,7 +331,7 @@ public class testEveryLanguageFitsThePopups
             + "Start Year,End Year,RailwayName,Notes,LastRun\n" + "Fit first" + row + "Fit second" + row).replace("{0}",
             held.getDecoderType().name()).replace("{1}", String.valueOf(held.getAddress())).getBytes("UTF-8"));
 
-        java.lang.reflect.Method csvDoor = Reflect.method(Class.forName("org.traincontrol.gui.LocomotiveCsvDoor"), "open",
+        java.lang.reflect.Method csvDoor = Reflect.method(Class.forName("org.traincontrol.gui.LocomotiveCsvImport"), "open",
             TrainControlUI.class, java.awt.Component.class);
 
         LanguageFit.assertNothingClipped("csv duplicates", LanguageFit.everyLanguage(language -> popup("popup-csv-duplicates",
@@ -344,7 +344,7 @@ public class testEveryLanguageFitsThePopups
      * The right-click menus 3.1.0 added or changed fit the menu bar's rule in every language: the diagram's menu over a
      * train and over an empty station, and the locomotive key's menu.
      *
-     * MUTATION: give an item of `LayoutRightclickAutonomyMenu` a preferred width of 2000 pixels, and this fails.
+     * MUTATION: give an item of `DiagramAutonomyContextMenu` a preferred width of 2000 pixels, and this fails.
      */
     @Test(timeOut = 240000)
     public void testTheRightClickMenusFitInEveryLanguage() throws Exception

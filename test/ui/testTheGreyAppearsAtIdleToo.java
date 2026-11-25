@@ -904,7 +904,7 @@ public class testTheGreyAppearsAtIdleToo
 
         assertNotNull(was, "precondition: no setup is loaded, so the claim below cannot tell");
 
-        final Method showFor = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu").getDeclaredMethod(
+        final Method showFor = Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu").getDeclaredMethod(
             "showFor", TrainControlUI.class, TileKey.class, TileKey.class, java.awt.Component.class, int.class, int.class);
 
         showFor.setAccessible(true);
@@ -1090,7 +1090,7 @@ public class testTheGreyAppearsAtIdleToo
     {
         assertBuilt();
 
-        final Method showFor = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu").getDeclaredMethod(
+        final Method showFor = Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu").getDeclaredMethod(
             "showFor", TrainControlUI.class, TileKey.class, TileKey.class, java.awt.Component.class, int.class, int.class);
 
         showFor.setAccessible(true);

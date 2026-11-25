@@ -303,7 +303,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
      * On a square nothing arrives at, with one way out, the caption's arrow is the icon's: that way out, though the
      * setup records the other way along the track (OB-510).
      *
-     * MUTATION: let `StationCaptions.facingArrowOf` read the setup's record before the only way out, and this fails.
+     * MUTATION: let `StationCaptionText.facingArrowOf` read the setup's record before the only way out, and this fails.
      */
     @Test
     public void testWithOneWayOutTheCaptionPointsWhereTheIconDoes() throws Exception

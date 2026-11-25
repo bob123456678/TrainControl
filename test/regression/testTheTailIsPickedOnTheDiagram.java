@@ -509,7 +509,7 @@ public class testTheTailIsPickedOnTheDiagram
 
             Reflect.set(TrainControlUI.class, ui, "tailAtTheLanding", "N");
 
-            // The paste door is DiagramLocGestures', which the window holds
+            // The paste door is DiagramTrainKeys', which the window holds
             final Object gestures = Reflect.get(TrainControlUI.class, ui, "diagramLocGestures");
 
             final java.lang.reflect.Method remember =
@@ -774,7 +774,7 @@ public class testTheTailIsPickedOnTheDiagram
 
         Reflect.set(TrainControlUI.class, ui, "tailAtTheLanding", "N");
 
-        // The paste door is DiagramLocGestures', which the window holds
+        // The paste door is DiagramTrainKeys', which the window holds
         final Object gestures = Reflect.get(TrainControlUI.class, ui, "diagramLocGestures");
 
         final java.lang.reflect.Method remember =
@@ -1641,13 +1641,13 @@ public class testTheTailIsPickedOnTheDiagram
     /** The diagram's right-click on this square, as a right-click builds it. */
     private static javax.swing.JPopupMenu rightClickMenu(TileKey square) throws Exception
     {
-        final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
+        final Class<?> menuClass = Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu");
 
         final java.lang.reflect.Method gather =
             Reflect.method(menuClass, "gatherPathOptions", TrainControlUI.class, Point.class);
 
         final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
-            TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
+            TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu$PathOptions"));
 
         make.setAccessible(true);
 

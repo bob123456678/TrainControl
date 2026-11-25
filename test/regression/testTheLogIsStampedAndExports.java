@@ -375,7 +375,7 @@ public class testTheLogIsStampedAndExports
     }
 
     /**
-     * MUTATION: `LogExportDoor` saves something other than `logText()` (the text without its stamps, say), or leaves the
+     * MUTATION: `LogExport` saves something other than `logText()` (the text without its stamps, say), or leaves the
      * line separators as LF, or writes no file, and this fails.
      */
     @Test(timeOut = 180000)
@@ -456,7 +456,7 @@ public class testTheLogIsStampedAndExports
     }
 
     /**
-     * MUTATION: `LogExportDoor` swallows the write error, or says `e.getMessage()` (which is only the path for a
+     * MUTATION: `LogExport` swallows the write error, or says `e.getMessage()` (which is only the path for a
      * missing folder), and this fails.
      */
     @Test(timeOut = 180000)

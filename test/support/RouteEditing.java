@@ -25,7 +25,7 @@ import org.traincontrol.base.NodeOr;
 import org.traincontrol.base.NodeRouteCommand;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.RouteCommand;
-import org.traincontrol.gui.RouteEditorFrame;
+import org.traincontrol.gui.RouteEditorWindow;
 import org.traincontrol.util.I18n;
 
 /**
@@ -61,7 +61,7 @@ public final class RouteEditing
     }
 
     /** The route editor's table of one class, by its simple name. */
-    public static JTable table(RouteEditorFrame frame, final String kind)
+    public static JTable table(RouteEditorWindow frame, final String kind)
     {
         JTable table = Components.find(frame, JTable.class, t -> kind.equals(t.getClass().getSimpleName()));
 
@@ -70,12 +70,12 @@ public final class RouteEditing
         return table;
     }
 
-    public static JTable commandTable(RouteEditorFrame frame)
+    public static JTable commandTable(RouteEditorWindow frame)
     {
         return table(frame, "CommandTable");
     }
 
-    public static JTable conditionTable(RouteEditorFrame frame)
+    public static JTable conditionTable(RouteEditorWindow frame)
     {
         return table(frame, "ConditionTable");
     }
@@ -300,13 +300,13 @@ public final class RouteEditing
     }
 
     /** The commands' section of the window: their frame, the row under it, and Capture. */
-    public static Container commandSection(final RouteEditorFrame frame)
+    public static Container commandSection(final RouteEditorWindow frame)
     {
         return Components.onTheEventThread(() -> section(commandTable(frame), conditionTable(frame)));
     }
 
     /** The button saying this outside the commands' section: the conditions' Undo, not the commands'. */
-    public static AbstractButton notOnTheCommands(final RouteEditorFrame frame, String key)
+    public static AbstractButton notOnTheCommands(final RouteEditorWindow frame, String key)
     {
         final Container commands = commandSection(frame);
 
@@ -315,7 +315,7 @@ public final class RouteEditing
     }
 
     /** The button in the commands' section saying this. */
-    public static AbstractButton commandButton(final RouteEditorFrame frame, String key)
+    public static AbstractButton commandButton(final RouteEditorWindow frame, String key)
     {
         AbstractButton out = Components.withText(commandSection(frame), I18n.t(key));
 
@@ -325,12 +325,12 @@ public final class RouteEditing
     }
 
     /** Presses a button of the route editor outside the commands' section by its text, and lets its work finish. */
-    public static void press(final RouteEditorFrame frame, String key)
+    public static void press(final RouteEditorWindow frame, String key)
     {
         pressed(notOnTheCommands(frame, key), key + " is grayed", "the route editor has no button " + key);
     }
 
-    public static void pressOnTheCommands(final RouteEditorFrame frame, String key)
+    public static void pressOnTheCommands(final RouteEditorWindow frame, String key)
     {
         pressed(commandButton(frame, key), key + " is grayed on the commands", "the commands' section has no " + key);
     }
@@ -439,7 +439,7 @@ public final class RouteEditing
     }
 
     /** The component a label of the window's top line names, the first after it that is one of these. */
-    public static <T extends Component> T beside(RouteEditorFrame frame, String labelKey, final Class<T> type)
+    public static <T extends Component> T beside(RouteEditorWindow frame, String labelKey, final Class<T> type)
     {
         final JLabel label = Components.find(frame, JLabel.class, l -> I18n.t(labelKey).equals(l.getText()));
 
@@ -476,7 +476,7 @@ public final class RouteEditing
      * Presses Save, answering any question with its first button, and waits for the editor to close; gives back the
      * questions asked, "[]" when none.
      */
-    public static String save(final RouteEditorFrame frame)
+    public static String save(final RouteEditorWindow frame)
     {
         try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
         {
@@ -505,13 +505,13 @@ public final class RouteEditing
     }
 
     /** The route editor showing now, if one is. */
-    public static RouteEditorFrame editorShowing()
+    public static RouteEditorWindow editorShowing()
     {
         return Components.onTheEventThread(() ->
         {
             for (java.awt.Window window : java.awt.Window.getWindows())
             {
-                if (window instanceof RouteEditorFrame && window.isShowing()) return (RouteEditorFrame) window;
+                if (window instanceof RouteEditorWindow && window.isShowing()) return (RouteEditorWindow) window;
             }
 
             return null;
@@ -527,7 +527,7 @@ public final class RouteEditing
         {
             for (java.awt.Window window : java.awt.Window.getWindows())
             {
-                if (window instanceof RouteEditorFrame) window.dispose();
+                if (window instanceof RouteEditorWindow) window.dispose();
             }
 
             return null;

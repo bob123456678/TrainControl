@@ -52,7 +52,7 @@ import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.widgets.HandPointer;
-import org.traincontrol.gui.widgets.PopupListener;
+import org.traincontrol.gui.widgets.PopupMenuTrigger;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.gui.widgets.QuickFileChooser;
@@ -177,7 +177,7 @@ final class LocomotiveFunctionsTab extends JPanel
         table.getColumnModel().getColumn(TEST).setPreferredWidth(70);
 
         // The Test column's cell is the target: a press anywhere in it switches the function
-        table.addMouseListener(Listen.released(e ->
+        table.addMouseListener(OnMouse.released(e ->
         {
             int row = playRowAt(e);
 
@@ -196,7 +196,7 @@ final class LocomotiveFunctionsTab extends JPanel
             }
         });
 
-        table.addMouseListener(new PopupListener()
+        table.addMouseListener(new PopupMenuTrigger()
         {
             @Override
             protected void showPopup(MouseEvent e)
@@ -596,7 +596,7 @@ final class LocomotiveFunctionsTab extends JPanel
         if (blocked || r.function >= loc.getNumF()) return;
 
         // The cached flag is up to a second old: a train that has just started must not fire from Test
-        if (LocomotiveSettings.whyNotEditable(ui, loc) != null) return;
+        if (LocomotiveEditRule.whyNotEditable(ui, loc) != null) return;
 
         ui.fireFunction(loc, r.function, !loc.getF(r.function));
 
@@ -909,7 +909,7 @@ final class LocomotiveFunctionsTab extends JPanel
         gridLayout(grid);
         grid.setName("functions.menuIconGrid");
         grid.setSelectedIndex(r.custom == null ? r.icon : -1);
-        grid.addMouseListener(Listen.released(e ->
+        grid.addMouseListener(OnMouse.released(e ->
         {
             int i = grid.locationToIndex(e.getPoint());
 
@@ -1127,7 +1127,7 @@ final class LocomotiveFunctionsTab extends JPanel
     private final class IconCell extends AbstractCellEditor implements TableCellRenderer, TableCellEditor
     {
         final JComboBox<Integer> combo = new JComboBox<>(new DefaultComboBoxModel<>(iconNumbers()));
-        final JButton wrench = new JButton(new LocIconActions.WrenchMark());
+        final JButton wrench = new JButton(new LocomotiveIconActions.WrenchMark());
         final JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         private Row row;
         private boolean filling;

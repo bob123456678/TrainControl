@@ -37,10 +37,8 @@ public class PositionAwareJFrame extends JFrame
     // TODO - could be replaced and de-coupled by an abstract method call
     private final Preferences prefs = TrainControlUI.getPrefs();
     
-    // By default, this is our class name
+    // The key saved positions are kept under, and the index that tells windows of one class apart
     private final String thisWindowName;
-    
-    // Custom index for the window if there are multiple windows with the same class name
     private String thisWindowIndex = "";
         
     // Have we loaded the window?
@@ -51,8 +49,13 @@ public class PositionAwareJFrame extends JFrame
     
     public PositionAwareJFrame()
     {
-        // Use the class name as the window identifier
-        this.thisWindowName = getClass().getSimpleName();
+        this(null);
+    }
+
+    /** Positions are saved under windowName, or the simple class name when null: a renamed window passes its old one. */
+    protected PositionAwareJFrame(String windowName)
+    {
+        this.thisWindowName = windowName != null ? windowName : getClass().getSimpleName();
 
         // Load the saved position, size, and state
         // Call this manually because we don't know when the window is ready

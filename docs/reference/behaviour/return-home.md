@@ -79,7 +79,7 @@ differently and none waits on the railway.
 > **Nothing on the event thread may call a `synchronized` method of `Layout`.**
 
 They all take one monitor. A dispatch holds it for the whole of `configureAndLockPath` (a sleep per accessory of the
-path), and `AutoLocomotiveStatus.findPaths` holds it for a search of the whole graph on every panel refresh. Waiting for
+path), and `AutonomyLocomotiveStatus.findPaths` holds it for a search of the whole graph on every panel refresh. Waiting for
 it on the event thread is a window that does not repaint while the trains run on (OB-192).
 
 `testNothingOnTheEventThreadTakesTheRailwaysMonitor` reads the list of `synchronized` methods out of `Layout.java` and

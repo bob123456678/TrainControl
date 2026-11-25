@@ -95,7 +95,7 @@ public class testNoSelfRecursiveWrappers
     private static final String[][] COLLABORATORS = {
         { "backupAction", "src/org/traincontrol/gui/widgets/BackupAction.java", "BackupAction", WINDOW, "TrainControlUI", "ui." },
         { "updateFlow", "src/org/traincontrol/gui/widgets/UpdateFlow.java", "UpdateFlow", WINDOW, "TrainControlUI", "ui." },
-        { "locIconActions", "src/org/traincontrol/gui/LocIconActions.java", "LocIconActions", WINDOW, "TrainControlUI",
+        { "locIconActions", "src/org/traincontrol/gui/LocomotiveIconActions.java", "LocomotiveIconActions", WINDOW, "TrainControlUI",
             "ui." },
         { "layoutFileActions", "src/org/traincontrol/gui/LayoutFileActions.java", "LayoutFileActions", WINDOW,
             "TrainControlUI", "ui." },
@@ -136,7 +136,7 @@ public class testNoSelfRecursiveWrappers
             "TrainControlUI", "ui." },
         { "autonomyLifecycle", "src/org/traincontrol/gui/AutonomyLifecycle.java", "AutonomyLifecycle", WINDOW,
             "TrainControlUI", "ui." },
-        { "diagramLocGestures", "src/org/traincontrol/gui/DiagramLocGestures.java", "DiagramLocGestures", WINDOW,
+        { "diagramLocGestures", "src/org/traincontrol/gui/DiagramTrainKeys.java", "DiagramTrainKeys", WINDOW,
             "TrainControlUI", "ui." },
         { "connectingNotice", "src/org/traincontrol/gui/ConnectingNotice.java", "ConnectingNotice", WINDOW,
             "TrainControlUI", "ui." },
