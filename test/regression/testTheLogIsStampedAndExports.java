@@ -186,11 +186,13 @@ public class testTheLogIsStampedAndExports
 
     /**
      * In the Log tab a warning shows the yellow triangle beside its line, an error the red one and a notice none,
-     * however it reached the log: a key the model logs, an exception, a task's uncaught error (FR-190).  The text keeps
+     * however it reached the log: the window, the model, a key the model logs, an exception, a task's uncaught error
+     * (FR-190).  The text keeps
      * no mark, and Export Log saves exactly it.
      *
      * MUTATION: in `MarklinControlStation.logf`, `Level.INFO` for `LogPanel.levelOf(key)`; or in its `log(Exception)`
-     * or `THREAD_ERRORS`, `Level.INFO` for `Level.SEVERE`; or `TrainControlUI.log(String, Level)` passes `Level.INFO`.
+     * or `THREAD_ERRORS`, `Level.INFO` for `Level.SEVERE`; or `TrainControlUI.log(String, Level)` passes `Level.INFO`;
+     * or its `log(String)` passes `Level.SEVERE`.
      */
     @Test(timeOut = 180000)
     public void testWarningsAndErrorsShowTheirTriangles() throws Exception
@@ -199,22 +201,23 @@ public class testTheLogIsStampedAndExports
         inAWindow(() -> (TrainControlUI) support.TestStation.simulatedWithWindowInDebug().getGUI(), ui ->
         {
             IllegalStateException failure = new IllegalStateException("FR190 uncaught");
-            String[] entries = {"FR190 notice", I18n.f("layout.warnPowerNotConfirmed", "FR190"),
+            String[] entries = {"FR190 notice", "FR190 model notice", I18n.f("layout.warnPowerNotConfirmed", "FR190"),
                 I18n.f("ui.errorSavingUiState", "FR190"), "FR190 exception",
                 I18n.f("error.uncaughtInThread", "fr190-task", failure)};
 
             ui.log(entries[0]);
+            ui.getModel().log(entries[1]);
             ui.getModel().logf("layout.warnPowerNotConfirmed", "FR190");
             ui.getModel().logf("ui.errorSavingUiState", "FR190");
-            ui.getModel().log(new Exception(entries[3]));
+            ui.getModel().log(new Exception(entries[4]));
             org.traincontrol.marklin.MarklinControlStation.THREAD_ERRORS.uncaughtException(new Thread("fr190-task"), failure);
 
             String shown = logOf(ui);
 
             for (String entry : entries) assertTrue(stamped(shown, entry).find(), "not shown plain: " + entry);
 
-            assertEquals(support.Components.onTheEventThread(() -> marks(ui, shown, entries)), "-YRRR",
-                "the marks beside notice, warning, error, exception, uncaught error");
+            assertEquals(support.Components.onTheEventThread(() -> marks(ui, shown, entries)), "--YRRR",
+                "the marks beside notice, model notice, warning, error, exception, uncaught error");
 
             exportedAsShown(ui, shown, "marked-log.txt", (file, answering) -> { });
         });
