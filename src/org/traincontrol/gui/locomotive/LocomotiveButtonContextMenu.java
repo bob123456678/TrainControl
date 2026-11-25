@@ -6,7 +6,7 @@ import javax.swing.JButton;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import org.traincontrol.gui.TrainControlUI;
-import org.traincontrol.gui.widgets.PopupMenuTrigger;
+import org.traincontrol.gui.util.PopupMenuTrigger;
 import org.traincontrol.util.I18n;
 
 /**

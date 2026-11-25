@@ -8,7 +8,7 @@ import org.traincontrol.automationui.GraphReducer;
 import org.traincontrol.automationui.TileAnnotation;
 import org.traincontrol.automationui.TileAnnotation.ToolMark;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.gui.SettledQuestion;
+import org.traincontrol.gui.util.SettledQuestion;
 import org.traincontrol.gui.autonomy.DestinationTable;
 import org.traincontrol.gui.autonomy.DestinationTable.Status;
 import org.traincontrol.util.I18n;

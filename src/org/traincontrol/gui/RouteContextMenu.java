@@ -6,7 +6,7 @@ import java.awt.event.MouseEvent;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import org.traincontrol.base.Route;
-import org.traincontrol.gui.widgets.PopupMenuTrigger;
+import org.traincontrol.gui.util.PopupMenuTrigger;
 import org.traincontrol.util.I18n;
 
 /**

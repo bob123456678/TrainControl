@@ -19,9 +19,9 @@ import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.DocumentEvent;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.gui.OnMouse;
+import org.traincontrol.gui.util.OnMouse;
 import org.traincontrol.gui.TrainControlUI;
-import org.traincontrol.gui.widgets.UiStyle;
+import org.traincontrol.gui.util.UiStyle;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 

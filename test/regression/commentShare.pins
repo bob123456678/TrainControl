@@ -53,7 +53,7 @@ src/org/traincontrol/gui/AutonomyOverlayToggle.java	460	5
 src/org/traincontrol/gui/AutonomySettingsTab.java	-	2
 src/org/traincontrol/gui/AutonomyConfigurationsPanel.java	349	17
 src/org/traincontrol/gui/CaptionVisibility.java	497	4
-src/org/traincontrol/gui/CoalescedWorker.java	552	2
+src/org/traincontrol/gui/util/CoalescedWorker.java	552	2
 src/org/traincontrol/gui/ConnectingNotice.java	410	4
 src/org/traincontrol/gui/CoveredTrackView.java	511	4
 src/org/traincontrol/gui/DiagramTrainKeys.java	367	6
@@ -82,7 +82,7 @@ src/org/traincontrol/gui/RouteRunningMarks.java	452	4
 src/org/traincontrol/gui/RunGates.java	477	12
 src/org/traincontrol/gui/RunningLayoutSync.java	348	15
 src/org/traincontrol/gui/SaveFileChooser.java	-	3
-src/org/traincontrol/gui/SettledQuestion.java	495	0
+src/org/traincontrol/gui/util/SettledQuestion.java	495	0
 src/org/traincontrol/gui/StationCaptionText.java	319	1
 src/org/traincontrol/gui/TailCrossedPrompt.java	359	11
 src/org/traincontrol/gui/TimetableTab.java	271	1
@@ -136,7 +136,7 @@ src/org/traincontrol/gui/widgets/RestoreAction.java	-	4
 src/org/traincontrol/gui/widgets/RowIcons.java	-	2
 src/org/traincontrol/gui/widgets/StartupSplash.java	365	0
 src/org/traincontrol/gui/widgets/StationCaption.java	350	3
-src/org/traincontrol/gui/widgets/UiStyle.java	307	0
+src/org/traincontrol/gui/util/UiStyle.java	307	0
 src/org/traincontrol/gui/widgets/UpdateFlow.java	261	3
 src/org/traincontrol/marklin/MarklinAccessory.java	284	0
 src/org/traincontrol/marklin/MarklinControlStation.java	353	27

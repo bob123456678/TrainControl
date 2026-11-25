@@ -13,6 +13,9 @@ import org.traincontrol.automation.TimetablePath;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import org.traincontrol.gui.util.CoalescedWorker;
+import org.traincontrol.gui.util.OnMouse;
+import org.traincontrol.gui.util.SettledQuestion;
 import org.traincontrol.util.I18n;
 
 /**

@@ -30,7 +30,7 @@ import org.traincontrol.automation.StandingRules.Row;
 import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.gui.InfoMark;
 import org.traincontrol.gui.widgets.RowIcons;
-import org.traincontrol.gui.widgets.UiStyle;
+import org.traincontrol.gui.util.UiStyle;
 import org.traincontrol.util.I18n;
 
 /**

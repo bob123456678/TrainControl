@@ -1,4 +1,4 @@
-package org.traincontrol.gui;
+package org.traincontrol.gui.util;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * question at a time, kept going while the answer is out of date, so the last ask always lands.  The flags, the
  * subject and one pass of the answer stay with each owner.
  */
-final class CoalescedWorker
+public final class CoalescedWorker
 {
     private CoalescedWorker()
     {
@@ -19,7 +19,7 @@ final class CoalescedWorker
      * are served and dropping one leaves a stale answer (OB-180), so the worker runs `pass` until `dirty` stays clear: a
      * flag rather than a queue (`repaintAutoLocList` says why).  `settle` gives the job up; `reAsk` serves the gap.
      */
-    static void ask(AtomicBoolean inFlight, AtomicBoolean dirty, ExecutorService pool, Runnable pass, Runnable settle,
+    public static void ask(AtomicBoolean inFlight, AtomicBoolean dirty, ExecutorService pool, Runnable pass, Runnable settle,
         Runnable reAsk)
     {
         if (!inFlight.compareAndSet(false, true)) return;

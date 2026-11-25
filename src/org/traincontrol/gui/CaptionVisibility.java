@@ -2,6 +2,7 @@ package org.traincontrol.gui;
 
 import java.util.Set;
 import org.traincontrol.automationui.TileGraph;
+import org.traincontrol.gui.util.CoalescedWorker;
 
 /**
  * Which station captions autonomy can never choose, worked out on `CoveredTrackRenderer` rather than on the event

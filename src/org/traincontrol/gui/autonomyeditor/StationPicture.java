@@ -40,10 +40,10 @@ import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.gui.InfoMark;
 import org.traincontrol.gui.LayoutLabel;
-import org.traincontrol.gui.OnMouse;
+import org.traincontrol.gui.util.OnMouse;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.widgets.HandPointer;
-import org.traincontrol.gui.widgets.UiStyle;
+import org.traincontrol.gui.util.UiStyle;
 import org.traincontrol.util.I18n;
 
 /**

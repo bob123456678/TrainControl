@@ -51,10 +51,11 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.util.OnMouse;
 import org.traincontrol.gui.widgets.HandPointer;
-import org.traincontrol.gui.widgets.PopupMenuTrigger;
+import org.traincontrol.gui.util.PopupMenuTrigger;
 import org.traincontrol.gui.widgets.RowIcons;
-import org.traincontrol.gui.widgets.UiStyle;
+import org.traincontrol.gui.util.UiStyle;
 import org.traincontrol.gui.widgets.QuickFileChooser;
 import org.traincontrol.util.I18n;
 

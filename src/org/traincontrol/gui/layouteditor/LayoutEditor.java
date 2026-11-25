@@ -77,7 +77,7 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
-import org.traincontrol.gui.OnMouse;
+import org.traincontrol.gui.util.OnMouse;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.LayoutGrid;
 import org.traincontrol.gui.LayoutLabel;
@@ -97,7 +97,7 @@ import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.TileSelection;
-import org.traincontrol.gui.widgets.UiStyle;
+import org.traincontrol.gui.util.UiStyle;
 
 /**
  * Track diagram editor

@@ -14,6 +14,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
+import org.traincontrol.gui.util.OnMouse;
 import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.util.I18n;
 

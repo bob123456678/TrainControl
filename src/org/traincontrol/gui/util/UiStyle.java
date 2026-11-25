@@ -1,4 +1,4 @@
-package org.traincontrol.gui.widgets;
+package org.traincontrol.gui.util;
 
 import java.awt.Color;
 import java.awt.Font;

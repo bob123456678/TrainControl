@@ -41,7 +41,7 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.locomotive.SegmentedControl;
 import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.gui.widgets.PillButton;
-import org.traincontrol.gui.widgets.UiStyle;
+import org.traincontrol.gui.util.UiStyle;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;

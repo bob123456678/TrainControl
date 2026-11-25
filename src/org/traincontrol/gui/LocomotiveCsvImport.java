@@ -20,7 +20,7 @@ import javax.swing.JRadioButton;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.widgets.ChoiceTable;
 import org.traincontrol.gui.widgets.DetailsArea;
-import org.traincontrol.gui.widgets.UiStyle;
+import org.traincontrol.gui.util.UiStyle;
 import org.traincontrol.marklin.MarklinLocomotiveCsv;
 import org.traincontrol.marklin.MarklinLocomotiveCsv.Choice;
 import org.traincontrol.marklin.MarklinLocomotiveCsv.Duplicate;

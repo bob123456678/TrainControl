@@ -26,7 +26,7 @@ import javax.swing.Icon;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import org.traincontrol.gui.TrainControlUI;
-import org.traincontrol.gui.widgets.UiStyle;
+import org.traincontrol.gui.util.UiStyle;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;

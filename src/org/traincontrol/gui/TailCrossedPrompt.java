@@ -831,7 +831,7 @@ public class TailCrossedPrompt
 
             // Cancel, and no "Not Known": for a train just put down the two did the same, and Cancel keeps whatever
             // road a train standing still already has.
-            JButton cancel = org.traincontrol.gui.widgets.UiStyle.button(new JButton(I18n.t("ui.cancel")));
+            JButton cancel = org.traincontrol.gui.util.UiStyle.button(new JButton(I18n.t("ui.cancel")));
 
             cancel.addActionListener(e -> finish(new Reply(false, null)));
 

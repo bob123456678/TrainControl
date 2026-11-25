@@ -43,7 +43,7 @@ public final class SyncTable implements AutoCloseable
         {
             this.dialog = dialog;
             JLabel h = Components.find(dialog, JLabel.class, l -> l.getForeground().equals(
-                org.traincontrol.gui.widgets.UiStyle.BLUE));
+                org.traincontrol.gui.util.UiStyle.BLUE));
             this.heading = h == null ? null : h.getText();
             // A row by its radios, or a by-hand row by its text
             for (javax.swing.JComponent b : Components.all(dialog, javax.swing.JComponent.class, b -> b.getName()

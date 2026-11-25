@@ -38,6 +38,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.autonomy.AutonomyReport;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import org.traincontrol.gui.util.OnMouse;
 import org.traincontrol.gui.widgets.QuickFileChooser;
 import org.traincontrol.gui.widgets.DetailsArea;
 import org.traincontrol.util.I18n;

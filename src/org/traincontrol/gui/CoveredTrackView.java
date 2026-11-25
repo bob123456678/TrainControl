@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import org.traincontrol.automationui.TileGraph;
+import org.traincontrol.gui.util.CoalescedWorker;
+import org.traincontrol.gui.util.SettledQuestion;
 
 /**
  * The marks a standing train puts on the track diagram, worked out on `CoveredTrackRenderer` and never on the event

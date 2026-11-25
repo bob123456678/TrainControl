@@ -5,7 +5,7 @@ import javax.swing.JDialog;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.locomotive.UsageChart;
-import org.traincontrol.gui.widgets.UiStyle;
+import org.traincontrol.gui.util.UiStyle;
 import org.traincontrol.util.I18n;
 import support.Components;
 import support.Looks;

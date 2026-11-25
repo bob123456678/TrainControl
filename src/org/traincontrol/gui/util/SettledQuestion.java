@@ -1,4 +1,4 @@
-package org.traincontrol.gui;
+package org.traincontrol.gui.util;
 
 /**
  * A question answered off the event thread whose caller can wait for the answer to settle: the settle and the bounded

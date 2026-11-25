@@ -178,7 +178,7 @@ public class testTheTrainWindow
 
         for (javax.swing.JLabel each : Components.all(form, javax.swing.JLabel.class, null))
         {
-            if (org.traincontrol.gui.widgets.UiStyle.BLUE.equals(each.getForeground())) blue.add(each.getText());
+            if (org.traincontrol.gui.util.UiStyle.BLUE.equals(each.getForeground())) blue.add(each.getText());
         }
 
         assertTrue(blue.isEmpty(), "blue in a tab with no section headings: " + blue);
@@ -191,7 +191,7 @@ public class testTheTrainWindow
 
             assertEquals(found.size(), 1, key + " is not one label of the tab");
             assertEquals(found.get(0).getForeground(), java.awt.Color.BLACK, key + " is not black");
-            assertEquals(found.get(0).getFont(), org.traincontrol.gui.widgets.UiStyle.LABEL_FONT, key + " is not Semibold 13");
+            assertEquals(found.get(0).getFont(), org.traincontrol.gui.util.UiStyle.LABEL_FONT, key + " is not Semibold 13");
         }
 
         StationDoors.close(window);
@@ -212,7 +212,7 @@ public class testTheTrainWindow
 
         javax.swing.JButton settings = StationDoors.part(window, "train.settings", javax.swing.JButton.class);
 
-        assertEquals(settings.getFont(), org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT, "train.settings is not Bold 12");
+        assertEquals(settings.getFont(), org.traincontrol.gui.util.UiStyle.BUTTON_FONT, "train.settings is not Bold 12");
 
         StationDoors.close(window);
     }

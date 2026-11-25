@@ -73,6 +73,7 @@ import org.traincontrol.base.RouteCommand;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.ThreeWaySwitch;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import org.traincontrol.gui.util.OnMouse;
 import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.DetailsArea;
@@ -82,7 +83,7 @@ import org.traincontrol.base.NodeAnd;
 import org.traincontrol.base.NodeGroup;
 import org.traincontrol.base.NodeOr;
 import org.traincontrol.base.NodeRouteCommand;
-import org.traincontrol.gui.widgets.PopupMenuTrigger;
+import org.traincontrol.gui.util.PopupMenuTrigger;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.ImageUtil;
 

@@ -378,7 +378,7 @@ EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocomotiveButtonContextMenu	<init
 EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.KeyboardPageContextMenu	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.widgets.AddressLabel	answerOnlyOver	square	1
 EI_EXPOSE_REP2	org.traincontrol.gui.widgets.BackupAction	<init>	ui	1
-EI_EXPOSE_REP2	org.traincontrol.gui.widgets.DragToScroll	<init>	image	1
+EI_EXPOSE_REP2	org.traincontrol.gui.util.DragToScroll	<init>	image	1
 EI_EXPOSE_REP2	org.traincontrol.gui.widgets.RestoreAction	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.widgets.UpdateFlow	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.marklin.MarklinAccessory	<init>	network	1

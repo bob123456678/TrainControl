@@ -25,7 +25,7 @@ import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
-import org.traincontrol.gui.widgets.UiStyle;
+import org.traincontrol.gui.util.UiStyle;
 
 /**
  * The autonomy editor's pairing of a station with its signals: the exit guard that is red while the platform is

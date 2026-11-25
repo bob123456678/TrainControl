@@ -26,6 +26,7 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.KeyStroke;
+import org.traincontrol.gui.util.UiStyle;
 
 /**
  * A list of rows under column headings, each row some cells and then its choices, that scrolls either way once it does

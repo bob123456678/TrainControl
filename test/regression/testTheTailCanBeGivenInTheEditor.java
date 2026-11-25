@@ -172,7 +172,7 @@ public class testTheTailCanBeGivenInTheEditor
             javax.swing.AbstractButton pick = support.StationDoors.part(window, "train.tailPick",
                 javax.swing.AbstractButton.class);
 
-            assertEquals(pick.getFont(), org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT, "Pick is not Bold 12");
+            assertEquals(pick.getFont(), org.traincontrol.gui.util.UiStyle.BUTTON_FONT, "Pick is not Bold 12");
 
             support.StationDoors.close(window);
         }

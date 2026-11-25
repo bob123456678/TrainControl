@@ -1,4 +1,4 @@
-package org.traincontrol.gui;
+package org.traincontrol.gui.util;
 
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;

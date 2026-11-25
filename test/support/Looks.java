@@ -7,7 +7,7 @@ import javax.swing.JLabel;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.traincontrol.gui.widgets.UiStyle;
+import org.traincontrol.gui.util.UiStyle;
 
 /** The standard's fonts and colors (docs/UI-standards.md), asserted on a window's parts.  Not a test. */
 public final class Looks

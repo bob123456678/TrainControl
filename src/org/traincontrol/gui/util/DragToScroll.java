@@ -1,4 +1,4 @@
-package org.traincontrol.gui.widgets;
+package org.traincontrol.gui.util;
 
 import java.awt.Cursor;
 import java.awt.Point;
@@ -7,6 +7,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.JPanel;
 import javax.swing.JViewport;
+import org.traincontrol.gui.widgets.HandPointer;
 
 /**
  * Found this on stackoverflow, modified for use with a JPanel

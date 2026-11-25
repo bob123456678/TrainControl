@@ -296,7 +296,7 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
         assertEquals(Components.onTheEventThread(() -> decoder.getWidth()), Integer.valueOf(fieldWidth), "the fields resized");
 
         javax.swing.JLabel address = Components.find(pane, javax.swing.JLabel.class,
-            l -> org.traincontrol.gui.widgets.UiStyle.withoutColon(I18n.t("layout.ui.address")).equals(l.getText()));
+            l -> org.traincontrol.gui.util.UiStyle.withoutColon(I18n.t("layout.ui.address")).equals(l.getText()));
 
         assertTrue(Components.onTheEventThread(() -> triangle.getParent() == address.getParent()
             && triangle.getX() >= address.getX() + address.getWidth()), "the triangle is not right of the Address label");
@@ -304,7 +304,7 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
         for (String key : new String[] { "loc.ui.settingsNameAndAddress", "ui.name", "loc.ui.decoderType",
             "layout.ui.address" })
         {
-            String text = org.traincontrol.gui.widgets.UiStyle.withoutColon(I18n.t(key));
+            String text = org.traincontrol.gui.util.UiStyle.withoutColon(I18n.t(key));
             javax.swing.JLabel label = Components.find(pane, javax.swing.JLabel.class, l -> text.equals(l.getText()));
 
             assertNotNull(label, "no label " + text);

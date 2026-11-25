@@ -21,7 +21,8 @@ import javax.swing.text.DocumentFilter;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.LocomotiveNotes;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
-import org.traincontrol.gui.widgets.UiStyle;
+import org.traincontrol.gui.util.OnTextEdit;
+import org.traincontrol.gui.util.UiStyle;
 import org.traincontrol.util.I18n;
 
 /**
