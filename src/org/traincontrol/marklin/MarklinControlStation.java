@@ -173,6 +173,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * succeeded: a local layout folder syncs happily, so a simulation would report itself connected (OB-098).
      */
     private boolean simulation = false;
+    /** The constructor's simulate, known before `simulation` is set: a simulation's first sync is expected to fail. */
+    private boolean simulatedStart = false;
     
     // Do we print out packets in debug mode?
     public static boolean DEBUG_LOG_NETWORK = true;
@@ -428,6 +430,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Set references
         this.on = false;
         this.NetworkInterface = network;
+        this.simulatedStart = simulate;
         this.view = view;
         
         // Set debug mode
@@ -500,7 +503,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         else
         {
             // A simulation never connects: a notice there, a warning with a real station
-            this.logf(simulate ? Level.INFO : Level.WARNING, "log.csNotConnected");
+            this.logf(unlessSimulating(Level.WARNING), "log.csNotConnected");
         } 
         
         this.linkSavedConsists();
@@ -1788,7 +1791,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             catch (Exception e)
             {
                 // No device file is ordinary for a local layout folder, so only another failure is an error
-                this.logf(e instanceof java.io.FileNotFoundException ? Level.INFO : Level.SEVERE, "log.csTypeDetectionError", e.toString());
+                this.logf(e instanceof java.io.FileNotFoundException ? Level.INFO : unlessSimulating(Level.SEVERE), "log.csTypeDetectionError", e.toString());
 
                 if (!(e instanceof java.io.FileNotFoundException)) this.stationTypeUnknown = e;
             }
@@ -1957,8 +1960,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             this.lastSyncError = describe(e);
 
-            this.logf(java.util.logging.Level.SEVERE, "loc.dbSyncFailed");
-            this.log(e);
+            this.logf(unlessSimulating(Level.SEVERE), "loc.dbSyncFailed");
+            this.log(e, unlessSimulating(Level.SEVERE));
              
             return -1;
         }
@@ -3463,13 +3466,22 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public final void log(Exception e)
     {
+        log(e, Level.SEVERE);
+    }
+
+    /** A level for a failure a simulation expects: a notice there, the given level with a real station. */
+    private Level unlessSimulating(Level level)
+    {
+        return this.simulatedStart || this.simulation ? Level.INFO : level;
+    }
+
+    private void log(Exception e, Level level)
+    {
         if (this.view != null)
         {
-            this.view.log(e.getMessage(), Level.SEVERE);
+            this.view.log(e.getMessage(), level);
         }
-
         log.warning(e.getClass().getName() + " " + e.getMessage());
-        
         if (debug)
         {
             log.warning(String.join("\n", Arrays.stream(e.getStackTrace())

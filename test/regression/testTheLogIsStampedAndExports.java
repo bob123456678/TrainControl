@@ -251,6 +251,38 @@ public class testTheLogIsStampedAndExports
     }
 
     /**
+     * A normal simulated start shows no triangle on a line it is expected to print: a simulation's first sync fails by
+     * design.  The data-driven "Failed to load image" and the simulation-mode warning keep theirs (FR-190).
+     *
+     * MUTATION: in `MarklinControlStation`, `unlessSimulating` returns its argument, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testASimulatedStartShowsNoTriangleOnItsOwnLines() throws Exception
+    {
+        inAWindow(() -> (TrainControlUI) support.TestStation.simulatedWithWindowInDebug().getGUI(), ui ->
+        {
+            String shown = logOf(ui);
+            java.util.List<String> entries = new java.util.ArrayList<>();
+            Matcher line = Pattern.compile("(?m)^\\d\\d:\\d\\d:\\d\\d (.*)$").matcher(shown);
+
+            while (line.find()) entries.add(line.group(1));
+
+            String marks = support.Components.onTheEventThread(() -> marks(ui, shown, entries.toArray(new String[0])));
+            StringBuilder marked = new StringBuilder();
+
+            for (int i = 0; i < entries.size(); i++)
+            {
+                String entry = entries.get(i);
+
+                if (marks.charAt(i) != '-' && !entry.startsWith("Failed to load image")
+                    && !entry.equals(I18n.t("autolayout.warningSimulationModeEnabled"))) marked.append(marks.charAt(i)).append(' ').append(entry).append('|');
+            }
+
+            assertEquals(marked.toString(), "", "start-up lines that show a triangle");
+        });
+    }
+
+    /**
      * The mark painted beside each entry's line in the shown Log tab: Y for the yellow triangle, R for the red, - for
      * none; event thread.
      */

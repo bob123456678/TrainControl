@@ -3266,11 +3266,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         if (layout == settingsBuiltFor && settingsAsBuilt != null) settingsAsBuilt.put("atomicRoutes", true);
 
         // Two log lines when both hold, not one reason at a time.
-        if (!track.isEmpty()) this.model.logf("autolayout.warnAtomicRoutesKeptOn", track.size(), someOf(track));
+        if (!track.isEmpty()) this.model.logf(java.util.logging.Level.INFO, "autolayout.warnAtomicRoutesKeptOn", track.size(), someOf(track));
 
         if (!trains.isEmpty())
         {
-            this.model.logf("autolayout.warnAtomicRoutesKeptOnTrains", trains.size(), someOf(trains));
+            this.model.logf(java.util.logging.Level.INFO, "autolayout.warnAtomicRoutesKeptOnTrains", trains.size(), someOf(trains));
         }
 
         this.autonomySettingsTab.loadAutoLayoutSettings();
