@@ -555,17 +555,18 @@ public class testLocMappingPages
 
         /**
          * Names the page the window is showing the way the operator's Rename does once its dialog is answered - the
-         * window's own `setPageName`, which words the label and asks for a render - on the event thread; null for none.
+         * mapping pages' `setPageName`, which words the label and asks for a render - on the event thread; null for none.
          */
         void renameTheShownPage(String name) throws Exception
         {
-            java.lang.reflect.Method rename = Reflect.method(TrainControlUI.class, "setPageName", String.class);
+            java.lang.reflect.Method rename = Reflect.method(org.traincontrol.gui.LocMappingPages.class, "setPageName",
+                String.class);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
                 try
                 {
-                    rename.invoke(ui, name);
+                    rename.invoke(ui.locMappingPages(), name);
                 }
                 catch (ReflectiveOperationException e)
                 {

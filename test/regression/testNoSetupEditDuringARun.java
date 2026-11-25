@@ -4038,13 +4038,14 @@ public class testNoSetupEditDuringARun
                 + " (OB-309)");
 
             // THE ROUTING RULE'S TOOLTIP, set again while grayed, as a load sets it: still says why
-            final java.lang.reflect.Method rule = Reflect.method(TrainControlUI.class, "refreshRoutingLogicTooltip");
+            final Object tab = Reflect.get(TrainControlUI.class, ui, "autonomySettingsTab");
+            final java.lang.reflect.Method rule = Reflect.method(tab.getClass(), "refreshRoutingLogicTooltip");
 
             SwingUtilities.invokeAndWait(() ->
             {
                 try
                 {
-                    rule.invoke(ui);
+                    rule.invoke(tab);
                 }
                 catch (ReflectiveOperationException e)
                 {

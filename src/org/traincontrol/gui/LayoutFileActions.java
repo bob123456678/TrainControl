@@ -195,6 +195,48 @@ public final class LayoutFileActions
         return null;
     }
 
+    /** The preferences a switch of the layout in use writes (`TrainControlUI.layoutFolderIs`). */
+    private static final String[] SWITCH_PREFS = {TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF,
+        TrainControlUI.LAST_LOCAL_LAYOUT_PREF, TrainControlUI.RECENT_LAYOUTS_PREF};
+
+    /**
+     * Makes `folder` the layout in use; asked after its sync, the answer is whether it read, and if not puts all back.
+     */
+    java.util.function.BooleanSupplier switchTo(String folder)
+    {
+        final String[] was = new String[SWITCH_PREFS.length];
+
+        for (int i = 0; i < was.length; i++) was[i] = TrainControlUI.getPrefs().get(SWITCH_PREFS[i], null);
+
+        final List<LayoutDiagram> pages = everyLoadedPage();
+
+        TrainControlUI.layoutFolderIs(folder);
+
+        return () ->
+        {
+            // A read puts new page objects in; a failed one (the folder changed after its check) keeps the old, or falls
+            // back to the station's, and the layout in use and its own pages go back as they were (FR-245)
+            List<LayoutDiagram> now = everyLoadedPage();
+            boolean same = now.size() == pages.size();
+
+            for (int i = 0; same && i < now.size(); i++) same = now.get(i) == pages.get(i);
+
+            if (!same && folder.equals(TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "")))
+                return true;
+
+            for (int i = 0; i < was.length; i++)
+            {
+                if (was[i] == null) TrainControlUI.getPrefs().remove(SWITCH_PREFS[i]);
+                else TrainControlUI.getPrefs().put(SWITCH_PREFS[i], was[i]);
+            }
+
+            // Read again, as after a page edit: the session and the page list follow the new objects
+            if (!same) this.ui.layoutEditingComplete(null);
+
+            return false;
+        };
+    }
+
     /** Copies a JAR resource file to the specified path. */
     private void copyResource(String resource, File output) throws IOException
     {

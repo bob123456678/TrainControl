@@ -188,20 +188,56 @@ public class testDeleteAsksWhichConfiguration
     @Test
     public void testALoadFailingAfterItsRailwayLeavesTheStoreOnIt() throws Exception
     {
+        aLoadFailingAfterItsRailway("KeyboardTab");
+    }
+
+    /**
+     * A load that fails after the parse but before the window has done the rest (the Auto tabs, the monitor) leaves the
+     * window's record on the configuration the railway runs (OB-510): exit captures the trains into that one.
+     *
+     * MUTATION: in `TrainControlUI.autonomyLoadedFromDiagram`, set `activeDiagramConfiguration` after
+     * `refreshAutonomyFindings` again, and the record stays on the configuration left.
+     */
+    @Test
+    public void testALoadFailingBeforeTheTabsLeavesTheWindowsRecordOnIt() throws Exception
+    {
+        aLoadFailingAfterItsRailway("locCommandPanels");
+    }
+
+    /**
+     * Loads a copy of the running configuration on the frozen railway with a failure thrown once as the load first
+     * changes the window's tab pane `tabs` (its selection or its tabs), and claims the window and the store name the copy.
+     */
+    private static void aLoadFailingAfterItsRailway(String tabs) throws Exception
+    {
         final String spare = "OB-510 spare";
 
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
         final TrainControlUI[] ui = new TrainControlUI[1];
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-        final javax.swing.JTabbedPane[] tabs = new javax.swing.JTabbedPane[1];
+        final javax.swing.JTabbedPane[] pane = new javax.swing.JTabbedPane[1];
         final AtomicBoolean armed = new AtomicBoolean();
 
-        // Stands for any failure in what follows the parse: thrown as the load shows the diagram, after the railway and
-        // the window's record of it have changed
-        final javax.swing.event.ChangeListener failing = e ->
+        // Stands for any failure in what follows the parse, after the railway has changed
+        final Runnable fail = () ->
         {
             if (armed.getAndSet(false)) throw new IllegalStateException("OB-510 probe: a failure after the parse");
+        };
+        final javax.swing.event.ChangeListener selected = e -> fail.run();
+        final java.awt.event.ContainerAdapter changed = new java.awt.event.ContainerAdapter()
+        {
+            @Override
+            public void componentRemoved(java.awt.event.ContainerEvent e)
+            {
+                fail.run();
+            }
+
+            @Override
+            public void componentAdded(java.awt.event.ContainerEvent e)
+            {
+                fail.run();
+            }
         };
 
         try
@@ -220,12 +256,13 @@ public class testDeleteAsksWhichConfiguration
 
             final Object before = ui[0].getModel().getAutoLayoutIfLoaded();
 
-            tabs[0] = (javax.swing.JTabbedPane) Reflect.get(TrainControlUI.class, ui[0], "KeyboardTab");
+            pane[0] = (javax.swing.JTabbedPane) Reflect.get(TrainControlUI.class, ui[0], tabs);
 
             SwingUtilities.invokeAndWait(() ->
             {
-                tabs[0].setSelectedIndex(0);
-                tabs[0].addChangeListener(failing);
+                pane[0].setSelectedIndex(0);
+                pane[0].addChangeListener(selected);
+                pane[0].addContainerListener(changed);
                 armed.set(true);
             });
 
@@ -235,13 +272,17 @@ public class testDeleteAsksWhichConfiguration
             }
             finally
             {
-                SwingUtilities.invokeAndWait(() -> tabs[0].removeChangeListener(failing));
+                SwingUtilities.invokeAndWait(() ->
+                {
+                    pane[0].removeChangeListener(selected);
+                    pane[0].removeContainerListener(changed);
+                });
             }
 
-            assertFalse(armed.get(), "precondition: the load never showed the diagram, so nothing failed");
+            assertFalse(armed.get(), "precondition: the load never changed " + tabs + ", so nothing failed");
             assertNotSame(ui[0].getModel().getAutoLayoutIfLoaded(), before, "precondition: the railway was not replaced");
-            assertEquals(ui[0].getActiveDiagramConfiguration(), spare, "precondition: the window does not record the"
-                + " railway as built from " + spare);
+            assertEquals(ui[0].getActiveDiagramConfiguration(), spare, "a load that failed after its railway was built"
+                + " left the window's record on " + running + " while the railway runs " + spare + " (OB-510)");
 
             assertEquals(session.getStore().getActiveConfiguration(), spare, "a load that failed after its railway was"
                 + " built put the store back on " + running + " while the railway runs " + spare + ": the captions read"

@@ -1361,7 +1361,7 @@ public class testTheKeyboardPages
     {
         try
         {
-            Reflect.method(TrainControlUI.class, method).invoke(ui);
+            Reflect.method(org.traincontrol.gui.LocMappingPages.class, method).invoke(ui.locMappingPages());
         }
         catch (ReflectiveOperationException e)
         {
