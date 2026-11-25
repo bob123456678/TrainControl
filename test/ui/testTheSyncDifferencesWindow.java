@@ -429,6 +429,7 @@ public class testTheSyncDifferencesWindow
             JDialog[] asking = new JDialog[1];
             SwingUtilities.invokeAndWait(() ->
             {
+                TrainControlUI.installLookAndFeel();
                 asking[0] = new JDialog(ui, "asking");
                 asking[0].setVisible(true);
             });

@@ -62,6 +62,7 @@ public final class SyncDifferencesWindow
     private SyncDifferencesWindow(Window owner, RenameProposals proposals, List<Row> rows)
     {
         this.dialog = new JDialog(owner, I18n.t("sync.ui.title"), JDialog.ModalityType.APPLICATION_MODAL);
+        TrainControlUI.applyWindowIcon(this.dialog);
         this.proposals = proposals;
         // A linked heading sets every row it can to its answer, as a row's own pick would
         this.table = new ChoiceTable(
