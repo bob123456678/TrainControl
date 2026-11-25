@@ -1412,7 +1412,7 @@ public class testATrainIsDispatchedOnce
 
         at.setLocomotive(train);
 
-        assertEquals(org.traincontrol.gui.TailCrossedPrompt.whereTheAnswerGoes(layout, at, train, at.getArrivedFrom(),
+        assertEquals(org.traincontrol.gui.autonomy.TailCrossedPrompt.whereTheAnswerGoes(layout, at, train, at.getArrivedFrom(),
             at.getArrivedAlong(), true), at, "precondition: at rest, the answer does not go to the square it was asked"
             + " about");
 
@@ -1420,7 +1420,7 @@ public class testATrainIsDispatchedOnce
 
         try
         {
-            assertEquals(org.traincontrol.gui.TailCrossedPrompt.whereTheAnswerGoes(layout, at, train, at.getArrivedFrom(),
+            assertEquals(org.traincontrol.gui.autonomy.TailCrossedPrompt.whereTheAnswerGoes(layout, at, train, at.getArrivedFrom(),
                 at.getArrivedAlong(), true), null, "a tail answered while Return Home plans - nothing running yet - was"
                 + " written into the setup and onto the railway (RLV13-C3)");
         }

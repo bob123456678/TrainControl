@@ -7,7 +7,7 @@ import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.gui.TailCrossedPrompt;
+import org.traincontrol.gui.autonomy.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.util.I18n;

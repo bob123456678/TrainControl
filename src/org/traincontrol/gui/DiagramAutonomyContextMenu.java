@@ -671,7 +671,7 @@ final class DiagramAutonomyContextMenu extends JPopupMenu
 
         String loc = ui.getActiveLoc() == null ? null : ui.getActiveLoc().getName();
 
-        org.traincontrol.automation.Layout running = org.traincontrol.gui.TailCrossedPrompt.runningNow(ui.getModel());
+        org.traincontrol.automation.Layout running = org.traincontrol.gui.autonomy.TailCrossedPrompt.runningNow(ui.getModel());
 
         // ITS HEADING, read before the move, from the copy it stands on.
         org.traincontrol.automationui.TilePorts.Side keep = session == null ? null : session.facingOf(loc, running);
@@ -812,7 +812,7 @@ final class DiagramAutonomyContextMenu extends JPopupMenu
             // AND THE TAIL, after `placeLocomotive`, because a change of occupant clears it.  Only for an arrival.
             if (arriving)
             {
-                setupStands = org.traincontrol.gui.TailCrossedPrompt.recordTheTail(session, station, running, landing,
+                setupStands = org.traincontrol.gui.autonomy.TailCrossedPrompt.recordTheTail(session, station, running, landing,
                     tail, locName, roadBefore, station != null && station.equals(squareBefore), sideBefore, ui,
                     ui, saved -> savedEarly[0] = saved);
             }

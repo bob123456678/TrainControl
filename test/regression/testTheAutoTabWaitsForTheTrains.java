@@ -1093,17 +1093,17 @@ public class testTheAutoTabWaitsForTheTrains
 
         onItsOwnWindow("live-snapshot", ui ->
         {
-            final org.traincontrol.gui.AutonomyOverlayToggle strip =
-                (org.traincontrol.gui.AutonomyOverlayToggle) control(ui, "autonomyOverlayToggle");
+            final org.traincontrol.gui.autonomy.AutonomyOverlayToggle strip =
+                (org.traincontrol.gui.autonomy.AutonomyOverlayToggle) control(ui, "autonomyOverlayToggle");
 
             assertNotNull(strip, "precondition: the track diagram has no strip");
 
             final javax.swing.JComponent edit = control(ui, "editLayoutButton");
 
-            java.lang.reflect.Field showField = Reflect.field(org.traincontrol.gui.AutonomyOverlayToggle.class, "show");
+            java.lang.reflect.Field showField = Reflect.field(org.traincontrol.gui.autonomy.AutonomyOverlayToggle.class, "show");
             final javax.swing.JCheckBox show = (javax.swing.JCheckBox) showField.get(strip);
 
-            java.lang.reflect.Field runField = Reflect.field(org.traincontrol.gui.AutonomyOverlayToggle.class, "run");
+            java.lang.reflect.Field runField = Reflect.field(org.traincontrol.gui.autonomy.AutonomyOverlayToggle.class, "run");
             final javax.swing.JButton run = (javax.swing.JButton) runField.get(strip);
 
             final int[] heights = new int[4];
@@ -1156,7 +1156,7 @@ public class testTheAutoTabWaitsForTheTrains
 
         SwingUtilities.invokeAndWait(() ->
         {
-            org.traincontrol.gui.AutonomyOverlayToggle strip = new org.traincontrol.gui.AutonomyOverlayToggle(null);
+            org.traincontrol.gui.autonomy.AutonomyOverlayToggle strip = new org.traincontrol.gui.autonomy.AutonomyOverlayToggle(null);
 
             // Styled first, as at start-up, before a layout binds Start
             javax.swing.JButton load = new javax.swing.JButton(I18n.t("autosetup.ui.btnLoadConfiguration"));
@@ -1198,11 +1198,11 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /** The strip's own button, the one that stands in for Start, Stop or Fix it. */
-    private static javax.swing.JButton runOf(org.traincontrol.gui.AutonomyOverlayToggle strip)
+    private static javax.swing.JButton runOf(org.traincontrol.gui.autonomy.AutonomyOverlayToggle strip)
     {
         try
         {
-            return (javax.swing.JButton) Reflect.get(org.traincontrol.gui.AutonomyOverlayToggle.class, strip, "run");
+            return (javax.swing.JButton) Reflect.get(org.traincontrol.gui.autonomy.AutonomyOverlayToggle.class, strip, "run");
         }
         catch (ReflectiveOperationException e)
         {

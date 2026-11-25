@@ -139,9 +139,11 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.automation.TimetablePath;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.app.LogExport;
+import org.traincontrol.gui.autonomy.AutonomyOverlayToggle;
 import org.traincontrol.gui.autonomy.JsonExportPanel;
 import org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
+import org.traincontrol.gui.autonomy.StationCaptionText;
 import org.traincontrol.gui.layout.DiagramExport;
 import org.traincontrol.gui.layout.DiagramHighlights;
 import org.traincontrol.gui.layout.DiagramMonitorDriver;
@@ -3347,7 +3349,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      * Whether an editor holds the diagram or is on its way to it: the editor is built in a posted task, and until
      * that runs `isLayoutEditorOpen` alone says no.  Package-visible for `TailCrossedPrompt` (OB-305).
      */
-    boolean anEditorIsOpenOrOnItsWay()
+    public boolean anEditorIsOpenOrOnItsWay()
     {
         return editorWindows.isLayoutEditorOpen() || this.editorOnItsWay;
     }
@@ -3770,13 +3772,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      * per square while it draws; volatile and replaced wholesale because the refresh may write it from any thread.
      * Package-private for `CoveredTrackView`, its only writer.
      */
-    volatile Map<TileGraph.TileKey, Set<TileGraph.RouteId>> coveredTrack = Collections.emptyMap();
+    public volatile Map<TileGraph.TileKey, Set<TileGraph.RouteId>> coveredTrack = Collections.emptyMap();
 
     /**
      * The squares standing trains have blocked, as of the last refresh: the squares a train's tail claims (OB-280),
      * per road (OB-208), at idle too.  Cached, volatile, replaced wholesale; package-private for `CoveredTrackView`.
      */
-    volatile Map<TileGraph.TileKey, Set<TileGraph.RouteId>> blockedTrack = Collections.emptyMap();
+    public volatile Map<TileGraph.TileKey, Set<TileGraph.RouteId>> blockedTrack = Collections.emptyMap();
 
     /** Whether a standing train has blocked this square, so the diagram can gray it, at idle and during a run. */
     public boolean isTrackBlocked(TileGraph.TileKey square)
@@ -15810,7 +15812,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      * Whether a graceful stop was asked for and the trains are still finishing (OB-143): the running flag is cleared
      * and neither button is enabled, so the diagram strip cannot pick its button from those.
      */
-    boolean isGracefulStopPending()
+    public boolean isGracefulStopPending()
     {
         return this.gracefulStopRequested && isAutonomyBusy();
     }

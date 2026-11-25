@@ -342,7 +342,7 @@ public class testTheCaptionsComeWithTheirPage
         assertNotNull(sensor, "precondition: the page shown has no sensor");
 
         assertNotNull(Components.onTheEventThread(() ->
-            Components.find(ui, org.traincontrol.gui.AutonomyOverlayToggle.class, each -> true)),
+            Components.find(ui, org.traincontrol.gui.autonomy.AutonomyOverlayToggle.class, each -> true)),
             "precondition: the window has no autonomy strip above the diagram");
 
         Counting counter = new Counting();
@@ -388,7 +388,7 @@ public class testTheCaptionsComeWithTheirPage
         public synchronized void addDirtyRegion(JComponent c, int x, int y, int w, int h)
         {
             if (c instanceof StationCaption) captions++;
-            if (c instanceof org.traincontrol.gui.AutonomyOverlayToggle) strip++;
+            if (c instanceof org.traincontrol.gui.autonomy.AutonomyOverlayToggle) strip++;
 
             if (SwingUtilities.getAncestorOfClass(org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus.class, c) != null)
             {
@@ -401,7 +401,7 @@ public class testTheCaptionsComeWithTheirPage
         @Override
         public synchronized void addInvalidComponent(JComponent c)
         {
-            if (c instanceof org.traincontrol.gui.AutonomyOverlayToggle) strip++;
+            if (c instanceof org.traincontrol.gui.autonomy.AutonomyOverlayToggle) strip++;
 
             super.addInvalidComponent(c);
         }

@@ -1,4 +1,4 @@
-package org.traincontrol.gui;
+package org.traincontrol.gui.autonomy;
 
 import java.awt.FlowLayout;
 import java.awt.BorderLayout;
@@ -13,7 +13,9 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import org.traincontrol.automationui.TileGraph;
-import org.traincontrol.gui.autonomy.AutonomyBanner;
+import org.traincontrol.gui.AutonomyConfigurationsPanel;
+import org.traincontrol.gui.LayoutLabel;
+import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.util.OnMouse;
 import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.util.I18n;
@@ -30,7 +32,7 @@ public class AutonomyOverlayToggle extends JPanel
     private final JCheckBox show = new JCheckBox(I18n.t("autosetup.ui.chkShowAutonomy"), true);
 
     // What the strip looks like on a page autonomy has been told to ignore
-    static final Color EXCLUDED_BACKGROUND = new Color(255, 232, 232);
+    public static final Color EXCLUDED_BACKGROUND = new Color(255, 232, 232);
     private static final Color EXCLUDED_TEXT = new Color(170, 0, 0);
 
     /**

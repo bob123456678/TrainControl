@@ -12,7 +12,7 @@ import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.TailCrossedPrompt;
+import org.traincontrol.gui.autonomy.TailCrossedPrompt;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**

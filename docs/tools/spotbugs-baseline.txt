@@ -272,9 +272,9 @@ EI_EXPOSE_REP	org.traincontrol.gui.LayoutGrid	getContainer	container	1
 EI_EXPOSE_REP	org.traincontrol.gui.LayoutLabel	getComponent	component	1
 EI_EXPOSE_REP	org.traincontrol.gui.LocomotiveSettingsWindow	getLocomotive	loc	1
 EI_EXPOSE_REP	org.traincontrol.gui.LocomotiveSettingsWindow	tabsForTest	tabs	1
-EI_EXPOSE_REP	org.traincontrol.gui.TailCrossedPrompt$Answer	getRoad	road	1
-EI_EXPOSE_REP	org.traincontrol.gui.TailCrossedPrompt$Answer	roadToRecord	road	1
-EI_EXPOSE_REP	org.traincontrol.gui.TailCrossedPrompt$Choice	getFarthest	farthest	1
+EI_EXPOSE_REP	org.traincontrol.gui.autonomy.TailCrossedPrompt$Answer	getRoad	road	1
+EI_EXPOSE_REP	org.traincontrol.gui.autonomy.TailCrossedPrompt$Answer	roadToRecord	road	1
+EI_EXPOSE_REP	org.traincontrol.gui.autonomy.TailCrossedPrompt$Choice	getFarthest	farthest	1
 EI_EXPOSE_REP	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus	getLocomotive	locomotive	1
 EI_EXPOSE_REP	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus	getRunningLayout	layout	1
 EI_EXPOSE_REP	org.traincontrol.gui.autonomy.AutonomyBanner	getActionButton	action	1
@@ -329,9 +329,9 @@ EI_EXPOSE_REP2	org.traincontrol.base.NodeRouteCommand	<init>	command	1
 EI_EXPOSE_REP2	org.traincontrol.base.RenameProposals	<init>	proposals	1
 EI_EXPOSE_REP2	org.traincontrol.base.Route	setRoute	route	1
 EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyMenu	<init>	ui	1
-EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyOverlayToggle	<init>	ui	1
-EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyOverlayToggle	bindRunButtons	start	1
-EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyOverlayToggle	bindRunButtons	stop	1
+EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutonomyOverlayToggle	<init>	ui	1
+EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutonomyOverlayToggle	bindRunButtons	start	1
+EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutonomyOverlayToggle	bindRunButtons	stop	1
 EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyConfigurationsPanel	<init>	initialSession	1
 EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyConfigurationsPanel	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyConfigurationsPanel$FindingRenderer	<init>	severities	1
@@ -555,8 +555,8 @@ REC_CATCH_EXCEPTION	org.traincontrol.gui.route.RouteEditorWindow	lambda$testAgai
 REC_CATCH_EXCEPTION	org.traincontrol.gui.RunningLayoutSync	captureRunningLayout		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.RunningLayoutSync	noteTheRailwaysSettingsAsBuilt		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.RunningLayoutSync	rebuildRunningLayoutFromSetup		1
-REC_CATCH_EXCEPTION	org.traincontrol.gui.TailCrossedPrompt	reply		1
-REC_CATCH_EXCEPTION	org.traincontrol.gui.TailCrossedPrompt$DiagramPick	ask		1
+REC_CATCH_EXCEPTION	org.traincontrol.gui.autonomy.TailCrossedPrompt	reply		1
+REC_CATCH_EXCEPTION	org.traincontrol.gui.autonomy.TailCrossedPrompt$DiagramPick	ask		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.layout.DiagramExport	awaitTiles		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.autonomy.FacingPrompt	askAmong		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.autonomy.ManualReversalPrompt	ask		1
@@ -598,7 +598,7 @@ SBSC_USE_STRINGBUFFER_CONCATENATION	org.traincontrol.gui.locomotive.LocomotiveSt
 SBSC_USE_STRINGBUFFER_CONCATENATION	org.traincontrol.marklin.MarklinRoute	toCSV		1
 SBSC_USE_STRINGBUFFER_CONCATENATION	org.traincontrol.util.Conversion	bytesToBin		1
 SBSC_USE_STRINGBUFFER_CONCATENATION	org.traincontrol.util.Conversion	bytesToHex		1
-SE_BAD_FIELD	org.traincontrol.gui.AutonomyOverlayToggle		firstFinding	1
+SE_BAD_FIELD	org.traincontrol.gui.autonomy.AutonomyOverlayToggle		firstFinding	1
 SE_BAD_FIELD	org.traincontrol.gui.AutonomyConfigurationsPanel		findingRelatedRows	1
 SE_BAD_FIELD	org.traincontrol.gui.AutonomyConfigurationsPanel		findingRows	1
 SE_BAD_FIELD	org.traincontrol.gui.AutonomyConfigurationsPanel		initialSession	1

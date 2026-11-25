@@ -483,8 +483,8 @@ public class testAnAnsweredZeroIsNotMissing
             boolean crossed = false;
             StringBuilder offered = new StringBuilder();
 
-            for (org.traincontrol.gui.TailCrossedPrompt.Choice choice
-                : org.traincontrol.gui.TailCrossedPrompt.choicesFor(layout, road.get(2).getEnd(),
+            for (org.traincontrol.gui.autonomy.TailCrossedPrompt.Choice choice
+                : org.traincontrol.gui.autonomy.TailCrossedPrompt.choicesFor(layout, road.get(2).getEnd(),
                     layout.entrySideOf(road.get(2), road.get(2).getEnd()), 6, null))
             {
                 offered.append(choice.getFarthest().getName()).append(choice.isReached() ? " (crossed)" : "").append("; ");

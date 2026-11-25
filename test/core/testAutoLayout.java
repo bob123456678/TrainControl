@@ -848,7 +848,7 @@ public class testAutoLayout
                 + " claim up to where the rails part does not claim the two squares they share: " + places.keySet());
 
             java.lang.reflect.Method reach =
-                Reflect.method(org.traincontrol.gui.TailCrossedPrompt.class, "reachOf", Edge.class, int.class);
+                Reflect.method(org.traincontrol.gui.autonomy.TailCrossedPrompt.class, "reachOf", Edge.class, int.class);
 
             java.util.Set<String> covered = (java.util.Set<String>) reach.invoke(null, xp, 3);
 

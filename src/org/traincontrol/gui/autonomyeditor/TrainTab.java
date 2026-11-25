@@ -24,7 +24,7 @@ import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.widgets.InfoMark;
 import org.traincontrol.gui.LocomotiveSettingsWindow;
-import org.traincontrol.gui.TailCrossedPrompt;
+import org.traincontrol.gui.autonomy.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomy.ArrivalSidePrompt;
 import org.traincontrol.gui.widgets.RowIcons;

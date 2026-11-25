@@ -905,7 +905,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
         Field field = Reflect.field(TrainControlUI.class, "autonomyOverlayToggle");
 
-        final org.traincontrol.gui.AutonomyOverlayToggle strip = (org.traincontrol.gui.AutonomyOverlayToggle) field.get(ui);
+        final org.traincontrol.gui.autonomy.AutonomyOverlayToggle strip = (org.traincontrol.gui.autonomy.AutonomyOverlayToggle) field.get(ui);
 
         assertNotNull(strip, "precondition: the window has no strip above the track diagram");
 

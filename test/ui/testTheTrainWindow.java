@@ -678,7 +678,7 @@ public class testTheTrainWindow
                 assertTrue(String.valueOf(showing).startsWith(shown), "precondition: the Train tab shows " + showing
                     + ", not the railway's train " + shown);
 
-                org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+                org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(org.traincontrol.gui.autonomy.TailCrossedPrompt.DISMISSED);
 
                 StationDoors.pick(window, "train.train", pick != null ? pick : I18n.t("autosetup.ui.labelNone"));
 
@@ -687,7 +687,7 @@ public class testTheTrainWindow
             }
             finally
             {
-                org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+                org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(null);
 
                 Components.onTheEventThread(() -> { window.dispose(); return null; });
             }
@@ -808,7 +808,7 @@ public class testTheTrainWindow
     {
         AutonomyEditorPanel panel = theEditorsPanel();
 
-        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+        org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(org.traincontrol.gui.autonomy.TailCrossedPrompt.DISMISSED);
 
         try
         {
@@ -849,7 +849,7 @@ public class testTheTrainWindow
         }
         finally
         {
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(null);
         }
     }
 
@@ -2973,7 +2973,7 @@ public class testTheTrainWindow
 
             Components.settle();
 
-            org.traincontrol.gui.TailCrossedPrompt.Choice tunnelPre = tunnelPreIsTheTail(tunnel);
+            org.traincontrol.gui.autonomy.TailCrossedPrompt.Choice tunnelPre = tunnelPreIsTheTail(tunnel);
 
             makeActive(name);
 
@@ -2991,33 +2991,33 @@ public class testTheTrainWindow
         }
         finally
         {
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(null);
 
             train.setTrainLength(lengthWas);
         }
     }
 
     /** Answers the tail question with TunnelPre, the tail of a five-unit train come into Tunnel from the north. */
-    private static org.traincontrol.gui.TailCrossedPrompt.Choice tunnelPreIsTheTail(TileKey tunnel) throws Exception
+    private static org.traincontrol.gui.autonomy.TailCrossedPrompt.Choice tunnelPreIsTheTail(TileKey tunnel) throws Exception
     {
         org.traincontrol.automation.Layout railway = model.getAutoLayout();
 
         org.traincontrol.automation.Point copy = railway.getPoint(session.facingsFor(tunnel).keySet().iterator().next());
 
-        org.traincontrol.gui.TailCrossedPrompt.Choice tunnelPre = org.traincontrol.gui.TailCrossedPrompt
+        org.traincontrol.gui.autonomy.TailCrossedPrompt.Choice tunnelPre = org.traincontrol.gui.autonomy.TailCrossedPrompt
             .choicesFor(railway, copy, "N", 5, null).stream()
             .filter(choice -> choice.getFarthest().getName().startsWith("TunnelPre")).findFirst().orElse(null);
 
         assertNotNull(tunnelPre, "precondition: a five-unit train at Tunnel from the north is not offered TunnelPre");
 
-        org.traincontrol.gui.TailCrossedPrompt.answerForTests(tunnelPre.getFarthest().getName());
+        org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(tunnelPre.getFarthest().getName());
 
         return tunnelPre;
     }
 
     /** Waits for the train to stand on the railway come in from the north, its tail along the road chosen. */
     private static void assertStandsFromTheNorthWithItsTail(Locomotive train,
-        org.traincontrol.gui.TailCrossedPrompt.Choice tail)
+        org.traincontrol.gui.autonomy.TailCrossedPrompt.Choice tail)
     {
         final java.util.List<String> expected = roadNames(tail.getRoad());
 
@@ -3117,7 +3117,7 @@ public class testTheTrainWindow
         String wasBefore = where(was);
         String nameBefore = where(name);
 
-        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+        org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(org.traincontrol.gui.autonomy.TailCrossedPrompt.DISMISSED);
 
         try
         {
@@ -3136,7 +3136,7 @@ public class testTheTrainWindow
         }
         finally
         {
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(null);
         }
     }
 
@@ -3227,7 +3227,7 @@ public class testTheTrainWindow
 
         offTheRailwayAt(empty);
 
-        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+        org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(org.traincontrol.gui.autonomy.TailCrossedPrompt.DISMISSED);
 
         try
         {
@@ -3251,7 +3251,7 @@ public class testTheTrainWindow
         }
         finally
         {
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(null);
 
             standBack(name, copy.getName(), null, null, null);
         }
@@ -3489,7 +3489,7 @@ public class testTheTrainWindow
 
     private void sendsTheCentralStationNothing(final boolean reversedForReal) throws Exception
     {
-        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+        org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(org.traincontrol.gui.autonomy.TailCrossedPrompt.DISMISSED);
 
         support.WireRecorder wire = support.WireRecorder.open();
 
@@ -3550,7 +3550,7 @@ public class testTheTrainWindow
         {
             wire.close();
 
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(null);
         }
     }
 
@@ -3689,7 +3689,7 @@ public class testTheTrainWindow
 
             assertNotNull(copy, "precondition: " + name + " stands nowhere on the railway");
 
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+            org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(org.traincontrol.gui.autonomy.TailCrossedPrompt.DISMISSED);
 
             // The main window's editor, as Edit opens it, so the rename reaches its Cancel snapshot
             final Object openBefore = Reflect.get(TrainControlUI.class, ui, "openEditor");
@@ -3723,7 +3723,7 @@ public class testTheTrainWindow
             }
             finally
             {
-                org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+                org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(null);
 
                 Reflect.set(TrainControlUI.class, ui, "openEditor", openBefore);
 
@@ -3756,7 +3756,7 @@ public class testTheTrainWindow
 
         Components.onTheEventThread(() -> model.newMM2Locomotive(name, 79));
 
-        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+        org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(org.traincontrol.gui.autonomy.TailCrossedPrompt.DISMISSED);
 
         try
         {
@@ -3795,7 +3795,7 @@ public class testTheTrainWindow
         }
         finally
         {
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(null);
 
             Reflect.set(TrainControlUI.class, ui, "openEditor", openBefore);
 
@@ -3971,7 +3971,7 @@ public class testTheTrainWindow
 
         String placed = null;
 
-        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+        org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(org.traincontrol.gui.autonomy.TailCrossedPrompt.DISMISSED);
 
         try
         {
@@ -3997,7 +3997,7 @@ public class testTheTrainWindow
         }
         finally
         {
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(null);
 
             standBack(setupTrain, copyName, brought, broughtWas, placed);
         }
@@ -4089,7 +4089,7 @@ public class testTheTrainWindow
 
         final Locomotive displaced = model.getLocByName(was);
 
-        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+        org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(org.traincontrol.gui.autonomy.TailCrossedPrompt.DISMISSED);
 
         StationSettingsWindow first = door.place(was);
 
@@ -4133,7 +4133,7 @@ public class testTheTrainWindow
         {
             train.setTrainLength(5);
 
-            org.traincontrol.gui.TailCrossedPrompt.Choice tunnelPre = tunnelPreIsTheTail(tunnel);
+            org.traincontrol.gui.autonomy.TailCrossedPrompt.Choice tunnelPre = tunnelPreIsTheTail(tunnel);
 
             window = door.place(name);
 
@@ -4154,7 +4154,7 @@ public class testTheTrainWindow
         }
         finally
         {
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(null);
 
             train.setTrainLength(lengthWas);
 
@@ -4363,7 +4363,7 @@ public class testTheTrainWindow
         String nameBefore = where(name);
         String stationBefore = station(empty);
 
-        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+        org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(org.traincontrol.gui.autonomy.TailCrossedPrompt.DISMISSED);
 
         try
         {
@@ -4379,7 +4379,7 @@ public class testTheTrainWindow
         }
         finally
         {
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(null);
 
             offTheRailwayAt(empty);
         }
@@ -4413,7 +4413,7 @@ public class testTheTrainWindow
         {
             train.setTrainLength(5);
 
-            org.traincontrol.gui.TailCrossedPrompt.Choice tunnelPre = tunnelPreIsTheTail(tunnel);
+            org.traincontrol.gui.autonomy.TailCrossedPrompt.Choice tunnelPre = tunnelPreIsTheTail(tunnel);
 
             makeActive(name);
 
@@ -4442,7 +4442,7 @@ public class testTheTrainWindow
             String tunnelBefore = station(tunnel);
             String emptyBefore = station(empty);
 
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+            org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(org.traincontrol.gui.autonomy.TailCrossedPrompt.DISMISSED);
 
             JMenuItem item = placeItemOn(panel, empty, name);
 
@@ -4466,7 +4466,7 @@ public class testTheTrainWindow
         }
         finally
         {
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(null);
 
             train.setTrainLength(lengthWas);
 
@@ -4492,7 +4492,7 @@ public class testTheTrainWindow
 
         String name = aTrainOffTheRailway();
 
-        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+        org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(org.traincontrol.gui.autonomy.TailCrossedPrompt.DISMISSED);
 
         try
         {
@@ -4508,7 +4508,7 @@ public class testTheTrainWindow
         }
         finally
         {
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(null);
 
             offTheRailwayAt(empty);
         }
@@ -4675,7 +4675,7 @@ public class testTheTrainWindow
         final String unplaced = aTrainNotPlaced();
         final TileKey empty = anEmptyStation();
 
-        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+        org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(org.traincontrol.gui.autonomy.TailCrossedPrompt.DISMISSED);
 
         try
         {
@@ -4700,7 +4700,7 @@ public class testTheTrainWindow
         }
         finally
         {
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(null);
 
             offTheRailway(java.util.Collections.singleton(unplaced));
 
@@ -4720,7 +4720,7 @@ public class testTheTrainWindow
     @Test(timeOut = 400000)
     public void testADiscardPutsAMovedTrainBackFacingTheWayItWasTurned() throws Exception
     {
-        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+        org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(org.traincontrol.gui.autonomy.TailCrossedPrompt.DISMISSED);
 
         try
         {
@@ -4758,7 +4758,7 @@ public class testTheTrainWindow
         }
         finally
         {
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(null);
         }
     }
 
@@ -4816,7 +4816,7 @@ public class testTheTrainWindow
         final String copyBefore = copyOf(name);
         final org.traincontrol.automationui.TilePorts.Side way = theOtherWay(square);
 
-        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+        org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(org.traincontrol.gui.autonomy.TailCrossedPrompt.DISMISSED);
 
         try
         {
@@ -4834,7 +4834,7 @@ public class testTheTrainWindow
         }
         finally
         {
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(null);
 
             standBack(name, copyBefore, null, null, null);
 
@@ -5761,7 +5761,7 @@ public class testTheTrainWindow
         final java.lang.reflect.Method remove = Reflect.method(AutonomyEditorPanel.class, "removeLocomotive",
             TileKey.class);
 
-        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+        org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(org.traincontrol.gui.autonomy.TailCrossedPrompt.DISMISSED);
 
         try
         {
@@ -5785,7 +5785,7 @@ public class testTheTrainWindow
         }
         finally
         {
-            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+            org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(null);
 
             train.putBack();
         }

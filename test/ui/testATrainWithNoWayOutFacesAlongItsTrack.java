@@ -790,7 +790,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         List<Side> sides = session.unbarredArrivalSides(PLATFORM);
 
         org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(sides == null || sides.isEmpty() ? "N" : sides.get(0).name());
-        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+        org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(org.traincontrol.gui.autonomy.TailCrossedPrompt.DISMISSED);
     }
 
     /** Right-clicks TunnelLeftPark on the track diagram and chooses Place, with this class's train the active one. */
@@ -848,7 +848,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     private static void liftIt() throws Exception
     {
         org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(null);
-        org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+        org.traincontrol.gui.autonomy.TailCrossedPrompt.answerForTests(null);
 
         SwingUtilities.invokeAndWait(() ->
         {

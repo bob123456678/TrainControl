@@ -361,7 +361,7 @@ public class testNoSetupEditDuringARun
             final String side = at.getArrivedFrom();
             final List<org.traincontrol.automation.Edge> road = at.getArrivedAlong();
 
-            assertEquals(org.traincontrol.gui.TailCrossedPrompt.whereTheAnswerGoes(railway, at, standing, side, road, true),
+            assertEquals(org.traincontrol.gui.autonomy.TailCrossedPrompt.whereTheAnswerGoes(railway, at, standing, side, road, true),
                 at, "precondition: at rest, the answer about " + standing.getName() + " does not go to " + at.getName());
 
             final Object[] dispatched = dispatchATrain(ui[0], standing.getName());
@@ -370,14 +370,14 @@ public class testNoSetupEditDuringARun
 
             assertTrue(at.getCurrentLocomotive() == standing, "precondition: the dispatch moved " + standing.getName());
 
-            assertEquals(org.traincontrol.gui.TailCrossedPrompt.whereTheAnswerGoes(railway, at, standing, side, road, true),
+            assertEquals(org.traincontrol.gui.autonomy.TailCrossedPrompt.whereTheAnswerGoes(railway, at, standing, side, road, true),
                 null, "a tail question about " + standing.getName() + " answered once " + dispatched[0] + " was under way"
                 + " was written into the setup and onto the railway - no setup edit is made during a run (RLV12-C3)");
 
             String before = logged();
 
-            org.traincontrol.gui.TailCrossedPrompt.noteADroppedAnswer(ui[0].getModel(), standing.getName(), at.getName(),
-                org.traincontrol.gui.TailCrossedPrompt.Answer.NOT_ASKED);
+            org.traincontrol.gui.autonomy.TailCrossedPrompt.noteADroppedAnswer(ui[0].getModel(), standing.getName(), at.getName(),
+                org.traincontrol.gui.autonomy.TailCrossedPrompt.Answer.NOT_ASKED);
 
             String said = logged().substring(before.length());
 
@@ -4235,8 +4235,8 @@ public class testNoSetupEditDuringARun
 
             // AND THE TRACK DIAGRAM'S STRIP, on the Graceful Stop it stands in for (Adam: "Can we show the spinner next
             // to start/graceful stop on the track diagram viewer page as well?")
-            final org.traincontrol.gui.AutonomyOverlayToggle strip =
-                (org.traincontrol.gui.AutonomyOverlayToggle) control(ui, "autonomyOverlayToggle");
+            final org.traincontrol.gui.autonomy.AutonomyOverlayToggle strip =
+                (org.traincontrol.gui.autonomy.AutonomyOverlayToggle) control(ui, "autonomyOverlayToggle");
 
             assertNotNull(strip, "precondition: the track diagram has no strip");
 

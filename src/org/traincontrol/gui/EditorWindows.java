@@ -418,7 +418,7 @@ public final class EditorWindows
      * The layout editor's window while one is open where it can be seen, or null: for a question that opens in front of
      * it (MT-575).  Not a minimized one: its owned windows hide with it on Windows, leaving a modal invisible.
      */
-    java.awt.Window openLayoutEditorWindow()
+    public java.awt.Window openLayoutEditorWindow()
     {
         return ui.openEditor != null && ui.openEditor.isDisplayable() && ui.openEditor.isShowing()
             && (ui.openEditor.getExtendedState() & Frame.ICONIFIED) == 0 ? ui.openEditor : null;

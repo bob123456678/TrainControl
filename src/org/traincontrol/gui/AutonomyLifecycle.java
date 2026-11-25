@@ -5,6 +5,7 @@ import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
+import org.traincontrol.gui.autonomy.AutonomyOverlayToggle;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.app.RestoreAction;
 import javax.swing.JOptionPane;

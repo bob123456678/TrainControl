@@ -20,7 +20,7 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.gui.LayoutGrid;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
-import org.traincontrol.gui.TailCrossedPrompt;
+import org.traincontrol.gui.autonomy.TailCrossedPrompt;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.marklin.MarklinControlStation;

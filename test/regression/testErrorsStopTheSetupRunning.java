@@ -13,7 +13,7 @@ import org.traincontrol.automationui.GraphReducer;
 import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.gui.AutonomyOverlayToggle;
+import org.traincontrol.gui.autonomy.AutonomyOverlayToggle;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;

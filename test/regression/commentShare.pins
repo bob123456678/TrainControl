@@ -49,7 +49,7 @@ src/org/traincontrol/gui/AccessoryKeyboard.java	-	1
 src/org/traincontrol/gui/AccessoryCountsExport.java	-	1
 src/org/traincontrol/gui/AutonomyLifecycle.java	304	3
 src/org/traincontrol/gui/AutonomyMenu.java	333	9
-src/org/traincontrol/gui/AutonomyOverlayToggle.java	460	5
+src/org/traincontrol/gui/autonomy/AutonomyOverlayToggle.java	460	5
 src/org/traincontrol/gui/AutonomySettingsTab.java	-	2
 src/org/traincontrol/gui/AutonomyConfigurationsPanel.java	349	17
 src/org/traincontrol/gui/CaptionVisibility.java	497	4
@@ -83,8 +83,8 @@ src/org/traincontrol/gui/RunGates.java	477	12
 src/org/traincontrol/gui/RunningLayoutSync.java	348	15
 src/org/traincontrol/gui/widgets/SaveFileChooser.java	-	3
 src/org/traincontrol/gui/util/SettledQuestion.java	495	0
-src/org/traincontrol/gui/StationCaptionText.java	319	1
-src/org/traincontrol/gui/TailCrossedPrompt.java	359	11
+src/org/traincontrol/gui/autonomy/StationCaptionText.java	319	1
+src/org/traincontrol/gui/autonomy/TailCrossedPrompt.java	359	11
 src/org/traincontrol/gui/TimetableTab.java	271	1
 src/org/traincontrol/gui/TrainControlUI.java	-	88
 src/org/traincontrol/gui/autonomy/ArrivalSidePrompt.java	524	4

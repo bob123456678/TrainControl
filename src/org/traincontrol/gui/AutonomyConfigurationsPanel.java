@@ -141,7 +141,7 @@ public class AutonomyConfigurationsPanel extends JPanel
 
     public static final Font FONT_GROUP = new Font("Segoe UI Semibold", Font.PLAIN, 13);
 
-    static final Font FONT_BOLD = new Font("Segoe UI", Font.BOLD, 12);
+    public static final Font FONT_BOLD = new Font("Segoe UI", Font.BOLD, 12);
 
     /** The findings and roster lists only: dense reading, and at 14 a real layout's list stops fitting. */
     static final Font FONT_LIST = new Font("Segoe UI", Font.PLAIN, 12);

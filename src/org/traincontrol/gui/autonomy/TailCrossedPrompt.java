@@ -1,4 +1,4 @@
-package org.traincontrol.gui;
+package org.traincontrol.gui.autonomy;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -28,6 +28,8 @@ import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.LayoutLabel;
+import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.layout.DiagramHighlights;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
@@ -56,7 +58,7 @@ public class TailCrossedPrompt
     private static volatile boolean quiet;
 
     /** Silences or restores the questions a placement would put; event thread only. */
-    static void beQuiet(boolean on)
+    public static void beQuiet(boolean on)
     {
         quiet = on;
     }
@@ -187,8 +189,8 @@ public class TailCrossedPrompt
         // main window, and a list hung from it was centered on the window the editor covers.  Not a minimized editor,
         // which hides what it owns: `openLayoutEditorWindow` answers null for it.  Else the window whose door this is.
         Component over = !(parent instanceof TrainControlUI) ? parent
-            : ((TrainControlUI) parent).editorWindows.openLayoutEditorWindow() != null
-                ? ((TrainControlUI) parent).editorWindows.openLayoutEditorWindow() : ((TrainControlUI) parent).dialogParent();
+            : ((TrainControlUI) parent).editorWindows().openLayoutEditorWindow() != null
+                ? ((TrainControlUI) parent).editorWindows().openLayoutEditorWindow() : ((TrainControlUI) parent).dialogParent();
 
         Reply reply = pick != null ? pick.ask()
             : reply(over, train, shownName(shown, at), choices, preselectedIndex(choices, recorded));

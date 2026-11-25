@@ -78,7 +78,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.AutonomyConfigurationsPanel;
 import org.traincontrol.gui.util.OnMouse;
 import org.traincontrol.gui.RunGates;
-import org.traincontrol.gui.TailCrossedPrompt;
+import org.traincontrol.gui.autonomy.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
 import org.traincontrol.gui.autonomy.AutonomyReport;

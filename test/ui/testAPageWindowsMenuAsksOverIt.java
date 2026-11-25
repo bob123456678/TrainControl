@@ -28,7 +28,7 @@ import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.LayoutPopupWindow;
-import org.traincontrol.gui.TailCrossedPrompt;
+import org.traincontrol.gui.autonomy.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomy.ArrivalSidePrompt;
 import org.traincontrol.gui.autonomy.FacingPrompt;

@@ -24,7 +24,7 @@ import org.traincontrol.automationui.GraphReducer;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.AutonomyOverlayToggle;
+import org.traincontrol.gui.autonomy.AutonomyOverlayToggle;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;

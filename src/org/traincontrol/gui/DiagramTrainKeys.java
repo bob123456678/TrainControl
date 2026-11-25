@@ -11,6 +11,7 @@ import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.autonomy.ArrivalSidePrompt;
 import org.traincontrol.gui.autonomy.FacingPrompt;
+import org.traincontrol.gui.autonomy.TailCrossedPrompt;
 import org.traincontrol.util.I18n;
 
 /** The diagram's keyboard gestures: cutting, pasting and clearing a train on a square, and writing its turns. */
