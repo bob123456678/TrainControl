@@ -23,7 +23,7 @@ window whose items need setting apart gets a blue heading over them, not blue it
 New hand-written windows take these rather than setting fonts and colors themselves. The 3.1.0 windows
 (`LocomotiveSettingsWindow`, `StationSettingsWindow` with its `TrainTab`) are built from them.
 
-- **`widgets/UiStyle`** holds the table above: `UiStyle.heading(...)` for a section heading, `UiStyle.label(...)` or
+- **`util/UiStyle`** holds the table above: `UiStyle.heading(...)` for a section heading, `UiStyle.label(...)` or
   `blackLabel(...)` for an item label, `UiStyle.button(...)` to put a button in Bold 12, and `withoutColon(...)` for
   an older bundle entry that ends in a colon.
 - **`InfoMark`** is the (i): a standing explanation goes behind one, as its tooltip, rather than in a label under the
