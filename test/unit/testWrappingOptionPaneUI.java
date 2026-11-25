@@ -195,6 +195,23 @@ public class testWrappingOptionPaneUI
         }
     }
 
+    /**
+     * The text of a scrolling box (the route editor's help, a Details list) keeps the house inset from its border.
+     *
+     * MUTATION: in `DetailsArea.scrolling`, drop the `setBorder`, and the text touches the box (OB-515).
+     */
+    @Test
+    public void testAScrollingBoxKeepsTheHouseInset()
+    {
+        javax.swing.JTextArea area = onTheEventThread(() ->
+            (javax.swing.JTextArea) org.traincontrol.gui.widgets.DetailsArea.scrolling("Help more help", 20)
+                .getViewport().getView());
+
+        java.awt.Insets inset = area.getInsets();
+
+        assertTrue(inset.left >= 6 && inset.right >= 6, "the text touches the box: " + inset);
+    }
+
     private static void textOf(Container c, List<String> lines)
     {
         for (Component child : c.getComponents())
