@@ -1,4 +1,4 @@
-package org.traincontrol.gui;
+package org.traincontrol.gui.autonomy;
 
 import java.util.List;
 import java.awt.Component;
@@ -14,7 +14,9 @@ import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.gui.autonomy.AutonomyReport;
+import org.traincontrol.gui.AutonomyConfigurationsPanel;
+import org.traincontrol.gui.RunGates;
+import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
 
@@ -118,11 +120,11 @@ public class AutonomyMenu extends JMenu
     }
 
     /** Go to the Opened Editor, which brings the open editor forward (OB-033): every menu an editor holds offers it. */
-    static JMenuItem goToOpenEditorItem(TrainControlUI ui)
+    public static JMenuItem goToOpenEditorItem(TrainControlUI ui)
     {
         JMenuItem item = new JMenuItem(I18n.t("autosetup.ui.menuGoToOpenEditor"));
 
-        item.addActionListener(e -> ui.editorWindows.showOpenEditor());
+        item.addActionListener(e -> ui.editorWindows().showOpenEditor());
 
         return item;
     }
@@ -415,7 +417,7 @@ public class AutonomyMenu extends JMenu
      * Fills the one Manage list, for the Autonomy menu and the Autonomy tab's Manage button.  Each door keeps its own
      * refusal; what acts on the configuration in use is grayed until one is, Delete (OB-319) only with none to delete.
      */
-    static void addManageItems(java.awt.Container into, final TrainControlUI ui, final AutonomyConfigurationsPanel actions,
+    public static void addManageItems(java.awt.Container into, final TrainControlUI ui, final AutonomyConfigurationsPanel actions,
         final AutonomySession session)
     {
         boolean loaded = ui.getActiveDiagramConfiguration() != null;

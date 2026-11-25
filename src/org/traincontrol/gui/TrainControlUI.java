@@ -139,6 +139,7 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.automation.TimetablePath;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.app.LogExport;
+import org.traincontrol.gui.autonomy.AutonomyMenu;
 import org.traincontrol.gui.autonomy.AutonomyOverlayToggle;
 import org.traincontrol.gui.autonomy.JsonExportPanel;
 import org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus;
@@ -3288,12 +3289,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         return RunGates.refuseWhileARunHoldsTheSetup(this, source, null);
     }
 
-    boolean refuseWhileARunHoldsTheSetup(Component source, Runnable putBack)
+    public boolean refuseWhileARunHoldsTheSetup(Component source, Runnable putBack)
     {
         return RunGates.refuseWhileARunHoldsTheSetup(this, source, putBack);
     }
 
-    boolean refuseWhileEditorOpen()
+    public boolean refuseWhileEditorOpen()
     {
         return RunGates.refuseWhileEditorOpen(this, this);
     }

@@ -48,7 +48,7 @@ src/org/traincontrol/examples/ProgrammaticControlExample.java	324	0
 src/org/traincontrol/gui/AccessoryKeyboard.java	-	1
 src/org/traincontrol/gui/AccessoryCountsExport.java	-	1
 src/org/traincontrol/gui/AutonomyLifecycle.java	304	3
-src/org/traincontrol/gui/AutonomyMenu.java	333	9
+src/org/traincontrol/gui/autonomy/AutonomyMenu.java	333	8
 src/org/traincontrol/gui/autonomy/AutonomyOverlayToggle.java	460	5
 src/org/traincontrol/gui/AutonomySettingsTab.java	-	2
 src/org/traincontrol/gui/AutonomyConfigurationsPanel.java	349	17

@@ -110,7 +110,7 @@ public class testTheMenusComeBackAtOneMoment
             // AND THE ONE MOMENT.
             call(ui, "ungreyTheMenus");
 
-            javax.swing.JMenu autonomy = named(bar, org.traincontrol.gui.AutonomyMenu.class);
+            javax.swing.JMenu autonomy = named(bar, org.traincontrol.gui.autonomy.AutonomyMenu.class);
 
             assertNotNull(autonomy, "the autonomy menu is not on the bar after the connect");
 

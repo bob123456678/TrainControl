@@ -201,7 +201,7 @@ public class testLocMappingPages
 
         try
         {
-            org.traincontrol.gui.AutonomyMenu menu = new org.traincontrol.gui.AutonomyMenu(ui);
+            org.traincontrol.gui.autonomy.AutonomyMenu menu = new org.traincontrol.gui.autonomy.AutonomyMenu(ui);
 
             // NO MODEL AT ALL, which is the first of the two reasons.
             menu.refreshEnabled();

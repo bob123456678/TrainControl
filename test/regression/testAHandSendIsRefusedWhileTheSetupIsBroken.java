@@ -340,7 +340,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
                 said[4] = ui[0].whyTheTrainsCannotBePlacedAtTheirHomes();
 
                 // THE AUTONOMY MENU, built as it is when it is opened
-                org.traincontrol.gui.AutonomyMenu menu = new org.traincontrol.gui.AutonomyMenu(ui[0]);
+                org.traincontrol.gui.autonomy.AutonomyMenu menu = new org.traincontrol.gui.autonomy.AutonomyMenu(ui[0]);
 
                 for (javax.swing.event.MenuListener listener : menu.getMenuListeners()) listener.menuSelected(null);
 

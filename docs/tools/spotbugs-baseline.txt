@@ -328,7 +328,7 @@ EI_EXPOSE_REP2	org.traincontrol.base.NodeGroup	<init>	expressions	1
 EI_EXPOSE_REP2	org.traincontrol.base.NodeRouteCommand	<init>	command	1
 EI_EXPOSE_REP2	org.traincontrol.base.RenameProposals	<init>	proposals	1
 EI_EXPOSE_REP2	org.traincontrol.base.Route	setRoute	route	1
-EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyMenu	<init>	ui	1
+EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutonomyMenu	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutonomyOverlayToggle	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutonomyOverlayToggle	bindRunButtons	start	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutonomyOverlayToggle	bindRunButtons	stop	1

@@ -127,7 +127,7 @@ public class testTheAutonomyMenuHoldsItsSlot
 
         // AND IT IS THE REAL ONE, not the placeholder with a new name.
         javax.swing.SwingUtilities.invokeAndWait(() ->
-            before[0] = autonomyMenuInTheBar() instanceof org.traincontrol.gui.AutonomyMenu ? 1 : 0);
+            before[0] = autonomyMenuInTheBar() instanceof org.traincontrol.gui.autonomy.AutonomyMenu ? 1 : 0);
 
         assertEquals(before[0], 1,
             "the menu in the autonomy slot is still the placeholder after mounting, so nothing was"

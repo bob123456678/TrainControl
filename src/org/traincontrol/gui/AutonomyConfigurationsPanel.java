@@ -36,6 +36,7 @@ import org.traincontrol.automationui.AutonomyChecks;
 import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.autonomy.AutonomyMenu;
 import org.traincontrol.gui.autonomy.AutonomyReport;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.util.OnMouse;

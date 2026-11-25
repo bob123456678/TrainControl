@@ -425,7 +425,7 @@ public final class EditorWindows
     }
 
     /** Brings the open editor forward, for the menu item that says "it is over there". */
-    void showOpenEditor()
+    public void showOpenEditor()
     {
         LayoutEditor shown = anEditorWindow();
 
