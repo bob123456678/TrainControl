@@ -883,6 +883,72 @@ public class testRecentLayouts
     }
 
     /**
+     * A recent layout whose sync is turned away (an editor on its way after the click's own check) says the layout was
+     * not switched, not that the folder is invalid, and the layout in use stays (FR-245).
+     *
+     * MUTATION: in `TrainControlUI.openLayoutFolder`, say the invalid-folder message whatever the sync answered, and
+     * the folder is called invalid.
+     */
+    @Test(timeOut = 180000)
+    public void testASwitchWhoseSyncIsTurnedAwayIsSaidNotSwitched() throws Exception
+    {
+        String a = sandbox.getFolder().getAbsolutePath();
+        String b = second.toFile().getAbsolutePath();
+
+        record(b, a);
+
+        shown();
+
+        final List<String> pagesWere = new ArrayList<>(model.getLayoutList());
+        final String opening = I18n.f("ui.main.toolbar.infoOpeningRecentLayout", b);
+        final java.util.logging.Logger log = java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
+
+        // The editor comes on its way once the click's own check has passed
+        final java.util.logging.Handler hook = new java.util.logging.Handler()
+        {
+            @Override
+            public void publish(java.util.logging.LogRecord record)
+            {
+                if (record != null && opening.equals(record.getMessage()))
+                    editorOnItsWay(true);
+            }
+
+            @Override
+            public void flush()
+            {
+            }
+
+            @Override
+            public void close()
+            {
+            }
+        };
+
+        log.addHandler(hook);
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+        {
+            SwingUtilities.invokeAndWait(listedItem(b)::doClick);
+
+            answering.awaitAsked(2, 60000);
+
+            Components.settle();
+
+            assertTrue(answering.asked().contains(I18n.t("layout.ui.errorNotSwitchedTryAgain")),
+                "a switch whose sync was turned away did not say it was not switched: " + answering.asked());
+            assertFalse(answering.asked().contains(I18n.t("layout.ui.errorInvalidPathOrCorruptData")),
+                "a switch whose sync was turned away called the folder invalid: " + answering.asked());
+        }
+        finally
+        {
+            log.removeHandler(hook);
+            editorOnItsWay(false);
+        }
+
+        nothingChanged(a, pagesWere, "a switch whose sync was turned away");
+    }
+
+    /**
      * Create New Layout whose new folder then fails in the sync's read says so, and nothing changes: the layout in use,
      * its preferences and pages stay, as after a layout that will not unpack (FR-245).
      *
@@ -928,6 +994,18 @@ public class testRecentLayouts
             }
 
             Util.deleteTree(fresh, 0);
+        }
+    }
+
+    private static void editorOnItsWay(boolean on)
+    {
+        try
+        {
+            support.Reflect.set(TrainControlUI.class, ui, "editorOnItsWay", on);
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException(e);
         }
     }
 

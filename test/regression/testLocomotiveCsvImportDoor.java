@@ -1235,6 +1235,8 @@ public class testLocomotiveCsvImportDoor
                     "the question counts the possible duplicate with the new ones: " + seen.question);
                 assertTrue(seen.question.contains(I18n.f("loc.ui.importCsvDuplicates", 1)),
                     "the table has no heading: " + seen.question);
+                assertTrue(seen.question.contains("already be in the database"),
+                    "the heading does not say what the rows are: " + seen.question);
                 assertEquals(everyLocomotive(model), before, "Cancel imported something");
                 assertTrue(seen.said.isEmpty(), "Cancel went on to say something: " + seen.said);
 

@@ -20,6 +20,9 @@ public final class DetailsArea
     /** The text's width in pixels: with the icon and the insets the popup stays under about 640. */
     public static final int WIDTH = 440;
 
+    /** The inset of a scrolling text, as `AutoLocomotiveStatus`'s text area has. */
+    public static final int INSET = 6;
+
     /** Lines of the list shown before it scrolls. */
     private static final int ROWS = 8;
 
@@ -41,9 +44,10 @@ public final class DetailsArea
     public static JScrollPane scrolling(String text, int rows)
     {
         JTextArea area = textArea(text);
+        // As the other text areas in the app, so the text does not touch the box (OB-515)
+        area.setBorder(BorderFactory.createEmptyBorder(INSET, INSET, INSET, INSET));
         area.setSize(WIDTH, Short.MAX_VALUE);
         area.setCaretPosition(0);
-
         JScrollPane scroll = new JScrollPane(area, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
             ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scroll.getViewport().setPreferredSize(new Dimension(WIDTH, Math.min(area.getPreferredSize().height,
