@@ -100,7 +100,9 @@ public class testAutonomyDiagramStore
 
     /**
      * Autonomy needs somewhere to put its files, and a layout read from the Central Station has no folder
-     * until it is downloaded.  The store says so rather than pretending to save.
+     * until it is downloaded.  The store says so rather than pretending to save, in words, as the log shows them.
+     *
+     * MUTATION: in `AutonomyCompanionStore.save`, throw `ERROR_NOT_LOCAL` untranslated.
      */
     @Test
     public void testALayoutWithNoFolderCannotHoldASetup()
@@ -117,8 +119,9 @@ public class testAutonomyDiagramStore
         }
         catch (IOException expected)
         {
-            // and it names the reason, so the UI can offer the download
-            assertTrue(expected.getMessage().contains("autosetup"), expected.getMessage());
+            // and it names the reason, with its remedy, the download
+            assertTrue(expected.getMessage().equals(org.traincontrol.util.I18n.t(AutonomyCompanionStore.ERROR_NOT_LOCAL)),
+                expected.getMessage());
         }
     }
 
