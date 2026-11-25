@@ -1330,7 +1330,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         final String body = SourceOf.declaration("    boolean writeNameAndAddress(Component source, Locomotive l,")
             .replaceAll("//[^\n]*", "");
 
-        final String after = body.substring(body.indexOf("refreshLocSelectorList()")).replaceAll("\\s+", "");
+        final String after = body.substring(body.indexOf("refreshAfterEdit(")).replaceAll("\\s+", "");
 
         assertTrue(after.contains("showMessageDialog(source,"), "precondition: no message after the database's refresh is"
             + " said over the window that asked");

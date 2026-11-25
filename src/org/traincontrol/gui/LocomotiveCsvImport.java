@@ -162,7 +162,10 @@ final class LocomotiveCsvImport
 
         TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, chosen.getParent());
 
-        refresh(ui, model, result);
+        // Once for the import; only the renamed have their multi-units checked, so a standing train is never swept off
+        if (result.readdressed.isEmpty() && result.renamed.isEmpty()) ui.getLocSelector().refreshLocSelectorList();
+        else ui.locomotiveActions.refreshAfterEdit(result.renamed.stream().map(model::getLocByName)
+            .collect(java.util.stream.Collectors.toList()));
         ManualSync.imported(ui, result);
 
         tell(ui, result);
@@ -270,30 +273,6 @@ final class LocomotiveCsvImport
         JOptionPane.showMessageDialog(ui, I18n.f("loc.ui.errorImportCsvMoving", moving.get(0)));
 
         return true;
-    }
-
-    /** What the address-change and rename doors refresh, once for the import; a standing train is never swept off. */
-    private static void refresh(TrainControlUI ui, ViewListener model, MarklinLocomotiveCsv.Result result)
-    {
-        boolean changed = !result.readdressed.isEmpty() || !result.renamed.isEmpty();
-        if (changed)
-        {
-            ui.clearCopyTarget();
-            ui.repaintLoc(true, null);
-            ui.repaintMappings(null, false);
-            ui.routeListPanel.refreshRouteList();
-        }
-
-        ui.getLocSelector().refreshLocSelectorList();
-
-        if (changed && model.hasAutoLayout())
-        {
-            for (String name : result.renamed) model.getAutoLayout().sanitizeMultiUnits(model.getLocByName(name));
-            model.getAutoLayout().refreshUI();
-            ui.updateVisiblePoints();
-            ui.repaintAutoLocList(false);
-            ui.timetableTab().repaintTimetable();
-        }
     }
 
     /** The possible duplicates' table (FR-249): one row per file row, on Merge where it can be, else Keep Both. */

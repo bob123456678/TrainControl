@@ -149,29 +149,7 @@ public final class LocomotiveActions
 
             if (renaming) this.ui.getModel().renameLoc(l.getName(), newName);
 
-            // Refresh everything
-            this.ui.clearCopyTarget();
-            this.ui.repaintLoc(true, null);
-            this.ui.repaintMappings(null, false);
-            this.ui.routeListPanel.refreshRouteList();
-            this.ui.getLocSelector().refreshLocSelectorList();
-
-            // Update locomotive on graph
-            if (this.ui.getModel().hasAutoLayout())
-            {
-                this.ui.getModel().getAutoLayout().sanitizeMultiUnits(l);
-                this.ui.getModel().getAutoLayout().refreshUI();
-
-                // And the station labels on the track diagram (OB-081): refreshUI redraws the autonomy
-                // surfaces, but the labels beside a station are written by updateStationLabels, which every
-                // other door that changes which locomotive stands where calls.
-                this.ui.updateVisiblePoints();
-                this.ui.repaintAutoLocList(false);
-
-                // And the timetable, which names locomotives too: the guard inside `repaintTimetable` is keyed
-                // on a hash a rename cannot move (MT-149).
-                this.ui.timetableTab().repaintTimetable();
-            }
+            refreshAfterEdit(Collections.singletonList(l));
 
             return true;
         }
@@ -183,6 +161,28 @@ public final class LocomotiveActions
 
             return false;
         }
+    }
+
+    /**
+     * Redraws every window that names locomotives after a rename or a new address, at each door that makes one;
+     * `changed` have their multi-units checked.
+     */
+    void refreshAfterEdit(List<? extends Locomotive> changed)
+    {
+        this.ui.clearCopyTarget();
+        this.ui.repaintLoc(true, null);
+        this.ui.repaintMappings(null, false);
+        this.ui.routeListPanel.refreshRouteList();
+        this.ui.getLocSelector().refreshLocSelectorList();
+
+        if (!this.ui.getModel().hasAutoLayout()) return;
+
+        for (Locomotive l : changed) this.ui.getModel().getAutoLayout().sanitizeMultiUnits(l);
+        this.ui.getModel().getAutoLayout().refreshUI();
+        // refreshUI leaves the station labels (OB-081) and the timetable (MT-149), which name locomotives too
+        this.ui.updateVisiblePoints();
+        this.ui.repaintAutoLocList(false);
+        this.ui.timetableTab().repaintTimetable();
     }
 
     /**

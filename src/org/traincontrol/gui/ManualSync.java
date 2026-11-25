@@ -302,20 +302,7 @@ public final class ManualSync
         }
         model.renameLoc(currentName, newName);
         l.setDeclinedStationName(null);
-        ui.clearCopyTarget();
-        ui.repaintLoc(true, null);
-        ui.repaintMappings(null, false);
-        ui.routeListPanel.refreshRouteList();
-        ui.getLocSelector().refreshLocSelectorList();
-        if (model.hasAutoLayout())
-        {
-            model.getAutoLayout().sanitizeMultiUnits(l);
-            model.getAutoLayout().refreshUI();
-            // And the station labels, as the rename dialog does (OB-081)
-            ui.updateVisiblePoints();
-            ui.repaintAutoLocList(false);
-            ui.timetableTab().repaintTimetable();
-        }
+        ui.locomotiveActions.refreshAfterEdit(java.util.Collections.singletonList(l));
         return "loc.renameApplied";
     }
 

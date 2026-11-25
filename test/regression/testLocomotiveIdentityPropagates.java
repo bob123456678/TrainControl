@@ -678,59 +678,47 @@ public class testLocomotiveIdentityPropagates
 
         assertEquals(counted, 2, "the two doors named here no longer hold two of the program's renameLoc calls");
 
-        // The CSV import renames in `apply`; its door's `refresh` is where the follow-up the other doors do must be
+        // The CSV import renames in `apply`; its door, after `apply`, is where the follow-up the other doors do must be
         String csvApply = withoutComments(SourceOf.declaration(
             "    public Result apply(ViewListener model, Plan plan, Map<Row, Choice> choices)"));
-        String csvRefresh = withoutComments(SourceOf.declaration("    private static void refresh(TrainControlUI ui, "
-            + "ViewListener model, MarklinLocomotiveCsv.Result result)"));
+        String csvDoor = withoutComments(SourceOf.declaration("    static void open(TrainControlUI ui, Component source)"));
 
         assertTrue(csvApply.contains("model.renameLoc("), "the CSV import's Merge and Replace are no longer the third renameLoc call");
-        assertTrue(csvRefresh.contains("updateVisiblePoints") && csvRefresh.contains("repaintTimetable"),
-            "the CSV import renames locomotives but its door does not rewrite the station labels and repaint the "
-            + "timetable afterwards, as the other rename doors do (OB-081, MT-149): " + csvRefresh);
 
-        // The refresh block that follows it, bounded by the catch that closes the method, or by the method's end; NOT
-        // by the next javadoc, which `withoutComments` has already removed, so the window would become the rest of the
+        // Each door calls the one refresh after its rename, before the catch that closes the method (or its end); NOT
+        // the next javadoc, which `withoutComments` has already removed, so the window would become the rest of the
         // file and the rule would pass whatever the code did.
         List<String> silent = new ArrayList<>();
 
-        List<String> quiet = new ArrayList<>();
+        doors.add(csvDoor);
 
         for (String body : doors)
         {
-            int at = Math.max(body.indexOf("model.renameLoc("), body.indexOf("getModel().renameLoc("));
-
-            // The refresh block that follows, bounded as above.
+            int at = Math.max(Math.max(body.indexOf("model.renameLoc("), body.indexOf("getModel().renameLoc(")),
+                body.indexOf("csv.apply("));
             int caught = body.indexOf("catch (Exception", at);
             int end = caught < 0 ? body.length() : caught;
 
-            assertTrue(end > at && end - at < 6000,
+            assertTrue(at > 0 && end > at && end - at < 6000,
                 "a refresh block could not be bounded, so this rule would read the rest of the file "
                 + "and pass whatever the code did");
 
-            String block = body.substring(at, end);
-
-            if (!block.contains("updateVisiblePoints"))
-            {
-                silent.add(body.substring(at, Math.min(at + 160, end)).trim());
-            }
-
-            // AND THE TIMETABLE, which names locomotives too: the fix went to the guard inside repaintTimetable and
-            // neither rename door was made to CALL it.
-            if (!block.contains("repaintTimetable"))
-            {
-                quiet.add(body.substring(at, Math.min(at + 160, end)).trim());
-            }
+            if (!body.substring(at, end).contains("refreshAfterEdit(")) silent.add(body.substring(at, Math.min(at + 160,
+                end)).trim());
         }
 
-        assertEquals(silent, new ArrayList<String>(),
-            "a locomotive rename does not rewrite the station labels, so the track diagram goes on "
-            + "showing the old name beside the train until something unrelated repaints it (OB-081): "
-            + silent);
+        assertEquals(silent, new ArrayList<String>(), "a locomotive rename door does not call the shared refresh after"
+            + " it, so the track diagram's labels or the timetable go on showing the old name: " + silent);
 
-        assertEquals(quiet, new ArrayList<String>(),
-            "a locomotive rename does not repaint the timetable, so it goes on naming a locomotive "
-            + "that no longer exists under that name - which is MT-149, whose fix was to the guard "
-            + "inside repaintTimetable and never to the doors that have to call it: " + quiet);
+        // AND THE TIMETABLE, which names locomotives too: the fix went to the guard inside repaintTimetable and no
+        // rename door was made to CALL it (MT-149); the station labels likewise (OB-081).
+        String refresh = withoutComments(SourceOf.declaration("    void refreshAfterEdit("));
+
+        assertTrue(refresh.contains("updateVisiblePoints()"), "a locomotive rename does not rewrite the station labels,"
+            + " so the track diagram goes on showing the old name beside the train until something unrelated repaints it"
+            + " (OB-081): " + refresh);
+        assertTrue(refresh.contains("repaintTimetable()"), "a locomotive rename does not repaint the timetable, so it"
+            + " goes on naming a locomotive that no longer exists under that name - which is MT-149, whose fix was to the"
+            + " guard inside repaintTimetable and never to the doors that have to call it: " + refresh);
     }
 }
