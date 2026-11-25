@@ -67,7 +67,7 @@ public final class DetailsArea
         JScrollPane scroll = scrolling(String.join("\n", lines), ROWS);
         scroll.setBorder(BorderFactory.createTitledBorder(I18n.t("ui.details")));
 
-        JPanel panel = new JPanel(new BorderLayout(0, 8));
+        JPanel panel = new JPanel(new BorderLayout(0, lines.isEmpty() ? 0 : 8));
         panel.setOpaque(false);
         panel.add(wrapped(sentence), BorderLayout.NORTH);
         if (!lines.isEmpty()) panel.add(scroll, BorderLayout.CENTER);
