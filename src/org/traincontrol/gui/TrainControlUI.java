@@ -14302,7 +14302,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     {
         try
         {
-            if (PositionAwareJFrame.remembersWindowLocations())
+            // A session with no pages could show no page window, so the ones remembered are kept for the next
+            if (PositionAwareJFrame.remembersWindowLocations() && !this.model.getLayoutList().isEmpty())
             {
                 Map<String, Set<String>> layoutTitlesMap = new HashMap<>();
                 ListIterator<LayoutPopupWindow> iter = this.popups.listIterator();

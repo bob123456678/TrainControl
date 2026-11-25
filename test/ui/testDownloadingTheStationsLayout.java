@@ -616,6 +616,41 @@ public class testDownloadingTheStationsLayout
         }
     }
 
+    /**
+     * The page windows remembered are kept through a session with no pages, which could show none of them: the exit's
+     * save leaves them for the next start (FR-252).
+     *
+     * MUTATION: in `TrainControlUI.saveLayoutTitles`, leave out `!this.model.getLayoutList().isEmpty()`, and the exit
+     * forgets them.
+     */
+    @Test(timeOut = 120000)
+    @SuppressWarnings("unchecked")
+    public void testASessionWithNoPagesKeepsThePageWindowsRemembered() throws Exception
+    {
+        final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+        final boolean rememberWas = prefs.getBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, true);
+        final String key = TrainControlUI.LAYOUT_TITLES_PREF + "_"
+            + ((java.util.Map<String, Integer>) Reflect.get(TrainControlUI.class, ui, "layoutSizes")).values().iterator().next();
+        final String remembered = rig.model.getLayoutList().get(0);
+
+        prefs.putBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, true);
+        prefs.put(key, remembered);
+
+        try
+        {
+            rig.model.clearLayouts();
+            SwingUtilities.invokeAndWait(() -> ui.saveState(false));
+
+            assertEquals(prefs.get(key, null), remembered, "an exit with no pages forgot the page window remembered");
+        }
+        finally
+        {
+            prefs.putBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, rememberWas);
+            prefs.remove(key);
+            rig.model.refreshLayouts();
+        }
+    }
+
     /** Layouts &gt; Open Layout's own method on `folder`, once its pages are in. */
     private void openTheFolder(File folder) throws Exception
     {
