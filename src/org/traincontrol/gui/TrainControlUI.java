@@ -5652,21 +5652,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
                     this.model.logf("layout.ui.infoInitializingDemoLayout");
 
                     String path = this.layoutFileActions.initializeEmptyLayout(folderName);
+                    boolean read = false;
 
                     if (path != null)
                     {
                         this.model.logf("layout.ui.infoLayoutInitializedAt", path);
-                        layoutFolderIs(path);
+                        java.util.function.BooleanSupplier sticks = this.layoutFileActions.switchTo(path);
+
+                        this.syncWithCS2();
+                        read = sticks.getAsBoolean();
 
                         // The editing controls follow whether there is a layout of the user's own to edit (OB-126).
                         this.editorWindows.applyLayoutEditingAvailability();
-
-                        this.syncWithCS2();
                         this.repaintLoc();
                     }
 
-                    // A folder that did not unpack whole is not switched to, and said so
-                    if (path != null && !this.model.getLayoutList().isEmpty())
+                    // A folder that did not unpack whole, or whose read failed, is not switched to, and said so
+                    if (read && !this.model.getLayoutList().isEmpty())
                     {
                         this.initializeTrackDiagram(false);
                     }
@@ -14693,7 +14695,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
         if (refuseWhileASyncRuns()) return false;
 
-        layoutFolderIs(folder.getPath());
+        final java.util.function.BooleanSupplier read = this.layoutFileActions.switchTo(folder.getPath());
+        final boolean[] opened = new boolean[1];
 
         this.editorWindows.applyLayoutEditingAvailability();
 
@@ -14705,11 +14708,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             () -> this.syncWithCS2(),
             () ->
             {
+                opened[0] = read.getAsBoolean() && !this.model.getLayoutList().isEmpty();
+
                 // Either way: a failed load leaves the editing controls grayed, not an editor with nothing to edit
                 // (OB-127).
                 this.editorWindows.applyLayoutEditingAvailability();
 
-                if (!this.model.getLayoutList().isEmpty() && this.isLocalLayout())
+                if (opened[0])
                 {
                     this.initializeTrackDiagram(true);
 
@@ -14728,7 +14733,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             });
 
         // BusyDialog.run returns once its event-thread half has run, so this is the answer it took
-        return !this.model.getLayoutList().isEmpty() && this.isLocalLayout();
+        return opened[0];
     }
 
     private void showCurrentLayoutFolderMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showCurrentLayoutFolderMenuItemActionPerformed

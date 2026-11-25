@@ -516,4 +516,73 @@ public class testDownloadingTheStationsLayout
             }
         }
     }
+
+    /**
+     * Open Layout on a folder that then fails in the sync's read, with a station that answers: the sync falls back to
+     * the station's pages, yet the layout in use stays, from the station's layout and from a folder of this computer's,
+     * whose own pages are read again (FR-245).  The session follows pages read again, so it is left out.
+     *
+     * MUTATION: in `LayoutFileActions.switchTo`, leave out `layoutEditingComplete`, and the station's pages stand under
+     * the folder's name.
+     */
+    @Test(timeOut = 240000)
+    public void testAFolderThatFailsInTheSyncLeavesTheLayoutInUse() throws Exception
+    {
+        final File local = new File(root, "local");
+        final File changing = new File(root, "changing");
+
+        Trees.copyForTheRun(new File("test/test_layout"), local);
+        Trees.copyForTheRun(new File("test/test_layout"), changing);
+
+        for (boolean fromLocal : new boolean[] {false, true})
+        {
+            if (fromLocal)
+            {
+                java.lang.reflect.Method open = Reflect.method(TrainControlUI.class, "openLayoutFolder", File.class);
+
+                SwingUtilities.invokeAndWait(() ->
+                {
+                    try
+                    {
+                        open.invoke(ui, local);
+                    }
+                    catch (ReflectiveOperationException e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
+                });
+
+                assertTrue(Components.waitFor(() -> rig.model.getLayoutList().contains("1 - Main"), 60000),
+                    "precondition: the folder of this computer's did not open");
+
+                Components.settle();
+            }
+
+            final String from = fromLocal ? "from a folder" : "from the station's layout";
+            final String was = withoutTheSession(testRecentLayouts.everythingAbout(ui));
+            final String filesWere = testRecentLayouts.filesIn(local);
+
+            try (AutoCloseable hook = testRecentLayouts.indexGoneWhenTheSyncReads(changing))
+            {
+                assertEquals(testRecentLayouts.openLayout(ui, changing), testRecentLayouts.REFUSED,
+                    "a folder that failed in the sync was not said to fail, " + from);
+            }
+
+            Components.waitFor(() -> was.equals(withoutTheSession(testRecentLayouts.everythingAbout(ui))), 30000);
+            Components.settle();
+
+            assertEquals(withoutTheSession(testRecentLayouts.everythingAbout(ui)), was, "a folder that failed in the"
+                + " sync changed it, " + from);
+            assertEquals(testRecentLayouts.filesIn(local), filesWere, "a folder that failed in the sync wrote the folder"
+                + " in use, " + from);
+
+            Files.copy(new File("test/test_layout/config/gleisbild.cs2").toPath(),
+                new File(changing, "config/gleisbild.cs2").toPath());
+        }
+    }
+
+    private static String withoutTheSession(String about)
+    {
+        return about.replaceFirst("\nsession: .*$", "");
+    }
 }
