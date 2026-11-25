@@ -121,11 +121,11 @@ public class testRouteCapture
 
         final String captured = signal.toAccessorySettingString();
 
-        final org.traincontrol.gui.RouteEditorWindow[] frame = new org.traincontrol.gui.RouteEditorWindow[1];
+        final org.traincontrol.gui.route.RouteEditorWindow[] frame = new org.traincontrol.gui.route.RouteEditorWindow[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
-            frame[0] = new org.traincontrol.gui.RouteEditorWindow(null, null);
+            frame[0] = new org.traincontrol.gui.route.RouteEditorWindow(null, null);
 
             frame[0].appendCommand(captured);
         });
@@ -151,11 +151,11 @@ public class testRouteCapture
     {
         Display.needed("the route editor is a window - this needs a display");
 
-        final org.traincontrol.gui.RouteEditorWindow[] frame = new org.traincontrol.gui.RouteEditorWindow[1];
+        final org.traincontrol.gui.route.RouteEditorWindow[] frame = new org.traincontrol.gui.route.RouteEditorWindow[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
-            frame[0] = new org.traincontrol.gui.RouteEditorWindow(null, null);
+            frame[0] = new org.traincontrol.gui.route.RouteEditorWindow(null, null);
 
             // An editable command, one the editor has no controls for, then another editable one
             frame[0].appendCommand(RouteCommand.RouteCommandAccessory(
@@ -198,11 +198,11 @@ public class testRouteCapture
     {
         Display.needed("the route editor is a window - this needs a display");
 
-        final org.traincontrol.gui.RouteEditorWindow[] frame = new org.traincontrol.gui.RouteEditorWindow[1];
+        final org.traincontrol.gui.route.RouteEditorWindow[] frame = new org.traincontrol.gui.route.RouteEditorWindow[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
-            frame[0] = new org.traincontrol.gui.RouteEditorWindow(null, null);
+            frame[0] = new org.traincontrol.gui.route.RouteEditorWindow(null, null);
 
             frame[0].appendCommand("this is not a command");
             frame[0].appendCommand(null);
@@ -233,12 +233,12 @@ public class testRouteCapture
 
         final String captured = turnout.toAccessorySettingString();
 
-        final org.traincontrol.gui.RouteEditorWindow[] frame =
-            new org.traincontrol.gui.RouteEditorWindow[1];
+        final org.traincontrol.gui.route.RouteEditorWindow[] frame =
+            new org.traincontrol.gui.route.RouteEditorWindow[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
-            frame[0] = new org.traincontrol.gui.RouteEditorWindow(null, null);
+            frame[0] = new org.traincontrol.gui.route.RouteEditorWindow(null, null);
 
             frame[0].setCapturingIntoConditions(true);
             frame[0].appendCommand(captured);

@@ -24,7 +24,7 @@ import org.traincontrol.base.NodeRouteCommand;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.base.ThreeWaySwitch;
-import org.traincontrol.gui.RouteEditorWindow;
+import org.traincontrol.gui.route.RouteEditorWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;

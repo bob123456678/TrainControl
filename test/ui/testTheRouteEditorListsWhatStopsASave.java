@@ -10,7 +10,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.RouteEditorWindow;
+import org.traincontrol.gui.route.RouteEditorWindow;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;

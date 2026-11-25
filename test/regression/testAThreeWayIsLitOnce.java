@@ -13,7 +13,7 @@ import org.traincontrol.base.ConditionOutline;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.LayoutLabel;
-import org.traincontrol.gui.RouteEditorWindow;
+import org.traincontrol.gui.route.RouteEditorWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;

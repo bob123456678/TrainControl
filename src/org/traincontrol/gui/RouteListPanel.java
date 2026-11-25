@@ -17,6 +17,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.Route;
+import org.traincontrol.gui.route.RouteEditorWindow;
 import org.traincontrol.gui.widgets.BusyDialog;
 import org.traincontrol.gui.widgets.DetailsArea;
 import org.traincontrol.marklin.MarklinControlStation;

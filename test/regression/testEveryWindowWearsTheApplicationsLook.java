@@ -62,11 +62,11 @@ public class testEveryWindowWearsTheApplicationsLook
         // WHAT THE MENUS LOOKED LIKE BEFORE, to compare against afterwards.
         java.awt.Font menuFontBefore = javax.swing.UIManager.getFont("MenuBar.font");
 
-        final org.traincontrol.gui.RouteEditorWindow[] built =
-            new org.traincontrol.gui.RouteEditorWindow[1];
+        final org.traincontrol.gui.route.RouteEditorWindow[] built =
+            new org.traincontrol.gui.route.RouteEditorWindow[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
-            built[0] = new org.traincontrol.gui.RouteEditorWindow(null, null));
+            built[0] = new org.traincontrol.gui.route.RouteEditorWindow(null, null));
 
         try
         {

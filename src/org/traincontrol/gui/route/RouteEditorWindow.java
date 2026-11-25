@@ -1,4 +1,4 @@
-package org.traincontrol.gui;
+package org.traincontrol.gui.route;
 
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
@@ -72,6 +72,8 @@ import org.traincontrol.base.NodeExpression;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.ThreeWaySwitch;
+import org.traincontrol.gui.DiagramHighlights;
+import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.util.OnMouse;
 import org.traincontrol.gui.widgets.HandPointer;
@@ -2858,19 +2860,19 @@ public class RouteEditorWindow extends JFrame
         // the route's own trigger, always in checkedSensors.  The removal comes before the paint calls.
         checkedSensors.removeAll(commandedSensors);
 
-        int lit = parent.diagramHighlights.highlightAccessories(commanded, ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS, null);
+        int lit = parent.diagramHighlights().highlightAccessories(commanded, ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS, null);
 
-        lit += parent.diagramHighlights.highlightAddresses(commandedRoutes, DiagramHighlights.AddressedAs.ROUTE,
+        lit += parent.diagramHighlights().highlightAddresses(commandedRoutes, DiagramHighlights.AddressedAs.ROUTE,
             ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);
 
         // And not a square already lit as commanded (OB-286): a three-way is commanded under one address and checked
         // under the other.
-        lit += parent.diagramHighlights.highlightAccessories(checked, ImageUtil.HIGHLIGHT_CONDITION, HIGHLIGHT_HOLD_MS, commanded);
+        lit += parent.diagramHighlights().highlightAccessories(checked, ImageUtil.HIGHLIGHT_CONDITION, HIGHLIGHT_HOLD_MS, commanded);
 
-        lit += parent.diagramHighlights.highlightAddresses(checkedSensors, DiagramHighlights.AddressedAs.FEEDBACK,
+        lit += parent.diagramHighlights().highlightAddresses(checkedSensors, DiagramHighlights.AddressedAs.FEEDBACK,
             ImageUtil.HIGHLIGHT_CONDITION, HIGHLIGHT_HOLD_MS);
 
-        lit += parent.diagramHighlights.highlightAddresses(commandedSensors, DiagramHighlights.AddressedAs.FEEDBACK,
+        lit += parent.diagramHighlights().highlightAddresses(commandedSensors, DiagramHighlights.AddressedAs.FEEDBACK,
             ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);
 
         // Nothing lit is an answer too: a route can name accessories that are not drawn anywhere on the diagram.
@@ -3065,9 +3067,9 @@ public class RouteEditorWindow extends JFrame
             }
 
             // A finished edit puts every play button back (FR-043).
-            parent.routeListPanel.resetRouteSpinners();
+            parent.routeListPanel().resetRouteSpinners();
 
-            parent.routeListPanel.refreshRouteList();
+            parent.routeListPanel().refreshRouteList();
             parent.repaintLayout();
 
             // No diagram edit to complete: a tile follows its route by number (rebindRouteTiles), and

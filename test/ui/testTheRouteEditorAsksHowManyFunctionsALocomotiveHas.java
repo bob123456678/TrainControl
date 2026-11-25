@@ -3,7 +3,7 @@ package ui;
 import javax.swing.SwingUtilities;
 
 import org.traincontrol.base.RouteCommand;
-import org.traincontrol.gui.RouteEditorWindow;
+import org.traincontrol.gui.route.RouteEditorWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 import org.traincontrol.marklin.MarklinControlStation;

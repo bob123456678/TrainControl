@@ -1,4 +1,4 @@
-package org.traincontrol.gui;
+package org.traincontrol.gui.route;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -6,6 +6,7 @@ import java.awt.event.MouseEvent;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import org.traincontrol.base.Route;
+import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.util.PopupMenuTrigger;
 import org.traincontrol.util.I18n;
 
@@ -73,7 +74,7 @@ public class RouteContextMenu extends PopupMenuTrigger
                 addSeparator();
 
                 menuItem = new JMenuItem(I18n.t("route.ui.menuExecute"));
-                menuItem.addActionListener(event -> ui.routeListPanel.executeRoute(routeName));
+                menuItem.addActionListener(event -> ui.routeListPanel().executeRoute(routeName));
                 add(menuItem);
                 addSeparator();
 
@@ -82,13 +83,13 @@ public class RouteContextMenu extends PopupMenuTrigger
                         ? I18n.t("route.ui.menuViewRouteDetails")
                         : I18n.t("route.ui.menuEditRoute")
                 );
-                menuItem.addActionListener(event -> ui.routeListPanel.editRoute(routeName));
+                menuItem.addActionListener(event -> ui.routeListPanel().editRoute(routeName));
                 add(menuItem);
 
                 menuItem = new JMenuItem(
                     I18n.t("route.ui.menuDuplicateRoute")
                 );
-                menuItem.addActionListener(event -> ui.routeListPanel.duplicateRoute(routeName));
+                menuItem.addActionListener(event -> ui.routeListPanel().duplicateRoute(routeName));
                 add(menuItem);
 
                 // The predicate `BulkEnableOrDisable` uses: offering DISABLE on an enabled route always works, ENABLE

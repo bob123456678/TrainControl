@@ -32,7 +32,7 @@ public class testRouteEditorShading
     {
         needsADisplay();
 
-        org.traincontrol.gui.RouteEditorWindow frame = openWithOneCondition();
+        org.traincontrol.gui.route.RouteEditorWindow frame = openWithOneCondition();
 
         try
         {
@@ -146,8 +146,8 @@ public class testRouteEditorShading
             commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false,
             new NodeRouteCommand(RouteCommand.RouteCommandFeedback(10, false)));
 
-        final org.traincontrol.gui.RouteEditorWindow[] frame =
-            new org.traincontrol.gui.RouteEditorWindow[1];
+        final org.traincontrol.gui.route.RouteEditorWindow[] frame =
+            new org.traincontrol.gui.route.RouteEditorWindow[1];
 
         // A REAL WINDOW IS THE PARENT: with none, highlightOnDiagram returns before the loop that asks each command
         // for its address, and the claim below would pass with that question taken out.
@@ -168,13 +168,13 @@ public class testRouteEditorShading
             assertNotNull(ui, "precondition: there is no window to be the editor's parent");
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
-                frame[0] = new org.traincontrol.gui.RouteEditorWindow(ui, "IPR-B1", route));
+                frame[0] = new org.traincontrol.gui.route.RouteEditorWindow(ui, "IPR-B1", route));
 
             try
             {
                 // THE ROUTE'S COMMANDS HAVE TO REACH THE TABLE, or the loop under test sees nothing and this passes
                 // vacuously.
-                Object table = Reflect.get(org.traincontrol.gui.RouteEditorWindow.class, frame[0], "commands");
+                Object table = Reflect.get(org.traincontrol.gui.route.RouteEditorWindow.class, frame[0], "commands");
 
                 java.lang.reflect.Field list = Reflect.field(table.getClass(), "rows");
 
@@ -183,7 +183,7 @@ public class testRouteEditorShading
                     + "test has nothing to walk.  Rows: " + list.get(table));
 
                 java.lang.reflect.Method highlight =
-                    Reflect.method(org.traincontrol.gui.RouteEditorWindow.class, "highlightOnDiagram");
+                    Reflect.method(org.traincontrol.gui.route.RouteEditorWindow.class, "highlightOnDiagram");
 
                 final Throwable[] thrown = new Throwable[1];
 
@@ -243,7 +243,7 @@ public class testRouteEditorShading
             if (sandbox != null) sandbox.close();
         }
     }
-    private org.traincontrol.gui.RouteEditorWindow openWithOneCondition() throws Exception
+    private org.traincontrol.gui.route.RouteEditorWindow openWithOneCondition() throws Exception
     {
         MarklinRoute route = new MarklinRoute(null, "OB-121", 40,
             new java.util.ArrayList<>(), 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false,
@@ -252,16 +252,16 @@ public class testRouteEditorShading
         // Locked, so every cell of the condition is washed gray: an editable one has no wash to prime with
         route.setLocked(true);
 
-        final org.traincontrol.gui.RouteEditorWindow[] frame =
-            new org.traincontrol.gui.RouteEditorWindow[1];
+        final org.traincontrol.gui.route.RouteEditorWindow[] frame =
+            new org.traincontrol.gui.route.RouteEditorWindow[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
-            frame[0] = new org.traincontrol.gui.RouteEditorWindow(null, "OB-121", route));
+            frame[0] = new org.traincontrol.gui.route.RouteEditorWindow(null, "OB-121", route));
 
         return frame[0];
     }
 
-    private void close(org.traincontrol.gui.RouteEditorWindow frame) throws Exception
+    private void close(org.traincontrol.gui.route.RouteEditorWindow frame) throws Exception
     {
         javax.swing.SwingUtilities.invokeAndWait(() -> frame.dispose());
     }

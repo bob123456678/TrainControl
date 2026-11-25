@@ -780,7 +780,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
         {
             for (java.awt.Window window : java.awt.Window.getWindows())
             {
-                if (window instanceof org.traincontrol.gui.RouteEditorWindow && window.isShowing()
+                if (window instanceof org.traincontrol.gui.route.RouteEditorWindow && window.isShowing()
                     && title.equals(((java.awt.Frame) window).getTitle())) return true;
             }
 

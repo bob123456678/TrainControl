@@ -158,6 +158,8 @@ import org.traincontrol.gui.locomotive.LocomotiveStats;
 import org.traincontrol.gui.locomotive.LocomotiveButtonContextMenu;
 import org.traincontrol.gui.locomotive.KeyboardPageContextMenu;
 import org.traincontrol.gui.locomotive.UsageChart;
+import org.traincontrol.gui.route.RouteContextMenu;
+import org.traincontrol.gui.route.RouteEditorWindow;
 import org.traincontrol.gui.util.OnMouse;
 import org.traincontrol.gui.app.AboutPanel;
 import org.traincontrol.gui.app.BackupAction;

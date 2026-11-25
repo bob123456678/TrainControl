@@ -26,7 +26,7 @@ public class testRouteEditorLocked
     {
         needsADisplay();
 
-        org.traincontrol.gui.RouteEditorWindow frame = open(locked(true));
+        org.traincontrol.gui.route.RouteEditorWindow frame = open(locked(true));
 
         assertFalse(frame.isEditable(), "a route the station owns is not this window's to change");
 
@@ -50,7 +50,7 @@ public class testRouteEditorLocked
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorWindow frame = open(locked(true));
+        final org.traincontrol.gui.route.RouteEditorWindow frame = open(locked(true));
 
         try
         {
@@ -80,7 +80,7 @@ public class testRouteEditorLocked
     {
         needsADisplay();
 
-        org.traincontrol.gui.RouteEditorWindow frame = open(locked(false));
+        org.traincontrol.gui.route.RouteEditorWindow frame = open(locked(false));
 
         assertTrue(frame.isEditable(), "a local route is editable");
 
@@ -104,7 +104,7 @@ public class testRouteEditorLocked
         final String captured = RouteCommand.RouteCommandAccessory(90,
             Accessory.accessoryDecoderType.MM2, true).toLine(null).trim();
 
-        org.traincontrol.gui.RouteEditorWindow ordinary = open(locked(false));
+        org.traincontrol.gui.route.RouteEditorWindow ordinary = open(locked(false));
 
         int was = ordinary.commandCount();
 
@@ -116,7 +116,7 @@ public class testRouteEditorLocked
 
         close(ordinary);
 
-        org.traincontrol.gui.RouteEditorWindow owned = open(locked(true));
+        org.traincontrol.gui.route.RouteEditorWindow owned = open(locked(true));
 
         int before = owned.commandCount();
 
@@ -137,7 +137,7 @@ public class testRouteEditorLocked
     {
         needsADisplay();
 
-        org.traincontrol.gui.RouteEditorWindow frame = open(locked(true));
+        org.traincontrol.gui.route.RouteEditorWindow frame = open(locked(true));
 
         List<javax.swing.text.JTextComponent> fields = fieldsIn(frame.getContentPane());
 
@@ -169,7 +169,7 @@ public class testRouteEditorLocked
     {
         needsADisplay();
 
-        org.traincontrol.gui.RouteEditorWindow frame = open(locked(true));
+        org.traincontrol.gui.route.RouteEditorWindow frame = open(locked(true));
 
         List<javax.swing.JTable> tables = tablesIn(frame.getContentPane());
 
@@ -209,7 +209,7 @@ public class testRouteEditorLocked
     {
         needsADisplay();
 
-        org.traincontrol.gui.RouteEditorWindow frame = open(locked(false));
+        org.traincontrol.gui.route.RouteEditorWindow frame = open(locked(false));
 
         boolean any = false;
 
@@ -245,12 +245,12 @@ public class testRouteEditorLocked
         needsADisplay();
 
         List<String> marks = Arrays.asList(
-            org.traincontrol.gui.RouteEditorWindow.markMoveUp(),
-            org.traincontrol.gui.RouteEditorWindow.markMoveDown(),
-            org.traincontrol.gui.RouteEditorWindow.markDelete(),
-            org.traincontrol.gui.RouteEditorWindow.markCopy());
+            org.traincontrol.gui.route.RouteEditorWindow.markMoveUp(),
+            org.traincontrol.gui.route.RouteEditorWindow.markMoveDown(),
+            org.traincontrol.gui.route.RouteEditorWindow.markDelete(),
+            org.traincontrol.gui.route.RouteEditorWindow.markCopy());
 
-        org.traincontrol.gui.RouteEditorWindow ordinary = open(locked(false));
+        org.traincontrol.gui.route.RouteEditorWindow ordinary = open(locked(false));
 
         // The control first: unless an ordinary route draws them, finding none on a locked one says nothing
         assertTrue(marksFound(ordinary, marks) > 0,
@@ -259,7 +259,7 @@ public class testRouteEditorLocked
 
         close(ordinary);
 
-        org.traincontrol.gui.RouteEditorWindow owned = open(locked(true));
+        org.traincontrol.gui.route.RouteEditorWindow owned = open(locked(true));
 
         assertEquals(marksFound(owned, marks), 0,
             "a route belonging to the Central Station is still drawing the trash and the arrows.  "
@@ -280,12 +280,12 @@ public class testRouteEditorLocked
     {
         needsADisplay();
 
-        org.traincontrol.gui.RouteEditorWindow ordinary = open(lockedWithTwoCommands(false));
+        org.traincontrol.gui.route.RouteEditorWindow ordinary = open(lockedWithTwoCommands(false));
 
         int movableFirst = ordinary.commandsAsSaved().get(0).getAddress();
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
-            ordinary.clickCommandMarkForTest(0, org.traincontrol.gui.RouteEditorWindow.markMoveDown()));
+            ordinary.clickCommandMarkForTest(0, org.traincontrol.gui.route.RouteEditorWindow.markMoveDown()));
 
         assertNotEquals(ordinary.commandsAsSaved().get(0).getAddress(), movableFirst,
             "moving the top row down on an ordinary route left it where it was, so the locked "
@@ -293,12 +293,12 @@ public class testRouteEditorLocked
 
         close(ordinary);
 
-        org.traincontrol.gui.RouteEditorWindow owned = open(lockedWithTwoCommands(true));
+        org.traincontrol.gui.route.RouteEditorWindow owned = open(lockedWithTwoCommands(true));
 
         int lockedFirst = owned.commandsAsSaved().get(0).getAddress();
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
-            owned.clickCommandMarkForTest(0, org.traincontrol.gui.RouteEditorWindow.markMoveDown()));
+            owned.clickCommandMarkForTest(0, org.traincontrol.gui.route.RouteEditorWindow.markMoveDown()));
 
         assertEquals(owned.commandsAsSaved().get(0).getAddress(), lockedFirst,
             "moveRow moved a row on a route belonging to the Central Station - the drawing guard "
@@ -314,7 +314,7 @@ public class testRouteEditorLocked
     private static void aMarkActsOnAnOrdinaryRouteAndNotOnALockedOne(final String mark, int change, String ordinaryDidNothing,
         String lockedActed) throws Exception
     {
-        final org.traincontrol.gui.RouteEditorWindow ordinary = open(locked(false));
+        final org.traincontrol.gui.route.RouteEditorWindow ordinary = open(locked(false));
 
         int before = ordinary.commandCount();
 
@@ -324,7 +324,7 @@ public class testRouteEditorLocked
 
         close(ordinary);
 
-        final org.traincontrol.gui.RouteEditorWindow owned = open(locked(true));
+        final org.traincontrol.gui.route.RouteEditorWindow owned = open(locked(true));
 
         int lockedBefore = owned.commandCount();
 
@@ -345,7 +345,7 @@ public class testRouteEditorLocked
     {
         needsADisplay();
 
-        aMarkActsOnAnOrdinaryRouteAndNotOnALockedOne(org.traincontrol.gui.RouteEditorWindow.markDelete(), -1,
+        aMarkActsOnAnOrdinaryRouteAndNotOnALockedOne(org.traincontrol.gui.route.RouteEditorWindow.markDelete(), -1,
             "deleting a row on an ordinary route did nothing, so the locked half below would "
             + "prove nothing about deleteRow's own guard",
             "deleteRow removed a row from a route belonging to the Central Station - the drawing "
@@ -362,7 +362,7 @@ public class testRouteEditorLocked
     {
         needsADisplay();
 
-        aMarkActsOnAnOrdinaryRouteAndNotOnALockedOne(org.traincontrol.gui.RouteEditorWindow.markCopy(), +1,
+        aMarkActsOnAnOrdinaryRouteAndNotOnALockedOne(org.traincontrol.gui.route.RouteEditorWindow.markCopy(), +1,
             "duplicating a row on an ordinary route did nothing, so the locked half below would "
             + "prove nothing about duplicateRow's own guard",
             "duplicateRow copied a row on a route belonging to the Central Station - the drawing "
@@ -380,7 +380,7 @@ public class testRouteEditorLocked
     {
         needsADisplay();
 
-        org.traincontrol.gui.RouteEditorWindow ordinary = open(locked(false));
+        org.traincontrol.gui.route.RouteEditorWindow ordinary = open(locked(false));
 
         int before = ordinary.commandCount();
 
@@ -392,7 +392,7 @@ public class testRouteEditorLocked
 
         close(ordinary);
 
-        org.traincontrol.gui.RouteEditorWindow owned = open(locked(true));
+        org.traincontrol.gui.route.RouteEditorWindow owned = open(locked(true));
 
         int lockedBefore = owned.commandCount();
 
@@ -407,7 +407,7 @@ public class testRouteEditorLocked
     }
 
     /** RouteEditorWindow.addTo(commands), the private method a real click cannot reach on a locked table. */
-    private static void invokeAddTo(org.traincontrol.gui.RouteEditorWindow frame) throws Exception
+    private static void invokeAddTo(org.traincontrol.gui.route.RouteEditorWindow frame) throws Exception
     {
         Object commandsTable = Reflect.get(frame.getClass(), frame, "commands");
 
@@ -427,7 +427,7 @@ public class testRouteEditorLocked
     }
 
     /** How many cells of the window's tables hold one of the row marks. */
-    private static int marksFound(org.traincontrol.gui.RouteEditorWindow frame, List<String> marks)
+    private static int marksFound(org.traincontrol.gui.route.RouteEditorWindow frame, List<String> marks)
     {
         int found = 0;
 
@@ -476,7 +476,7 @@ public class testRouteEditorLocked
     {
         needsADisplay();
 
-        org.traincontrol.gui.RouteEditorWindow frame = open(locked(false));
+        org.traincontrol.gui.route.RouteEditorWindow frame = open(locked(false));
 
         boolean any = false;
 
@@ -612,7 +612,7 @@ public class testRouteEditorLocked
 
     private interface LockedClaim
     {
-        void run(org.traincontrol.gui.RouteEditorWindow frame, javax.swing.JTable table, boolean owned) throws Exception;
+        void run(org.traincontrol.gui.route.RouteEditorWindow frame, javax.swing.JTable table, boolean owned) throws Exception;
     }
 
     /** A claim on an ordinary route and then on a locked one, each in a window of its own, showing the table named. */
@@ -622,7 +622,7 @@ public class testRouteEditorLocked
 
         for (boolean owned : new boolean[]{false, true})
         {
-            final org.traincontrol.gui.RouteEditorWindow frame = open(twoCommands ? lockedWithTwoCommands(owned)
+            final org.traincontrol.gui.route.RouteEditorWindow frame = open(twoCommands ? lockedWithTwoCommands(owned)
                 : locked(owned));
 
             try
@@ -682,7 +682,7 @@ public class testRouteEditorLocked
     {
         needsADisplay();
 
-        org.traincontrol.gui.RouteEditorWindow frame = open(locked(true));
+        org.traincontrol.gui.route.RouteEditorWindow frame = open(locked(true));
 
         try
         {
@@ -695,7 +695,7 @@ public class testRouteEditorLocked
                     try
                     {
                         javax.swing.JTable table = (javax.swing.JTable) support.Reflect.get(
-                            org.traincontrol.gui.RouteEditorWindow.class, frame, "commands");
+                            org.traincontrol.gui.route.RouteEditorWindow.class, frame, "commands");
 
                         table.setSelectionBackground(selection);
                         table.setRowSelectionInterval(0, 0);
@@ -758,18 +758,18 @@ public class testRouteEditorLocked
         return route;
     }
 
-    private static org.traincontrol.gui.RouteEditorWindow open(Route route) throws Exception
+    private static org.traincontrol.gui.route.RouteEditorWindow open(Route route) throws Exception
     {
-        final org.traincontrol.gui.RouteEditorWindow[] frame =
-            new org.traincontrol.gui.RouteEditorWindow[1];
+        final org.traincontrol.gui.route.RouteEditorWindow[] frame =
+            new org.traincontrol.gui.route.RouteEditorWindow[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
-            frame[0] = new org.traincontrol.gui.RouteEditorWindow(null, route.getName(), route));
+            frame[0] = new org.traincontrol.gui.route.RouteEditorWindow(null, route.getName(), route));
 
         return frame[0];
     }
 
-    private static void close(org.traincontrol.gui.RouteEditorWindow frame) throws Exception
+    private static void close(org.traincontrol.gui.route.RouteEditorWindow frame) throws Exception
     {
         javax.swing.SwingUtilities.invokeAndWait(() -> frame.dispose());
     }
