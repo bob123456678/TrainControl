@@ -559,19 +559,19 @@ public class testTheWaitMarkIsAnHourglass
         }
 
         // AND IT HAS NOWHERE TO KEEP ONE: a class with no state cannot hold a window between calls.
-        assertEquals(org.traincontrol.gui.widgets.StartupSplash.class.getDeclaredFields().length, 0,
+        assertEquals(org.traincontrol.gui.app.StartupSplash.class.getDeclaredFields().length, 0,
             "StartupSplash has state again, which is what a window it can close later needs");
 
         // AND WHAT IT HANDS OVER IS SOMETHING A WINDOW CAN WEAR.
         final javax.swing.JPanel[] built = new javax.swing.JPanel[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
-            built[0] = org.traincontrol.gui.widgets.StartupSplash.panel("probe"));
+            built[0] = org.traincontrol.gui.app.StartupSplash.panel("probe"));
 
         assertNotNull(built[0], "no notice was built");
 
         assertFalse(java.awt.Window.class.isAssignableFrom(
-                org.traincontrol.gui.widgets.StartupSplash.class.getMethod("panel", String.class).getReturnType()),
+                org.traincontrol.gui.app.StartupSplash.class.getMethod("panel", String.class).getReturnType()),
             "the notice is handed over as a window again");
 
         assertTrue(saysAndSpins(built[0], "probe"),

@@ -138,6 +138,7 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.automation.TimetablePath;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.app.LogExport;
 import org.traincontrol.gui.autonomy.JsonExportPanel;
 import org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
@@ -158,8 +159,8 @@ import org.traincontrol.gui.locomotive.LocomotiveButtonContextMenu;
 import org.traincontrol.gui.locomotive.KeyboardPageContextMenu;
 import org.traincontrol.gui.locomotive.UsageChart;
 import org.traincontrol.gui.util.OnMouse;
-import org.traincontrol.gui.widgets.AboutPanel;
-import org.traincontrol.gui.widgets.BackupAction;
+import org.traincontrol.gui.app.AboutPanel;
+import org.traincontrol.gui.app.BackupAction;
 import org.traincontrol.gui.widgets.BusyDialog;
 import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.gui.util.DragToScroll;
@@ -167,10 +168,10 @@ import org.traincontrol.gui.widgets.LoadingSpinner;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.PositionAwareJFrame;
 import org.traincontrol.gui.widgets.QuickFileChooser;
-import org.traincontrol.gui.widgets.RestoreAction;
-import org.traincontrol.gui.widgets.StartupSplash;
+import org.traincontrol.gui.app.RestoreAction;
+import org.traincontrol.gui.app.StartupSplash;
 import org.traincontrol.gui.widgets.StationCaption;
-import org.traincontrol.gui.widgets.UpdateFlow;
+import org.traincontrol.gui.app.UpdateFlow;
 import org.traincontrol.model.View;
 import org.traincontrol.model.ViewListener;
 import org.json.JSONObject;
@@ -4124,7 +4125,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     }
     
     /** The Log tab; Export Log reads its text. */
-    final org.traincontrol.gui.app.LogPanel logView = new org.traincontrol.gui.app.LogPanel();
+    public final org.traincontrol.gui.app.LogPanel logView = new org.traincontrol.gui.app.LogPanel();
 
     /**
      * Logs a message

@@ -637,10 +637,10 @@ public class testControlStationFaults
 
             try (java.io.FileInputStream holding = new java.io.FileInputStream(live))
             {
-                outcome = new org.traincontrol.gui.widgets.BackupAction(ui).writeTheBackup(false);
+                outcome = new org.traincontrol.gui.app.BackupAction(ui).writeTheBackup(false);
             }
 
-            Class<?> outcomes = org.traincontrol.gui.widgets.BackupAction.BackupOutcome.class;
+            Class<?> outcomes = org.traincontrol.gui.app.BackupAction.BackupOutcome.class;
 
             java.util.List<String> unsaved = (java.util.List<String>) Reflect.get(outcomes, outcome, "unsaved");
 

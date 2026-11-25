@@ -63,7 +63,7 @@ then
     # One exec file per class: battery.sh puts the class name where %s stands.  An instrumented run's flakes stay in
     # its own scratch log, apart from ordinary runs'.
     (cd "$TREE" && TC_SCRATCH="$(cygpath -m "$OUT/scratch")" \
-        TC_JVM_ARGS="-javaagent:$JACOCO/jacocoagent.jar=destfile=$(cygpath -m "$OUT/exec")/%s.exec,includes=org.traincontrol.*,excludes=org.traincontrol.gui.widgets.StartupSplash" \
+        TC_JVM_ARGS="-javaagent:$JACOCO/jacocoagent.jar=destfile=$(cygpath -m "$OUT/exec")/%s.exec,includes=org.traincontrol.*,excludes=org.traincontrol.gui.app.StartupSplash" \
         bash docs/tools/battery.sh)
 
     echo "battery exit $?"

@@ -30,7 +30,7 @@ import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.locomotive.LocomotiveSelector;
 import org.traincontrol.gui.locomotive.LocomotiveSelectorItem;
-import org.traincontrol.gui.widgets.AboutPanel;
+import org.traincontrol.gui.app.AboutPanel;
 import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;

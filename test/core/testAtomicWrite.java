@@ -618,7 +618,7 @@ public class testAtomicWrite
         Files.write(setup.toPath(), "{\"the setup\": \"now\"}".getBytes(StandardCharsets.UTF_8));
         Files.write(new File(yard, "config/gleisbild.cs2").toPath(), "index now".getBytes(StandardCharsets.UTF_8));
 
-        Class<?> archiveClass = Class.forName("org.traincontrol.gui.widgets.RestoreAction$Archive");
+        Class<?> archiveClass = Class.forName("org.traincontrol.gui.app.RestoreAction$Archive");
 
         Object archive = support.Reflect.method(archiveClass, "read", File.class,
             org.traincontrol.model.ViewListener.class).invoke(null, zip, null);
@@ -672,7 +672,7 @@ public class testAtomicWrite
         {
             Files.write(legacy.toPath(), "{\"the legacy setup\": \"now\"}".getBytes(StandardCharsets.UTF_8));
 
-            Class<?> archiveClass = Class.forName("org.traincontrol.gui.widgets.RestoreAction$Archive");
+            Class<?> archiveClass = Class.forName("org.traincontrol.gui.app.RestoreAction$Archive");
 
             Object archive = support.Reflect.method(archiveClass, "read", File.class,
                 org.traincontrol.model.ViewListener.class).invoke(null, zip, null);

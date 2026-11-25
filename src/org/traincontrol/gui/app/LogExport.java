@@ -1,22 +1,23 @@
-package org.traincontrol.gui;
+package org.traincontrol.gui.app;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.widgets.SaveFileChooser;
 import org.traincontrol.util.I18n;
 
 /**
  * File > Export Log (FR-051): saves the log as it shows, stamps included, to a text file.  Event thread only.
  */
-final class LogExport
+public final class LogExport
 {
     private LogExport()
     {
     }
 
-    static void save(TrainControlUI ui)
+    public static void save(TrainControlUI ui)
     {
         String text = ui.logView.text().replace("\n", System.lineSeparator());
 

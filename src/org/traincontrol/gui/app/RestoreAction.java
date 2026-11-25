@@ -1,4 +1,4 @@
-package org.traincontrol.gui.widgets;
+package org.traincontrol.gui.app;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -25,6 +25,8 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.widgets.BusyDialog;
+import org.traincontrol.gui.widgets.QuickFileChooser;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;

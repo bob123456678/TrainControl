@@ -1,4 +1,4 @@
-package org.traincontrol.gui.widgets;
+package org.traincontrol.gui.app;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -7,6 +7,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import org.traincontrol.gui.widgets.LoadingSpinner;
 
 /**
  * Says the application is starting, during the part of start-up that has nothing to show yet (FR-041).  Not a window of

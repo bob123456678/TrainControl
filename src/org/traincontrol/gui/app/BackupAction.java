@@ -1,4 +1,4 @@
-package org.traincontrol.gui.widgets;
+package org.traincontrol.gui.app;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;

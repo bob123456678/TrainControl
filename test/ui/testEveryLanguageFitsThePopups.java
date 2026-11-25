@@ -181,7 +181,7 @@ public class testEveryLanguageFitsThePopups
 
         java.lang.reflect.Method syncRetry = Reflect.method(TrainControlUI.class, "offerSyncRetry", java.awt.Component.class,
             String.class, Runnable.class);
-        java.lang.reflect.Method backupAsks = Reflect.method(org.traincontrol.gui.widgets.BackupAction.class,
+        java.lang.reflect.Method backupAsks = Reflect.method(org.traincontrol.gui.app.BackupAction.class,
             "askOnEventThread", String.class);
         java.lang.reflect.Method csvDoor = Reflect.method(Class.forName("org.traincontrol.gui.LocomotiveCsvImport"), "open",
             TrainControlUI.class, java.awt.Component.class);
@@ -209,12 +209,12 @@ public class testEveryLanguageFitsThePopups
                 return null;
             }, null));
             found.addAll(popup("popup-update", language, m -> Answering.pressAt(0), null,
-                later(() -> org.traincontrol.gui.widgets.UpdateFlow.askAboutTheUpdate(railway.ui, "9.9.9", "3.1.0", true)), null));
+                later(() -> org.traincontrol.gui.app.UpdateFlow.askAboutTheUpdate(railway.ui, "9.9.9", "3.1.0", true)), null));
             found.addAll(popup("popup-backup", language, m -> Answering.pressAt(1), null,
-                later(() -> backupAsks.invoke(new org.traincontrol.gui.widgets.BackupAction(railway.ui),
+                later(() -> backupAsks.invoke(new org.traincontrol.gui.app.BackupAction(railway.ui),
                     I18n.t("ui.askBackupIncludeCentralStationLayout"))), null));
             found.addAll(popup("popup-restore-refused", language, m -> null, notAnArchive,
-                later(() -> { new org.traincontrol.gui.widgets.RestoreAction(railway.ui).restoreFromBackup(); return null; }), null));
+                later(() -> { new org.traincontrol.gui.app.RestoreAction(railway.ui).restoreFromBackup(); return null; }), null));
             found.addAll(popup("popup-csv-nothing", language, m -> null, csv, later(() -> csvDoor.invoke(null, railway.ui, railway.ui)),
                 null));
 

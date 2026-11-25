@@ -35,7 +35,7 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.TrainControlUI;
-import org.traincontrol.gui.widgets.RestoreAction;
+import org.traincontrol.gui.app.RestoreAction;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.marklin.MarklinSimpleComponent;

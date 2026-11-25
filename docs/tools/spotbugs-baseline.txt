@@ -180,8 +180,8 @@ DB_DUPLICATE_SWITCH_CLAUSES	org.traincontrol.gui.RouteEditorWindow	settingWords	
 DCN_NULLPOINTER_EXCEPTION	org.traincontrol.base.Accessory	stringToAccessoryDecoderType		1
 DCN_NULLPOINTER_EXCEPTION	org.traincontrol.marklin.file.CS2File	parseLocomotives		1
 DE_MIGHT_IGNORE	org.traincontrol.gui.autonomy.DiagramExport	awaitTiles		1
-DE_MIGHT_IGNORE	org.traincontrol.gui.widgets.AboutPanel	linkLabel1MouseClicked		2
-DE_MIGHT_IGNORE	org.traincontrol.gui.widgets.AboutPanel	linkLabelMouseClicked		2
+DE_MIGHT_IGNORE	org.traincontrol.gui.app.AboutPanel	linkLabel1MouseClicked		2
+DE_MIGHT_IGNORE	org.traincontrol.gui.app.AboutPanel	linkLabelMouseClicked		2
 DLS_DEAD_LOCAL_STORE	org.traincontrol.automationui.TileGraph	exits		1
 DLS_DEAD_LOCAL_STORE	org.traincontrol.gui.layouteditor.LayoutEditorSelection	fillSelection		1
 DM_BOXED_PRIMITIVE_FOR_COMPARE	org.traincontrol.gui.locomotive.LocomotiveStats	lambda$null		1
@@ -223,7 +223,7 @@ DM_CONVERT_CASE	org.traincontrol.util.JarUpdater	backupName		1
 DM_CONVERT_CASE	org.traincontrol.util.SelfUpdate	jarAt		1
 DM_CONVERT_CASE	org.traincontrol.util.SelfUpdate	whyNotAWholeJar		1
 DM_DEFAULT_ENCODING	org.traincontrol.marklin.MarklinControlStation	init		1
-DM_EXIT	org.traincontrol.gui.widgets.RestoreAction	closeWithoutSaving		1
+DM_EXIT	org.traincontrol.gui.app.RestoreAction	closeWithoutSaving		1
 DM_EXIT	org.traincontrol.marklin.MarklinControlStation	init		1
 DM_INVALID_MIN_MAX	org.traincontrol.gui.layouteditor.LayoutEditor	scrollable		1
 DM_STRING_TOSTRING	org.traincontrol.automation.Layout$ConfigurationFile	placeLocomotive		1
@@ -377,10 +377,10 @@ EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocomotiveButtonContextMenu	<init
 EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.LocomotiveButtonContextMenu	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.locomotive.KeyboardPageContextMenu	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.widgets.AddressLabel	answerOnlyOver	square	1
-EI_EXPOSE_REP2	org.traincontrol.gui.widgets.BackupAction	<init>	ui	1
+EI_EXPOSE_REP2	org.traincontrol.gui.app.BackupAction	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.util.DragToScroll	<init>	image	1
-EI_EXPOSE_REP2	org.traincontrol.gui.widgets.RestoreAction	<init>	ui	1
-EI_EXPOSE_REP2	org.traincontrol.gui.widgets.UpdateFlow	<init>	ui	1
+EI_EXPOSE_REP2	org.traincontrol.gui.app.RestoreAction	<init>	ui	1
+EI_EXPOSE_REP2	org.traincontrol.gui.app.UpdateFlow	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.marklin.MarklinAccessory	<init>	network	1
 EI_EXPOSE_REP2	org.traincontrol.marklin.MarklinControlStation	<init>	NetworkInterface	1
 EI_EXPOSE_REP2	org.traincontrol.marklin.MarklinFeedback	<init>	network	1
@@ -581,7 +581,7 @@ RV_RETURN_VALUE_IGNORED_BAD_PRACTICE	org.traincontrol.gui.LayoutFileActions	init
 RV_RETURN_VALUE_IGNORED_BAD_PRACTICE	org.traincontrol.gui.LocomotiveIconActions	deleteLocIconFile		1
 RV_RETURN_VALUE_IGNORED_BAD_PRACTICE	org.traincontrol.gui.LocomotiveFunctionsTab	loadStandardIcons		1
 RV_RETURN_VALUE_IGNORED_BAD_PRACTICE	org.traincontrol.gui.TimetableTab	repaintTimetable		1
-RV_RETURN_VALUE_IGNORED_BAD_PRACTICE	org.traincontrol.gui.widgets.BackupAction	writeTheBackup		1
+RV_RETURN_VALUE_IGNORED_BAD_PRACTICE	org.traincontrol.gui.app.BackupAction	writeTheBackup		1
 RV_RETURN_VALUE_IGNORED_BAD_PRACTICE	org.traincontrol.marklin.MarklinControlStation	receiveMessage		1
 RV_RETURN_VALUE_IGNORED_BAD_PRACTICE	org.traincontrol.marklin.file.CS2File	downloadCS2Layout		1
 RV_RETURN_VALUE_IGNORED_BAD_PRACTICE	org.traincontrol.util.JarUpdater	update		1

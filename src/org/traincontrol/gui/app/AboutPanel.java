@@ -1,9 +1,10 @@
-package org.traincontrol.gui.widgets;
+package org.traincontrol.gui.app;
 
 import java.awt.Desktop;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**

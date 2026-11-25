@@ -93,8 +93,8 @@ public class testNoSelfRecursiveWrappers
      * owner's file and class name, and the prefix the collaborator calls its owner by (`ui.`, `owner.`, `editor.`).
      */
     private static final String[][] COLLABORATORS = {
-        { "backupAction", "src/org/traincontrol/gui/widgets/BackupAction.java", "BackupAction", WINDOW, "TrainControlUI", "ui." },
-        { "updateFlow", "src/org/traincontrol/gui/widgets/UpdateFlow.java", "UpdateFlow", WINDOW, "TrainControlUI", "ui." },
+        { "backupAction", "src/org/traincontrol/gui/app/BackupAction.java", "BackupAction", WINDOW, "TrainControlUI", "ui." },
+        { "updateFlow", "src/org/traincontrol/gui/app/UpdateFlow.java", "UpdateFlow", WINDOW, "TrainControlUI", "ui." },
         { "locIconActions", "src/org/traincontrol/gui/LocomotiveIconActions.java", "LocomotiveIconActions", WINDOW, "TrainControlUI",
             "ui." },
         { "layoutFileActions", "src/org/traincontrol/gui/LayoutFileActions.java", "LayoutFileActions", WINDOW,
