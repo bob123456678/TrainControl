@@ -3785,7 +3785,7 @@ public class testDiagramLooksRight
 
         int ink = commonestInk(drawn);
 
-        java.lang.reflect.Field gray = Reflect.field(org.traincontrol.gui.InfoMark.class, "GRAY");
+        java.lang.reflect.Field gray = Reflect.field(org.traincontrol.gui.widgets.InfoMark.class, "GRAY");
 
         int marks = gray.getInt(null) & 0xFFFFFF;
 

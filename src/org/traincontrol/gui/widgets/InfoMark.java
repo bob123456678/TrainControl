@@ -1,8 +1,9 @@
-package org.traincontrol.gui;
+package org.traincontrol.gui.widgets;
 
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.ToolTipManager;
+import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
@@ -47,8 +48,8 @@ public final class InfoMark
             }
 
             out.setRGB(0, 0, read.getWidth(), read.getHeight(), pixels, 0, read.getWidth());
-            return new org.traincontrol.util.SharpIcon(out, InfoMark::art,
-                org.traincontrol.util.SharpIcon.Fit.WHOLE);
+            return new org.traincontrol.gui.widgets.SharpIcon(out, InfoMark::art,
+                org.traincontrol.gui.widgets.SharpIcon.Fit.WHOLE);
         }
         catch (java.io.IOException | RuntimeException ex)
         {

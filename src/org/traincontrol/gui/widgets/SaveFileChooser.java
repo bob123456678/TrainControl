@@ -1,4 +1,4 @@
-package org.traincontrol.gui;
+package org.traincontrol.gui.widgets;
 
 import java.io.File;
 import java.io.IOException;
@@ -6,6 +6,7 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 import java.util.function.BiFunction;
 import javax.swing.JFileChooser;
@@ -15,7 +16,7 @@ import javax.swing.JOptionPane;
  * The save chooser behind the exports that write one file (FR-178, FR-051).  A file that cannot be written is said, and
  * the chooser comes back for another place.  Event thread only.
  */
-final class SaveFileChooser
+public final class SaveFileChooser
 {
     private SaveFileChooser()
     {
@@ -25,7 +26,7 @@ final class SaveFileChooser
      * A plain reason a write failed, never just the path (which is all the message of a missing folder or a refused
      * write holds).
      */
-    static String reason(File file, IOException e)
+    public static String reason(File file, IOException e)
     {
         if (e instanceof NoSuchFileException) return I18n.t("ui.reasonFolderMissing");
 
@@ -46,7 +47,7 @@ final class SaveFileChooser
      * @param whyNot the message for a write of this file that failed
      * @return the file written, or null when the user canceled
      */
-    static File save(TrainControlUI ui, byte[] bytes, String extension, String suggestedName,
+    public static File save(TrainControlUI ui, byte[] bytes, String extension, String suggestedName,
         BiFunction<File, IOException, String> whyNot)
     {
         JFileChooser fc = ui.getFileChooser(JFileChooser.SAVE_DIALOG, extension);

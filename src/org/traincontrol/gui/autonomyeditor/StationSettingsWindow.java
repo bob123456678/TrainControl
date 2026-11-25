@@ -55,7 +55,7 @@ import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts;
-import org.traincontrol.gui.InfoMark;
+import org.traincontrol.gui.widgets.InfoMark;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.TabIcons;
 import org.traincontrol.gui.util.UiStyle;
@@ -822,7 +822,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
         JLabel out = styled(new JLabel(triangle), partName, REGULAR);
 
-        out.setDisabledIcon(new org.traincontrol.util.SharpIcon(grayed(triangle, 16, 16),
+        out.setDisabledIcon(new org.traincontrol.gui.widgets.SharpIcon(grayed(triangle, 16, 16),
             (w, h) -> grayed(triangle, w, h)));
         out.setToolTipText(mixedTip());
         out.setBorder(BorderFactory.createEmptyBorder(0, 6, 0, 0));

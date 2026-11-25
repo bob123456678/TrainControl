@@ -445,7 +445,7 @@ MS_CANNOT_BE_FINAL	org.traincontrol.base.Accessory		echoes	1
 MS_CANNOT_BE_FINAL	org.traincontrol.base.Accessory		lastEchoed	1
 MS_CANNOT_BE_FINAL	org.traincontrol.marklin.MarklinControlStation		DEBUG_SIMULATE_PACKETS	1
 MS_EXPOSE_REP	org.traincontrol.base.LayoutDiagram	getUnreadableIndex	unreadableIndex	1
-MS_EXPOSE_REP	org.traincontrol.gui.InfoMark	icon	ICON	1
+MS_EXPOSE_REP	org.traincontrol.gui.widgets.InfoMark	icon	ICON	1
 MS_EXPOSE_REP	org.traincontrol.gui.locomotive.LocomotiveIconCropDialog	crop	result	1
 MS_MUTABLE_COLLECTION_PKGPROTECT	org.traincontrol.util.ImageUtil		RenderingProperties	1
 MS_PKGPROTECT	org.traincontrol.marklin.MarklinLocomotive		COLOR_WHITE	1

@@ -1,4 +1,4 @@
-package org.traincontrol.gui.locomotive;
+package org.traincontrol.gui.widgets;
 
 import java.awt.Color;
 import java.awt.Dimension;

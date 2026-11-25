@@ -138,7 +138,7 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
         assertTrue(at.y >= picture.y + picture.height && at.y - (picture.y + picture.height) <= 12,
             "the button is not directly under the picture: " + at + " under " + picture);
         assertNotNull(Components.find(SettingsWindow.showing().getContentPane(), JLabel.class,
-            l -> org.traincontrol.gui.InfoMark.icon() == l.getIcon() && l.getToolTipText() != null
+            l -> org.traincontrol.gui.widgets.InfoMark.icon() == l.getIcon() && l.getToolTipText() != null
                 && l.getToolTipText().contains(I18n.t("loc.ui.settingsSyncHint"))), "the button has no (i)");
 
         assertFalse(Components.onTheEventThread(button::isEnabled), "the button is lit in a simulation");
@@ -552,7 +552,7 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
         }
 
         java.awt.Component info = Components.find(SettingsWindow.showing().getContentPane(), JLabel.class,
-            l -> org.traincontrol.gui.InfoMark.icon() == l.getIcon());
+            l -> org.traincontrol.gui.widgets.InfoMark.icon() == l.getIcon());
 
         assertNotNull(info, "no (i)");
         assertEquals((int) Components.onTheEventThread(() -> info.getCursor().getType()), java.awt.Cursor.DEFAULT_CURSOR,

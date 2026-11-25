@@ -89,7 +89,7 @@ import org.traincontrol.gui.widgets.PositionAwareJFrame;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.util.I18n;
-import org.traincontrol.util.SharpIcon;
+import org.traincontrol.gui.widgets.SharpIcon;
 import org.json.JSONObject;
 import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.automationui.AutonomySession;

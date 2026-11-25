@@ -30,6 +30,7 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.RenameProposals;
 import org.traincontrol.base.RenameProposals.Row;
 import org.traincontrol.gui.widgets.ChoiceTable;
+import org.traincontrol.gui.widgets.InfoMark;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.util.UiStyle;
 import org.traincontrol.util.I18n;

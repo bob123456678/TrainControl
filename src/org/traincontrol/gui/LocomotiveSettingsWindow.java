@@ -53,6 +53,7 @@ import org.traincontrol.gui.locomotive.CurrentKeyRow;
 import org.traincontrol.gui.util.OnMouse;
 import org.traincontrol.gui.util.OnTextEdit;
 import org.traincontrol.gui.widgets.HandPointer;
+import org.traincontrol.gui.widgets.InfoMark;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.TabIcons;
 import org.traincontrol.gui.util.UiStyle;

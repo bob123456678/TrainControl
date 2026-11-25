@@ -30,6 +30,7 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.util.OnMouse;
 import org.traincontrol.gui.util.OnTextEdit;
 import org.traincontrol.gui.util.UiStyle;
+import org.traincontrol.gui.widgets.InfoMark;
 import org.traincontrol.util.I18n;
 
 /**

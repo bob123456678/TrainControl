@@ -38,7 +38,7 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.autonomyeditor.StationPreset;
 import org.traincontrol.gui.autonomyeditor.StationSettingsWindow;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
-import org.traincontrol.gui.locomotive.SegmentedControl;
+import org.traincontrol.gui.widgets.SegmentedControl;
 import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.gui.widgets.PillButton;
 import org.traincontrol.gui.util.UiStyle;

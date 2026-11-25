@@ -208,7 +208,7 @@ final class LayoutEditorTrainDrag
         int width = metrics.stringWidth(name) + 16;
         int height = metrics.getHeight() + 8;
 
-        return org.traincontrol.util.SharpIcon.painted(editor, width, height, g ->
+        return org.traincontrol.gui.widgets.SharpIcon.painted(editor, width, height, g ->
         {
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g.setColor(new Color(40, 40, 40, 210));

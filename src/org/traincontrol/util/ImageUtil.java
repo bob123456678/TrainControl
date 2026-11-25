@@ -12,6 +12,7 @@ import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import javax.swing.ImageIcon;
+import org.traincontrol.gui.widgets.SharpIcon;
 
 /**
  * Image manipulation utility functions

@@ -7,7 +7,6 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.geom.RoundRectangle2D;
 import javax.swing.JToggleButton;
-import org.traincontrol.gui.locomotive.SegmentedControl;
 import org.traincontrol.gui.util.UiStyle;
 import org.traincontrol.util.ImageUtil;
 

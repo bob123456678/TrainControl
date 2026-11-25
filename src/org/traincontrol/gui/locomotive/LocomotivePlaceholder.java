@@ -49,7 +49,7 @@ public class LocomotivePlaceholder
     /** As an icon, sharp on a scaled screen (D191). */
     public static javax.swing.ImageIcon icon(int width)
     {
-        return new org.traincontrol.util.SharpIcon(image(width), LocomotivePlaceholder::image);
+        return new org.traincontrol.gui.widgets.SharpIcon(image(width), LocomotivePlaceholder::image);
     }
 
     /**

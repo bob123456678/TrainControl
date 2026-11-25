@@ -414,7 +414,7 @@ public class testTheTrainWindow
                     java.awt.Container form = Components.named(window, "train.form", java.awt.Container.class);
 
                     for (javax.swing.JLabel mark : Components.all(form, javax.swing.JLabel.class,
-                        l -> l.getIcon() == org.traincontrol.gui.InfoMark.icon()))
+                        l -> l.getIcon() == org.traincontrol.gui.widgets.InfoMark.icon()))
                     {
                         out.add(mark.getToolTipText() == null ? "" : mark.getToolTipText().replaceAll("<[^>]*>", " ")
                             .replace("&nbsp;", " ").replaceAll("\\s+", " ").trim());
@@ -1287,7 +1287,7 @@ public class testTheTrainWindow
 
             javax.swing.JDialog out = new javax.swing.JDialog();
 
-            mark[0] = org.traincontrol.gui.InfoMark.label("a sentence");
+            mark[0] = org.traincontrol.gui.widgets.InfoMark.label("a sentence");
             out.add(mark[0]);
             out.pack();
             out.setVisible(true);
@@ -1518,7 +1518,7 @@ public class testTheTrainWindow
         java.awt.Container form = StationDoors.part(window, "train.form", java.awt.Container.class);
 
         javax.swing.JLabel mark = Components.onTheEventThread(() -> Components.find(form, javax.swing.JLabel.class,
-            l -> l.getIcon() == org.traincontrol.gui.InfoMark.icon() && l.getToolTipText() != null));
+            l -> l.getIcon() == org.traincontrol.gui.widgets.InfoMark.icon() && l.getToolTipText() != null));
 
         try
         {

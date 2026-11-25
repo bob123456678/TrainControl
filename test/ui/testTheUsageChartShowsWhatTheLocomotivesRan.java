@@ -28,7 +28,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.locomotive.LocomotiveStats;
-import org.traincontrol.gui.locomotive.SegmentedControl;
+import org.traincontrol.gui.widgets.SegmentedControl;
 import org.traincontrol.gui.locomotive.UsageChart;
 import org.traincontrol.gui.locomotive.UsageChartPanel;
 import org.traincontrol.marklin.MarklinControlStation;

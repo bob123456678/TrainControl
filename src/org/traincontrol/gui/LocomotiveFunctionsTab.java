@@ -54,6 +54,7 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.util.OnMouse;
 import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.gui.util.PopupMenuTrigger;
+import org.traincontrol.gui.widgets.InfoMark;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.util.UiStyle;
 import org.traincontrol.gui.widgets.QuickFileChooser;

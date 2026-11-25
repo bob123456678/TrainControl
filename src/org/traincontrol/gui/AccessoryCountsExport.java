@@ -3,6 +3,7 @@ package org.traincontrol.gui;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import org.traincontrol.gui.widgets.SaveFileChooser;
 import org.traincontrol.util.I18n;
 
 /**

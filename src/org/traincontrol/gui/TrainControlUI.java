@@ -184,7 +184,7 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
-import org.traincontrol.util.SharpIcon;
+import org.traincontrol.gui.widgets.SharpIcon;
 import org.traincontrol.util.Util;
 import org.traincontrol.util.JarUpdater;
 import org.traincontrol.util.SelfUpdate;

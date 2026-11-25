@@ -33,7 +33,7 @@ import javax.swing.Timer;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.gui.InfoMark;
+import org.traincontrol.gui.widgets.InfoMark;
 import org.traincontrol.gui.RunGates;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;

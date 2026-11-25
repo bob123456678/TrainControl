@@ -22,7 +22,7 @@ import javax.swing.JToggleButton;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.InfoMark;
+import org.traincontrol.gui.widgets.InfoMark;
 import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;

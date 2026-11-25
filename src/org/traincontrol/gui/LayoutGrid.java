@@ -236,7 +236,7 @@ public class LayoutGrid
 
         if (pill == null || pill.width <= 0 || pill.height <= 0) return;
 
-        javax.swing.Icon shot = org.traincontrol.util.SharpIcon.painted(editor, pill.width, pill.height, g ->
+        javax.swing.Icon shot = org.traincontrol.gui.widgets.SharpIcon.painted(editor, pill.width, pill.height, g ->
         {
             g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.8f));
             g.translate(-pill.x, -pill.y);

@@ -38,7 +38,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.base.LayoutDiagramComponent;
-import org.traincontrol.gui.InfoMark;
+import org.traincontrol.gui.widgets.InfoMark;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.util.OnMouse;
 import org.traincontrol.gui.TrainControlUI;

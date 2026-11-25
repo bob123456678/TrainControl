@@ -264,7 +264,7 @@ public class testPicturesAreSharpOnAScaledScreen
             "the function icon's picture is not the one getLocImage makes");
 
         // As a scaled screen keeps it, with its 48-pixel original
-        Icon functionIcon = new org.traincontrol.util.SharpIcon(picture,
+        Icon functionIcon = new org.traincontrol.gui.widgets.SharpIcon(picture,
             javax.imageio.ImageIO.read(new java.net.URL(function)));
 
         Icon[] icons = {square(componentType.SWITCH_LEFT, 1, 30), square(componentType.CURVE, 3, 60),
@@ -459,7 +459,7 @@ public class testPicturesAreSharpOnAScaledScreen
         ui.getLocIcon(url, TrainControlUI.LOC_ICON_WIDTH, TrainControlUI.LOC_ICON_HEIGHT);
         ui.getLocIcon(url, 66);
 
-        if (org.traincontrol.util.SharpIcon.screenScale(ui) <= 1)
+        if (org.traincontrol.gui.widgets.SharpIcon.screenScale(ui) <= 1)
         {
             assertNull(TrainControlUI.getImageCache().get(url), "the original is kept under its address");
         }
@@ -503,7 +503,7 @@ public class testPicturesAreSharpOnAScaledScreen
             for (int y = 0; y < 16; y++) small.setRGB(x, y, (x + y) % 2 == 0 ? 0xff000000 : 0xffffffff);
         }
 
-        Icon icon = new org.traincontrol.util.SharpIcon(ImageUtil.getScaledImage(small, 34, 14), small);
+        Icon icon = new org.traincontrol.gui.widgets.SharpIcon(ImageUtil.getScaledImage(small, 34, 14), small);
 
         assertEquals(differing(painted(icon, 2), onClear(ImageUtil.getScaledImage(small, 68, 28))), 0,
             "a 40-pixel original drawn 68 pixels across is not the bilinear enlargement");
@@ -519,13 +519,13 @@ public class testPicturesAreSharpOnAScaledScreen
     @Test
     public void testTheInfoMarkIsDrawnAtTheScreensPixels() throws Exception
     {
-        java.lang.reflect.Method art = support.Reflect.method(org.traincontrol.gui.InfoMark.class, "art", int.class,
+        java.lang.reflect.Method art = support.Reflect.method(org.traincontrol.gui.widgets.InfoMark.class, "art", int.class,
             int.class);
 
         for (double scale : new double[] {1.25, 2})
         {
             int size = (int) (14 * scale);
-            BufferedImage drawn = painted(org.traincontrol.gui.InfoMark.icon(), scale).getSubimage(0, 0, size, size);
+            BufferedImage drawn = painted(org.traincontrol.gui.widgets.InfoMark.icon(), scale).getSubimage(0, 0, size, size);
 
             assertEquals(differing(drawn, onClear((Image) art.invoke(null, size, size))), 0,
                 "the mark at " + scale + " is not the art made " + size + " pixels across");
@@ -569,8 +569,8 @@ public class testPicturesAreSharpOnAScaledScreen
             }
         }
 
-        assertEquals(differing(painted(org.traincontrol.gui.InfoMark.icon(), 1), onClear(gray)), 0, "the mark at scale 1");
-        assertEquals(differing(painted(new ImageIcon(org.traincontrol.gui.InfoMark.icon().getImage()), 1), onClear(gray)), 0,
+        assertEquals(differing(painted(org.traincontrol.gui.widgets.InfoMark.icon(), 1), onClear(gray)), 0, "the mark at scale 1");
+        assertEquals(differing(painted(new ImageIcon(org.traincontrol.gui.widgets.InfoMark.icon().getImage()), 1), onClear(gray)), 0,
             "its picture");
     }
 
@@ -638,7 +638,7 @@ public class testPicturesAreSharpOnAScaledScreen
     public void testADisabledSharpIconIsDrawnAtTheScreensPixels() throws Exception
     {
         com.formdev.flatlaf.FlatLaf laf = (com.formdev.flatlaf.FlatLaf) javax.swing.UIManager.getLookAndFeel();
-        org.traincontrol.util.SharpIcon.Art art = (w, h) ->
+        org.traincontrol.gui.widgets.SharpIcon.Art art = (w, h) ->
         {
             BufferedImage out = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
 
@@ -649,7 +649,7 @@ public class testPicturesAreSharpOnAScaledScreen
 
             return out;
         };
-        Icon icon = new org.traincontrol.util.SharpIcon(art.at(20, 20), art);
+        Icon icon = new org.traincontrol.gui.widgets.SharpIcon(art.at(20, 20), art);
         Icon disabled = laf.getDisabledIcon(null, icon);
 
         assertEquals(differing(painted(disabled, 1), painted(laf.getDisabledIcon(null, new ImageIcon(
@@ -815,7 +815,7 @@ public class testPicturesAreSharpOnAScaledScreen
     public void testADrawnPictureIsOnePictureAnywhere() throws Exception
     {
         java.net.URL function = TrainControlUI.class.getResource("resources/functions/FktIcon_a_ge_01.png");
-        Icon[] icons = {TrainControlUI.TAB_ICON_CONTROL, LocomotivePlaceholder.icon(142), new org.traincontrol.util
+        Icon[] icons = {TrainControlUI.TAB_ICON_CONTROL, LocomotivePlaceholder.icon(142), new org.traincontrol.gui.widgets
             .SharpIcon(ui.getLocImage(function.toString(), TrainControlUI.BUTTON_ICON_WIDTH),
                 javax.imageio.ImageIO.read(function))};
 
@@ -848,7 +848,7 @@ public class testPicturesAreSharpOnAScaledScreen
         g.fillRect(0, 0, 198, 75);
         g.dispose();
 
-        Icon icon = new org.traincontrol.util.SharpIcon(photo.getScaledInstance(66, 25, Image.SCALE_SMOOTH), photo);
+        Icon icon = new org.traincontrol.gui.widgets.SharpIcon(photo.getScaledInstance(66, 25, Image.SCALE_SMOOTH), photo);
 
         for (int x = 0; x < 4; x++)
         {

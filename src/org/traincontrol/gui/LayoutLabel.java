@@ -763,7 +763,7 @@ public final class LayoutLabel extends JLabel
                     if (img != null) TrainControlUI.getImageCache().putIfAbsent(k, img);
 
                     // Then, apart, the copy a scaled screen draws (D191), so its first paint need not make it
-                    double scale = org.traincontrol.util.SharpIcon.screenScale(tcUI);
+                    double scale = org.traincontrol.gui.widgets.SharpIcon.screenScale(tcUI);
                     int turn = c.getOrientation();
                     if (scale > 1) tcUI.getTileImageLoader().execute(() ->
                     {
@@ -900,8 +900,8 @@ public final class LayoutLabel extends JLabel
                         
                         boolean hadIcon = (this.getIcon() != null);
                         final int turn = this.component.getOrientation();
-                        lastIcon = ICONS.computeIfAbsent(img, i -> new org.traincontrol.util.SharpIcon(i,
-                            (w, h) -> sharp(shown, w, turn), org.traincontrol.util.SharpIcon.Fit.TILE));
+                        lastIcon = ICONS.computeIfAbsent(img, i -> new org.traincontrol.gui.widgets.SharpIcon(i,
+                            (w, h) -> sharp(shown, w, turn), org.traincontrol.gui.widgets.SharpIcon.Fit.TILE));
 
                         // A flash that is up is given up whenever the picture is replaced: its timer holds the icon it
                         // captured and would draw the tile as it was.
@@ -1375,7 +1375,7 @@ public final class LayoutLabel extends JLabel
         if (!(icon instanceof ImageIcon)) return;
 
         // Made from each sharp copy too (FR-243); kept here, as each copy holds the icon it came from
-        if (arrowsOf != icon) arrows = org.traincontrol.util.SharpIcon.map((ImageIcon) icon, LayoutLabel::redOf);
+        if (arrowsOf != icon) arrows = org.traincontrol.gui.widgets.SharpIcon.map((ImageIcon) icon, LayoutLabel::redOf);
         arrowsOf = icon;
 
         java.awt.Insets in = getInsets();

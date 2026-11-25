@@ -476,7 +476,7 @@ public class testSeveralStationsAtOnce
     {
         StationSettingsWindow window = pick(stations(1));
         List<javax.swing.JLabel> marks = Components.all(window, javax.swing.JLabel.class,
-            l -> l.getIcon() == org.traincontrol.gui.InfoMark.icon() && l.isShowing());
+            l -> l.getIcon() == org.traincontrol.gui.widgets.InfoMark.icon() && l.isShowing());
 
         assertTrue(marks.size() >= 4, "precondition: Station Settings shows " + marks.size() + " (i) marks");
 

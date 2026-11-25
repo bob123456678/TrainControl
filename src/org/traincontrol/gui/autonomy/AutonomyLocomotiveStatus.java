@@ -109,8 +109,8 @@ public final class AutonomyLocomotiveStatus extends javax.swing.JPanel
         });
     }
 
-    /** The "there is a reason, hover me" mark (OB-063), shared as {@link org.traincontrol.gui.InfoMark}. */
-    private static final javax.swing.ImageIcon INFO_ICON = org.traincontrol.gui.InfoMark.icon();
+    /** The "there is a reason, hover me" mark (OB-063), shared as {@link org.traincontrol.gui.widgets.InfoMark}. */
+    private static final javax.swing.ImageIcon INFO_ICON = org.traincontrol.gui.widgets.InfoMark.icon();
 
     /**
      * This tab's blue, for a card's station badge and its text: the darker blue the window's own labels are written in.

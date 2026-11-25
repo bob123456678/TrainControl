@@ -1,4 +1,4 @@
-package org.traincontrol.util;
+package org.traincontrol.gui.widgets;
 
 import java.awt.Component;
 import java.awt.Dimension;
@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.swing.ImageIcon;
+import org.traincontrol.util.ImageUtil;
 
 /**
  * An ImageIcon that a scaled screen draws sharp (D191): where Java 9 and later scale the drawing, it paints a picture
