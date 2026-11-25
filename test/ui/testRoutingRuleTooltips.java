@@ -37,7 +37,8 @@ public class testRoutingRuleTooltips
         assertEquals(dropdown.getItemCount(), rules.length,
             "the dropdown does not offer one item per rule, so the indexes below name the wrong ones");
 
-        java.lang.reflect.Method refresh = Reflect.method(TrainControlUI.class, "refreshRoutingLogicTooltip");
+        Object tab = Reflect.get(TrainControlUI.class, ui, "autonomySettingsTab");
+        java.lang.reflect.Method refresh = Reflect.method(tab.getClass(), "refreshRoutingLogicTooltip");
 
         String general = I18n.t("ui.main.tooltip.routingLogic");
 
@@ -65,7 +66,7 @@ public class testRoutingRuleTooltips
 
             dropdown.setSelectedIndex(at);
 
-            refresh.invoke(ui);
+            refresh.invoke(tab);
 
             String tip = dropdown.getToolTipText();
 
@@ -98,7 +99,9 @@ public class testRoutingRuleTooltips
 
         dropdown.setSelectedIndex(-1);
 
-        Reflect.method(TrainControlUI.class, "refreshRoutingLogicTooltip").invoke(ui);
+        Object tab = Reflect.get(TrainControlUI.class, ui, "autonomySettingsTab");
+
+        Reflect.method(tab.getClass(), "refreshRoutingLogicTooltip").invoke(tab);
 
         assertEquals(dropdown.getToolTipText(), I18n.t("ui.main.tooltip.routingLogic"),
             "with no rule chosen the control said more than what it is for");

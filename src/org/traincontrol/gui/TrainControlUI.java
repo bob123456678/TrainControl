@@ -4546,11 +4546,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
        repaintMappings();        
     }
     
-    private void setPageName(String name)
-    {
-        this.locMappingPages.setPageName(name);
-    }
-
     public javax.swing.JLabel locMappingNumberLabel()
     {
         return this.LocMappingNumberLabel;
@@ -4586,11 +4581,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     private void installShowPageNumbersMenuItem()
     {
         this.showPageNumbersMenuItem = this.locMappingPages.installShowPageNumbersMenuItem();
-    }
-
-    private void retitlePages()
-    {
-        this.locMappingPages.retitlePages();
     }
 
     /**
@@ -6529,11 +6519,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
     /** Set while the routing dropdown is put back by us, so its ActionEvent does not re-enter the listener. */
     boolean restoringRoutingLogic = false;
-
-    private void refreshRoutingLogicTooltip()
-    {
-        autonomySettingsTab.refreshRoutingLogicTooltip();
-    }
 
     void restoreRoutingLogicSelection()
     {
