@@ -214,13 +214,11 @@ public class DiagramMonitorDriver
      */
     public void start()
     {
-        Timer running = timer;
-
         try
         {
-            if (running != null)
+            if (timer != null)
             {
-                running.schedule(aTick(), 0);
+                timer.schedule(aTick(), 0);
                 return;
             }
         }

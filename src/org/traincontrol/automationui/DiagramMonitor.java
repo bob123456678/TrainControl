@@ -170,7 +170,7 @@ public class DiagramMonitor
     {
         if (!dirty.getAndSet(false)) return false;
 
-        // Owed again when it throws: an idle railway fires nothing more, so its last picture would stay.
+        // Owed again on a throw: an idle railway fires no more.
         try
         {
             refresh();
@@ -180,7 +180,6 @@ public class DiagramMonitor
             markDirty();
             throw e;
         }
-
         return true;
     }
 
