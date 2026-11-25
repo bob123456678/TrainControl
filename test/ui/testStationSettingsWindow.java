@@ -2582,26 +2582,26 @@ public class testStationSettingsWindow
     }
 
     /**
-     * The Priority row's (i) says which way the number counts, in both states: at the default 0 and with a number typed.
+     * The Importance row's (i) says which way the number counts, in both states: at the default 0 and with a number typed.
      *
-     * MUTATION: drop "A higher number is preferred" from `flyPriorityNow` or `flyPriorityNoneNow`, and this fails.
+     * MUTATION: drop "A higher importance is preferred" from `flyPriorityNow` or `flyPriorityNoneNow`, and this fails.
      */
     @Test(timeOut = 120000)
-    public void testThePriorityMarkSaysAHigherNumberIsPreferred() throws Exception
+    public void testThePriorityMarkSaysAHigherImportanceIsPreferred() throws Exception
     {
         StationSettingsWindow window = StationDoors.open(panel, aStation());
 
         StationDoors.current(window);
 
-        String said = "A higher number is preferred";
+        String said = "A higher importance is preferred";
 
         assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("priority")).contains(said),
-            "the Priority (i) at the default does not say which way the number counts");
+            "the Importance (i) at the default does not say which way the number counts");
 
         StationDoors.typeAndEnter(window, "station.priority", "4");
 
         assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("priority")).contains(said),
-            "the Priority (i) with a number typed does not say which way the number counts");
+            "the Importance (i) with a number typed does not say which way the number counts");
 
         StationDoors.close(window);
     }
