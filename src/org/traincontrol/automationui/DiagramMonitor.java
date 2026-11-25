@@ -170,7 +170,16 @@ public class DiagramMonitor
     {
         if (!dirty.getAndSet(false)) return false;
 
-        refresh();
+        // Owed again when it throws: an idle railway fires nothing more, so its last picture would stay.
+        try
+        {
+            refresh();
+        }
+        catch (RuntimeException | Error e)
+        {
+            markDirty();
+            throw e;
+        }
 
         return true;
     }
