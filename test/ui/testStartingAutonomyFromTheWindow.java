@@ -371,8 +371,8 @@ public class testStartingAutonomyFromTheWindow
     }
 
     /**
-     * Opens a page window, starts the run and waits until the window shows a path, then hands over; puts the setup back
-     * loaded and closes the window afterwards.
+     * Opens a page window, starts the run and waits until the window shows a path, then hands over; closes the window
+     * and puts the setup back loaded afterwards.
      */
     private static void throughAPageWindow(InAPageWindow claim) throws Exception
     {
@@ -394,6 +394,9 @@ public class testStartingAutonomyFromTheWindow
             support.AskingWindows.closeThePage(page);
 
             if (ui.getActiveDiagramConfiguration() == null) loadAgain();
+
+            // A reset makes the window a new session, which the other claims edit
+            session = ui.getAutonomySession();
         }
     }
 
