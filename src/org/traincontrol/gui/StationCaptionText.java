@@ -1,4 +1,4 @@
-package org.traincontrol.gui.autonomy;
+package org.traincontrol.gui;
 
 import java.awt.Color;
 import java.util.Collections;
@@ -13,8 +13,6 @@ import org.traincontrol.automationui.DiagramColours;
 import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.LayoutGrid;
-import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.layout.StationCaption;
 
 /**
@@ -25,7 +23,7 @@ public final class StationCaptionText
 {
     private final TrainControlUI ui;
 
-    public StationCaptionText(TrainControlUI ui)
+    StationCaptionText(TrainControlUI ui)
     {
         this.ui = ui;
     }
@@ -55,7 +53,7 @@ public final class StationCaptionText
     }
 
     /** The locomotive the SETUP puts on a square, not the one standing there; null when the setup puts none there. */
-    public String autonomyLocomotiveAt(TileGraph.TileKey station)
+    String autonomyLocomotiveAt(TileGraph.TileKey station)
     {
         AutonomySession session = this.ui.getAutonomySession();
 
@@ -214,7 +212,7 @@ public final class StationCaptionText
     }
 
     /** Writes one Point's autonomy state onto the diagram's station labels; gated on a setup running, not a window. */
-    public void updateStationLabels(Point point)
+    void updateStationLabels(Point point)
     {
         // A caption points at the Point's square; the Point's own name misses once a station is several Points.
         AutonomySession labelSession = this.ui.getAutonomySession();
@@ -234,7 +232,7 @@ public final class StationCaptionText
 
         final Layout shown = this.ui.getModel().getAutoLayoutIfLoaded();
 
-        if (shown != null && !this.ui.getLayoutStations(square).isEmpty() && this.ui.getActiveDiagramConfiguration() != null)
+        if (shown != null && !this.ui.getLayoutStations(square).isEmpty() && this.ui.activeDiagramConfiguration != null)
         {
             Point destination = shown.getDestination(p.getCurrentLocomotive());
             Point start = shown.getStart(p.getCurrentLocomotive());

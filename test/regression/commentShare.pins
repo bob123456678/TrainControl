@@ -83,7 +83,7 @@ src/org/traincontrol/gui/RunGates.java	477	12
 src/org/traincontrol/gui/RunningLayoutSync.java	348	15
 src/org/traincontrol/gui/widgets/SaveFileChooser.java	-	0
 src/org/traincontrol/gui/util/SettledQuestion.java	495	0
-src/org/traincontrol/gui/autonomy/StationCaptionText.java	319	1
+src/org/traincontrol/gui/StationCaptionText.java	319	1
 src/org/traincontrol/gui/autonomy/TailCrossedPrompt.java	359	11
 src/org/traincontrol/gui/TimetableTab.java	271	1
 src/org/traincontrol/gui/TrainControlUI.java	-	83

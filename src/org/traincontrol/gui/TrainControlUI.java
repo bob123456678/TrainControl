@@ -144,7 +144,6 @@ import org.traincontrol.gui.autonomy.AutonomyOverlayToggle;
 import org.traincontrol.gui.autonomy.JsonExportPanel;
 import org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
-import org.traincontrol.gui.autonomy.StationCaptionText;
 import org.traincontrol.gui.layout.DiagramExport;
 import org.traincontrol.gui.layout.DiagramHighlights;
 import org.traincontrol.gui.layout.DiagramMonitorDriver;
