@@ -13936,6 +13936,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
                 JOptionPane.showMessageDialog(c, I18n.t("ui.infoSyncAlreadyRunning")));
         }
         else if (synced == -1) offerSyncRetry(c, null, retry);
+        // The table's renames happened before the sync; what they left is said here, at their door
+        if (synced < 0) javax.swing.SwingUtilities.invokeLater(() -> autonomyLifecycle.sayAfterRenames(c, null,
+            Collections.emptyList(), I18n.t("sync.ui.title")));
         return synced < 0;
     }
 

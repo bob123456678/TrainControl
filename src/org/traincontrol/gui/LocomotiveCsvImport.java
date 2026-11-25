@@ -158,6 +158,7 @@ final class LocomotiveCsvImport
             return;
         }
 
+        ui.autonomyLifecycle.forgetUnrepaired();
         MarklinLocomotiveCsv.Result result = csv.apply(model, plan, table == null ? new HashMap<>() : table.picks());
 
         TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, chosen.getParent());

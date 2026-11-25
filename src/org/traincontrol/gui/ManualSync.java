@@ -201,6 +201,7 @@ public final class ManualSync
         Map<RenameProposals.Row, Answer> answers, Map<Locomotive, String> names, List<RenameProposals.Row> taken)
     {
         ViewListener model = ui.getModel();
+        if (ui instanceof TrainControlUI) ((TrainControlUI) ui).autonomyLifecycle.forgetUnrepaired();
         // A Keep the station no longer offers is forgotten, so nothing is left to hold back a later offer; on a partial
         // read, one with no row is kept, as its record may be what did not read
         Map<Locomotive, RenameProposals.Row> differing = new HashMap<>(), current = new HashMap<>();

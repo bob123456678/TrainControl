@@ -602,8 +602,8 @@ public class testTheLocomotiveSettingsAutonomyTab
             + ".json");
         final Object excluded = Components.onTheEventThread(() -> session.getPointProperty(square, "excludedLocs"));
         final String line = I18n.f("loc.ui.renameSetupNotUpdated", configuration, name);
-        final String start = I18n.t("loc.ui.renameSetupNotUpdated").substring(0, I18n.t("loc.ui.renameSetupNotUpdated")
-            .indexOf("{0}"));
+        final String key = I18n.t("loc.ui.renameSetupNotUpdated");
+        final String start = key.substring(key.indexOf("{1}") + 3, key.indexOf("{0}"));
         final int address = freeAddress(13000), address2 = freeAddress(address - 1);
         final java.io.File csv = rows(name, address), csv2 = rows(name2, address2);
 

@@ -73,6 +73,7 @@ public final class LocomotiveActions
         try
         {
             boolean renaming = newName != null && !l.getName().equals(newName);
+            this.ui.autonomyLifecycle.forgetUnrepaired();
 
             if (renaming)
             {
@@ -150,7 +151,8 @@ public final class LocomotiveActions
             if (renaming) this.ui.getModel().renameLoc(l.getName(), newName);
 
             refreshAfterEdit(Collections.singletonList(l));
-            this.ui.autonomyLifecycle.sayAfterRenames(source, null, Collections.emptyList(), null);
+            this.ui.autonomyLifecycle.sayAfterRenames(source, null, Collections.emptyList(),
+                I18n.t("autolayout.ui.tabAutonomy"));
 
             return true;
         }

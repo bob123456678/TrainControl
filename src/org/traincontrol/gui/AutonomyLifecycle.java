@@ -551,6 +551,13 @@ public final class AutonomyLifecycle
         unrepairedIn.addAll(configurations);
     }
 
+    /** Forgets what earlier renames left, as a door's renames begin: it is said at its own door or not at all. */
+    void forgetUnrepaired()
+    {
+        unrepaired.clear();
+        unrepairedIn.clear();
+    }
+
     /** Says `said` (null: nothing) and `lines` over c, with the configurations renames left; Retry repeats them. */
     void sayAfterRenames(Component c, String said, List<String> lines, String title)
     {
