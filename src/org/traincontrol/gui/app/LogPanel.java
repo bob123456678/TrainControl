@@ -46,8 +46,9 @@ public final class LogPanel extends JPanel
     /** The lines the entries span. */
     private int lines = 0;
 
-    private static final class Entry
+    private static final class Entry implements java.io.Serializable
     {
+        private static final long serialVersionUID = 1L;
         final Level level;
         final int lines;
 
