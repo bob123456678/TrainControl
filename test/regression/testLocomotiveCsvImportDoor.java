@@ -65,6 +65,127 @@ public class testLocomotiveCsvImportDoor
     }
 
     /**
+     * The duplicates popup keeps its heading close: with nothing to say above the table it starts the popup, and with a
+     * sentence it sits no more than the house gap (6 px) under it; the table sits no more than 6 px under the heading
+     * (MT-1097).
+     *
+     * MUTATION: in `LocomotiveCsvDoor`, drop `bare`, or put the 12 px strut back, or in `DetailsArea.message` give the
+     * BorderLayout its 8 px gap with no list, and this fails.
+     */
+    @Test
+    public void testTheDuplicatesHeadingSitsCloseAboveTheTable() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            final int held = freeAddress(model, 13000), free = freeAddress(model, held - 1);
+
+            model.newMFXLocomotive("gap here", held);
+            File bare = write(HEADER + mfx("gap twin", held));
+            File said = write(HEADER + mfx("gap twin", held) + mfx("gap alone", free));
+
+            try
+            {
+                int[] none = gapsAround(ui, bare), some = gapsAround(ui, said);
+
+                assertEquals(none[0], 0, "a popup with nothing above the table starts " + none[0] + " px above its heading");
+                assertTrue(some[0] >= 0 && some[0] <= 6, "the heading sits " + some[0] + " px under the sentence");
+                assertTrue(none[1] >= 0 && none[1] <= 6 && some[1] >= 0 && some[1] <= 6,
+                    "the table sits " + none[1] + " and " + some[1] + " px under the heading");
+            }
+            finally
+            {
+                bare.delete();
+                said.delete();
+                model.deleteLoc("gap here");
+            }
+        });
+    }
+
+    /** The gaps in the duplicates popup for `file`: above its heading (from the sentence, or the popup's top), and below. */
+    private static int[] gapsAround(TrainControlUI ui, File file) throws Exception
+    {
+        final int[] gaps = new int[2];
+
+        press(ui, file, CANCEL, s -> s.answered, () -> support.Components.onTheEventThread(() ->
+        {
+            List<javax.swing.JTextArea> sentence = support.Components.all(asking, javax.swing.JTextArea.class, a -> true);
+            javax.swing.JLabel heading = support.Components.all(asking, javax.swing.JLabel.class,
+                l -> l.getText() != null && l.getText().startsWith("Locomotives that may already")).get(0);
+            org.traincontrol.gui.widgets.ChoiceTable table = support.Components.all(asking,
+                org.traincontrol.gui.widgets.ChoiceTable.class, t -> true).get(0);
+            java.awt.Rectangle head = SwingUtilities.convertRectangle(heading.getParent().getParent(),
+                heading.getParent().getBounds(), asking);
+            java.awt.Rectangle grid = SwingUtilities.convertRectangle(table.getParent(), table.getBounds(), asking);
+
+            gaps[0] = heading.getParent().getY();
+            if (!sentence.isEmpty())
+            {
+                java.awt.Rectangle text = SwingUtilities.convertRectangle(sentence.get(0).getParent(),
+                    sentence.get(0).getBounds(), asking);
+                gaps[0] = head.y - (text.y + text.height);
+            }
+            gaps[1] = grid.y - (head.y + head.height);
+
+            return null;
+        }));
+
+        return gaps;
+    }
+
+    /**
+     * The duplicates popup is no wider than the main window; the table scrolls sideways inside it (MT-1097).
+     *
+     * MUTATION: in `LocomotiveCsvDoor`, leave out the `limitWidth` call, and the popup is wider than a 700 px window.
+     */
+    @Test
+    public void testTheDuplicatesPopupIsNoWiderThanTheMainWindow() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            final int held = freeAddress(model, 13000);
+            final int[] widths = new int[2];
+            final java.awt.Dimension was = support.Components.onTheEventThread(() -> ui.getSize());
+            final java.awt.Dimension least = support.Components.onTheEventThread(() -> ui.getMinimumSize());
+
+            model.newMFXLocomotive("wide here", held);
+            File file = write(HEADER + mfx("wide twin", held));
+
+            try
+            {
+                support.Components.onTheEventThread(() ->
+                {
+                    ui.setMinimumSize(new java.awt.Dimension(300, 300));
+                    ui.setSize(700, was.height);
+                    ui.setVisible(true);
+                    return null;
+                });
+                press(ui, file, CANCEL, s -> s.answered, () -> support.Components.onTheEventThread(() ->
+                {
+                    widths[0] = SwingUtilities.getWindowAncestor(asking).getWidth();
+                    widths[1] = ui.getWidth();
+
+                    return null;
+                }));
+            }
+            finally
+            {
+                support.Components.onTheEventThread(() ->
+                {
+                    ui.setMinimumSize(least);
+                    ui.setVisible(false);
+                    ui.setSize(was);
+                    return null;
+                });
+                file.delete();
+                model.deleteLoc("wide here");
+            }
+
+            assertEquals(widths[1], 700, "precondition: the main window did not take the width");
+            assertTrue(widths[0] <= widths[1], "the popup is " + widths[0] + " px wide in a " + widths[1] + " px window");
+        });
+    }
+
+    /**
      * Presses the item with the file chosen (null cancels the chooser) and the question answered with `answer`, and
      * waits for `until`.
      */

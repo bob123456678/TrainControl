@@ -212,6 +212,31 @@ public class testWrappingOptionPaneUI
         assertTrue(inset.left >= 6 && inset.right >= 6, "the text touches the box: " + inset);
     }
 
+    /**
+     * A scrolling box looks like a text field: white inside, in a thin dark line, the text still off the line (MT-1094).
+     *
+     * MUTATION: in `DetailsArea.scrolling`, leave out the `setBorder` on the scroll pane or the white background, and
+     * this fails.
+     */
+    @Test
+    public void testAScrollingBoxIsWhiteInAThinDarkLine()
+    {
+        javax.swing.JScrollPane box = onTheEventThread(() ->
+            org.traincontrol.gui.widgets.DetailsArea.scrolling("Help more help", 20));
+        java.awt.Component area = box.getViewport().getView();
+
+        assertTrue(area.isOpaque(), "the text area is see-through, so the box is not white");
+        assertEquals(area.getBackground(), java.awt.Color.WHITE, "the text area is not white");
+        assertEquals(box.getViewport().getBackground(), java.awt.Color.WHITE, "the space under a short text is not white");
+        assertTrue(box.getBorder() instanceof javax.swing.border.LineBorder, "the box has no line: " + box.getBorder());
+
+        javax.swing.border.LineBorder line = (javax.swing.border.LineBorder) box.getBorder();
+        java.awt.Color c = line.getLineColor();
+
+        assertEquals(line.getThickness(), 1, "the line is not thin");
+        assertTrue(c.getRed() + c.getGreen() + c.getBlue() < 3 * 128, "the line is not dark: " + c);
+    }
+
     private static void textOf(Container c, List<String> lines)
     {
         for (Component child : c.getComponents())

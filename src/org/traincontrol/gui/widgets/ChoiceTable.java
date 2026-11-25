@@ -75,6 +75,8 @@ public final class ChoiceTable extends JScrollPane
     private int rows = 1;
     /** A choice's height with text, at the scale this table was made in. */
     private final int high;
+    /** The most the table asks for in width, set by {@link #limitWidth}. */
+    private int widest = Integer.MAX_VALUE;
 
     /** @param heads each column's heading, left to right: a label, or a {@link #link} that acts on every row */
     public ChoiceTable(JComponent... heads)
@@ -235,6 +237,11 @@ public final class ChoiceTable extends JScrollPane
         for (JComponent l : lines) p.add(l);
         return p;
     }
+    /** Narrows the table to at most `width` pixels, the rest scrolling sideways, where the screen's allowance is more. */
+    public void limitWidth(int width)
+    {
+        this.widest = width;
+    }
 
     /** Every row up to half the screen's height and three quarters of its width; the rest scrolls, beside its bars. */
     @Override
@@ -243,8 +250,9 @@ public final class ChoiceTable extends JScrollPane
         Dimension d = super.getPreferredSize(), screen = Toolkit.getDefaultToolkit().getScreenSize();
         int most = screen.height / 2;
         if (d.height > most) d = new Dimension(d.width + getVerticalScrollBar().getPreferredSize().width, most);
-        if (d.width > screen.width * 3 / 4)
-            d = new Dimension(screen.width * 3 / 4, d.height + getHorizontalScrollBar().getPreferredSize().height);
+        int wide = Math.min(screen.width * 3 / 4, widest);
+        if (d.width > wide)
+            d = new Dimension(wide, d.height + getHorizontalScrollBar().getPreferredSize().height);
         return d;
     }
 }
