@@ -1,6 +1,7 @@
 package org.traincontrol.gui.widgets;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.util.List;
 import javax.swing.BorderFactory;
@@ -44,12 +45,17 @@ public final class DetailsArea
     public static JScrollPane scrolling(String text, int rows)
     {
         JTextArea area = textArea(text);
-        // As the other text areas in the app, so the text does not touch the box (OB-515)
+        // As the other text areas in the app, so the text does not touch the box (OB-515); white in a thin dark line,
+        // like a text field (MT-1094)
         area.setBorder(BorderFactory.createEmptyBorder(INSET, INSET, INSET, INSET));
+        area.setOpaque(true);
+        area.setBackground(Color.WHITE);
         area.setSize(WIDTH, Short.MAX_VALUE);
         area.setCaretPosition(0);
         JScrollPane scroll = new JScrollPane(area, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
             ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.setBorder(BorderFactory.createLineBorder(new Color(0x606060)));
+        scroll.getViewport().setBackground(Color.WHITE);
         scroll.getViewport().setPreferredSize(new Dimension(WIDTH, Math.min(area.getPreferredSize().height,
             rows * area.getFontMetrics(area.getFont()).getHeight())));
         return scroll;
