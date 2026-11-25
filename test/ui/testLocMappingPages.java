@@ -1660,6 +1660,19 @@ public class testLocMappingPages
         }
     }
 
+    /**
+     * The page count is saved under the key it always had, whatever the class that reads it is called: another key
+     * finds nothing, and every user's pages go back to the default.
+     *
+     * MUTATION: build `TrainControlUI.LOC_MAPPING_PAGES_PREF` from "LocomotiveKeyboardPages", and this fails.
+     */
+    @Test
+    public void testThePageCountKeepsItsSavedKey()
+    {
+        assertEquals(TrainControlUI.LOC_MAPPING_PAGES_PREF, "LocMappingPages" + org.traincontrol.util.Conversion
+            .getFolderHash(10), "the page count is saved under a new key, so a user's saved pages are not found");
+    }
+
     // FR-128: the page tabs and the page label follow the one rule the line over the name does
 
     /** Forty-four Ms: wider than the page label's forty-letter cut, which the 22-M page is not. */
