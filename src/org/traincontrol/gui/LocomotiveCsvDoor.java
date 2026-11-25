@@ -131,11 +131,11 @@ final class LocomotiveCsvDoor
 
         Object[] options = {I18n.t("loc.ui.importCsvButton"), I18n.t("ui.cancel")};
         Duplicates table = duplicates.isEmpty() ? null : new Duplicates(duplicates);
-        // No wider than the main window, less the popup's icon and margins; the table scrolls the rest sideways
+        // No wider than the main window less the popup's icon and margins (72 scaled) and frame (18); the rest scrolls
         if (table != null)
         {
             int room = ui.isShowing() ? ui.getWidth() : java.awt.Toolkit.getDefaultToolkit().getScreenSize().width;
-            table.table.limitWidth(room - com.formdev.flatlaf.util.UIScale.scale(140));
+            table.table.limitWidth(room - com.formdev.flatlaf.util.UIScale.scale(72) - 18);
         }
         // With nothing to say above the table, the heading starts the popup
         boolean bare = question.isEmpty() && lines.isEmpty();

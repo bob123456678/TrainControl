@@ -281,10 +281,11 @@ public class testChoiceTable
     @Test
     public void testALimitAloneDecidesTheWidth()
     {
-        int screen = Toolkit.getDefaultToolkit().getScreenSize().width, rows = screen * 7 / 8;
         Dimension[] sizes = onTheEventThread(() ->
         {
             ChoiceTable table = new ChoiceTable(new JLabel("Name"));
+            // After the table: making it settles the screen's scale, which the first reading may not have
+            int screen = Toolkit.getDefaultToolkit().getScreenSize().width, rows = screen * 7 / 8;
             JLabel wide = new JLabel("Row");
             wide.setPreferredSize(new Dimension(rows, 20));
             table.addRow(wide);
@@ -292,8 +293,10 @@ public class testChoiceTable
             Dimension roomy = table.getPreferredSize();
             table.limitWidth(rows / 2);
             return new Dimension[] {roomy, table.getPreferredSize(), table.getViewport().getView().getPreferredSize(),
-                table.getHorizontalScrollBar().getPreferredSize()};
+                table.getHorizontalScrollBar().getPreferredSize(),
+                new Dimension(screen, rows)};
         });
+        int screen = sizes[4].width, rows = sizes[4].height;
 
         assertTrue(sizes[2].width > screen * 3 / 4, "precondition: the rows are wider than three quarters of the screen");
         assertTrue(sizes[0].width >= sizes[2].width, "inside the limit the table asks for " + sizes[0].width
