@@ -8,7 +8,7 @@ import org.traincontrol.automationui.TileGraph;
 /**
  * The marks a standing train puts on the track diagram, worked out on `CoveredTrackRenderer` and never on the event
  * thread (OB-192), coalesced so the last ask always lands, with a bounded wait for them to have landed.  The marks, the
- * flags and the pool stay on `TrainControlUI`; the ask and the loop are `CoalescedAsk`'s.
+ * flags and the pool stay on `TrainControlUI`; the ask and the loop are `CoalescedWorker`'s.
  */
 final class CoveredTrackView extends SettledQuestion
 {
@@ -46,13 +46,13 @@ final class CoveredTrackView extends SettledQuestion
     }
 
     /**
-     * Puts one worker on the job, unless one is already on it, COALESCED (`CoalescedAsk`): the refresh runs on every
+     * Puts one worker on the job, unless one is already on it, COALESCED (`CoalescedWorker`): the refresh runs on every
      * monitor tick of a run and at both ends of every path, and the answer can take as long as a dispatch holds the
      * railway's monitor.
      */
     void askForCoveredTrack()
     {
-        CoalescedAsk.ask(this.ui.coveredTrackInFlight, this.ui.coveredTrackDirty, this.ui.CoveredTrackRenderer,
+        CoalescedWorker.ask(this.ui.coveredTrackInFlight, this.ui.coveredTrackDirty, this.ui.CoveredTrackRenderer,
             this::workOutCoveredTrack, this::settle, this::askForCoveredTrack);
     }
 

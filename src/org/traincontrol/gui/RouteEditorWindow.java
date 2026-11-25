@@ -82,7 +82,7 @@ import org.traincontrol.base.NodeAnd;
 import org.traincontrol.base.NodeGroup;
 import org.traincontrol.base.NodeOr;
 import org.traincontrol.base.NodeRouteCommand;
-import org.traincontrol.gui.widgets.PopupListener;
+import org.traincontrol.gui.widgets.PopupMenuTrigger;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.ImageUtil;
 
@@ -465,7 +465,7 @@ public class RouteEditorWindow extends JFrame
         // Below the rows, the commands' menu offers Add Command (FR-162).
         final Component belowCommands = commands.getParent();
 
-        belowCommands.addMouseListener(new PopupListener()
+        belowCommands.addMouseListener(new PopupMenuTrigger()
         {
             @Override
             protected void showPopup(MouseEvent e)
@@ -942,14 +942,14 @@ public class RouteEditorWindow extends JFrame
 
         area.add(conditions, BorderLayout.NORTH);
 
-        area.addMouseListener(Listen.pressed(e ->
+        area.addMouseListener(OnMouse.pressed(e ->
         {
             if (conditions.isEditing()) conditions.getCellEditor().stopCellEditing();
 
             conditions.clearSelection();
         }));
 
-        area.addMouseListener(new PopupListener()
+        area.addMouseListener(new PopupMenuTrigger()
         {
             @Override
             protected void showPopup(MouseEvent e)
@@ -1983,7 +1983,7 @@ public class RouteEditorWindow extends JFrame
 
         for (int column : marked) table.getColumnModel().getColumn(column).setCellRenderer(marks);
 
-        table.addMouseListener(Listen.pressed(e ->
+        table.addMouseListener(OnMouse.pressed(e ->
         {
             // A right-click opens the table's menu rather than working the mark under it.
             if (!SwingUtilities.isLeftMouseButton(e)) return;
@@ -3574,7 +3574,7 @@ public class RouteEditorWindow extends JFrame
                 }
             });
 
-            addMouseListener(new PopupListener()
+            addMouseListener(new PopupMenuTrigger()
             {
                 @Override
                 protected void showPopup(MouseEvent e)

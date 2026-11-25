@@ -76,7 +76,7 @@ import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.AutonomyConfigurationsPanel;
-import org.traincontrol.gui.Listen;
+import org.traincontrol.gui.OnMouse;
 import org.traincontrol.gui.RunGates;
 import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
@@ -1099,7 +1099,7 @@ public class AutonomyEditorPanel extends JPanel
             AutonomyConfigurationsPanel.FONT_GROUP));
 
         // A double-click, or Control+O, opens the station's settings; one click stays as it is (FR-072).
-        findings.addMouseListener(Listen.clicked(e ->
+        findings.addMouseListener(OnMouse.clicked(e ->
         {
             if (e.getClickCount() == 2) openStationSettingsForTheFinding();
         }));
@@ -1254,7 +1254,7 @@ public class AutonomyEditorPanel extends JPanel
         {
             setFocusable(false);
 
-            addMouseListener(Listen.pressed(e ->
+            addMouseListener(OnMouse.pressed(e ->
             {
                 setFocusable(true);
                 requestFocusInWindow();
@@ -3287,7 +3287,7 @@ public class AutonomyEditorPanel extends JPanel
         if (row.getComponentCount() > 0) panel.add(row, BorderLayout.SOUTH);
 
         // Double-click chooses, as OK does.
-        list.addMouseListener(Listen.clicked(e ->
+        list.addMouseListener(OnMouse.clicked(e ->
         {
             if (e.getClickCount() == 2 && list.getSelectedValue() != null)
             {

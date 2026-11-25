@@ -270,7 +270,7 @@ public class AutonomyConfigurationsPanel extends JPanel
 
         // No ActionListener, deliberately: a configuration is chosen from the menu, not by selecting here.  Anything
         // that adds one needs a guard around populate(), which sets the selection itself.
-        configurations.addMouseListener(Listen.pressed(e ->
+        configurations.addMouseListener(OnMouse.pressed(e ->
         {
             if (SwingUtilities.isRightMouseButton(e)) manageMenu().show(configurations, e.getX(), e.getY());
         }));
@@ -394,7 +394,7 @@ public class AutonomyConfigurationsPanel extends JPanel
         findings.setFont(FONT_LIST);
 
         // One click, straight to the square it is about, with the tools that can fix it already open.
-        findings.addMouseListener(Listen.clicked(e ->
+        findings.addMouseListener(OnMouse.clicked(e ->
         {
             int row = findings.locationToIndex(e.getPoint());
 

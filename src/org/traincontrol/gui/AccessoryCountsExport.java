@@ -19,7 +19,7 @@ final class AccessoryCountsExport
     {
         String csv = ui.getModel().exportAccessoryActuationsToCSV();
 
-        SaveToFileDoor.save(ui, csv.getBytes(StandardCharsets.UTF_8), "csv",
+        SaveFileChooser.save(ui, csv.getBytes(StandardCharsets.UTF_8), "csv",
             "TC_actuations_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) + ".csv",
             (file, e) -> I18n.t("error.writingToFile"));
     }

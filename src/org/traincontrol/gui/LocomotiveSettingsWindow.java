@@ -938,7 +938,7 @@ public class LocomotiveSettingsWindow extends javax.swing.JFrame
             // Always the icon's size, so the row does not change width when the triangle appears
             sameAddress.setPreferredSize(new Dimension(RowIcons.warning(16).getIconWidth() + 4,
                 RowIcons.warning(16).getIconHeight()));
-            sameAddress.addMouseListener(Listen.released(e ->
+            sameAddress.addMouseListener(OnMouse.released(e ->
             {
                 if (sameAddress.getIcon() != null) showShared(true);
             }));
@@ -951,7 +951,7 @@ public class LocomotiveSettingsWindow extends javax.swing.JFrame
             // The spinner is as tall as the fields above it
             speed.setPreferredSize(new Dimension(speed.getPreferredSize().width, name.getPreferredSize().height));
 
-            DocumentListener tell = Typing.tell(this::typed);
+            DocumentListener tell = OnTextEdit.tell(this::typed);
 
             name.getDocument().addDocumentListener(tell);
             address.getDocument().addDocumentListener(tell);
@@ -1214,7 +1214,7 @@ public class LocomotiveSettingsWindow extends javax.swing.JFrame
         {
             mark.setToolTipText(tip);
             mark.setCursor(HandPointer.cursor());
-            mark.addMouseListener(Listen.released(e ->
+            mark.addMouseListener(OnMouse.released(e ->
             {
                 // The crop and the revert act on the picture on screen, never on one still on its way (OB-482)
                 boolean waiting = mark != wrench && !Objects.equals(onScreen, shownPicture);
@@ -1610,7 +1610,7 @@ public class LocomotiveSettingsWindow extends javax.swing.JFrame
                         ? HandPointer.cursor() : Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
                 }
             });
-            note.addMouseListener(Listen.released(e ->
+            note.addMouseListener(OnMouse.released(e ->
             {
                 if (SwingUtilities.isLeftMouseButton(e) && onLink.test(e.getPoint())) open.run();
             }));

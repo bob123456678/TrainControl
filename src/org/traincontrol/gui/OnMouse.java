@@ -8,9 +8,9 @@ import java.util.function.Consumer;
  * Mouse adapters that hear one event and hand it to a lambda, for listeners that override a single method.  Three, no
  * more: a fourth of the same shape is a copy testNoNewCopies counts.
  */
-public final class Listen
+public final class OnMouse
 {
-    private Listen()
+    private OnMouse()
     {
     }
 

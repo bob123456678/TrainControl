@@ -13,14 +13,14 @@ import javax.swing.JViewport;
  * 
  * Makes an area within a JScrollPane draggable with the mouse
  */
-public class HandScrollListener extends MouseAdapter
+public class DragToScroll extends MouseAdapter
 {
     private final Cursor defCursor = Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR);
     private final Cursor hndCursor = HandPointer.cursor();
     private final Point pp = new Point();
     private final JPanel image;
 
-    public HandScrollListener(JPanel image)
+    public DragToScroll(JPanel image)
     {
         this.image = image;
     }

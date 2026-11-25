@@ -6,14 +6,14 @@ import java.awt.event.MouseEvent;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import org.traincontrol.base.Route;
-import org.traincontrol.gui.widgets.PopupListener;
+import org.traincontrol.gui.widgets.PopupMenuTrigger;
 import org.traincontrol.util.I18n;
 
 /**
  * This class represents a right-click menu with various utility functions displayed when any route entry is right-clicked
  * @author Adam
  */
-public class RouteContextMenu extends PopupListener
+public class RouteContextMenu extends PopupMenuTrigger
 {    
     protected TrainControlUI ui;
     

@@ -102,7 +102,7 @@ public class AutonomyOverlayToggle extends JPanel
         left_out.setCursor(HandPointer.cursor());
         left_out.setToolTipText(I18n.t("autosetup.ui.tooltipPageLeftOut"));
 
-        left_out.addMouseListener(Listen.clicked(e ->
+        left_out.addMouseListener(OnMouse.clicked(e ->
         {
             // Straight to the editor, not the Pages menu: there is no entry for disabled pages.
             ui.openAutonomyEditorIfItCan();
@@ -116,7 +116,7 @@ public class AutonomyOverlayToggle extends JPanel
         findings.setVisible(false);
         findings.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 0));
 
-        findings.addMouseListener(Listen.clicked(e -> ui.editorWindows().openAutonomyEditor(firstFinding)));
+        findings.addMouseListener(OnMouse.clicked(e -> ui.editorWindows().openAutonomyEditor(firstFinding)));
 
         left.add(findings);
 

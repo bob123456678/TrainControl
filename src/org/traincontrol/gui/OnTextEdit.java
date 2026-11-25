@@ -4,9 +4,9 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
 /** A document listener that tells one callback about any edit. */
-final class Typing
+final class OnTextEdit
 {
-    private Typing()
+    private OnTextEdit()
     {
     }
 

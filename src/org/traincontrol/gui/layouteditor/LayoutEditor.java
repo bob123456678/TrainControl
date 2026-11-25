@@ -77,7 +77,7 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
-import org.traincontrol.gui.Listen;
+import org.traincontrol.gui.OnMouse;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.LayoutGrid;
 import org.traincontrol.gui.LayoutLabel;
@@ -4924,7 +4924,7 @@ public class LayoutEditor extends PositionAwareJFrame
         });
 
         // On the click, not the selection change, which code and arrow keys fire too.
-        pageList.addMouseListener(Listen.clicked(e ->
+        pageList.addMouseListener(OnMouse.clicked(e ->
         {
             int row = pageRowAt(e.getPoint());
 

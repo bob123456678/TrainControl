@@ -52,7 +52,7 @@ import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.widgets.HandPointer;
-import org.traincontrol.gui.widgets.PopupListener;
+import org.traincontrol.gui.widgets.PopupMenuTrigger;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.gui.widgets.QuickFileChooser;
@@ -177,7 +177,7 @@ final class LocomotiveFunctionsTab extends JPanel
         table.getColumnModel().getColumn(TEST).setPreferredWidth(70);
 
         // The Test column's cell is the target: a press anywhere in it switches the function
-        table.addMouseListener(Listen.released(e ->
+        table.addMouseListener(OnMouse.released(e ->
         {
             int row = playRowAt(e);
 
@@ -196,7 +196,7 @@ final class LocomotiveFunctionsTab extends JPanel
             }
         });
 
-        table.addMouseListener(new PopupListener()
+        table.addMouseListener(new PopupMenuTrigger()
         {
             @Override
             protected void showPopup(MouseEvent e)
@@ -909,7 +909,7 @@ final class LocomotiveFunctionsTab extends JPanel
         gridLayout(grid);
         grid.setName("functions.menuIconGrid");
         grid.setSelectedIndex(r.custom == null ? r.icon : -1);
-        grid.addMouseListener(Listen.released(e ->
+        grid.addMouseListener(OnMouse.released(e ->
         {
             int i = grid.locationToIndex(e.getPoint());
 

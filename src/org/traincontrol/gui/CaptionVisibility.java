@@ -42,13 +42,13 @@ final class CaptionVisibility
     }
 
     /**
-     * Puts one worker on "which squares can autonomy choose", unless one is already on it, COALESCED (`CoalescedAsk`).
+     * Puts one worker on "which squares can autonomy choose", unless one is already on it, COALESCED (`CoalescedWorker`).
      * On `CoveredTrackRenderer` rather than a pool of its own: this answer changes with the SETUP, a handful of times a
      * session, and it has no await, so it settles with no lock.
      */
     void askForCaptionVisibility()
     {
-        CoalescedAsk.ask(this.ui.captionVisibilityInFlight, this.ui.captionVisibilityDirty, this.ui.CoveredTrackRenderer,
+        CoalescedWorker.ask(this.ui.captionVisibilityInFlight, this.ui.captionVisibilityDirty, this.ui.CoveredTrackRenderer,
             this::workOutCaptionVisibility, () -> this.ui.captionVisibilityInFlight.set(false), this::askForCaptionVisibility);
     }
 

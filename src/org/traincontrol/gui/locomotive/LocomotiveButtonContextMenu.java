@@ -6,14 +6,14 @@ import javax.swing.JButton;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import org.traincontrol.gui.TrainControlUI;
-import org.traincontrol.gui.widgets.PopupListener;
+import org.traincontrol.gui.widgets.PopupMenuTrigger;
 import org.traincontrol.util.I18n;
 
 /**
  * This class represents a right-click menu with various utility functions displayed when any locomotive button is right-clicked
  * @author Adam
  */
-public class LocomotiveButtonContextMenu extends PopupListener
+public class LocomotiveButtonContextMenu extends PopupMenuTrigger
 {    
     protected TrainControlUI ui;
     protected JButton source;

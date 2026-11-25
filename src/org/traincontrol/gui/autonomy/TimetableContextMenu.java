@@ -7,14 +7,14 @@ import javax.swing.JPopupMenu;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.RunGates;
 import org.traincontrol.gui.TrainControlUI;
-import org.traincontrol.gui.widgets.PopupListener;
+import org.traincontrol.gui.widgets.PopupMenuTrigger;
 import org.traincontrol.util.I18n;
 
 /**
  * This class represents a right-click menu with various utility functions displayed when any timetable entry is right-clicked
  * @author Adam
  */
-public class TimetableContextMenu extends PopupListener
+public class TimetableContextMenu extends PopupMenuTrigger
 {    
     protected TrainControlUI ui;
     

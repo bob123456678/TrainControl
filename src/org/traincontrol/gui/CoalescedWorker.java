@@ -8,9 +8,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * question at a time, kept going while the answer is out of date, so the last ask always lands.  The flags, the
  * subject and one pass of the answer stay with each owner.
  */
-final class CoalescedAsk
+final class CoalescedWorker
 {
-    private CoalescedAsk()
+    private CoalescedWorker()
     {
     }
 

@@ -15,9 +15,9 @@ import javax.swing.JOptionPane;
  * The save chooser behind the exports that write one file (FR-178, FR-051).  A file that cannot be written is said, and
  * the chooser comes back for another place.  Event thread only.
  */
-final class SaveToFileDoor
+final class SaveFileChooser
 {
-    private SaveToFileDoor()
+    private SaveFileChooser()
     {
     }
 

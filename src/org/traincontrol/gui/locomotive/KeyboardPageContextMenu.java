@@ -5,14 +5,14 @@ import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.TrainControlUI;
-import org.traincontrol.gui.widgets.PopupListener;
+import org.traincontrol.gui.widgets.PopupMenuTrigger;
 import org.traincontrol.util.I18n;
 
 /**
  * This class represents a right-click menu with various utility functions for locomotive mapping pages
  * @author Adam
  */
-public class KeyboardPageContextMenu extends PopupListener
+public class KeyboardPageContextMenu extends PopupMenuTrigger
 {    
     protected TrainControlUI ui;
     

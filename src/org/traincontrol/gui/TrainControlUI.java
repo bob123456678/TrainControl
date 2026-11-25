@@ -161,7 +161,7 @@ import org.traincontrol.gui.widgets.AboutPanel;
 import org.traincontrol.gui.widgets.BackupAction;
 import org.traincontrol.gui.widgets.BusyDialog;
 import org.traincontrol.gui.widgets.HandPointer;
-import org.traincontrol.gui.widgets.HandScrollListener;
+import org.traincontrol.gui.widgets.DragToScroll;
 import org.traincontrol.gui.widgets.LoadingSpinner;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.PositionAwareJFrame;
@@ -4834,7 +4834,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         // Once the model says which mode this is.
         layoutMenus.mountDebugMenu();
                 
-        HandScrollListener scrollListener = new HandScrollListener(InnerLayoutPanel);
+        DragToScroll scrollListener = new DragToScroll(InnerLayoutPanel);
         LayoutArea.getViewport().addMouseMotionListener(scrollListener);
         LayoutArea.getViewport().addMouseListener(scrollListener);
         nameTheStation();
@@ -17432,7 +17432,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         iconWrench.setOpaque(false);
         iconWrench.setCursor(HandPointer.cursor());
 
-        iconWrench.addMouseListener(Listen.released(evt ->
+        iconWrench.addMouseListener(OnMouse.released(evt ->
         {
             // A right-click over the wrench is a right-click over the picture: it chooses the icon, with the power off.
             if (activeLoc == null) return;

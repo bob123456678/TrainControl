@@ -7,7 +7,7 @@ import java.awt.event.MouseEvent;
  * A mouse listener that shows a popup menu on the platform's popup trigger, which fires on press on some systems and on
  * release on others.
  */
-public abstract class PopupListener extends MouseAdapter
+public abstract class PopupMenuTrigger extends MouseAdapter
 {
     @Override
     public void mousePressed(MouseEvent e)
