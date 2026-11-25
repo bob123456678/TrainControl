@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.LocomotiveNotes;
 import org.traincontrol.base.RouteCommand;
-import org.traincontrol.gui.LocomotiveEditRule;
+import org.traincontrol.gui.locomotive.LocomotiveEditRule;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.model.ViewListener;
 

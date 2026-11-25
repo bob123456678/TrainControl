@@ -22,7 +22,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.LocomotiveEditRule;
+import org.traincontrol.gui.locomotive.LocomotiveEditRule;
 import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.locomotive.LocomotiveSelectorContextMenu;
@@ -927,7 +927,7 @@ public class testTheLocomotiveSettingsMovingRule
     public void testTheRulesCommentSaysWhatItAsks() throws Exception
     {
         String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "src/org/traincontrol/gui/LocomotiveEditRule.java")), java.nio.charset.StandardCharsets.UTF_8);
+            "src/org/traincontrol/gui/locomotive/LocomotiveEditRule.java")), java.nio.charset.StandardCharsets.UTF_8);
 
         String comment = source.substring(0, source.indexOf("public final class LocomotiveEditRule"));
 

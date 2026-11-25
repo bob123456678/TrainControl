@@ -71,7 +71,7 @@ src/org/traincontrol/gui/LocomotiveActions.java	-	4
 src/org/traincontrol/gui/LocomotiveCsvImport.java	-	1
 src/org/traincontrol/gui/LocomotiveFunctionsTab.java	-	7
 src/org/traincontrol/gui/LocomotiveNotesPanel.java	-	6
-src/org/traincontrol/gui/LocomotiveEditRule.java	378	0
+src/org/traincontrol/gui/locomotive/LocomotiveEditRule.java	378	0
 src/org/traincontrol/gui/LocomotiveSettingsWindow.java	-	11
 src/org/traincontrol/gui/MultiUnitPanel.java	-	3
 src/org/traincontrol/gui/ReturnHomeController.java	309	5

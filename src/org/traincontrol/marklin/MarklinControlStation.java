@@ -59,7 +59,7 @@ import org.traincontrol.base.RemoteDeviceCollection;
 import org.traincontrol.base.RenameProposals;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.RouteCommand;
-import org.traincontrol.gui.LocomotiveEditRule;
+import org.traincontrol.gui.locomotive.LocomotiveEditRule;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.app.LogPanel;
 import org.traincontrol.marklin.file.CS2File;

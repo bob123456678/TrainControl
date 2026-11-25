@@ -24,6 +24,7 @@ import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.LocomotiveNotes;
 import org.traincontrol.base.Route;
+import org.traincontrol.gui.locomotive.LocomotiveEditRule;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
 import org.traincontrol.base.RouteCommand;

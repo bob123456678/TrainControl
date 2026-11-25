@@ -50,6 +50,7 @@ import javax.swing.text.View;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.gui.locomotive.CurrentKeyRow;
+import org.traincontrol.gui.locomotive.LocomotiveEditRule;
 import org.traincontrol.gui.util.OnMouse;
 import org.traincontrol.gui.util.OnTextEdit;
 import org.traincontrol.gui.widgets.HandPointer;

@@ -51,6 +51,7 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.locomotive.LocomotiveEditRule;
 import org.traincontrol.gui.util.OnMouse;
 import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.gui.util.PopupMenuTrigger;

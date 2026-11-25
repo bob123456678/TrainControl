@@ -17631,7 +17631,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      * Whether the power is known to be on, for the picture's tools.  Until the station says, only where start-up turned
      * it on, since the model takes it as on before it hears.
      */
-    boolean powerIsOn()
+    public boolean powerIsOn()
     {
         return this.model != null && this.model.getPowerState() && (powerHeard || poweredOnAtStartUp);
     }

@@ -1121,7 +1121,7 @@ public class testLocomotiveCsvImport
             head.setSpeed(1);
             head.waitForSpeedAtOrAbove(1);
 
-            assertTrue(org.traincontrol.gui.LocomotiveEditRule.hasSpeed(model, member),
+            assertTrue(org.traincontrol.gui.locomotive.LocomotiveEditRule.hasSpeed(model, member),
                 "Locomotive Settings does not see the member as moving with its head");
         }
         finally
@@ -1193,8 +1193,8 @@ public class testLocomotiveCsvImport
                 head.setSpeed(1);
                 head.waitForSpeedAtOrAbove(1);
 
-                List<Boolean> moving = Arrays.asList(org.traincontrol.gui.LocomotiveEditRule.hasSpeed(model, holder),
-                    org.traincontrol.gui.LocomotiveEditRule.hasSpeed(model, decliner));
+                List<Boolean> moving = Arrays.asList(org.traincontrol.gui.locomotive.LocomotiveEditRule.hasSpeed(model, holder),
+                    org.traincontrol.gui.locomotive.LocomotiveEditRule.hasSpeed(model, decliner));
 
                 if (!moving.equals(Arrays.asList(true, false))) wrong.add(order + "moving with the head " + moving);
 

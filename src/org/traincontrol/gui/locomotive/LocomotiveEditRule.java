@@ -1,8 +1,9 @@
-package org.traincontrol.gui;
+package org.traincontrol.gui.locomotive;
 
 import java.awt.Component;
 import javax.swing.JOptionPane;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 
 /**
