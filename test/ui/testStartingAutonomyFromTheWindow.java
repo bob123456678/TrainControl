@@ -275,6 +275,219 @@ public class testStartingAutonomyFromTheWindow
             "after the trains came in, the menu on " + standing + " is not the menu at rest: " + live);
     }
 
+    // ---------------------------------------------------------------- a page window through a session reset (OB-519)
+
+    /**
+     * A page window left open through Stop Using Autonomy shows the next run's path: the reset must not let go of the
+     * window's squares, which nothing draws again to register them (OB-519).
+     *
+     * MUTATION: in `DiagramTileRegistry.reset`, `tiles.clear()` again, and the page window shows no path.
+     */
+    @Test
+    public void testAPageWindowShowsTheNextRunAfterStopUsingAutonomy() throws Exception
+    {
+        throughAPageWindow(page ->
+        {
+            press(gracefulStop(), message -> null);
+
+            assertTrue(Settle.idle(model.getAutoLayout(), Settle.PATIENCE_MS), "precondition: the first run did not rest");
+
+            stopUsingAutonomy();
+
+            loadAgain();
+
+            startTheRun(() -> press(start(), message -> null));
+
+            assertTrue(Settle.until(() -> squaresShowing(page, true) > 0, 30000), "a page window left open through Stop"
+                + " Using Autonomy shows no train's path in the next run (OB-519)");
+        });
+    }
+
+    /**
+     * Stop Using Autonomy while a path is lit leaves nothing of the run in a page window: no path, no train.
+     *
+     * MUTATION: in `DiagramTileRegistry.reset`, forget the labels without blanking them, and the path stays.
+     */
+    @Test
+    public void testStopUsingAutonomyMidRunEmptiesAPageWindow() throws Exception
+    {
+        throughAPageWindow(page ->
+        {
+            stopUsingAutonomy();
+
+            assertTrue(Settle.until(() -> squaresShowing(page, false) == 0, 10000), "a page window still shows "
+                + squaresShowing(page, false) + " squares of a run after Stop Using Autonomy (OB-519)");
+        });
+    }
+
+    /**
+     * A page window open while the pages are read again after a diagram edit, which resets the session, shows the next
+     * run's path.
+     *
+     * MUTATION: with `tiles.clear()` in `DiagramTileRegistry.reset`, leave out `this.updatePopups(true)` in
+     * `TrainControlUI.layoutRefreshCompleteInternal`, and the page window shows no path.
+     */
+    @Test
+    public void testAPageWindowShowsTheRunAfterThePagesAreReadAgain() throws Exception
+    {
+        throughAPageWindow(page ->
+        {
+            press(gracefulStop(), message -> null);
+
+            assertTrue(Settle.idle(model.getAutoLayout(), Settle.PATIENCE_MS), "precondition: the first run did not rest");
+
+            final java.util.concurrent.atomic.AtomicInteger underWay =
+                (java.util.concurrent.atomic.AtomicInteger) Reflect.get(TrainControlUI.class, ui, "refreshesUnderWay");
+
+            javax.swing.SwingUtilities.invokeAndWait(ui::layoutEditingCompleteFromTheEditor);
+
+            assertTrue(Components.waitFor(() -> underWay.get() == 0, 30000), "precondition: the pages were not read again");
+
+            Settle.theDiagram(ui);
+
+            Settle.simulate(model.getAutoLayout());
+
+            startTheRun(() -> press(start(), message -> null));
+
+            assertTrue(Settle.until(() -> squaresShowing(page, true) > 0, 30000), "a page window open while the pages"
+                + " were read again shows no train's path in the next run (OB-519)");
+        });
+    }
+
+    /**
+     * Stop Using Autonomy while a train heads for a station leaves no caption orange, in a page window or the main
+     * window, and none once the setup is loaded again with nothing running (OB-519).
+     *
+     * MUTATION: in `AutonomyLifecycle.resetAutonomySession`, leave out the captions' reset, and the destination stays
+     * orange.
+     */
+    @Test
+    public void testStopUsingAutonomyMidRunLeavesNoCaptionOrange() throws Exception
+    {
+        throughAPageWindow(page ->
+        {
+            assertTrue(Settle.until(() -> !orangeCaptions().isEmpty(), 30000), "precondition: no caption shows a"
+                + " destination during the run");
+
+            stopUsingAutonomy();
+
+            Components.settle();
+
+            assertTrue(orangeCaptions().isEmpty(), "captions are left orange after Stop Using Autonomy: " + orangeCaptions());
+
+            loadAgain();
+
+            assertTrue(orangeCaptions().isEmpty(), "captions are orange with the setup loaded again and nothing running: "
+                + orangeCaptions());
+        });
+    }
+
+    private interface InAPageWindow
+    {
+        void run(org.traincontrol.gui.LayoutPopupWindow page) throws Exception;
+    }
+
+    /**
+     * Opens a page window, starts the run and waits until the window shows a path, then hands over; puts the setup back
+     * loaded and closes the window afterwards.
+     */
+    private static void throughAPageWindow(InAPageWindow claim) throws Exception
+    {
+        org.traincontrol.gui.LayoutPopupWindow page = null;
+
+        try
+        {
+            final org.traincontrol.gui.LayoutPopupWindow opened = page = support.AskingWindows.openThePage(ui);
+
+            startTheRun(() -> press(start(), message -> null));
+
+            assertTrue(Settle.until(() -> squaresShowing(opened, true) > 0, 30000), "precondition: the page window shows"
+                + " no train's path during the run");
+
+            claim.run(opened);
+        }
+        finally
+        {
+            support.AskingWindows.closeThePage(page);
+
+            if (ui.getActiveDiagramConfiguration() == null) loadAgain();
+        }
+    }
+
+    /** Stop Using Autonomy, as the Autonomy menu's item does it, answering Yes to stopping the trains. */
+    private static void stopUsingAutonomy() throws Exception
+    {
+        try (Answering answering = Answering.start(message ->
+            Answering.press(String.valueOf(TrainControlUI.YES_NO_OPTS[0]))))
+        {
+            javax.swing.SwingUtilities.invokeLater(() -> ui.autonomyLifecycle().unloadAutonomy());
+
+            assertTrue(Settle.until(() -> ui.getActiveDiagramConfiguration() == null, 30000), "precondition: Stop Using"
+                + " Autonomy left a setup loaded: " + answering.asked());
+
+            Components.settle();
+        }
+    }
+
+    /** Loads the setup the class opened with, as choosing it in the Autonomy menu does, simulated. */
+    private static void loadAgain() throws Exception
+    {
+        final String name = session.getStore().getActiveConfiguration();
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(name, false));
+
+        assertTrue(Settle.until(() -> name.equals(ui.getActiveDiagramConfiguration()), 30000), "precondition: " + name
+            + " did not load");
+
+        Components.settle();
+
+        Settle.simulate(model.getAutoLayout());
+    }
+
+    /** How many of a window's squares show a path ahead (`ahead`), or anything of a run at all. */
+    private static int squaresShowing(java.awt.Window window, boolean ahead)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            int count = 0;
+
+            for (org.traincontrol.gui.LayoutLabel square
+                : Components.all(window, org.traincontrol.gui.LayoutLabel.class, label -> true))
+            {
+                org.traincontrol.automationui.TileOverlay shown = (org.traincontrol.automationui.TileOverlay)
+                    Reflect.get(org.traincontrol.gui.LayoutLabel.class, square, "autonomyOverlay");
+
+                if (shown != null && (!ahead || shown.getSegments().stream().anyMatch(each ->
+                    each.getState() == org.traincontrol.automationui.TileOverlay.State.ACTIVE))) count++;
+            }
+
+            return count;
+        });
+    }
+
+    /** The captions on screen drawn as a destination (a caption with no text draws nothing), with their windows. */
+    private static List<String> orangeCaptions()
+    {
+        return Components.onTheEventThread(() ->
+        {
+            List<String> out = new ArrayList<>();
+
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (!window.isShowing()) continue;
+
+                for (javax.swing.JLabel caption : Components.all(window, javax.swing.JLabel.class, label ->
+                    label.isShowing() && label.getText() != null && !label.getText().isEmpty()
+                    && org.traincontrol.gui.widgets.StationCaption.isDestination(label.getBackground())))
+                {
+                    out.add(caption.getText() + " in " + window.getClass().getSimpleName());
+                }
+            }
+
+            return out;
+        });
+    }
+
     // ---------------------------------------------------------------- the keys (FR-200)
 
     /**

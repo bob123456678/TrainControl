@@ -395,6 +395,9 @@ public final class AutonomyLifecycle
         // replay the old badges and arrows.
         if (ui.diagramTileRegistry != null) ui.diagramTileRegistry.reset();
 
+        // And the captions, which no Point may write again: a destination's orange outlives its run (OB-519).
+        ui.blankLayoutStationLabels();
+
         setAutonomyDependentTabs(false);
 
         ui.autonomyViewerPanel = null;
