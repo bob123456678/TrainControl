@@ -50,7 +50,7 @@ public class testEveryLanguageFitsThePopups
     private static final int CAP = 440;
 
     /** An 80-character Windows path with no spaces, wider than the cap on one line. */
-    private static final String PATH = "C:\\Users\\Wilhelmina\\Documents\\TrainControl\\Modellbahn-Wohnzimmer\\MOBA-26-WM.json";
+    private static final String PATH = "C:\\Users\\Wilhelmina\\Documents\\TrainControl\\Modellbahn-Wohnzimmer\\MOBA_26-WM.json";
 
     private static LanguageFit.Railway railway;
     private static File files;
