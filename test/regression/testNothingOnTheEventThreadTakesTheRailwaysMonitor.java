@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
  * MEASURES the two doors that matter most.
  *
  * MUTATION: put `layout.getPossiblePaths(locomotive, true)` back in
- * `LayoutRightclickAutonomyMenu`'s constructor, or `isChoosableByAutonomy` back in
+ * `DiagramAutonomyContextMenu`'s constructor, or `isChoosableByAutonomy` back in
  * `TrainControlUI.captionIsActive`, and `testEveryDoorOntoTheRailwaysMonitorIsWrittenDown` fails.
  *
  * @author Adam
@@ -105,7 +105,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "OFF THE EVENT THREAD: `runLocomotives` is dispatched on a `new Thread`, which is why the"
             + " Return Home button is disabled directly rather than through refreshReturnHomeButton.");
 
-        ALLOWED.put("AutoLocomotiveStatus.java#findPaths",
+        ALLOWED.put("AutonomyLocomotiveStatus.java#findPaths",
             "OFF THE EVENT THREAD: AutonomyRenderer, submitted by repaintAutoLocList; its own javadoc"
             + " says why the search and the legend reads both happen there");
 
@@ -113,7 +113,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "OFF THE EVENT THREAD: the constructor asks both tiers, so each `new DestinationTable` is a door of its own,"
             + " listed under its caller below");
 
-        ALLOWED.put("AutoLocomotiveStatus.java#destinationTable",
+        ALLOWED.put("AutonomyLocomotiveStatus.java#destinationTable",
             "OFF THE EVENT THREAD: called by whyNotReport, on the `new Thread` showWhyNot starts before it opens the"
             + " window, and by whyNotToolTip, on the one explainOnHover starts (OB-079 - hovering that label during a"
             + " dispatch used to freeze the whole window)");
@@ -122,7 +122,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "OFF THE EVENT THREAD: WhyRenderer, whose answer is painted in an invokeLater (D3-C1, Adam 2026-09-09:"
             + " \"I would rather take it off EDT\")");
 
-        ALLOWED.put("LayoutRightclickAutonomyMenu.java#gatherPathOptions",
+        ALLOWED.put("DiagramAutonomyContextMenu.java#gatherPathOptions",
             "OFF THE EVENT THREAD: the worker showFor starts before it builds the menu, which is the"
             + " whole reason that method exists");
 
@@ -145,7 +145,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "OFF THE EVENT THREAD: reached only from CoveredTrackView.workOutCoveredTrack, on"
             + " CoveredTrackRenderer");
 
-        ALLOWED.put("AutoLocomotiveStatus.java#whatTheOperatorMayChoose",
+        ALLOWED.put("AutonomyLocomotiveStatus.java#whatTheOperatorMayChoose",
             "OFF THE EVENT THREAD from findPaths, which is where the path search runs and why this"
             + " class exists.  The one caller that reaches it on the event thread is the fallback for"
             + " a caller with no worker, and that line already takes this monitor for a WHOLE-GRAPH"
@@ -173,31 +173,31 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
 
         // ------------------------------------------------------------ on the event thread, and why
 
-        ALLOWED.put("AutoLocomotiveStatus.java#updateState",
+        ALLOWED.put("AutonomyLocomotiveStatus.java#updateState",
             "ON THE EVENT THREAD: the fallback search, reached only by a caller that did not gather"
             + " first.  Every caller that ships passes haveFound, because repaintAutoLocList runs"
             + " findPaths on AutonomyRenderer - so this is the branch for a caller that has no worker,"
             + " and there is none today");
 
-        ALLOWED.put("AutoLocomotiveStatus.java#timetableStart",
+        ALLOWED.put("AutonomyLocomotiveStatus.java#timetableStart",
             "ON THE EVENT THREAD: the same fallback, for the same reason - findPaths gathers this on"
             + " the worker and stamps it, and this reads the Layout only when nothing gathered");
 
-        ALLOWED.put("AutonomyViewerPanel.java#loadPrepared",
+        ALLOWED.put("AutonomyConfigurationsPanel.java#loadPrepared",
             "ON THE EVENT THREAD: loading a configuration captures the outgoing one first, and"
             + " prepareAutonomyReload has already stopped everything that was moving, so nothing is"
             + " holding the monitor by the time this runs - `load` asks it, then hands over to this"
             + " (split for RLV6-B1, so the carry can run the load without asking twice)");
 
-        ALLOWED.put("AutonomyViewerPanel.java#importLegacyGraph",
+        ALLOWED.put("AutonomyConfigurationsPanel.java#importLegacyGraph",
             "ON THE EVENT THREAD: an old file imported into the configuration in use captures the running layout into"
             + " it first, only while isAutonomyBusy() is false, so nothing is holding the monitor (RLU2-C2, RLD3-C1)");
 
-        ALLOWED.put("LayoutRightclickAutonomyMenu.java#placeFacing",
+        ALLOWED.put("DiagramAutonomyContextMenu.java#placeFacing",
             "ON THE EVENT THREAD (D3-C4): placing a train from the diagram's menu is a change of state the operator has"
             + " just confirmed, and the repaint that follows must not run before it");
 
-        ALLOWED.put("LayoutRightclickAutonomyMenu.java#removeLocomotiveHere",
+        ALLOWED.put("DiagramAutonomyContextMenu.java#removeLocomotiveHere",
             "ON THE EVENT THREAD (D3-C4): taking a train off a square, offered only when"
             + " isAutonomyBusy() is false");
 
@@ -287,7 +287,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "a user interface class calls a method that takes the railway's monitor, and this test does"
             + " not know which thread it is on:\n\n    " + String.join("\n    ", unlisted)
             + "\n\nEvery `synchronized` method of `Layout` takes the monitor a dispatch holds across a"
-            + " CONFIGURE_SLEEP per accessory of a path, and that `AutoLocomotiveStatus.findPaths`"
+            + " CONFIGURE_SLEEP per accessory of a path, and that `AutonomyLocomotiveStatus.findPaths`"
             + " holds for a search of the whole graph with nothing running at all.  On the event"
             + " thread, waiting for it is OB-192: no repaints, no controls, and the trains still"
             + " running.\n\nMove the question to a worker and paint the answer when it lands -"

@@ -214,7 +214,7 @@ public class testErrorsStopTheSetupRunning
         // the counting.  The pair is asked of the things that carry it: the item's ENABLED state comes from the guard's
         // own question, its REASON from the one rule, and the one rule reaches the number.  WITHOUT COMMENTS, over the
         // constructor that builds the item, whose prose mentions `autonomyErrorCount` twice.
-        String menuCode = code("private LayoutRightclickAutonomyMenu(");
+        String menuCode = code("private DiagramAutonomyContextMenu(");
 
         assertTrue(menuCode.contains("canStartAutonomy()"),
             "the right-click Start item no longer takes its enabled state from the guard's own "
@@ -456,7 +456,7 @@ public class testErrorsStopTheSetupRunning
             {"the guard itself", code("    String whyAutonomyStartIsRefused()")},
             {"the API's exception", code("public void requestStartAutonomy() throws Exception")},
             // THE CONSTRUCTOR for this one: the tooltip is built inside the menu's constructor.
-            {"the greyed Start item's tooltip", code("private LayoutRightclickAutonomyMenu(")},
+            {"the greyed Start item's tooltip", code("private DiagramAutonomyContextMenu(")},
         };
 
         // ASKED, AND COUNTED.  A site is in scope if it words the refusal ITSELF or delegates to the one rule (MT-263

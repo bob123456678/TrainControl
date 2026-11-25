@@ -3770,7 +3770,7 @@ public class testDiagramLooksRight
     public void testTheNoPathsMarkIsTheInfoMarksGray() throws Exception
     {
         java.lang.reflect.Field field =
-            Reflect.field(org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class, "INFO_ICON");
+            Reflect.field(org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus.class, "INFO_ICON");
 
         javax.swing.ImageIcon mark = (javax.swing.ImageIcon) field.get(null);
 
@@ -4713,14 +4713,14 @@ public class testDiagramLooksRight
 
     /**
      * A train standing at its home is shown by a little house on the Auto tab, not by a teal badge (MT-709), in the
-     * same spot as the (i): `AutoLocomotiveStatus.markFor` chooses the card's mark.
+     * same spot as the (i): `AutonomyLocomotiveStatus.markFor` chooses the card's mark.
      *
      * MUTATION: put the teal back, or the house away, and this fails.
      */
     @Test
     public void testATrainAtHomeShowsAHouseNotTeal() throws Exception
     {
-        java.lang.reflect.Method markFor = Reflect.method(org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class,
+        java.lang.reflect.Method markFor = Reflect.method(org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus.class,
             "markFor", boolean.class, boolean.class);
 
         javax.swing.Icon house = (javax.swing.Icon) markFor.invoke(null, true, false);

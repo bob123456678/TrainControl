@@ -1599,7 +1599,7 @@ public class testTheTrainWindow
      * menu, and Remove is there where a train stands (Adam: "it should still allow you to place the train that is active
      * directly").
      *
-     * MUTATION: drop the Place item from `LayoutRightclickAutonomyMenu`, and this fails.
+     * MUTATION: drop the Place item from `DiagramAutonomyContextMenu`, and this fails.
      */
     @Test(timeOut = 120000)
     public void testTheDiagramsMenuStillPlacesTheActiveTrain() throws Exception
@@ -1651,7 +1651,7 @@ public class testTheTrainWindow
      * Train at..., Place, Remove and Edit <name>... ("Edit Locomotive doesn't exist in the same grouping as any of the
      * autonomy options"); Autonomy Setup; then Start and Return Home last.  No divider twice or at the end.
      *
-     * MUTATION: add the Start group first again in `LayoutRightclickAutonomyMenu`, and this fails.
+     * MUTATION: add the Start group first again in `DiagramAutonomyContextMenu`, and this fails.
      */
     @Test(timeOut = 120000)
     public void testTheDiagramsMenuOverATrainIsGrouped() throws Exception
@@ -1707,7 +1707,7 @@ public class testTheTrainWindow
      * Every other state's menu, as Adam ruled it: the square's items first, under its name;
      * Autonomy Setup; Start and Return Home last (Gracefully Stop while running); the blank diagram's menu only those.
      *
-     * MUTATION: put Autonomy Setup's items on the menu itself in `LayoutRightclickAutonomyMenu.addSetupMenu`, and this
+     * MUTATION: put Autonomy Setup's items on the menu itself in `DiagramAutonomyContextMenu.addSetupMenu`, and this
      * fails.
      */
     @Test(timeOut = 180000)
@@ -1773,7 +1773,7 @@ public class testTheTrainWindow
      * Every square's menu starts with its name in bold, as the sensor menu did: at rest, running and with an
      * editor open.
      *
-     * MUTATION: drop the bold font in `LayoutRightclickAutonomyMenu.headline`, and this fails.
+     * MUTATION: drop the bold font in `DiagramAutonomyContextMenu.headline`, and this fails.
      */
     @Test(timeOut = 120000)
     public void testEverySquaresMenuStartsWithItsNameInBold() throws Exception
@@ -1812,7 +1812,7 @@ public class testTheTrainWindow
      * Plain track is headed with what it is ("Straight Track"), not its grid square, and its Autonomy Setup holds no
      * second heading (OB-451).
      *
-     * MUTATION: head the menu with `session.describeTile` again in `LayoutRightclickAutonomyMenu.headline`, and this
+     * MUTATION: head the menu with `session.describeTile` again in `DiagramAutonomyContextMenu.headline`, and this
      * fails.
      */
     @Test(timeOut = 120000)
@@ -1841,7 +1841,7 @@ public class testTheTrainWindow
      * in that order with a divider between each, Bulk Tools as the editor builds it (OB-448's groups), and each
      * still does what it did: Segment Length asks for the length, Open the Full Editor opens it.
      *
-     * MUTATION: put Autonomy Setup's items on the menu itself in `LayoutRightclickAutonomyMenu.addSetupMenu`, and this
+     * MUTATION: put Autonomy Setup's items on the menu itself in `DiagramAutonomyContextMenu.addSetupMenu`, and this
      * fails.
      */
     @Test(timeOut = 180000)
@@ -2011,7 +2011,7 @@ public class testTheTrainWindow
      * Locomotive Here...", which opens the Train tab; with none, "Place a Locomotive Here..." alone.  Over a standing
      * train, "Place <name> Here" too.
      *
-     * MUTATION: drop the `setText` of Place Another Locomotive Here... in `LayoutRightclickAutonomyMenu.addHandDoors`,
+     * MUTATION: drop the `setText` of Place Another Locomotive Here... in `DiagramAutonomyContextMenu.addHandDoors`,
      * and this fails.
      */
     @Test(timeOut = 120000)
@@ -2071,7 +2071,7 @@ public class testTheTrainWindow
      * With an editor open, every square's menu is its name, a short gray line and a live Go to the Opened Editor, the
      * menu bar's item, which brings the editor back.
      *
-     * MUTATION: leave the Go to the Opened Editor item off in `LayoutRightclickAutonomyMenu`, and this fails.
+     * MUTATION: leave the Go to the Opened Editor item off in `DiagramAutonomyContextMenu`, and this fails.
      */
     @Test(timeOut = 120000)
     public void testWithAnEditorOpenTheMenuLeadsToIt() throws Exception
@@ -2194,7 +2194,7 @@ public class testTheTrainWindow
      * (Adam: "change the gray <loc name> heading to Send <locname> To: if there are ANY destination options below it");
      * the heading is there only with a destination under it.
      *
-     * MUTATION: head the destinations with `locomotive.getName()` again in `LayoutRightclickAutonomyMenu.addDestinations`,
+     * MUTATION: head the destinations with `locomotive.getName()` again in `DiagramAutonomyContextMenu.addDestinations`,
      * and this fails.
      */
     @Test(timeOut = 120000)
@@ -2283,7 +2283,7 @@ public class testTheTrainWindow
      * On the track diagram Station Settings... is the first item under the station's name, with a train standing there
      * or not, above Is Active (MT-957).
      *
-     * MUTATION: add the Is Active item before Station Settings in `LayoutRightclickAutonomyMenu`'s station block, and
+     * MUTATION: add the Is Active item before Station Settings in `DiagramAutonomyContextMenu`'s station block, and
      * the station with a train fails.
      */
     @Test(timeOut = 120000)
@@ -2386,7 +2386,7 @@ public class testTheTrainWindow
      * all the same, with Station Settings... first under the name (FR-195: "move the Station Settings item to the top of
      * its divider section") and Place a Locomotive Here... among the hand doors.
      *
-     * MUTATION: add the train item before Station Settings in `LayoutRightclickAutonomyMenu.addHandDoors`'s caller, and
+     * MUTATION: add the train item before Station Settings in `DiagramAutonomyContextMenu.addHandDoors`'s caller, and
      * this fails.
      */
     @Test(timeOut = 120000)
@@ -2648,7 +2648,7 @@ public class testTheTrainWindow
      * On the menu shown while autonomy runs, Edit <name>... is never in a group with the autonomy items (FR-182): not
      * with Stop or Is Active.  Change Train at... is a hand door beside it, as on the menu at rest.
      *
-     * MUTATION: drop the divider before the hand doors in `LayoutRightclickAutonomyMenu`, and this fails.
+     * MUTATION: drop the divider before the hand doors in `DiagramAutonomyContextMenu`, and this fails.
      */
     @Test(timeOut = 120000)
     public void testDuringARunEditIsApartFromTheAutonomyItems() throws Exception
@@ -2729,7 +2729,7 @@ public class testTheTrainWindow
      * While autonomy runs, an empty station's menu offers no way to place a train there: neither Place a Locomotive
      * Here... nor Place <the active locomotive>.
      *
-     * MUTATION: drop `busy && locomotive == null` from the train window's line in `LayoutRightclickAutonomyMenu`, and
+     * MUTATION: drop `busy && locomotive == null` from the train window's line in `DiagramAutonomyContextMenu`, and
      * this fails.
      */
     @Test

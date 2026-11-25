@@ -17,16 +17,16 @@ import org.traincontrol.util.I18n;
 /**
  * UI for exporting JSON or other state to a file
  */
-public class AutoJSONExport extends javax.swing.JPanel
+public class JsonExportPanel extends javax.swing.JPanel
 {
     TrainControlUI tcui;
     String prefix;
     String extension;
     
     /**
-     * Creates new form AutoJSONExport
+     * Creates new form JsonExportPanel
      */
-    public AutoJSONExport(String text, TrainControlUI tcui, String prefix, String extension)
+    public JsonExportPanel(String text, TrainControlUI tcui, String prefix, String extension)
     {
         initComponents();
         this.jsonTextArea.setText(text);

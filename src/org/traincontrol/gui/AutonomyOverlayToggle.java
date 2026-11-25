@@ -160,7 +160,7 @@ public class AutonomyOverlayToggle extends JPanel
 
         // Belt and braces over show.setFocusable(false) above: this strip sits inside the main window,
         // where bare key presses drive locomotives, so nothing in it may hold the keyboard.
-        AutonomyViewerPanel.unfocusable(this);
+        AutonomyConfigurationsPanel.unfocusable(this);
     }
 
     /** Sets the checkbox, which also applies it; used when a configuration loads successfully. */
@@ -323,7 +323,7 @@ public class AutonomyOverlayToggle extends JPanel
     {
         if (button == null) return;
 
-        button.setFont(start != null ? start.getFont() : AutonomyViewerPanel.FONT_BOLD);
+        button.setFont(start != null ? start.getFont() : AutonomyConfigurationsPanel.FONT_BOLD);
         button.setMargin(BUTTON_MARGIN);
 
         // Cleared first: asking a component its preferred size after setting one reads back what was set

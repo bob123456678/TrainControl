@@ -27,7 +27,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
-import org.traincontrol.gui.AutonomyViewerPanel;
+import org.traincontrol.gui.AutonomyConfigurationsPanel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.model.ViewListener;
@@ -37,7 +37,7 @@ import org.traincontrol.automationui.AutonomySession;
 /**
  * Displays the status of a locomotive in autonomous operation
  */
-public final class AutoLocomotiveStatus extends javax.swing.JPanel
+public final class AutonomyLocomotiveStatus extends javax.swing.JPanel
 {
     private final Locomotive locomotive;
     private List<List<Edge>> paths;
@@ -46,9 +46,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     private final TrainControlUI parent;
     
     /**
-     * Creates new form AutoLocomotiveStatus
+     * Creates new form AutonomyLocomotiveStatus
      */
-    public AutoLocomotiveStatus(Locomotive loc, TrainControlUI parent)
+    public AutonomyLocomotiveStatus(Locomotive loc, TrainControlUI parent)
     {
         this(loc, parent, false);
     }
@@ -59,7 +59,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * the event thread on a monitor a driving thread holds.  A caller passing true promises to call findPaths off the
      * event thread and hand the result back through updateState.
      */
-    public AutoLocomotiveStatus(Locomotive loc, TrainControlUI parent, boolean deferSearch)
+    public AutonomyLocomotiveStatus(Locomotive loc, TrainControlUI parent, boolean deferSearch)
     {
         this.parent = parent;
         this.control = parent.getModel();
@@ -116,7 +116,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * This tab's blue, for a card's station badge and its text: the darker blue the window's own labels are written in.
      * The track diagram's captions and badges keep their brighter blue, `StationCaption.PILL`.
      */
-    static final Color TAB_BLUE = AutonomyViewerPanel.HEADING_COLOUR;
+    static final Color TAB_BLUE = AutonomyConfigurationsPanel.HEADING_COLOUR;
 
     /**
      * The " -" suffix marking a station full autonomy will never send this locomotive to.

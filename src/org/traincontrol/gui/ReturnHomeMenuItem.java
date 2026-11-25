@@ -11,13 +11,13 @@ import org.traincontrol.util.I18n;
  *
  * The editor for assigning and clearing homes lives in `AutonomyEditorPanel` (see `homeChoices`, tested by
  * `test/regression/testHomeAssignmentRules.java`); only `addReturnHomeItem` is here, with its one caller in
- * `LayoutRightclickAutonomyMenu`.
+ * `DiagramAutonomyContextMenu`.
  *
  * @author Adam
  */
-final class HomeLocomotiveMenu
+final class ReturnHomeMenuItem
 {
-    private HomeLocomotiveMenu()
+    private ReturnHomeMenuItem()
     {
     }
 

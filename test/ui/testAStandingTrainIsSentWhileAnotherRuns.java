@@ -346,7 +346,7 @@ public class testAStandingTrainIsSentWhileAnotherRuns
             taken.add(e.getEnd());
         }
 
-        java.lang.reflect.Method gather = Reflect.method(Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu"),
+        java.lang.reflect.Method gather = Reflect.method(Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu"),
             "gatherPathOptions", TrainControlUI.class, Point.class);
         java.lang.reflect.Method mayTake = Reflect.method(TrainControlUI.class, "whyThisPathCannotBeTaken", Layout.class,
             List.class, Locomotive.class);
@@ -428,7 +428,7 @@ public class testAStandingTrainIsSentWhileAnotherRuns
             for (java.awt.Component card : ((javax.swing.JPanel) Reflect.get(TrainControlUI.class, ui, "autoLocPanel"))
                 .getComponents())
             {
-                Class<?> type = org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class;
+                Class<?> type = org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus.class;
 
                 if (!type.isInstance(card) || !train.equals(Reflect.get(type, card, "locomotive"))) continue;
 

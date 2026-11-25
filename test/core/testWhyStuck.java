@@ -601,7 +601,7 @@ public class testWhyStuck
     }
 
     /**
-     * THE DASH AND THE RULE, swept limb by limb: `AutoLocomotiveStatus.notChosenByAutonomy` is a deliberate lock-free
+     * THE DASH AND THE RULE, swept limb by limb: `AutonomyLocomotiveStatus.notChosenByAutonomy` is a deliberate lock-free
      * copy of `Layout.barredFromAutonomy` (the rule takes the Layout monitor, this runs on the event thread three times
      * per repaint), so only a test that compares both ANSWERS over every case keeps them together.  Both are reached by
      * reflection.
@@ -620,7 +620,7 @@ public class testWhyStuck
 
         final org.traincontrol.automation.Point end = layout.getPoint("WS11_B");
 
-        java.lang.reflect.Method dash = Reflect.method(org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class,
+        java.lang.reflect.Method dash = Reflect.method(org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus.class,
             "notChosenByAutonomy", org.traincontrol.automation.Point.class, org.traincontrol.base.Locomotive.class);
 
         java.lang.reflect.Method rule = Reflect.method(Layout.class,
@@ -990,12 +990,12 @@ public class testWhyStuck
      * The (i) a card shows when hovering explains why it is not moving is a picture that loads: its lookup is anchored
      * on `TrainControlUI` as every other is, or the card loses its mark without a word.
      *
-     * MUTATION: look it up as `AutoLocomotiveStatus.class.getResource("resources/info.gif")` and this fails.
+     * MUTATION: look it up as `AutonomyLocomotiveStatus.class.getResource("resources/info.gif")` and this fails.
      */
     @Test
     public void testTheWhyMarkLoads() throws Exception
     {
-        java.lang.reflect.Method markFor = Reflect.method(org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class,
+        java.lang.reflect.Method markFor = Reflect.method(org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus.class,
             "markFor", boolean.class, boolean.class);
 
         javax.swing.ImageIcon info = (javax.swing.ImageIcon) markFor.invoke(null, false, true);

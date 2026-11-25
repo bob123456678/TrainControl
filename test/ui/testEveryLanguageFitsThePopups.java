@@ -344,7 +344,7 @@ public class testEveryLanguageFitsThePopups
      * The right-click menus 3.1.0 added or changed fit the menu bar's rule in every language: the diagram's menu over a
      * train and over an empty station, and the locomotive key's menu.
      *
-     * MUTATION: give an item of `LayoutRightclickAutonomyMenu` a preferred width of 2000 pixels, and this fails.
+     * MUTATION: give an item of `DiagramAutonomyContextMenu` a preferred width of 2000 pixels, and this fails.
      */
     @Test(timeOut = 240000)
     public void testTheRightClickMenusFitInEveryLanguage() throws Exception

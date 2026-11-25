@@ -51,7 +51,7 @@ import org.traincontrol.automationui.TileGraph;
  *
  * @author Adam
  */
-public class AutonomyViewerPanel extends JPanel
+public class AutonomyConfigurationsPanel extends JPanel
 {
     /**
      * The window's current session, asked for every time: the window replaces its own when the layout changes, and a
@@ -110,7 +110,7 @@ public class AutonomyViewerPanel extends JPanel
 
     private final JLabel status = new JLabel();
 
-    public AutonomyViewerPanel(AutonomySession session, TrainControlUI ui)
+    public AutonomyConfigurationsPanel(AutonomySession session, TrainControlUI ui)
     {
         // Fallback for session(); every use asks the window for the current one.
         this.initialSession = session;

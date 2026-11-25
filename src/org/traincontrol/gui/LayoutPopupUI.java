@@ -399,7 +399,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
         {
             // Same as the main window: the menu carries the setup now, so it is offered whether or not
             // a layout has been built yet
-            LayoutRightclickAutonomyMenu.showFor(parent, null, null,
+            DiagramAutonomyContextMenu.showFor(parent, null, null,
                 evt.getComponent(), evt.getX(), evt.getY());
         }
     }//GEN-LAST:event_ExtLayoutPanelMouseClicked

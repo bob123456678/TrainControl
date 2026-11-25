@@ -285,7 +285,7 @@ public class testAPageWindowsMenuAsksOverIt
     /**
      * Start on an open menu, grayed since, says why over the window the menu was in.
      *
-     * MUTATION: `ui` for `ui.dialogParent()` at Start's catch in `LayoutRightclickAutonomyMenu`, or leave the menu's
+     * MUTATION: `ui` for `ui.dialogParent()` at Start's catch in `DiagramAutonomyContextMenu`, or leave the menu's
      * items out of `itemsPressFromWindow`, and it hangs off the main window.
      */
     @Test
@@ -318,7 +318,7 @@ public class testAPageWindowsMenuAsksOverIt
     /**
      * Graceful Stop once a stop has been asked says so over the window the menu was in.
      *
-     * MUTATION: `ui` for `ui.dialogParent()` at Stop's catch in `LayoutRightclickAutonomyMenu`, and it hangs off the main
+     * MUTATION: `ui` for `ui.dialogParent()` at Stop's catch in `DiagramAutonomyContextMenu`, and it hangs off the main
      * window.
      */
     @Test

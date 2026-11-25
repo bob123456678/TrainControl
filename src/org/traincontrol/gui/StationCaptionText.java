@@ -19,11 +19,11 @@ import org.traincontrol.gui.widgets.StationCaption;
  * What the track diagram's station captions say: the station, train and home a square shows, asked of the setup, and
  * the words and colors a running Point writes onto its labels.  The labels themselves stay registered on the window.
  */
-public final class StationCaptions
+public final class StationCaptionText
 {
     private final TrainControlUI ui;
 
-    StationCaptions(TrainControlUI ui)
+    StationCaptionText(TrainControlUI ui)
     {
         this.ui = ui;
     }

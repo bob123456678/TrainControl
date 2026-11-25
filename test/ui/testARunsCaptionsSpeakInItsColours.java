@@ -17,7 +17,7 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.DiagramColours;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.autonomy.AutoLocomotiveStatus;
+import org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus;
 import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -28,7 +28,7 @@ import support.Reflect;
  * A running route's captions speak the route's colors, its destination is a warm yellow, and the Auto tab's station
  * badge is the captions' blue (Adam: "Build 2,3,5,6", the diagram look proposals), asked of the real window on his
  * frozen railway with a run staged part way along its route.  The colors themselves are claimed beside the pill
- * (`ui.testDiagramLooksRight`); this asks `StationCaptions.updateStationLabels`, since a rule tested apart from its
+ * (`ui.testDiagramLooksRight`); this asks `StationCaptionText.updateStationLabels`, since a rule tested apart from its
  * caller says nothing about the caller.
  */
 public class testARunsCaptionsSpeakInItsColours
@@ -56,7 +56,7 @@ public class testARunsCaptionsSpeakInItsColours
      * asked rather than restated.
      */
     private static final Color LABEL_BLUE =
-        support.ProgramConstants.colour(org.traincontrol.gui.AutonomyViewerPanel.class, "HEADING_COLOUR");
+        support.ProgramConstants.colour(org.traincontrol.gui.AutonomyConfigurationsPanel.class, "HEADING_COLOUR");
 
     /** The train the run is staged with, from TopMainR2Inter to TopMainR1. */
     private static final String MOVER = "2-8-4 3505 SP";
@@ -242,19 +242,19 @@ public class testARunsCaptionsSpeakInItsColours
             // THE AUTO TAB'S BADGE AND TEXT, the window's label blue (Adam: "match the color of the text and pills to
             // the darker blue used on text labels"): every card whose badge is neither idle gray nor home teal, and
             // every destination not in red
-            List<AutoLocomotiveStatus> cards = new ArrayList<>();
+            List<AutonomyLocomotiveStatus> cards = new ArrayList<>();
 
             collect(ui.getContentPane(), cards);
 
             assertFalse(cards.isEmpty(), "precondition: the Auto tab has no locomotive cards");
 
-            Field badgeField = Reflect.field(AutoLocomotiveStatus.class, "locStation");
+            Field badgeField = Reflect.field(AutonomyLocomotiveStatus.class, "locStation");
 
-            Field destinationField = Reflect.field(AutoLocomotiveStatus.class, "locDest");
+            Field destinationField = Reflect.field(AutonomyLocomotiveStatus.class, "locDest");
 
             int blueBadges = 0;
 
-            for (AutoLocomotiveStatus card : cards)
+            for (AutonomyLocomotiveStatus card : cards)
             {
                 Color badge = ((JLabel) badgeField.get(card)).getBackground();
 
@@ -294,11 +294,11 @@ public class testARunsCaptionsSpeakInItsColours
         }
     }
 
-    private static void collect(java.awt.Container in, List<AutoLocomotiveStatus> out)
+    private static void collect(java.awt.Container in, List<AutonomyLocomotiveStatus> out)
     {
         for (java.awt.Component c : in.getComponents())
         {
-            if (c instanceof AutoLocomotiveStatus) out.add((AutoLocomotiveStatus) c);
+            if (c instanceof AutonomyLocomotiveStatus) out.add((AutonomyLocomotiveStatus) c);
 
             if (c instanceof java.awt.Container) collect((java.awt.Container) c, out);
         }

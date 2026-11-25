@@ -193,8 +193,8 @@ public class testWhereHisTrainsMayBeSent
         int messages = 0;
 
         // The panel is built and never shown, so a message parented on it belongs to the hidden frame as a menu's does
-        for (String path : new String[] {"final class LayoutRightclickAutonomyMenu extends JPopupMenu",
-            "final class LayoutEditorRightclickMenu extends JPopupMenu", "public class AutonomyViewerPanel extends JPanel"})
+        for (String path : new String[] {"final class DiagramAutonomyContextMenu extends JPopupMenu",
+            "final class LayoutEditorRightclickMenu extends JPopupMenu", "public class AutonomyConfigurationsPanel extends JPanel"})
         {
             // Each class, found by its declaration
             String[] lines = SourceOf.fileDeclaring(path).split("\n");
@@ -732,12 +732,12 @@ public class testWhereHisTrainsMayBeSent
     /** The right-click's "-> X" item on this square. */
     private static javax.swing.JMenuItem destination(TileKey square, String to) throws Exception
     {
-        final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
+        final Class<?> menuClass = Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu");
 
         final Method gather = Reflect.method(menuClass, "gatherPathOptions", TrainControlUI.class, Point.class);
 
         final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
-            TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
+            TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu$PathOptions"));
 
         make.setAccessible(true);
 
@@ -859,7 +859,7 @@ public class testWhereHisTrainsMayBeSent
     @SuppressWarnings("unchecked")
     private static List<List<Edge>> offeredPaths(TileKey square) throws Exception
     {
-        final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
+        final Class<?> menuClass = Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu");
 
         final Method gather = Reflect.method(menuClass, "gatherPathOptions", TrainControlUI.class, Point.class);
 
@@ -886,12 +886,12 @@ public class testWhereHisTrainsMayBeSent
     /** The destinations the right-click menu on this square offers, by name, as its items read. */
     private static List<String> offered(TileKey square) throws Exception
     {
-        final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
+        final Class<?> menuClass = Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu");
 
         final Method gather = Reflect.method(menuClass, "gatherPathOptions", TrainControlUI.class, Point.class);
 
         final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
-            TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
+            TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu$PathOptions"));
 
         make.setAccessible(true);
 

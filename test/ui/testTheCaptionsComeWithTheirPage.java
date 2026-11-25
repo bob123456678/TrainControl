@@ -390,7 +390,7 @@ public class testTheCaptionsComeWithTheirPage
             if (c instanceof StationCaption) captions++;
             if (c instanceof org.traincontrol.gui.AutonomyOverlayToggle) strip++;
 
-            if (SwingUtilities.getAncestorOfClass(org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class, c) != null)
+            if (SwingUtilities.getAncestorOfClass(org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus.class, c) != null)
             {
                 panels++;
             }

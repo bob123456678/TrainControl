@@ -184,7 +184,7 @@ public class testEveryWindowWearsTheIcon
      * Every hand pointer is TrainControl's, `HandPointer.cursor()` (FR-224): Java's own hand is the jagged one on
      * Java 8.  The GUI builder's code is not ours to edit; its windows set the hand again after `initComponents()`.
      *
-     * MUTATION: setting `Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)` back in `AutoLocomotiveStatus` fails this.
+     * MUTATION: setting `Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)` back in `AutonomyLocomotiveStatus` fails this.
      */
     @Test
     public void testEveryHandPointerIsTheApplications() throws Exception

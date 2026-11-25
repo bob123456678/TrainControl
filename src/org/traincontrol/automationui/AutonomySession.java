@@ -7352,7 +7352,7 @@ public class AutonomySession
      * Whether a train standing anywhere on this square could move at all.
      *
      * About the SQUARE, not one copy: a dead copy beside a live one must not decide it
-     * (`LayoutRightclickAutonomyMenu.placeableCopies` asks the same).
+     * (`DiagramAutonomyContextMenu.placeableCopies` asks the same).
      *
      * @param running the layout
      * @param tile the square

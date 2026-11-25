@@ -174,7 +174,7 @@ public class testTheRefusalsAreAskedAtTheDoors
             "the Layout menu's saves and rebuilds commit work an editor has not saved"},
         {"    private static PathOptions gatherPathOptions(", "anEditorIsOpenOrOnItsWay()",
             "the right-click menu gathers on a worker, so it can be built between Edit and the editor showing"},
-        {"    private LayoutRightclickAutonomyMenu(TrainControlUI ui,", "anEditorIsOpenOrOnItsWay()",
+        {"    private DiagramAutonomyContextMenu(TrainControlUI ui,", "anEditorIsOpenOrOnItsWay()",
             "anything done from the right-click menu is overwritten by the editor's own copy of the setup"},
 
         // And the rest.
@@ -296,8 +296,8 @@ public class testTheRefusalsAreAskedAtTheDoors
         }
 
         // The two hand doors are classes of their own, read whole.
-        for (String hand : new String[] {"public final class AutoLocomotiveStatus extends",
-            "final class LayoutRightclickAutonomyMenu extends"})
+        for (String hand : new String[] {"public final class AutonomyLocomotiveStatus extends",
+            "final class DiagramAutonomyContextMenu extends"})
         {
             String source = SourceOf.withoutComments(SourceOf.fileDeclaring(hand));
 
@@ -622,7 +622,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         boolean carried = false;
 
         for (java.lang.reflect.Field field : Class.forName(
-            "org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions").getDeclaredFields())
+            "org.traincontrol.gui.DiagramAutonomyContextMenu$PathOptions").getDeclaredFields())
         {
             if (field.getType() == org.traincontrol.automation.Layout.class) carried = true;
         }

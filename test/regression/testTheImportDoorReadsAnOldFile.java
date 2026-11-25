@@ -33,7 +33,7 @@ import support.Reflect;
 /**
  * The Autonomy menu's Import, driven as Adam drives it, on a sandbox copy of his railway with his own 2.7.4c file.
  *
- * The door is `AutonomyViewerPanel.importConfiguration`, answered from a thread of its own, as he would answer it.
+ * The door is `AutonomyConfigurationsPanel.importConfiguration`, answered from a thread of its own, as he would answer it.
  * What each import then says, logs and leaves in the setup is what MT-491 and MT-298 ask him to read.
  *
  * @author Adam

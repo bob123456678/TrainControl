@@ -651,7 +651,7 @@ public class testStartingAutonomyFromTheWindow
      * The diagram's Start, Gracefully Stop and Return Home items show the table's keys, and do not act on them
      * themselves: the table already does.
      *
-     * MUTATION: drop the `showShortcut` of the Start item in `LayoutRightclickAutonomyMenu`.
+     * MUTATION: drop the `showShortcut` of the Start item in `DiagramAutonomyContextMenu`.
      */
     @Test
     public void testTheDiagramsItemsShowTheirKeys() throws Exception
@@ -996,13 +996,13 @@ public class testStartingAutonomyFromTheWindow
      */
     private static AbstractButton diagramItem(final TileKey square, String text) throws Exception
     {
-        final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
+        final Class<?> menuClass = Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu");
 
         final java.lang.reflect.Method gather =
             Reflect.method(menuClass, "gatherPathOptions", TrainControlUI.class, Point.class);
 
         final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
-            TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
+            TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu$PathOptions"));
 
         make.setAccessible(true);
 

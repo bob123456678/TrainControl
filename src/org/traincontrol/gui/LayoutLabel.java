@@ -689,7 +689,7 @@ public final class LayoutLabel extends JLabel
         final org.traincontrol.automationui.TileGraph.TileKey here =
             tcUI.autonomyTileAt(autonomyPage, component.getX(), component.getY());
 
-        LayoutRightclickAutonomyMenu.showFor(tcUI, station, here,
+        DiagramAutonomyContextMenu.showFor(tcUI, station, here,
             e.getComponent(), e.getX(), e.getY());
 
         return true;

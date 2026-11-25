@@ -269,7 +269,7 @@ final class LayoutMenus
         ui.interfaceMenu().add(debug);
     }
 
-    /** A disabled bold item as a label (as LayoutRightclickAutonomyMenu): a plain grayed item looks unavailable. */
+    /** A disabled bold item as a label (as DiagramAutonomyContextMenu): a plain grayed item looks unavailable. */
     JMenuItem menuHeading(String text)
     {
         JMenuItem heading = new JMenuItem(text);

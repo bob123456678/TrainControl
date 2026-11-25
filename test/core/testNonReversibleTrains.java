@@ -320,8 +320,8 @@ public class testNonReversibleTrains
     public void testEveryManualDoorHandsOverAPrompt() throws Exception
     {
         // One hand door: the diagram's destinations and the Auto tab's list both send through sendATrainByHand.
-        for (String hand : new String[] {"final class LayoutRightclickAutonomyMenu extends JPopupMenu",
-            "public final class AutoLocomotiveStatus extends javax.swing.JPanel"})
+        for (String hand : new String[] {"final class DiagramAutonomyContextMenu extends JPopupMenu",
+            "public final class AutonomyLocomotiveStatus extends javax.swing.JPanel"})
         {
             // The class itself is the claim: found by its declaration, wherever its file is.
             String source = SourceOf.withoutComments(SourceOf.fileDeclaring(hand));

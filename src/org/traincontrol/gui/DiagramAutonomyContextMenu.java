@@ -15,7 +15,7 @@ import org.traincontrol.util.I18n;
  * This class represents a right-click menu on the track diagram, to control autonomy
  * @author Adam
  */
-final class LayoutRightclickAutonomyMenu extends JPopupMenu
+final class DiagramAutonomyContextMenu extends JPopupMenu
 {    
     /** Its tooltips wrapped where a line will not hold them, as it is shown (FR-112) - whatever set them. */
     @Override
@@ -78,7 +78,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             {
                 if (options != null) options.sortAsRead(ui.getAutonomySession());
 
-                LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(ui, station, here, options);
+                DiagramAutonomyContextMenu menu = new DiagramAutonomyContextMenu(ui, station, here, options);
 
                 // An empty menu is not worth showing.
                 if (menu.getComponentCount() > 0)
@@ -91,7 +91,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     if (at.isShowing()) menu.show(at, x, y);
                 }
             });
-        }, "LayoutRightclickAutonomyMenu options");
+        }, "DiagramAutonomyContextMenu options");
 
         gathering.setDaemon(true);
 
@@ -244,7 +244,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      * clicked, or null where the click was not on one.  `options` is what `showFor` gathered off the event thread, or
      * null where there is nothing to list.  NOTHING IN THIS CONSTRUCTOR MAY ASK THE RAILWAY ITSELF (see `showFor`).
      */
-    private LayoutRightclickAutonomyMenu(TrainControlUI ui,
+    private DiagramAutonomyContextMenu(TrainControlUI ui,
         org.traincontrol.automationui.TileGraph.TileKey station,
         org.traincontrol.automationui.TileGraph.TileKey here,
         PathOptions options)
@@ -349,7 +349,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             // The hand doors' sentence, from the same reading
             String broken = why == null ? null : why[1];
 
-            HomeLocomotiveMenu.addReturnHomeItem(this, ui, broken);
+            ReturnHomeMenuItem.addReturnHomeItem(this, ui, broken);
         }
         else if (ready)
         {

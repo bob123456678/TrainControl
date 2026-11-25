@@ -395,7 +395,7 @@ public final class StationDoors
     public static javax.swing.JPopupMenu diagramMenu(final org.traincontrol.gui.TrainControlUI ui, final TileKey square,
         org.traincontrol.automation.Point standing) throws Exception
     {
-        final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
+        final Class<?> menuClass = Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu");
 
         final java.lang.reflect.Method gather = menuClass.getDeclaredMethod("gatherPathOptions",
             org.traincontrol.gui.TrainControlUI.class, org.traincontrol.automation.Point.class);
@@ -404,7 +404,7 @@ public final class StationDoors
 
         final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(
             org.traincontrol.gui.TrainControlUI.class, TileKey.class, TileKey.class,
-            Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
+            Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu$PathOptions"));
 
         make.setAccessible(true);
 

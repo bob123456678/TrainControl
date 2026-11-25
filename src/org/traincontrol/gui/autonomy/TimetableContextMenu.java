@@ -14,11 +14,11 @@ import org.traincontrol.util.I18n;
  * This class represents a right-click menu with various utility functions displayed when any timetable entry is right-clicked
  * @author Adam
  */
-public class RightClickTimetableMenu extends PopupListener
+public class TimetableContextMenu extends PopupListener
 {    
     protected TrainControlUI ui;
     
-    public RightClickTimetableMenu(TrainControlUI u)
+    public TimetableContextMenu(TrainControlUI u)
     {
         this.ui = u;
     }

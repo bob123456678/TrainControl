@@ -138,14 +138,14 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.automation.TimetablePath;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.autonomy.AutoJSONExport;
-import org.traincontrol.gui.autonomy.AutoLocomotiveStatus;
+import org.traincontrol.gui.autonomy.JsonExportPanel;
+import org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
 import org.traincontrol.gui.autonomy.DiagramExport;
 import org.traincontrol.gui.autonomy.DiagramMonitorDriver;
 import org.traincontrol.gui.autonomy.DiagramTileRegistry;
 import org.traincontrol.gui.autonomy.ManualReversalPrompt;
-import org.traincontrol.gui.autonomy.RightClickTimetableMenu;
+import org.traincontrol.gui.autonomy.TimetableContextMenu;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.locomotive.CurrentKeyRow;
@@ -1083,7 +1083,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         this.RouteList.addMouseListener(new RightClickRouteMenu(this)); 
         
         // Right-clicks on the timetable
-        this.timetable.addMouseListener(new RightClickTimetableMenu(this));  
+        this.timetable.addMouseListener(new TimetableContextMenu(this));  
         
         // Power at startup preference
         switch (prefs.getInt(TrainControlUI.AUTO_POWER_ON, 0))
@@ -3137,9 +3137,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         }
     }
 
-    final StationCaptions stationCaptions = new StationCaptions(this);
+    final StationCaptionText stationCaptions = new StationCaptionText(this);
 
-    public StationCaptions stationCaptions()
+    public StationCaptionText stationCaptions()
     {
         return this.stationCaptions;
     }
@@ -4043,12 +4043,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         }
     }
 
-    public AutonomyViewerPanel getAutonomyViewerPanel()
+    public AutonomyConfigurationsPanel getAutonomyViewerPanel()
     {
         return autonomyViewerPanel;
     }
 
-    AutonomyViewerPanel autonomyViewerPanel;
+    AutonomyConfigurationsPanel autonomyViewerPanel;
 
     /** Tells the window the running configuration was renamed, since captures and reloads look it up by name. */
     public void autonomySetupRenamed(String from, String to)
@@ -16130,7 +16130,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
                 {
                     JOptionPane.showMessageDialog(
                         this,
-                        new AutoJSONExport(payload, this, type, extension),
+                        new JsonExportPanel(payload, this, type, extension),
                         I18n.t(titleKey),
                         JOptionPane.PLAIN_MESSAGE
                     );
@@ -16835,7 +16835,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         {
             // Not gated on there being an autonomy layout: this menu carries the setup itself, and an empty menu is not
             // shown.
-            LayoutRightclickAutonomyMenu.showFor(this, null, null,
+            DiagramAutonomyContextMenu.showFor(this, null, null,
                 evt.getComponent(), evt.getX(), evt.getY());
         }
     }//GEN-LAST:event_InnerLayoutPanelMouseClicked
@@ -18104,11 +18104,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             refreshWhatWaitsForTheTrains();
 
             // The panel list is read here, on the EDT, because the component list belongs to Swing.
-            final java.util.List<AutoLocomotiveStatus> panels = new java.util.ArrayList<>();
+            final java.util.List<AutonomyLocomotiveStatus> panels = new java.util.ArrayList<>();
 
             for (Object o : this.autoLocPanel.getComponents())
             {
-                panels.add((AutoLocomotiveStatus) o);
+                panels.add((AutonomyLocomotiveStatus) o);
             }
 
             // updateState must draw on the EDT, but the search is synchronized on the Layout and walks the whole graph
@@ -18116,10 +18116,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             // thread holds.
             AutonomyRenderer.submit(() ->
             {
-                final java.util.Map<AutoLocomotiveStatus, java.util.List<java.util.List<Edge>>> found =
+                final java.util.Map<AutonomyLocomotiveStatus, java.util.List<java.util.List<Edge>>> found =
                     new java.util.LinkedHashMap<>();
-                final java.util.Map<AutoLocomotiveStatus, Layout> searchedOn = new java.util.IdentityHashMap<>();
-                for (AutoLocomotiveStatus panel : panels)
+                final java.util.Map<AutonomyLocomotiveStatus, Layout> searchedOn = new java.util.IdentityHashMap<>();
+                for (AutonomyLocomotiveStatus panel : panels)
                 {
                     try
                     {
@@ -18136,7 +18136,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
-                    for (AutoLocomotiveStatus panel : panels)
+                    for (AutonomyLocomotiveStatus panel : panels)
                     {
                         // null is "did not search", not "searched and found nothing": findPaths bails while the layout
                         // runs, and the run can have ended by now, so the panel would print "no available paths" with
@@ -18151,8 +18151,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     }
     
     /** A card's search, noting the running layout it searched on so a later landing can drop a stale answer. */
-    private static void searchCard(AutoLocomotiveStatus panel, java.util.Map<AutoLocomotiveStatus,
-        java.util.List<java.util.List<Edge>>> found, java.util.Map<AutoLocomotiveStatus, Layout> searchedOn)
+    private static void searchCard(AutonomyLocomotiveStatus panel, java.util.Map<AutonomyLocomotiveStatus,
+        java.util.List<java.util.List<Edge>>> found, java.util.Map<AutonomyLocomotiveStatus, Layout> searchedOn)
     {
         searchedOn.put(panel, panel.getRunningLayout());
         found.put(panel, panel.findPaths());
@@ -18179,14 +18179,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             List<Locomotive> locs = shown == null ? null : autoTabOrder(shown, shown.getLocomotivesToRun());
 
             // Kept when they are these trains in this order (OB-460), each shown afresh on the running layout.
-            // Otherwise built empty and filled in afterwards: AutoLocomotiveStatus's constructor would search paths
+            // Otherwise built empty and filled in afterwards: AutonomyLocomotiveStatus's constructor would search paths
             // (synchronized on the Layout, the whole graph, once per locomotive) on the EDT.
-            final java.util.List<AutoLocomotiveStatus> kept = theCardsOf(locs);
-            final java.util.List<AutoLocomotiveStatus> panels = kept != null ? kept : new java.util.LinkedList<>();
+            final java.util.List<AutonomyLocomotiveStatus> kept = theCardsOf(locs);
+            final java.util.List<AutonomyLocomotiveStatus> panels = kept != null ? kept : new java.util.LinkedList<>();
 
             if (kept != null)
             {
-                for (AutoLocomotiveStatus panel : kept) panel.showOn(shown);
+                for (AutonomyLocomotiveStatus panel : kept) panel.showOn(shown);
             }
             else
             {
@@ -18211,7 +18211,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
                 for (Locomotive loc : locs)
                 {
-                    AutoLocomotiveStatus panel = new AutoLocomotiveStatus(loc, this, true);
+                    AutonomyLocomotiveStatus panel = new AutonomyLocomotiveStatus(loc, this, true);
                     panels.add(panel);
                     this.autoLocPanel.add(panel);
                 }
@@ -18219,10 +18219,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
             AutonomyRenderer.submit(() ->
             {
-                final java.util.Map<AutoLocomotiveStatus, java.util.List<java.util.List<Edge>>> found
+                final java.util.Map<AutonomyLocomotiveStatus, java.util.List<java.util.List<Edge>>> found
                     = new java.util.LinkedHashMap<>();
-                final java.util.Map<AutoLocomotiveStatus, Layout> searchedOn = new java.util.IdentityHashMap<>();
-                for (AutoLocomotiveStatus panel : panels)
+                final java.util.Map<AutonomyLocomotiveStatus, Layout> searchedOn = new java.util.IdentityHashMap<>();
+                for (AutonomyLocomotiveStatus panel : panels)
                 {
                     try
                     {
@@ -18241,7 +18241,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
-                    for (java.util.Map.Entry<AutoLocomotiveStatus,
+                    for (java.util.Map.Entry<AutonomyLocomotiveStatus,
                         java.util.List<java.util.List<Edge>>> entry : found.entrySet())
                     {
                         entry.getKey().updateState(entry.getKey().getLocomotive(),
@@ -18284,17 +18284,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     }
 
     /** The Auto tab's cards when they are these trains, in this order; otherwise, or for none, null.  Event thread. */
-    private java.util.List<AutoLocomotiveStatus> theCardsOf(List<Locomotive> due)
+    private java.util.List<AutonomyLocomotiveStatus> theCardsOf(List<Locomotive> due)
     {
         final Component[] standing = this.autoLocPanel.getComponents();
         if (due == null || due.isEmpty() || standing.length != due.size()) return null;
 
-        final java.util.List<AutoLocomotiveStatus> cards = new java.util.ArrayList<>();
+        final java.util.List<AutonomyLocomotiveStatus> cards = new java.util.ArrayList<>();
         for (int i = 0; i < standing.length; i++)
         {
-            if (!(standing[i] instanceof AutoLocomotiveStatus)
-                || ((AutoLocomotiveStatus) standing[i]).getLocomotive() != due.get(i)) return null;
-            cards.add((AutoLocomotiveStatus) standing[i]);
+            if (!(standing[i] instanceof AutonomyLocomotiveStatus)
+                || ((AutonomyLocomotiveStatus) standing[i]).getLocomotive() != due.get(i)) return null;
+            cards.add((AutonomyLocomotiveStatus) standing[i]);
         }
         return cards;
     }
@@ -18306,15 +18306,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
         if (shown == null || this.autoLocPanel == null) return;
 
-        final java.util.Map<Locomotive, AutoLocomotiveStatus> cards = new java.util.IdentityHashMap<>();
+        final java.util.Map<Locomotive, AutonomyLocomotiveStatus> cards = new java.util.IdentityHashMap<>();
 
         final List<Component> standing = java.util.Arrays.asList(this.autoLocPanel.getComponents());
 
         for (Component card : standing)
         {
-            if (!(card instanceof AutoLocomotiveStatus)) return;
+            if (!(card instanceof AutonomyLocomotiveStatus)) return;
 
-            cards.put(((AutoLocomotiveStatus) card).getLocomotive(), (AutoLocomotiveStatus) card);
+            cards.put(((AutonomyLocomotiveStatus) card).getLocomotive(), (AutonomyLocomotiveStatus) card);
         }
 
         List<Locomotive> due = autoTabOrder(shown, cards.keySet());

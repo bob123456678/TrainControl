@@ -168,7 +168,7 @@ CT_CONSTRUCTOR_THROW	org.traincontrol.automation.Point	<init>		1
 CT_CONSTRUCTOR_THROW	org.traincontrol.base.LayoutDiagramComponent	<init>		2
 CT_CONSTRUCTOR_THROW	org.traincontrol.gui.LocomotiveSettingsFrame	<init>		1
 CT_CONSTRUCTOR_THROW	org.traincontrol.gui.RouteEditorFrame	<init>		2
-CT_CONSTRUCTOR_THROW	org.traincontrol.gui.autonomy.AutoJSONExport	<init>		1
+CT_CONSTRUCTOR_THROW	org.traincontrol.gui.autonomy.JsonExportPanel	<init>		1
 CT_CONSTRUCTOR_THROW	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	<init>		1
 CT_CONSTRUCTOR_THROW	org.traincontrol.gui.locomotive.UsageChart	<init>		1
 CT_CONSTRUCTOR_THROW	org.traincontrol.marklin.MarklinControlStation	<init>		2
@@ -275,8 +275,8 @@ EI_EXPOSE_REP	org.traincontrol.gui.LocomotiveSettingsFrame	tabsForTest	tabs	1
 EI_EXPOSE_REP	org.traincontrol.gui.TailCrossedPrompt$Answer	getRoad	road	1
 EI_EXPOSE_REP	org.traincontrol.gui.TailCrossedPrompt$Answer	roadToRecord	road	1
 EI_EXPOSE_REP	org.traincontrol.gui.TailCrossedPrompt$Choice	getFarthest	farthest	1
-EI_EXPOSE_REP	org.traincontrol.gui.autonomy.AutoLocomotiveStatus	getLocomotive	locomotive	1
-EI_EXPOSE_REP	org.traincontrol.gui.autonomy.AutoLocomotiveStatus	getRunningLayout	layout	1
+EI_EXPOSE_REP	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus	getLocomotive	locomotive	1
+EI_EXPOSE_REP	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus	getRunningLayout	layout	1
 EI_EXPOSE_REP	org.traincontrol.gui.autonomy.AutonomyBanner	getActionButton	action	1
 EI_EXPOSE_REP	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	getBanner	banner	1
 EI_EXPOSE_REP	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	getExcludePage	excludePage	1
@@ -332,10 +332,10 @@ EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyMenu	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyOverlayToggle	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyOverlayToggle	bindRunButtons	start	1
 EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyOverlayToggle	bindRunButtons	stop	1
-EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyViewerPanel	<init>	initialSession	1
-EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyViewerPanel	<init>	ui	1
-EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyViewerPanel$FindingRenderer	<init>	severities	1
-EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyViewerPanel$FindingRenderer	<init>	tiles	1
+EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyConfigurationsPanel	<init>	initialSession	1
+EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyConfigurationsPanel	<init>	ui	1
+EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyConfigurationsPanel$FindingRenderer	<init>	severities	1
+EI_EXPOSE_REP2	org.traincontrol.gui.AutonomyConfigurationsPanel$FindingRenderer	<init>	tiles	1
 EI_EXPOSE_REP2	org.traincontrol.gui.LayoutGrid	<init>	builtMaster	1
 EI_EXPOSE_REP2	org.traincontrol.gui.LayoutGrid	<init>	owner	1
 EI_EXPOSE_REP2	org.traincontrol.gui.LayoutGrid	<init>	window	1
@@ -347,14 +347,14 @@ EI_EXPOSE_REP2	org.traincontrol.gui.LayoutPopupUI	<init>	parent	1
 EI_EXPOSE_REP2	org.traincontrol.gui.RightClickRouteMenu	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.RouteEditorFrame	<init>	parent	1
 EI_EXPOSE_REP2	org.traincontrol.gui.TrainControlUI$CustomTableRenderer	<init>	this$0	1
-EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutoJSONExport	<init>	tcui	1
-EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutoLocomotiveStatus	<init>	locomotive	1
-EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutoLocomotiveStatus	<init>	parent	1
-EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutoLocomotiveStatus	showOn	layout	1
+EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.JsonExportPanel	<init>	tcui	1
+EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus	<init>	locomotive	1
+EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus	<init>	parent	1
+EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus	showOn	layout	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.DiagramMonitorDriver	<init>	registry	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.DiagramMonitorDriver	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.DiagramMonitorDriver	bind	boundTo	1
-EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.RightClickTimetableMenu	<init>	ui	1
+EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.TimetableContextMenu	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	<init>	session	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	setBanner	messageBanner	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	setDialogOwner	dialogOwner	1
@@ -532,7 +532,7 @@ RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.automationui.AutonomyS
 RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.automationui.AutonomySession	stationRoad		1
 RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.automationui.AutonomySession	walkFrom		1
 RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.examples.FeedbackEvents	lambda$execCode		3
-RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.gui.LayoutRightclickAutonomyMenu	placeableCopies		1
+RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.gui.DiagramAutonomyContextMenu	placeableCopies		1
 RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.gui.RouteEditorFrame	functionsOffered		1
 RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.gui.layouteditor.LayoutEditor	setAutonomyMode		1
 RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.gui.widgets.QuickFileChooser	theDesktops		1
@@ -546,8 +546,8 @@ RC_REF_COMPARISON_BAD_PRACTICE_BOOLEAN	org.traincontrol.gui.TrainControlUI$KeySh
 RC_REF_COMPARISON_BAD_PRACTICE_BOOLEAN	org.traincontrol.gui.TrainControlUI$KeyShortcuts$Row	stroke	control	1
 REC_CATCH_EXCEPTION	org.traincontrol.base.RouteCommand	parseLine		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.AutonomyLifecycle	getAutonomySession		1
-REC_CATCH_EXCEPTION	org.traincontrol.gui.AutonomyViewerPanel	importLegacyGraph		1
-REC_CATCH_EXCEPTION	org.traincontrol.gui.AutonomyViewerPanel	loadPrepared		1
+REC_CATCH_EXCEPTION	org.traincontrol.gui.AutonomyConfigurationsPanel	importLegacyGraph		1
+REC_CATCH_EXCEPTION	org.traincontrol.gui.AutonomyConfigurationsPanel	loadPrepared		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.CoveredTrackView	workOutCoveredTrack		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.LocomotiveActions	findSimilarLocs		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.LocomotiveFunctionsTab	imageKey		1
@@ -599,24 +599,24 @@ SBSC_USE_STRINGBUFFER_CONCATENATION	org.traincontrol.marklin.MarklinRoute	toCSV	
 SBSC_USE_STRINGBUFFER_CONCATENATION	org.traincontrol.util.Conversion	bytesToBin		1
 SBSC_USE_STRINGBUFFER_CONCATENATION	org.traincontrol.util.Conversion	bytesToHex		1
 SE_BAD_FIELD	org.traincontrol.gui.AutonomyOverlayToggle		firstFinding	1
-SE_BAD_FIELD	org.traincontrol.gui.AutonomyViewerPanel		findingRelatedRows	1
-SE_BAD_FIELD	org.traincontrol.gui.AutonomyViewerPanel		findingRows	1
-SE_BAD_FIELD	org.traincontrol.gui.AutonomyViewerPanel		initialSession	1
+SE_BAD_FIELD	org.traincontrol.gui.AutonomyConfigurationsPanel		findingRelatedRows	1
+SE_BAD_FIELD	org.traincontrol.gui.AutonomyConfigurationsPanel		findingRows	1
+SE_BAD_FIELD	org.traincontrol.gui.AutonomyConfigurationsPanel		initialSession	1
 SE_BAD_FIELD	org.traincontrol.gui.LayoutLabel		autonomyAnnotation	1
 SE_BAD_FIELD	org.traincontrol.gui.LayoutLabel		autonomyOverlay	1
 SE_BAD_FIELD	org.traincontrol.gui.LayoutLabel		component	1
 SE_BAD_FIELD	org.traincontrol.gui.LayoutLabel		square	1
 SE_BAD_FIELD	org.traincontrol.gui.LayoutPopupUI		grid	1
 SE_BAD_FIELD	org.traincontrol.gui.LayoutPopupUI		layout	1
-SE_BAD_FIELD	org.traincontrol.gui.LayoutRightclickAutonomyMenu		here	1
-SE_BAD_FIELD	org.traincontrol.gui.LayoutRightclickAutonomyMenu		session	1
-SE_BAD_FIELD	org.traincontrol.gui.LayoutRightclickAutonomyMenu		station	1
+SE_BAD_FIELD	org.traincontrol.gui.DiagramAutonomyContextMenu		here	1
+SE_BAD_FIELD	org.traincontrol.gui.DiagramAutonomyContextMenu		session	1
+SE_BAD_FIELD	org.traincontrol.gui.DiagramAutonomyContextMenu		station	1
 SE_BAD_FIELD	org.traincontrol.gui.LocomotiveFunctionsTab		copiedFrom	1
 SE_BAD_FIELD	org.traincontrol.gui.LocomotiveFunctionsTab		rows	1
 SE_BAD_FIELD	org.traincontrol.gui.LocomotiveFunctionsTab		setAside	1
-SE_BAD_FIELD	org.traincontrol.gui.autonomy.AutoLocomotiveStatus		gatheredTimetableStart	1
-SE_BAD_FIELD	org.traincontrol.gui.autonomy.AutoLocomotiveStatus		layout	1
-SE_BAD_FIELD	org.traincontrol.gui.autonomy.AutoLocomotiveStatus		paths	1
+SE_BAD_FIELD	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus		gatheredTimetableStart	1
+SE_BAD_FIELD	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus		layout	1
+SE_BAD_FIELD	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus		paths	1
 SE_BAD_FIELD	org.traincontrol.gui.autonomy.AutonomyBanner		followingViewport	1
 SE_BAD_FIELD	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel		WhyRenderer	1
 SE_BAD_FIELD	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel		blockingFor	1
@@ -704,7 +704,7 @@ SIC_INNER_SHOULD_BE_STATIC	org.traincontrol.automation.Layout$EdgeConfigurationS
 SIC_INNER_SHOULD_BE_STATIC	org.traincontrol.automation.Layout$PointPath			1
 SIC_INNER_SHOULD_BE_STATIC	org.traincontrol.gui.LayoutLabel$EmptyIcon			1
 SIC_INNER_SHOULD_BE_STATIC	org.traincontrol.gui.RightClickRouteMenu$RightClickMenu			1
-SIC_INNER_SHOULD_BE_STATIC	org.traincontrol.gui.autonomy.RightClickTimetableMenu$RightClickMenu			1
+SIC_INNER_SHOULD_BE_STATIC	org.traincontrol.gui.autonomy.TimetableContextMenu$RightClickMenu			1
 SIC_INNER_SHOULD_BE_STATIC	org.traincontrol.gui.locomotive.LocomotiveStats$TimestampString			1
 SIC_INNER_SHOULD_BE_STATIC	org.traincontrol.gui.locomotive.RightClickPageMenu$RightClickMenu			1
 SIC_INNER_SHOULD_BE_STATIC	org.traincontrol.marklin.MarklinControlStation$CustomObjectInputStream			1
@@ -724,7 +724,7 @@ SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.RouteEditorFrame$N	build		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.RouteEditorFrame$N	greyWhatCannotBeEdited		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.RouteListPanel$N	lambda$refreshRouteList		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.TrainControlUI$N			3
-SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.autonomy.AutoLocomotiveStatus$N	initComponents		1
+SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus$N	initComponents		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.autonomy.AutonomyBanner$N	floatOver		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.autonomy.AutonomyBanner$N	floatOver	followingViewport	1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel$N	<init>	banner	1
@@ -818,7 +818,7 @@ THROWS_METHOD_THROWS_RUNTIMEEXCEPTION	org.traincontrol.marklin.udp.NetworkProxy	
 UCF_USELESS_CONTROL_FLOW	org.traincontrol.marklin.file.CS2File	parseRoutes		1
 UC_USELESS_CONDITION	org.traincontrol.automation.Layout	bfs		1
 UC_USELESS_CONDITION	org.traincontrol.base.Feedback	readyForUpdate		1
-UC_USELESS_OBJECT	org.traincontrol.gui.LayoutRightclickAutonomyMenu	placeableCopies		1
+UC_USELESS_OBJECT	org.traincontrol.gui.DiagramAutonomyContextMenu	placeableCopies		1
 UC_USELESS_OBJECT_STACK	org.traincontrol.marklin.MarklinControlStation	wireComponents		1
 UG_SYNC_SET_UNSYNC_GET	org.traincontrol.marklin.MarklinLocomotive	getAccessoryState		1
 UG_SYNC_SET_UNSYNC_GET	org.traincontrol.marklin.MarklinLocomotive	getF		1

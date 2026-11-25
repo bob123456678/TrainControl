@@ -183,7 +183,7 @@ public class testDeleteAsksWhichConfiguration
      * A load that fails after the railway was replaced leaves the store on the configuration the railway now runs
      * (OB-510): the setup the captions read and the next start resumes is the one running.
      *
-     * MUTATION: put the store back after every failure in `AutonomyViewerPanel.loadPrepared`, and this fails.
+     * MUTATION: put the store back after every failure in `AutonomyConfigurationsPanel.loadPrepared`, and this fails.
      */
     @Test
     public void testALoadFailingAfterItsRailwayLeavesTheStoreOnIt() throws Exception

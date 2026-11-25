@@ -206,7 +206,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
                         javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
                         // Handed the sentence, as the menu hands it where Start is grayed.
-                        Method add = Class.forName("org.traincontrol.gui.HomeLocomotiveMenu").getDeclaredMethod(
+                        Method add = Class.forName("org.traincontrol.gui.ReturnHomeMenuItem").getDeclaredMethod(
                             "addReturnHomeItem", javax.swing.JComponent.class, TrainControlUI.class, String.class);
 
                         add.setAccessible(true);
@@ -425,9 +425,9 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
     @Test
     public void testTheMenuAsksTheSetupOnceWhereStartIsOffered() throws Exception
     {
-        // The menu is built by its constructor; the Return Home item is the whole of HomeLocomotiveMenu's file.
-        String menu = code("private LayoutRightclickAutonomyMenu(");
-        String item = SourceOf.withoutComments(SourceOf.fileDeclaring("final class HomeLocomotiveMenu"));
+        // The menu is built by its constructor; the Return Home item is the whole of ReturnHomeMenuItem's file.
+        String menu = code("private DiagramAutonomyContextMenu(");
+        String item = SourceOf.withoutComments(SourceOf.fileDeclaring("final class ReturnHomeMenuItem"));
 
         assertTrue(menu.contains("canStart ? null : ui.whyStartAndAHandSendAreRefused()"), "the right-click menu does"
             + " not work Start's and the hand doors' sentences out together from Start's answer (ADU-C3, ADU2-C5)");
@@ -435,7 +435,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
         // Over the block that builds Start's item and Return Home's.  A destination item asks again when it is CLICKED,
         // which is its guard (MT-263) and stays.
         int from = menu.indexOf("boolean canStart = ui.canStartAutonomy();");
-        int to = menu.indexOf("HomeLocomotiveMenu.addReturnHomeItem(this, ui, broken)");
+        int to = menu.indexOf("ReturnHomeMenuItem.addReturnHomeItem(this, ui, broken)");
 
         assertTrue(from >= 0 && to > from, "precondition: the block that builds Start's item and Return Home's is not"
             + " where it was");
@@ -445,7 +445,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
         assertFalse(building.contains("ui.whyAutonomyWillNotStart()") || building.contains("ui.whyAHandSendIsRefused()"),
             "the right-click menu asks the setup again for one of the two sentences, over a broken setup (ADU2-C5)");
 
-        assertTrue(menu.contains("HomeLocomotiveMenu.addReturnHomeItem(this, ui, broken)"), "the right-click menu does not"
+        assertTrue(menu.contains("ReturnHomeMenuItem.addReturnHomeItem(this, ui, broken)"), "the right-click menu does not"
             + " hand the Return Home item the sentence it worked out (ADU-C3)");
 
         // AND EACH SENTENCE GOES WHERE IT BELONGS: Start's to Start's tooltip, the hand doors' to Return Home.
@@ -595,14 +595,14 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
             // THE RIGHT-CLICK MENU, built as `showFor` - the diagram's own door - builds it: the Point on the square
             // resolved on the event thread, the paths gathered off it, the menu made on it.  Not shown: the test's window
             // is not on screen, and `showFor` shows only over a showing window.
-            final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
+            final Class<?> menuClass = Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu");
 
             final Method gather = Reflect.method(menuClass,
                 "gatherPathOptions", TrainControlUI.class, org.traincontrol.automation.Point.class);
 
             final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
                 org.traincontrol.automationui.TileGraph.TileKey.class, org.traincontrol.automationui.TileGraph.TileKey.class,
-                Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
+                Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu$PathOptions"));
 
             make.setAccessible(true);
 
