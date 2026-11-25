@@ -10,7 +10,6 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.util.I18n;
 import support.Components;
-import support.Reflect;
 
 /**
  * `LogPanel` on its own (FR-190): the level a key names, newest on top, the plain text, the triangles beside the first
@@ -151,8 +150,8 @@ public class testLogPanel
 
         String[] tips = Components.onTheEventThread(() ->
         {
-            JComponent gutter = (JComponent) Reflect.get(LogPanel.class, panel, "gutter");
-            JTextArea area = (JTextArea) Reflect.get(LogPanel.class, panel, "area");
+            JComponent gutter = panel.gutter;
+            JTextArea area = panel.area;
             String[] said = new String[4];
 
             // Laid out as a shown text area would be: a text area with no size places no line

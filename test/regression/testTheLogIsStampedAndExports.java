@@ -216,21 +216,7 @@ public class testTheLogIsStampedAndExports
             assertEquals(support.Components.onTheEventThread(() -> marks(ui, shown, entries)), "-YRRR",
                 "the marks beside notice, warning, error, exception, uncaught error");
 
-            File file = new File(temporaryFolder(), "marked-log.txt");
-
-            try (support.Answering answering = support.Answering.start(message -> null).choosing(file))
-            {
-                SwingUtilities.invokeLater(item(ui)::doClick);
-
-                assertTrue(support.Components.waitFor(file::isFile, 60000), "Export Log wrote no file");
-                support.Components.settle();
-                assertEquals(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8),
-                    shown.replace("\n", System.lineSeparator()), "the file is not the log as it showed");
-            }
-            finally
-            {
-                file.delete();
-            }
+            exportedAsShown(ui, shown, "marked-log.txt", (file, answering) -> { });
         });
     }
 
@@ -338,31 +324,43 @@ public class testTheLogIsStampedAndExports
             ui.log("FR051 export one");
             ui.log("FR051 export two\nFR051 export tail");
 
-            String shown = logOf(ui);
-
-            File file = new File(temporaryFolder(), "chosen-log.txt");
-
-            try (support.Answering answering = support.Answering.start(message -> null).choosing(file))
+            exportedAsShown(ui, logOf(ui), "chosen-log.txt", (file, answering) ->
             {
-                SwingUtilities.invokeLater(item(ui)::doClick);
-
-                assertTrue(support.Components.waitFor(file::isFile, 60000), "no file was written where the chooser was told to save");
-
-                support.Components.settle();
-
-                assertEquals(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8),
-                    shown.replace("\n", System.lineSeparator()), "the file is not the log as it showed");
-
                 assertTrue(logOf(ui).contains(I18n.f("ui.infoLogSaved", file.getAbsolutePath())),
                     "the log does not say where it was saved");
 
                 assertTrue(answering.asked().isEmpty(), "a message came up on a good save: " + answering.asked());
-            }
-            finally
-            {
-                file.delete();
-            }
+            });
         });
+    }
+
+    private interface AfterTheSave
+    {
+        void check(File file, support.Answering answering) throws Exception;
+    }
+
+    /** Presses File > Export Log, chooses a new file of that name, checks it holds `shown`, then `after`. */
+    private static void exportedAsShown(TrainControlUI ui, String shown, String name, AfterTheSave after) throws Exception
+    {
+        File file = new File(temporaryFolder(), name);
+
+        try (support.Answering answering = support.Answering.start(message -> null).choosing(file))
+        {
+            SwingUtilities.invokeLater(item(ui)::doClick);
+
+            assertTrue(support.Components.waitFor(file::isFile, 60000), "no file was written where the chooser was told to save");
+
+            support.Components.settle();
+
+            assertEquals(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8),
+                shown.replace("\n", System.lineSeparator()), "the file is not the log as it showed");
+
+            after.check(file, answering);
+        }
+        finally
+        {
+            file.delete();
+        }
     }
 
     /** What the door said when the chooser was told to save to `target`, which it cannot write. */
