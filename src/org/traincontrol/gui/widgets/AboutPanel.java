@@ -10,9 +10,9 @@ import org.traincontrol.marklin.MarklinControlStation;
  *
  * @author adam
  */
-public class About extends javax.swing.JPanel
+public class AboutPanel extends javax.swing.JPanel
 {
-    public About()
+    public AboutPanel()
     {
         initComponents();
         // The form sets Java's own hand; this one replaces it (FR-224).

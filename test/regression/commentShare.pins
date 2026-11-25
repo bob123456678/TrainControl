@@ -46,7 +46,7 @@ src/org/traincontrol/base/TileSelection.java	421	0
 src/org/traincontrol/examples/FullAutonomyExample.java	362	0
 src/org/traincontrol/examples/ProgrammaticControlExample.java	324	0
 src/org/traincontrol/gui/AccessoryKeyboard.java	-	1
-src/org/traincontrol/gui/ActuationCsvDoor.java	-	1
+src/org/traincontrol/gui/AccessoryCountsExport.java	-	1
 src/org/traincontrol/gui/AutonomyLifecycle.java	304	3
 src/org/traincontrol/gui/AutonomyMenu.java	333	9
 src/org/traincontrol/gui/AutonomyOverlayToggle.java	460	5
@@ -75,7 +75,7 @@ src/org/traincontrol/gui/LocomotiveEditRule.java	378	0
 src/org/traincontrol/gui/LocomotiveSettingsWindow.java	-	11
 src/org/traincontrol/gui/MultiUnitPanel.java	-	3
 src/org/traincontrol/gui/ReturnHomeController.java	309	5
-src/org/traincontrol/gui/RightClickTips.java	260	0
+src/org/traincontrol/gui/HoverTooltips.java	260	0
 src/org/traincontrol/gui/RouteEditorWindow.java	266	61
 src/org/traincontrol/gui/RouteListPanel.java	389	4
 src/org/traincontrol/gui/RouteRunningMarks.java	452	4

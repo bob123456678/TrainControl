@@ -16,21 +16,21 @@ import javax.swing.MenuSelectionManager;
  * only while their menu is open and put back as it closes, so code that saves a tooltip or reads a key never keeps a
  * hidden one.  Only the display changes: the window's own key handling acts on the keys either way.
  */
-public final class RightClickTips
+public final class HoverTooltips
 {
     /** The preference that holds the setting.  Off by default; its name stays, so a saved choice carries over. */
     public static final String PREF = "HideRightClickMenuTips";
 
-    private static final String HELD_TIP = "RightClickTips.held";
+    private static final String HELD_TIP = "HoverTooltips.held";
 
-    private static final String HELD_KEY = "RightClickTips.key";
+    private static final String HELD_KEY = "HoverTooltips.key";
 
     private static boolean installed;
 
     /** The items whose tips or keys this setting has taken off, to put back once their menu closes. */
     private static final Set<JMenuItem> stripped = new HashSet<>();
 
-    private RightClickTips()
+    private HoverTooltips()
     {
     }
 

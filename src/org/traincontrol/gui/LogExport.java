@@ -9,9 +9,9 @@ import org.traincontrol.util.I18n;
 /**
  * File > Export Log (FR-051): saves the log as it shows, stamps included, to a text file.  Event thread only.
  */
-final class LogExportDoor
+final class LogExport
 {
-    private LogExportDoor()
+    private LogExport()
     {
     }
 

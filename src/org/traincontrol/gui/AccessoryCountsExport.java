@@ -9,9 +9,9 @@ import org.traincontrol.util.I18n;
  * The keyboard tab's Export Counts button (FR-178): saves every accessory's actuation count as a CSV file.  Event
  * thread only.
  */
-final class ActuationCsvDoor
+final class AccessoryCountsExport
 {
-    private ActuationCsvDoor()
+    private AccessoryCountsExport()
     {
     }
 

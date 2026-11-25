@@ -167,7 +167,7 @@ public class testEveryLanguageFitsThePopups
      * message, the editor-open refusals, Clear All's question and the Cancel question that names the trains going back.
      * No line of their text, a failed sync's exception text and path included, is wider than the cap (FR-254).
      *
-     * MUTATION: put a label of fixed preferred width 20 pixels into `About`'s form, and this fails in every language.
+     * MUTATION: put a label of fixed preferred width 20 pixels into `AboutPanel`'s form, and this fails in every language.
      */
     @Test(timeOut = 300000)
     public void testThePopupsFitInEveryLanguage() throws Exception

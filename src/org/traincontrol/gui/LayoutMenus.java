@@ -523,18 +523,18 @@ final class LayoutMenus
     /** Preferences > Hide Hover Tooltips (FR-168); read when a menu opens, so it needs no refresh. */
     void mountRightClickTipsMenu()
     {
-        RightClickTips.install();
+        HoverTooltips.install();
 
         if (ui.interfaceMenu() == null) return;
 
         final JCheckBoxMenuItem hide = new JCheckBoxMenuItem(
             I18n.t("ui.main.toolbar.hideRightClickTips"),
-            RightClickTips.hidden());
+            HoverTooltips.hidden());
 
         hide.setToolTipText(AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.hideRightClickTips")));
 
         hide.addActionListener(event ->
-            TrainControlUI.getPrefs().putBoolean(RightClickTips.PREF, hide.isSelected()));
+            TrainControlUI.getPrefs().putBoolean(HoverTooltips.PREF, hide.isSelected()));
 
         // Under Remember Window Locations, above the divider (MT-910).
         int under = ui.interfaceMenu().getPopupMenu().getComponentIndex(ui.rememberLocationMenuItem());

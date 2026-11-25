@@ -157,7 +157,7 @@ import org.traincontrol.gui.locomotive.LocomotiveStats;
 import org.traincontrol.gui.locomotive.LocomotiveButtonContextMenu;
 import org.traincontrol.gui.locomotive.KeyboardPageContextMenu;
 import org.traincontrol.gui.locomotive.UsageChart;
-import org.traincontrol.gui.widgets.About;
+import org.traincontrol.gui.widgets.AboutPanel;
 import org.traincontrol.gui.widgets.BackupAction;
 import org.traincontrol.gui.widgets.BusyDialog;
 import org.traincontrol.gui.widgets.HandPointer;
@@ -4145,7 +4145,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     {
         JMenuItem item = new JMenuItem(I18n.t("ui.main.toolbar.exportLog"));
 
-        item.addActionListener(event -> LogExportDoor.save(this));
+        item.addActionListener(event -> LogExport.save(this));
 
         this.exportLogMenuItem = item;
 
@@ -4259,7 +4259,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
     /**
      * Shows these keys on a menu item, bound to nothing: the window's own key handling acts on them.  Hide Hover
-     * Tooltips takes them off while the menu is open ({@link RightClickTips}).
+     * Tooltips takes them off while the menu is open ({@link HoverTooltips}).
      */
     public static void showShortcut(JMenuItem item, KeyStroke keys)
     {
@@ -4672,7 +4672,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         this.exportActuationsButton.setFont(new Font("Segoe UI", Font.BOLD, 12));
         this.exportActuationsButton.setToolTipText(I18n.t("acc.ui.tooltip.exportActuations"));
         this.exportActuationsButton.setFocusable(false);
-        this.exportActuationsButton.addActionListener(event -> ActuationCsvDoor.save(this));
+        this.exportActuationsButton.addActionListener(event -> AccessoryCountsExport.save(this));
 
         JPanel row = new JPanel(new BorderLayout());
         row.setOpaque(false);
@@ -14541,7 +14541,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
     private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aboutMenuItemActionPerformed
         
-        JOptionPane.showMessageDialog(this, new About(), I18n.t("ui.about"), JOptionPane.PLAIN_MESSAGE);
+        JOptionPane.showMessageDialog(this, new AboutPanel(), I18n.t("ui.about"), JOptionPane.PLAIN_MESSAGE);
     }//GEN-LAST:event_aboutMenuItemActionPerformed
 
     private void switchCSLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_switchCSLayoutMenuItemActionPerformed

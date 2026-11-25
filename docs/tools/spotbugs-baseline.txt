@@ -180,8 +180,8 @@ DB_DUPLICATE_SWITCH_CLAUSES	org.traincontrol.gui.RouteEditorWindow	settingWords	
 DCN_NULLPOINTER_EXCEPTION	org.traincontrol.base.Accessory	stringToAccessoryDecoderType		1
 DCN_NULLPOINTER_EXCEPTION	org.traincontrol.marklin.file.CS2File	parseLocomotives		1
 DE_MIGHT_IGNORE	org.traincontrol.gui.autonomy.DiagramExport	awaitTiles		1
-DE_MIGHT_IGNORE	org.traincontrol.gui.widgets.About	linkLabel1MouseClicked		2
-DE_MIGHT_IGNORE	org.traincontrol.gui.widgets.About	linkLabelMouseClicked		2
+DE_MIGHT_IGNORE	org.traincontrol.gui.widgets.AboutPanel	linkLabel1MouseClicked		2
+DE_MIGHT_IGNORE	org.traincontrol.gui.widgets.AboutPanel	linkLabelMouseClicked		2
 DLS_DEAD_LOCAL_STORE	org.traincontrol.automationui.TileGraph	exits		1
 DLS_DEAD_LOCAL_STORE	org.traincontrol.gui.layouteditor.LayoutEditorSelection	fillSelection		1
 DM_BOXED_PRIMITIVE_FOR_COMPARE	org.traincontrol.gui.locomotive.LocomotiveStats	lambda$null		1

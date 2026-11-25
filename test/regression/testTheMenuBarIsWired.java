@@ -21,7 +21,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.LayoutPopupWindow;
-import org.traincontrol.gui.RightClickTips;
+import org.traincontrol.gui.HoverTooltips;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
@@ -740,7 +740,7 @@ public class testTheMenuBarIsWired
     {
         Object[][] rows = rows("preferences>winOnTop ONTOP_SETTING_PREF ONTOP_SETTING_DEFAULT;"
             + " preferences>rememberWindowLoc REMEMBER_WINDOW_LOCATION true;"
-            + " preferences>hideRightClickTips RightClickTips.PREF false;"
+            + " preferences>hideRightClickTips HoverTooltips.PREF false;"
             + " preferences>locControl>slidersChangeActiveLoc SLIDER_SETTING_PREF false;"
             + " preferences>locControl>showKeyboardControlHints SHOW_KEYBOARD_HINTS_PREF true;"
             + " preferences>locControl>activeLocInPopupTitles ACTIVE_LOC_IN_TITLE true;"
@@ -760,7 +760,7 @@ public class testTheMenuBarIsWired
 
         for (Object[] row : rows)
         {
-            row[1] = "RightClickTips.PREF".equals(row[1]) ? RightClickTips.PREF : constant((String) row[1]);
+            row[1] = "HoverTooltips.PREF".equals(row[1]) ? HoverTooltips.PREF : constant((String) row[1]);
 
             String value = (String) row[2];
 
