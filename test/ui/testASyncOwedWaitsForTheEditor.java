@@ -141,7 +141,7 @@ public class testASyncOwedWaitsForTheEditor
 
         made.clear();
 
-        Components.onTheEventThread(() -> { ui.refreshRouteList(); return null; });
+        Components.onTheEventThread(() -> { ui.routeListPanel().refreshRouteList(); return null; });
     }
 
     /** An armed route the station carried (locked), so disarming it syncs; listed in the window. */
@@ -167,7 +167,7 @@ public class testASyncOwedWaitsForTheEditor
 
         ((MarklinRoute) model.getRoute(name)).setLocked(true);
 
-        Components.onTheEventThread(() -> { ui.refreshRouteList(); return null; });
+        Components.onTheEventThread(() -> { ui.routeListPanel().refreshRouteList(); return null; });
 
         Components.settle();
 

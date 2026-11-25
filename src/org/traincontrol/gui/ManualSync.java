@@ -305,7 +305,7 @@ public final class ManualSync
         ui.clearCopyTarget();
         ui.repaintLoc(true, null);
         ui.repaintMappings(null, false);
-        ui.refreshRouteList();
+        ui.routeListPanel.refreshRouteList();
         ui.getLocSelector().refreshLocSelectorList();
         if (model.hasAutoLayout())
         {
@@ -314,7 +314,7 @@ public final class ManualSync
             // And the station labels, as the rename dialog does (OB-081)
             ui.updateVisiblePoints();
             ui.repaintAutoLocList(false);
-            ui.repaintTimetable();
+            ui.timetableTab().repaintTimetable();
         }
         return "loc.renameApplied";
     }

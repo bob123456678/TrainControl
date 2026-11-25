@@ -517,7 +517,7 @@ public final class AutonomyLifecycle
                 ui.repaintAutoLocListLite();
 
                 // Every timetable row names a locomotive (MT-149).
-                ui.repaintTimetable();
+                ui.timetableTab().repaintTimetable();
             });
         }
         catch (Exception e)

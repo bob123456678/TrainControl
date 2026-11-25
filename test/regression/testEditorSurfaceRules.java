@@ -538,7 +538,7 @@ public class testEditorSurfaceRules
     @Test
     public void testEveryDoorThatRunsARouteAsksIfItIsAlreadyRunning() throws Exception
     {
-        String funnel = codeOf("    void executeRoute(String route)");
+        String funnel = codeOf("    public void executeRoute(String route)");
 
         assertTrue(funnel.contains("routesExecuting.contains(route)"),
             "executeRoute does not ask whether the route is already running, and it is the method "

@@ -540,7 +540,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
             {
                 try
                 {
-                    ui.setHoveredDiagramTile(PLATFORM.getPage(), PLATFORM.getX(), PLATFORM.getY());
+                    ui.diagramLocGestures().setHoveredDiagramTile(PLATFORM.getPage(), PLATFORM.getX(), PLATFORM.getY());
 
                     handled[0] = door.invoke(ui, java.awt.event.KeyEvent.VK_V, true);
                 }

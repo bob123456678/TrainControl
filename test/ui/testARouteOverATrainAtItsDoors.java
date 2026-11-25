@@ -570,7 +570,7 @@ public class testARouteOverATrainAtItsDoors
     {
         if (door == 0)
         {
-            SwingUtilities.invokeLater(() -> ui.executeRoute(ROUTE));
+            SwingUtilities.invokeLater(() -> ui.routeListPanel().executeRoute(ROUTE));
         }
         else
         {

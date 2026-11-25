@@ -56,7 +56,7 @@ src/org/traincontrol/gui/CaptionVisibility.java	497	4
 src/org/traincontrol/gui/CoalescedAsk.java	552	2
 src/org/traincontrol/gui/ConnectingNotice.java	410	4
 src/org/traincontrol/gui/CoveredTrackView.java	511	4
-src/org/traincontrol/gui/DiagramLocGestures.java	367	7
+src/org/traincontrol/gui/DiagramLocGestures.java	367	6
 src/org/traincontrol/gui/EditorWindows.java	355	4
 src/org/traincontrol/gui/HomeLocomotiveMenu.java	465	2
 src/org/traincontrol/gui/InfoMark.java	261	0
@@ -67,7 +67,7 @@ src/org/traincontrol/gui/LayoutMenus.java	-	11
 src/org/traincontrol/gui/LayoutPopupUI.java	338	8
 src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java	403	24
 src/org/traincontrol/gui/LocIconActions.java	332	12
-src/org/traincontrol/gui/LocomotiveActions.java	-	5
+src/org/traincontrol/gui/LocomotiveActions.java	-	4
 src/org/traincontrol/gui/LocomotiveCsvDoor.java	-	1
 src/org/traincontrol/gui/LocomotiveFunctionsTab.java	-	7
 src/org/traincontrol/gui/LocomotiveNotesPanel.java	-	6
@@ -77,7 +77,7 @@ src/org/traincontrol/gui/MultiUnitPanel.java	-	3
 src/org/traincontrol/gui/ReturnHomeController.java	309	5
 src/org/traincontrol/gui/RightClickTips.java	260	0
 src/org/traincontrol/gui/RouteEditorFrame.java	266	61
-src/org/traincontrol/gui/RouteListPanel.java	389	5
+src/org/traincontrol/gui/RouteListPanel.java	389	4
 src/org/traincontrol/gui/RouteRunningMarks.java	452	4
 src/org/traincontrol/gui/RunGates.java	477	12
 src/org/traincontrol/gui/RunningLayoutSync.java	348	15
@@ -85,7 +85,7 @@ src/org/traincontrol/gui/SaveToFileDoor.java	-	3
 src/org/traincontrol/gui/SettledQuestion.java	495	0
 src/org/traincontrol/gui/StationCaptions.java	319	1
 src/org/traincontrol/gui/TailCrossedPrompt.java	359	11
-src/org/traincontrol/gui/TimetableTab.java	271	2
+src/org/traincontrol/gui/TimetableTab.java	271	1
 src/org/traincontrol/gui/TrainControlUI.java	-	89
 src/org/traincontrol/gui/autonomy/ArrivalSidePrompt.java	524	4
 src/org/traincontrol/gui/autonomy/AutoLocomotiveStatus.java	364	12

@@ -213,7 +213,7 @@ public class testRouteRoundTrip
 
         assertEquals(NodeExpression.toList(kept), Arrays.asList(notAt), "the locomotive database lost the not");
 
-        // A duplicate is made from the route's own commands and conditions, as TrainControlUI.duplicateRoute does
+        // A duplicate is made from the route's own commands and conditions, as RouteListPanel.duplicateRoute does
         String copy = "RT not at (copy FR-141)";
 
         assertTrue(model.newRoute(copy, route.getRoute(), route.getS88(), route.getTriggerType(), false,

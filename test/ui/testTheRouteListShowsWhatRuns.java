@@ -806,7 +806,7 @@ public class testTheRouteListShowsWhatRuns
 
             assertNotEquals(backgroundOf(first), atRest, "precondition: a running route's cell is not gray");
 
-            SwingUtilities.invokeAndWait(ui::resetRouteSpinners);
+            SwingUtilities.invokeAndWait(ui.routeListPanel()::resetRouteSpinners);
 
             refresh();
 
@@ -2028,7 +2028,7 @@ public class testTheRouteListShowsWhatRuns
 
     private static void refresh() throws Exception
     {
-        SwingUtilities.invokeAndWait(() -> ui.refreshRouteList());
+        SwingUtilities.invokeAndWait(() -> ui.routeListPanel().refreshRouteList());
 
         for (int turn = 0; turn < 4; turn++) SwingUtilities.invokeAndWait(() -> { });
     }

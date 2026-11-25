@@ -141,12 +141,12 @@ public class testARenameReachesTheTimetableOnScreen
             // being discarded.
             ui[0].setViewListener(model, new java.util.concurrent.CountDownLatch(1));
 
-            java.lang.reflect.Method repaint = Reflect.method(TrainControlUI.class, "repaintTimetable");
+            java.lang.reflect.Method repaint = Reflect.method(org.traincontrol.gui.TimetableTab.class, "repaintTimetable");
 
             java.lang.reflect.Field state = Reflect.field(TrainControlUI.class, "lastTimetableState");
 
             // Once, to establish what it believes it is showing.
-            repaint.invoke(ui[0]);
+            repaint.invoke(ui[0].timetableTab());
 
             Components.drain(5);
 
@@ -159,7 +159,7 @@ public class testARenameReachesTheTimetableOnScreen
             // And a second rename has to move it again, which is the whole of the guard.
             assertTrue(model.renameLoc(AFTER, BEFORE), "the second rename failed");
 
-            repaint.invoke(ui[0]);
+            repaint.invoke(ui[0].timetableTab());
 
             Components.drain(5);
 

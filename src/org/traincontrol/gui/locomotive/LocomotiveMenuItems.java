@@ -36,7 +36,7 @@ final class LocomotiveMenuItems
         JMenuItem item = new JMenuItem(I18n.t("loc.ui.menuDeleteFromDatabase"));
 
         item.setForeground(java.awt.Color.RED);
-        item.addActionListener(event -> ui.deleteLoc(loc.getName(), evt));
+        item.addActionListener(event -> ui.locomotiveActions().deleteLoc(loc.getName(), evt));
 
         return item;
     }

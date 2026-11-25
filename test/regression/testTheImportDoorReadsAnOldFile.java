@@ -2020,7 +2020,7 @@ public class testTheImportDoorReadsAnOldFile
                 assertFalse(ui.getModel().hasAutoLayout(), "after Unload the latency ping built a railway, which"
                     + " hasAutoLayout then answers yes about (RLV8-C2)");
 
-                Reflect.method(TrainControlUI.class, "repaintTimetable").invoke(ui);
+                Reflect.method(org.traincontrol.gui.TimetableTab.class, "repaintTimetable").invoke(ui.timetableTab());
 
                 for (int turn = 0; turn < 4; turn++) SwingUtilities.invokeAndWait(() -> { });
 
@@ -2429,7 +2429,7 @@ public class testTheImportDoorReadsAnOldFile
 
             railway.restoreReversalsOnArrival(owed);
 
-            SwingUtilities.invokeAndWait(() -> ui[0].reconcileFacingWhenIdle());
+            SwingUtilities.invokeAndWait(() -> ui[0].diagramLocGestures().reconcileFacingWhenIdle());
 
             assertEquals(railway.turnedOnArrivalAt(turned), at.getName(), "precondition: the turn was written while "
                 + dispatched[0] + " was under way");
@@ -4767,7 +4767,7 @@ public class testTheImportDoorReadsAnOldFile
 
             startAnsweringYes(asked, going);
 
-            SwingUtilities.invokeAndWait(() -> ui.clearTimetable());
+            SwingUtilities.invokeAndWait(() -> ui.timetableTab().clearTimetable());
 
             long until = System.currentTimeMillis() + 10000;
 

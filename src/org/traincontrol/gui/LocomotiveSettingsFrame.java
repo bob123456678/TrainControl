@@ -1009,7 +1009,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             corner.add(crop, BorderLayout.EAST);
             picture.add(corner, BorderLayout.NORTH);
 
-            mark(wrench, noted(I18n.t("loc.ui.menuSetLocalLocomotiveIcon")), e -> main.setLocIcon(loc, e));
+            mark(wrench, noted(I18n.t("loc.ui.menuSetLocalLocomotiveIcon")), e -> main.locIconActions().setLocIcon(loc, e));
             mark(crop, noted(I18n.t("loc.ui.tooltip.recrop")), e -> main.locIconActions().recropLocIcon(loc, LocomotiveSettingsFrame.this));
             mark(revert, noted(I18n.t("loc.ui.menuClearLocalLocomotiveIcon")), e -> main.clearLocIcon(loc));
 

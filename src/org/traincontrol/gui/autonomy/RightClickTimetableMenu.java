@@ -56,7 +56,7 @@ public class RightClickTimetableMenu extends PopupListener
             menuItem = new JMenuItem(
                 I18n.t("timetable.ui.menuChangeDelay")
             );
-            menuItem.addActionListener(event -> ui.updateTimetableDelay(e));
+            menuItem.addActionListener(event -> ui.timetableTab().updateTimetableDelay(e));
             menuItem.setToolTipText(busy ? busyTooltip : I18n.t("timetable.ui.tooltip.changeDelay"));
             menuItem.setEnabled(!busy);
             add(menuItem);
@@ -64,7 +64,7 @@ public class RightClickTimetableMenu extends PopupListener
             menuItem = new JMenuItem(
                 I18n.t("timetable.ui.menuDeleteEntry")
             );
-            menuItem.addActionListener(event -> ui.deleteTimetableEntry(e));
+            menuItem.addActionListener(event -> ui.timetableTab().deleteTimetableEntry(e));
             menuItem.setToolTipText(busyTooltip);
             menuItem.setEnabled(!busy);
             add(menuItem);
@@ -74,7 +74,7 @@ public class RightClickTimetableMenu extends PopupListener
             menuItem = new JMenuItem(
                 I18n.t("timetable.ui.menuRestartTimetable")
             );
-            menuItem.addActionListener(event -> ui.restartTimetable());
+            menuItem.addActionListener(event -> ui.timetableTab().restartTimetable());
             menuItem.setToolTipText(busy ? busyTooltip : I18n.t("timetable.ui.tooltip.restartTimetable"));
             menuItem.setEnabled(!busy);
             add(menuItem);
@@ -85,7 +85,7 @@ public class RightClickTimetableMenu extends PopupListener
                 I18n.t("timetable.ui.menuClearTimetable")
             );
             menuItem.setForeground(Color.RED);
-            menuItem.addActionListener(event -> ui.clearTimetable());
+            menuItem.addActionListener(event -> ui.timetableTab().clearTimetable());
             menuItem.setToolTipText(busy ? busyTooltip : I18n.t("timetable.ui.tooltip.clearTimetable"));
             menuItem.setEnabled(!busy);
             add(menuItem);

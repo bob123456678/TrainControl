@@ -272,7 +272,7 @@ final class LocomotiveCsvDoor
             ui.clearCopyTarget();
             ui.repaintLoc(true, null);
             ui.repaintMappings(null, false);
-            ui.refreshRouteList();
+            ui.routeListPanel.refreshRouteList();
         }
 
         ui.getLocSelector().refreshLocSelectorList();
@@ -283,7 +283,7 @@ final class LocomotiveCsvDoor
             model.getAutoLayout().refreshUI();
             ui.updateVisiblePoints();
             ui.repaintAutoLocList(false);
-            ui.repaintTimetable();
+            ui.timetableTab().repaintTimetable();
         }
     }
 

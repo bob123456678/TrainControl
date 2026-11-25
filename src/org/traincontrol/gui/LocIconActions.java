@@ -210,8 +210,8 @@ public final class LocIconActions
         }
     }
 
-    /** `TrainControlUI.setLocIcon`'s body. */
-    void setLocIcon(Locomotive l, MouseEvent evt)
+    /** Lets the user choose a local picture for a locomotive. */
+    public void setLocIcon(Locomotive l, MouseEvent evt)
     {
         Component source = evt != null ? (Component) evt.getSource() : this.ui;
         

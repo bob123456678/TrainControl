@@ -518,7 +518,7 @@ public class testTheTimetableAnswersItsMenu
 
         railway().setTimetable(entries);
 
-        Reflect.method(TrainControlUI.class, "repaintTimetable").invoke(ui);
+        Reflect.method(org.traincontrol.gui.TimetableTab.class, "repaintTimetable").invoke(ui.timetableTab());
 
         assertTrue(Components.waitFor(() -> rows() == 2, PATIENCE_MS), "precondition: the tab shows " + rows()
             + " rows, not the two entries");

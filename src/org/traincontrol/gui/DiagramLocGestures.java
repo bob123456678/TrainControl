@@ -14,7 +14,7 @@ import org.traincontrol.gui.autonomy.FacingPrompt;
 import org.traincontrol.util.I18n;
 
 /** The diagram's keyboard gestures: cutting, pasting and clearing a train on a square, and writing its turns. */
-final class DiagramLocGestures
+public final class DiagramLocGestures
 {
     private final TrainControlUI ui;
 
@@ -103,7 +103,7 @@ final class DiagramLocGestures
     private volatile TileGraph.TileKey hoveredDiagramTile;
 
     /** Sets the hovered square; page is null when the pointer has left the diagram. */
-    void setHoveredDiagramTile(String page, int x, int y)
+    public void setHoveredDiagramTile(String page, int x, int y)
     {
         hoveredDiagramTile = page == null || x < 0 || y < 0 ? null : new TileGraph.TileKey(page, x, y);
     }
@@ -436,7 +436,7 @@ final class DiagramLocGestures
      *
      * Called from the refresh, not the automation layer, which must not reach into the window; safe to repeat.
      */
-    void reconcileFacingWhenIdle()
+    public void reconcileFacingWhenIdle()
     {
         try
         {

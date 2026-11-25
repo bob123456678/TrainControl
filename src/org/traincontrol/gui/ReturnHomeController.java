@@ -141,7 +141,7 @@ final class ReturnHomeController extends SettledQuestion
 
                 // So the operator sees what is about to run; from this thread, as repaintTimetable waits on the Layout
                 // monitor
-                this.ui.repaintTimetable();
+                this.ui.timetableTab().repaintTimetable();
 
                 // Blocks until every train has arrived, not merely until the last one set off
                 final boolean completed = layout.executeTimetable(stopsAtPress);
@@ -197,7 +197,7 @@ final class ReturnHomeController extends SettledQuestion
                 });
 
                 // Off the EDT as the pre-run repaint; a path still unwinding may hold the monitor
-                this.ui.repaintTimetable();
+                this.ui.timetableTab().repaintTimetable();
 
                 // Repainted here, not by the end-of-path callback, which runs before stopLocomotives(); full, to
                 // rebuild panels

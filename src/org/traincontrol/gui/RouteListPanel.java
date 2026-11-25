@@ -32,7 +32,7 @@ import org.traincontrol.util.Util;
  * The list's cell renderer (`TrainControlUI.CustomTableRenderer`) is a public class of the window and stays there, as
  * do the hover handlers and every field.
  */
-final class RouteListPanel
+public final class RouteListPanel
 {
     private final TrainControlUI ui;
 
@@ -42,9 +42,9 @@ final class RouteListPanel
     }
 
     /**
-     * `TrainControlUI.executeRoute`'s body.
+     * Runs the named route, unless it is already running.
      */
-    void executeRoute(String route)
+    public void executeRoute(String route)
     {
         // The same answer at all three doors (the OB-057/OB-090 shape).  A debounce, not a lock: `execRoute` returns
         // once it has spawned the route thread, so the name is cleared 600 ms later.  Logged rather than silent: the
@@ -254,17 +254,21 @@ final class RouteListPanel
         SwingUtilities.invokeLater(() -> refreshRouteList());
     }
 
-    /** `TrainControlUI.resetRouteSpinners`'s body. */
-    void resetRouteSpinners()
+    /**
+     * Puts every play button back; called by a database sync, an import and a completed route edit, not by
+     * `refreshRouteList`, which a route finishing also reaches, so the first route to complete would wipe the spinner
+     * off every other running one.
+     */
+    public void resetRouteSpinners()
     {
         this.ui.routesExecuting.clear();
         this.ui.startedRunningAt.clear();
     }
 
     /**
-     * `TrainControlUI.editRoute`'s body.
+     * Opens the named route in the route editor, asking over the window the call came from.
      */
-    void editRoute(String routeName)
+    public void editRoute(String routeName)
     {
         // Another window's door hears the refusal over it, on the event thread, ahead of the worker's
         final java.awt.Window askedFrom = this.ui.dialogParent();
@@ -326,9 +330,9 @@ final class RouteListPanel
     }
 
     /**
-     * `TrainControlUI.duplicateRoute`'s body.
+     * Makes a copy of the named route.
      */
-    void duplicateRoute(String routeName)
+    public void duplicateRoute(String routeName)
     {
         new Thread(()->
         {  
@@ -372,7 +376,7 @@ final class RouteListPanel
     }
 
     /**
-     * `TrainControlUI.BulkEnableOrDisable`'s body.
+     * Asks for a search string, then enables or disables every route whose name matches.
      */
     void BulkEnableOrDisable(boolean enable)
     {
@@ -396,7 +400,7 @@ final class RouteListPanel
     }
 
     /** Sets automatic execution for each route whose name contains `search` ("*" for all), past the prompt (MT-467). */
-    void enableOrDisableMatching(String search, boolean enable)
+    public void enableOrDisableMatching(String search, boolean enable)
     {
         new Thread(()->
         {
@@ -789,9 +793,9 @@ final class RouteListPanel
     }
 
     /**
-     * `TrainControlUI.refreshRouteList`'s body.
+     * Rebuilds the route list from the model.
      */
-    void refreshRouteList()
+    public void refreshRouteList()
     {
         // singlePass, not invokeLater: joins a pass already running rather than asking for another.
         TrainControlUI.singlePass(() ->

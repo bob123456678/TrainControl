@@ -355,7 +355,7 @@ public final class RouteListDoors
 
             Components.onTheEventThread(() ->
             {
-                ui.refreshRouteList();
+                ui.routeListPanel().refreshRouteList();
 
                 return null;
             });
@@ -463,7 +463,7 @@ public final class RouteListDoors
 
             Components.onTheEventThread(() ->
             {
-                this.ui.refreshRouteList();
+                this.ui.routeListPanel().refreshRouteList();
 
                 return null;
             });

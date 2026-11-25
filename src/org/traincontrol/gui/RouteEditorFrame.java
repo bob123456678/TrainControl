@@ -3064,9 +3064,9 @@ public class RouteEditorFrame extends JFrame
             }
 
             // A finished edit puts every play button back (FR-043).
-            parent.resetRouteSpinners();
+            parent.routeListPanel.resetRouteSpinners();
 
-            parent.refreshRouteList();
+            parent.routeListPanel.refreshRouteList();
             parent.repaintLayout();
 
             // No diagram edit to complete: a tile follows its route by number (rebindRouteTiles), and

@@ -1587,7 +1587,7 @@ public class testTheTailIsPickedOnTheDiagram
         {
             try
             {
-                ui.setHoveredDiagramTile(from.getPage(), from.getX(), from.getY());
+                ui.diagramLocGestures().setHoveredDiagramTile(from.getPage(), from.getX(), from.getY());
 
                 cut[0] = door.invoke(ui, java.awt.event.KeyEvent.VK_X, true);
             }
@@ -1613,7 +1613,7 @@ public class testTheTailIsPickedOnTheDiagram
         {
             try
             {
-                ui.setHoveredDiagramTile(tunnel.getPage(), tunnel.getX(), tunnel.getY());
+                ui.diagramLocGestures().setHoveredDiagramTile(tunnel.getPage(), tunnel.getX(), tunnel.getY());
 
                 door.invoke(ui, java.awt.event.KeyEvent.VK_V, true);
             }

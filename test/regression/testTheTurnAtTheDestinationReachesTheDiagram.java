@@ -446,7 +446,7 @@ public class testTheTurnAtTheDestinationReachesTheDiagram
     /** Runs the drain the way an idle refresh does. */
     private static void drain() throws Exception
     {
-        ui.reconcileFacingWhenIdle();
+        ui.diagramLocGestures().reconcileFacingWhenIdle();
 
         pumpTheEventThread();
     }

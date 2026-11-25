@@ -275,14 +275,14 @@ public final class LayoutLabel extends JLabel
                 {
                     // From the label's own square, not from what is drawn on it: a station's name sits on blank space
                     // beside the platform and must stay aimable.
-                    tcUI.setHoveredDiagramTile(hovering.autonomyPage,
+                    tcUI.diagramLocGestures.setHoveredDiagramTile(hovering.autonomyPage,
                         hovering.squareX, hovering.squareY);
                 }
 
                 @Override
                 public void mouseExited(MouseEvent e)
                 {
-                    tcUI.setHoveredDiagramTile(null, -1, -1);
+                    tcUI.diagramLocGestures.setHoveredDiagramTile(null, -1, -1);
                 }
             });
         }
@@ -369,7 +369,7 @@ public final class LayoutLabel extends JLabel
                                 {
                                     javax.swing.SwingUtilities.invokeLater(() -> 
                                     {
-                                        tcUI.editRoute(component.getRoute().getName());
+                                        tcUI.routeListPanel.editRoute(component.getRoute().getName());
                                     });
                                     
                                     return;

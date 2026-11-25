@@ -3646,8 +3646,9 @@ public class testNoSetupEditDuringARun
                 + " rest");
 
             // DUPLICATE CURRENT PAGE: the gate asked straight after the door's own work, before its reset
-            final java.lang.reflect.Method duplicate = Reflect.method(TrainControlUI.class,
-                "duplicateOrRenameCurrentLayout", String.class, boolean.class, boolean.class, boolean.class);
+            final java.lang.reflect.Method duplicate = Reflect.method(ui[0].layoutFileActions().getClass(),
+                "duplicateOrRenameCurrentLayout", String.class, boolean.class, boolean.class, boolean.class,
+                org.traincontrol.gui.layouteditor.LayoutEditor.class);
 
             answers = answeringNamesAndYes(asked, answering, "RSA23 combined");
 
@@ -3661,7 +3662,7 @@ public class testNoSetupEditDuringARun
             {
                 try
                 {
-                    duplicate.invoke(ui[0], "RSA23 copy", false, true, false);
+                    duplicate.invoke(ui[0].layoutFileActions(), "RSA23 copy", false, true, false, null);
                 }
                 catch (ReflectiveOperationException e)
                 {
@@ -3715,13 +3716,14 @@ public class testNoSetupEditDuringARun
 
             SwingUtilities.invokeAndWait(() -> pages.setSelectedItem("1 - Main"));
 
-            final java.lang.reflect.Method combine = Reflect.method(TrainControlUI.class, "combineLinkedPages");
+            final java.lang.reflect.Method combine = Reflect.method(ui[0].layoutFileActions().getClass(), "combineLinkedPages",
+                org.traincontrol.gui.layouteditor.LayoutEditor.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
                 try
                 {
-                    combine.invoke(ui[0]);
+                    combine.invoke(ui[0].layoutFileActions(), (Object) null);
 
                     said[0] = gate.invoke(ui[0], true);
                 }

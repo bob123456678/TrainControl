@@ -115,8 +115,6 @@ public class testNoSelfRecursiveWrappers
             "TrainControlUI", "ui." },
         { "locomotiveActions", "src/org/traincontrol/gui/LocomotiveActions.java", "LocomotiveActions", WINDOW,
             "TrainControlUI", "ui." },
-        { "timetableTab", "src/org/traincontrol/gui/TimetableTab.java", "TimetableTab", WINDOW,
-            "TrainControlUI", "ui." },
         { "coveredTrackView", "src/org/traincontrol/gui/CoveredTrackView.java", "CoveredTrackView", WINDOW,
             "TrainControlUI", "ui." },
         { "tileMenus", "src/org/traincontrol/gui/autonomyeditor/EditorTileMenus.java", "EditorTileMenus", AUTONOMY_EDITOR,
