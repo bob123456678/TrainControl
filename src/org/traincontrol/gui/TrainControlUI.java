@@ -2682,6 +2682,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      */
     public void autonomyLoadedFromDiagram(String name, boolean resumed)
     {
+        // Which configuration the running railway's state belongs to, for exit and the findings; first, as the railway
+        // already runs it whatever below throws (OB-510).
+        this.activeDiagramConfiguration = name;
+
         this.routeListPanel.refreshRouteList();
 
         // Interactive loads only: the stop is for choosing a different railway, not for an edit to the running setup,
@@ -2730,9 +2734,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         autonomyOverlayToggle.setLoaded(true);
 
         this.autonomyLifecycle.refreshAutonomyFindings();
-
-        // Exit uses this to know which configuration the running layout's state belongs to.
-        this.activeDiagramConfiguration = name;
 
         refreshConfigurationTitles();
 
