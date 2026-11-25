@@ -236,16 +236,14 @@ public class DiagramTileRegistry
     }
 
     /**
-     * Blanks every square and forgets what each was shown, for a layout or setup replaced wholesale.  A label still on
-     * screen stays registered: a window that stays open, such as a page window, is not built again to register it
-     * (OB-519).
+     * Blanks every square and forgets what each showed, for a setup replaced wholesale; a label on screen stays
+     * registered, as an open page window is not built again (OB-519).
      */
     public void reset()
     {
         clearOverlays();
         clearAnnotations();
-
-        // A label off screen is let go, as before: a cached page asks whether it is still wired before coming back.
+        // Off screen is let go: a cached page asks whether it is still wired.
         tiles.values().removeIf(here ->
         {
             here.removeIf(label -> !label.isDisplayable());

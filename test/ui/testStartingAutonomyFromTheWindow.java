@@ -286,21 +286,12 @@ public class testStartingAutonomyFromTheWindow
     @Test
     public void testAPageWindowShowsTheNextRunAfterStopUsingAutonomy() throws Exception
     {
-        throughAPageWindow(page ->
+        throughAPageWindow(page -> theNextRunShowsIn(page, "left open through Stop Using Autonomy", between ->
         {
-            press(gracefulStop(), message -> null);
-
-            assertTrue(Settle.idle(model.getAutoLayout(), Settle.PATIENCE_MS), "precondition: the first run did not rest");
-
             stopUsingAutonomy();
 
             loadAgain();
-
-            startTheRun(() -> press(start(), message -> null));
-
-            assertTrue(Settle.until(() -> squaresShowing(page, true) > 0, 30000), "a page window left open through Stop"
-                + " Using Autonomy shows no train's path in the next run (OB-519)");
-        });
+        }));
     }
 
     /**
@@ -331,12 +322,8 @@ public class testStartingAutonomyFromTheWindow
     @Test
     public void testAPageWindowShowsTheRunAfterThePagesAreReadAgain() throws Exception
     {
-        throughAPageWindow(page ->
+        throughAPageWindow(page -> theNextRunShowsIn(page, "open while the pages were read again", between ->
         {
-            press(gracefulStop(), message -> null);
-
-            assertTrue(Settle.idle(model.getAutoLayout(), Settle.PATIENCE_MS), "precondition: the first run did not rest");
-
             final java.util.concurrent.atomic.AtomicInteger underWay =
                 (java.util.concurrent.atomic.AtomicInteger) Reflect.get(TrainControlUI.class, ui, "refreshesUnderWay");
 
@@ -347,12 +334,7 @@ public class testStartingAutonomyFromTheWindow
             Settle.theDiagram(ui);
 
             Settle.simulate(model.getAutoLayout());
-
-            startTheRun(() -> press(start(), message -> null));
-
-            assertTrue(Settle.until(() -> squaresShowing(page, true) > 0, 30000), "a page window open while the pages"
-                + " were read again shows no train's path in the next run (OB-519)");
-        });
+        }));
     }
 
     /**
@@ -413,6 +395,22 @@ public class testStartingAutonomyFromTheWindow
 
             if (ui.getActiveDiagramConfiguration() == null) loadAgain();
         }
+    }
+
+    /** Lets the run rest, does `between`, and asserts the page window shows the next run's path. */
+    private static void theNextRunShowsIn(org.traincontrol.gui.LayoutPopupWindow page, String how, InAPageWindow between)
+        throws Exception
+    {
+        press(gracefulStop(), message -> null);
+
+        assertTrue(Settle.idle(model.getAutoLayout(), Settle.PATIENCE_MS), "precondition: the first run did not rest");
+
+        between.run(page);
+
+        startTheRun(() -> press(start(), message -> null));
+
+        assertTrue(Settle.until(() -> squaresShowing(page, true) > 0, 30000), "a page window " + how + " shows no train's"
+            + " path in the next run (OB-519)");
     }
 
     /** Stop Using Autonomy, as the Autonomy menu's item does it, answering Yes to stopping the trains. */
