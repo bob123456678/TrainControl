@@ -133,9 +133,10 @@ public class testLocomotiveCsvImportDoor
     }
 
     /**
-     * The duplicates popup is no wider than the main window; the table scrolls sideways inside it (MT-1097).
+     * The duplicates popup is no wider than the main window, and the table scrolls sideways only past it (MT-1097).
      *
-     * MUTATION: in `LocomotiveCsvDoor`, leave out the `limitWidth` call, and the popup is wider than a 700 px window.
+     * MUTATION: in `LocomotiveCsvDoor`, leave out the `limitWidth` call, and the popup is wider than a 700 px window;
+     * reserve 140 instead of 72 scaled + 18, and a window just wide enough for the popup still scrolls the table.
      */
     @Test
     public void testTheDuplicatesPopupIsNoWiderThanTheMainWindow() throws Exception
@@ -143,46 +144,66 @@ public class testLocomotiveCsvImportDoor
         inAWindow((ui, model) ->
         {
             final int held = freeAddress(model, 13000);
-            final int[] widths = new int[2];
-            final java.awt.Dimension was = support.Components.onTheEventThread(() -> ui.getSize());
-            final java.awt.Dimension least = support.Components.onTheEventThread(() -> ui.getMinimumSize());
-
             model.newMFXLocomotive("wide here", held);
             File file = write(HEADER + mfx("wide twin", held));
 
             try
             {
-                support.Components.onTheEventThread(() ->
-                {
-                    ui.setMinimumSize(new java.awt.Dimension(300, 300));
-                    ui.setSize(700, was.height);
-                    ui.setVisible(true);
-                    return null;
-                });
-                press(ui, file, CANCEL, s -> s.answered, () -> support.Components.onTheEventThread(() ->
-                {
-                    widths[0] = SwingUtilities.getWindowAncestor(asking).getWidth();
-                    widths[1] = ui.getWidth();
+                int natural = popupWidth(ui, file, java.awt.Toolkit.getDefaultToolkit().getScreenSize().width);
+                int exact = popupWidth(ui, file, natural), narrower = popupWidth(ui, file, natural - 1);
 
-                    return null;
-                }));
+                assertTrue(natural > 300, "precondition: the popup is " + natural + " px wide");
+                assertEquals(exact, natural, "a window as wide as the popup: it is " + exact + " px, not " + natural);
+                assertTrue(narrower <= natural - 1, "one pixel narrower the popup is " + narrower + " px in a "
+                    + (natural - 1) + " px window");
+                assertTrue(narrower < natural, "the table did not narrow in the " + (natural - 1) + " px window");
+                assertTrue(popupWidth(ui, file, 700) <= 700, "the popup is wider than a 700 px window");
             }
             finally
             {
-                support.Components.onTheEventThread(() ->
-                {
-                    ui.setMinimumSize(least);
-                    ui.setVisible(false);
-                    ui.setSize(was);
-                    return null;
-                });
                 file.delete();
                 model.deleteLoc("wide here");
             }
-
-            assertEquals(widths[1], 700, "precondition: the main window did not take the width");
-            assertTrue(widths[0] <= widths[1], "the popup is " + widths[0] + " px wide in a " + widths[1] + " px window");
         });
+    }
+
+    /** The duplicates popup's width with the main window `width` px wide (the window as it was is restored). */
+    private static int popupWidth(TrainControlUI ui, File file, int width) throws Exception
+    {
+        final int[] shown = new int[2];
+        final java.awt.Dimension was = support.Components.onTheEventThread(() -> ui.getSize());
+        final java.awt.Dimension least = support.Components.onTheEventThread(() -> ui.getMinimumSize());
+
+        try
+        {
+            support.Components.onTheEventThread(() ->
+            {
+                ui.setMinimumSize(new java.awt.Dimension(300, 300));
+                ui.setSize(width, was.height);
+                ui.setVisible(true);
+                return null;
+            });
+            press(ui, file, CANCEL, s -> s.answered, () -> support.Components.onTheEventThread(() ->
+            {
+                shown[0] = SwingUtilities.getWindowAncestor(asking).getWidth();
+                shown[1] = ui.getWidth();
+
+                return null;
+            }));
+        }
+        finally
+        {
+            support.Components.onTheEventThread(() ->
+            {
+                ui.setMinimumSize(least);
+                ui.setVisible(false);
+                ui.setSize(was);
+                return null;
+            });
+        }
+
+        assertEquals(shown[1], width, "precondition: the main window did not take the width");
+        return shown[0];
     }
 
     /**
