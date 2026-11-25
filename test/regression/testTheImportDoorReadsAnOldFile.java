@@ -1349,12 +1349,12 @@ public class testTheImportDoorReadsAnOldFile
 
             assertTrue((Boolean) noEditorOpen.get(ui[0]), "precondition: the window reads an editor as open");
 
-            final org.traincontrol.gui.RouteEditorFrame[] editor = new org.traincontrol.gui.RouteEditorFrame[1];
+            final org.traincontrol.gui.RouteEditorWindow[] editor = new org.traincontrol.gui.RouteEditorWindow[1];
 
-            SwingUtilities.invokeAndWait(() -> editor[0] = new org.traincontrol.gui.RouteEditorFrame(ui[0], routeName,
+            SwingUtilities.invokeAndWait(() -> editor[0] = new org.traincontrol.gui.RouteEditorWindow(ui[0], routeName,
                 ui[0].getModel().getRoute(routeName)));
 
-            final java.lang.reflect.Method save = Reflect.method(org.traincontrol.gui.RouteEditorFrame.class, "onSave");
+            final java.lang.reflect.Method save = Reflect.method(org.traincontrol.gui.RouteEditorWindow.class, "onSave");
 
             startAnsweringYes(asked, going);
 

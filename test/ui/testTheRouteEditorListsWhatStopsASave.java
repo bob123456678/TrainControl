@@ -10,7 +10,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.RouteEditorFrame;
+import org.traincontrol.gui.RouteEditorWindow;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
@@ -32,11 +32,11 @@ public class testTheRouteEditorListsWhatStopsASave
     {
         if (GraphicsEnvironment.isHeadless()) throw new SkipException("the route editor is a window");
 
-        final RouteEditorFrame[] frame = new RouteEditorFrame[1];
+        final RouteEditorWindow[] frame = new RouteEditorWindow[1];
 
         SwingUtilities.invokeAndWait(() ->
         {
-            frame[0] = new RouteEditorFrame(null, null);
+            frame[0] = new RouteEditorWindow(null, null);
             frame[0].setVisible(true);
         });
 
@@ -82,24 +82,24 @@ public class testTheRouteEditorListsWhatStopsASave
     /**
      * Control+Enter is Save (FR-200), pressed in the name field: on a blank route it says what Save says.
      *
-     * MUTATION: drop the Control+Enter binding from `RouteEditorFrame`, and nothing is said.
+     * MUTATION: drop the Control+Enter binding from `RouteEditorWindow`, and nothing is said.
      */
     @Test
     public void testControlEnterIsSave() throws Exception
     {
         if (GraphicsEnvironment.isHeadless()) throw new SkipException("the route editor is a window");
 
-        final RouteEditorFrame[] frame = new RouteEditorFrame[1];
+        final RouteEditorWindow[] frame = new RouteEditorWindow[1];
 
         SwingUtilities.invokeAndWait(() ->
         {
-            frame[0] = new RouteEditorFrame(null, null);
+            frame[0] = new RouteEditorWindow(null, null);
             frame[0].setVisible(true);
         });
 
         try (Answering answering = Answering.start(message -> Answering.press(I18n.t("route.ui.frameGoAndFixIt"))))
         {
-            support.Keys.chord((java.awt.Component) support.Reflect.get(RouteEditorFrame.class, frame[0], "nameField"),
+            support.Keys.chord((java.awt.Component) support.Reflect.get(RouteEditorWindow.class, frame[0], "nameField"),
                 java.awt.event.KeyEvent.VK_ENTER, java.awt.event.InputEvent.CTRL_DOWN_MASK);
 
             assertTrue(answering.awaitAsked(1, 15000), "Control+Enter on a blank route said nothing");

@@ -317,7 +317,7 @@ public final class RouteListPanel
 
                         // The route itself, rather than its name to look up again: this window is handed what it is to
                         // show, which makes its read-only behavior testable without a control station on the network.
-                        this.ui.routeEditor = new RouteEditorFrame(this.ui, routeName, currentRoute);
+                        this.ui.routeEditor = new RouteEditorWindow(this.ui, routeName, currentRoute);
 
                         // Not over a locked route's own title: a route from the Central Station opens with every
                         // control grayed and its title is the only thing that says why.
@@ -628,7 +628,7 @@ public final class RouteListPanel
 
         if (!SwingUtilities.isLeftMouseButton(evt))
         {
-            // The right-click menu is RightClickRouteMenu's own business - it listens for the popup
+            // The right-click menu is RouteContextMenu's own business - it listens for the popup
             // trigger on press and release, which is where a platform decides what a right click is.
             return;
         }

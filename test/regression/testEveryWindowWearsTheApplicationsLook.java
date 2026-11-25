@@ -47,7 +47,7 @@ public class testEveryWindowWearsTheApplicationsLook
     /**
      * A window built cold, as a test builds it, wears the application's look.  Asked once per JVM (once anything has
      * installed the look and feel the question stops meaning anything; the battery runs one JVM per class), so it
-     * asserts its own precondition.  `RouteEditorFrame` is the window four test classes build this way.
+     * asserts its own precondition.  `RouteEditorWindow` is the window four test classes build this way.
      */
     @Test
     public void testAWindowBuiltColdStillWearsTheApplicationsLook() throws Exception
@@ -62,11 +62,11 @@ public class testEveryWindowWearsTheApplicationsLook
         // WHAT THE MENUS LOOKED LIKE BEFORE, to compare against afterwards.
         java.awt.Font menuFontBefore = javax.swing.UIManager.getFont("MenuBar.font");
 
-        final org.traincontrol.gui.RouteEditorFrame[] built =
-            new org.traincontrol.gui.RouteEditorFrame[1];
+        final org.traincontrol.gui.RouteEditorWindow[] built =
+            new org.traincontrol.gui.RouteEditorWindow[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
-            built[0] = new org.traincontrol.gui.RouteEditorFrame(null, null));
+            built[0] = new org.traincontrol.gui.RouteEditorWindow(null, null));
 
         try
         {
@@ -203,7 +203,7 @@ public class testEveryWindowWearsTheApplicationsLook
      * And a TEST that stands up a bare Swing window installs it too (Adam: "I still see tests popping up with the small
      * font in the menu bar, FYI.").  A `JFrame`, `JDialog`, `JWindow` or `JOptionPane` built by a test is nobody's
      * window but the test's.  Only BARE windows are asked about: a test that builds a `TrainControlUI` or
-     * `RouteEditorFrame` is covered by the claim above.
+     * `RouteEditorWindow` is covered by the claim above.
      *
      * MUTATION: take the install out of any of the four and this names the file.
      */

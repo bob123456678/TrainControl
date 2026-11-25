@@ -76,7 +76,7 @@ src/org/traincontrol/gui/LocomotiveSettingsWindow.java	-	11
 src/org/traincontrol/gui/MultiUnitPanel.java	-	3
 src/org/traincontrol/gui/ReturnHomeController.java	309	5
 src/org/traincontrol/gui/RightClickTips.java	260	0
-src/org/traincontrol/gui/RouteEditorFrame.java	266	61
+src/org/traincontrol/gui/RouteEditorWindow.java	266	61
 src/org/traincontrol/gui/RouteListPanel.java	389	4
 src/org/traincontrol/gui/RouteRunningMarks.java	452	4
 src/org/traincontrol/gui/RunGates.java	477	12

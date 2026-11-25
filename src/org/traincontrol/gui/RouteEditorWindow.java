@@ -92,7 +92,7 @@ import org.traincontrol.util.ImageUtil;
  * condition with a real bracket in it, are kept exactly as found and shown read-only: rendering them as something
  * that nearly means the same would rewrite somebody's railway on Save.
  */
-public class RouteEditorFrame extends JFrame
+public class RouteEditorWindow extends JFrame
 {
     // A static block, not the constructor: JFrame's constructor creates the root pane before any constructor body
     // here, so a look and feel installed later leaves a cold-built window (a test's) with Metal's title bar instead
@@ -202,7 +202,7 @@ public class RouteEditorFrame extends JFrame
      * @param parent the main window, which owns the model and the route list
      * @param routeName the route to edit, or null for a new one
      */
-    public RouteEditorFrame(TrainControlUI parent, String routeName)
+    public RouteEditorWindow(TrainControlUI parent, String routeName)
     {
         this(parent, routeName,
             parent == null || routeName == null ? null : parent.getModel().getRoute(routeName));
@@ -212,7 +212,7 @@ public class RouteEditorFrame extends JFrame
      * The same window, handed the route rather than sent to look it up, so its read-only behavior can be exercised
      * without a running control station.  A null `route` is a new one.
      */
-    public RouteEditorFrame(TrainControlUI parent, String routeName, Route route)
+    public RouteEditorWindow(TrainControlUI parent, String routeName, Route route)
     {
         this.parent = parent;
         this.originalName = routeName == null ? "" : routeName;

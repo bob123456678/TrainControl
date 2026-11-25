@@ -22,7 +22,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.gui.LayoutLabel;
-import org.traincontrol.gui.RouteEditorFrame;
+import org.traincontrol.gui.RouteEditorWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
@@ -588,11 +588,11 @@ public class testLayoutTiles
 
         assertTrue(ui.editorWindows().everyOpenWindowMaySettle(), "precondition: the exit is already blocked by something else");
 
-        final AtomicReference<RouteEditorFrame> ref = new AtomicReference<>();
+        final AtomicReference<RouteEditorWindow> ref = new AtomicReference<>();
 
-        SwingUtilities.invokeAndWait(() -> ref.set(new RouteEditorFrame(ui, null, null)));
+        SwingUtilities.invokeAndWait(() -> ref.set(new RouteEditorWindow(ui, null, null)));
 
-        final RouteEditorFrame editor = ref.get();
+        final RouteEditorWindow editor = ref.get();
 
         Field field = Reflect.field(TrainControlUI.class, "routeEditor");
 
@@ -614,19 +614,19 @@ public class testLayoutTiles
             assertTrue(editor.hasUnsavedWork(), "a command typed into the route editor is not counted as unsaved work");
             assertTrue(ui.editorWindows().routeEditorHasUnsavedWork(), "the exit cannot see that the route editor has unsaved work");
 
-            RouteEditorFrame.discardAnswerForTest = Boolean.FALSE;
+            RouteEditorWindow.discardAnswerForTest = Boolean.FALSE;
 
             assertFalse(ui.editorWindows().everyOpenWindowMaySettle(),
                 "the exit carries on although the route editor was asked and said no, so the typing goes with the"
                 + " process");
 
-            RouteEditorFrame.discardAnswerForTest = Boolean.TRUE;
+            RouteEditorWindow.discardAnswerForTest = Boolean.TRUE;
 
             assertTrue(ui.editorWindows().everyOpenWindowMaySettle(), "the exit is refused although the route editor said yes");
         }
         finally
         {
-            RouteEditorFrame.discardAnswerForTest = null;
+            RouteEditorWindow.discardAnswerForTest = null;
 
             field.set(ui, was);
 
@@ -643,11 +643,11 @@ public class testLayoutTiles
     @Test
     public void testTheExitBringsAMinimisedRouteEditorBackBeforeItAsks() throws Exception
     {
-        final AtomicReference<RouteEditorFrame> ref = new AtomicReference<>();
+        final AtomicReference<RouteEditorWindow> ref = new AtomicReference<>();
 
-        SwingUtilities.invokeAndWait(() -> ref.set(new RouteEditorFrame(ui, null, null)));
+        SwingUtilities.invokeAndWait(() -> ref.set(new RouteEditorWindow(ui, null, null)));
 
-        final RouteEditorFrame editor = ref.get();
+        final RouteEditorWindow editor = ref.get();
 
         try
         {
@@ -670,7 +670,7 @@ public class testLayoutTiles
                 + " not minimise");
 
             // THE QUESTION ANSWERED through the hook, which stands in for the dialog only
-            RouteEditorFrame.discardAnswerForTest = Boolean.TRUE;
+            RouteEditorWindow.discardAnswerForTest = Boolean.TRUE;
 
             final boolean[] may = new boolean[1];
 
@@ -683,7 +683,7 @@ public class testLayoutTiles
         }
         finally
         {
-            RouteEditorFrame.discardAnswerForTest = null;
+            RouteEditorWindow.discardAnswerForTest = null;
 
             SwingUtilities.invokeAndWait(() -> editor.dispose());
         }
@@ -707,11 +707,11 @@ public class testLayoutTiles
         model.newRoute(name, id, commands, 0, org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED,
             false, null);
 
-        final AtomicReference<RouteEditorFrame> ref = new AtomicReference<>();
+        final AtomicReference<RouteEditorWindow> ref = new AtomicReference<>();
 
-        SwingUtilities.invokeAndWait(() -> ref.set(new RouteEditorFrame(ui, name, model.getRoute(name))));
+        SwingUtilities.invokeAndWait(() -> ref.set(new RouteEditorWindow(ui, name, model.getRoute(name))));
 
-        final RouteEditorFrame editor = ref.get();
+        final RouteEditorWindow editor = ref.get();
 
         try
         {
@@ -803,9 +803,9 @@ public class testLayoutTiles
             model.editRoute(name, name, driving, 0,
                 org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
 
-            final AtomicReference<RouteEditorFrame> second = new AtomicReference<>();
+            final AtomicReference<RouteEditorWindow> second = new AtomicReference<>();
 
-            SwingUtilities.invokeAndWait(() -> second.set(new RouteEditorFrame(ui, name, model.getRoute(name))));
+            SwingUtilities.invokeAndWait(() -> second.set(new RouteEditorWindow(ui, name, model.getRoute(name))));
 
             try
             {

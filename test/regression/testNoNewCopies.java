@@ -89,7 +89,7 @@ public class testNoNewCopies
         "RouteCommand:1,TrainControlUI:1 (138)",
         "RouteCommand:2 (109)",
         "RouteCommand:2 (64)",
-        "RouteEditorFrame:2 (65)",
+        "RouteEditorWindow:2 (65)",
         "RowIcons:2 (64)",
         "TileAnnotation:1,TileOverlay:1 (101)",
         "TileAnnotation:3,TileOverlay:1 (86)",

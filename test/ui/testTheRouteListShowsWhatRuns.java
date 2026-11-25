@@ -253,7 +253,7 @@ public class testTheRouteListShowsWhatRuns
                 for (java.awt.Window window : java.awt.Window.getWindows())
                 {
                     if (window instanceof javax.swing.JDialog
-                        || "RouteEditorFrame".equals(window.getClass().getSimpleName()))
+                        || "RouteEditorWindow".equals(window.getClass().getSimpleName()))
                     {
                         window.dispose();
                     }
@@ -403,7 +403,7 @@ public class testTheRouteListShowsWhatRuns
     /**
      * The right-click menu's Execute Route still runs the route with the power off (FR-164).
      *
-     * MUTATION: in `RightClickRouteMenu`, give the Execute Route item `setEnabled(ui.getModel().getPowerState())`, and
+     * MUTATION: in `RouteContextMenu`, give the Execute Route item `setEnabled(ui.getModel().getPowerState())`, and
      * this fails.
      */
     @Test
@@ -459,7 +459,7 @@ public class testTheRouteListShowsWhatRuns
      * The menu opens with a grayed, bold line naming the route and its id, a divider, and then Execute Route, plain
      * (FR-164).
      *
-     * MUTATION: in `RightClickRouteMenu`, delete the header's `setFont(...)` line, and this fails.
+     * MUTATION: in `RouteContextMenu`, delete the header's `setFont(...)` line, and this fails.
      */
     @Test
     public void testTheMenuOpensWithAGrayHeaderAndExecuteRouteBelowIt() throws Exception
@@ -1042,7 +1042,7 @@ public class testTheRouteListShowsWhatRuns
             {
                 for (java.awt.Window window : java.awt.Window.getWindows())
                 {
-                    if ("RouteEditorFrame".equals(window.getClass().getSimpleName())) window.dispose();
+                    if ("RouteEditorWindow".equals(window.getClass().getSimpleName())) window.dispose();
                 }
             });
         }
@@ -1431,7 +1431,7 @@ public class testTheRouteListShowsWhatRuns
      * A route renamed elsewhere while its editor is open: Save asks, naming both names and starting on No, and Yes
      * saves onto the route under its new name, keeping its id.
      *
-     * MUTATION: in `RouteEditorFrame.nameToSaveAs`, `return typed != null && typed.equals(originalName) ? nowCalled : typed;`
+     * MUTATION: in `RouteEditorWindow.nameToSaveAs`, `return typed != null && typed.equals(originalName) ? nowCalled : typed;`
      * to `return typed;`; or the rename's `confirmedMove(..., 1)` to `confirmedMove(..., 0)`.
      */
     @Test
@@ -1477,7 +1477,7 @@ public class testTheRouteListShowsWhatRuns
     /**
      * The same question answered No saves nothing, and leaves the editor open.
      *
-     * MUTATION: in `RouteEditorFrame.onSave`, the rename's `if (!confirmedMove(...)) return;` to
+     * MUTATION: in `RouteEditorWindow.onSave`, the rename's `if (!confirmedMove(...)) return;` to
      * `confirmedMove(...);`.
      */
     @Test
@@ -1519,7 +1519,7 @@ public class testTheRouteListShowsWhatRuns
      * A route deleted elsewhere while its editor is open: Save asks whether to save it as a new route, starting on Yes,
      * and Yes does.
      *
-     * MUTATION: in `RouteEditorFrame.onSave`, the `newRoute` call under `"gone".equals(moved)` to `false`; or the gone
+     * MUTATION: in `RouteEditorWindow.onSave`, the `newRoute` call under `"gone".equals(moved)` to `false`; or the gone
      * route's `confirmedMove(..., 0)` to `confirmedMove(..., 1)`.
      */
     @Test
@@ -1561,7 +1561,7 @@ public class testTheRouteListShowsWhatRuns
      * A route changed elsewhere while its editor is open: Save asks, starting on No, and No keeps the other change and
      * the editor.
      *
-     * MUTATION: in `RouteEditorFrame.onSave`, `"changed".equals(moved) && !confirmedMove(` to
+     * MUTATION: in `RouteEditorWindow.onSave`, `"changed".equals(moved) && !confirmedMove(` to
      * `false && !confirmedMove(`; or the change's `confirmedMove(..., 1)` to `confirmedMove(..., 0)`.
      */
     @Test
@@ -1610,7 +1610,7 @@ public class testTheRouteListShowsWhatRuns
     /**
      * Cancel over a change typed into the editor asks first, and No keeps the editor and what was typed.
      *
-     * MUTATION: in `RouteEditorFrame.closeIfThrowingNothingAway`, `if (answer == 0) dispose();` to `dispose();`.
+     * MUTATION: in `RouteEditorWindow.closeIfThrowingNothingAway`, `if (answer == 0) dispose();` to `dispose();`.
      */
     @Test
     public void testCancelOverATypedChangeAnsweredNoKeepsTheEditor() throws Exception
@@ -1696,7 +1696,7 @@ public class testTheRouteListShowsWhatRuns
         {
             for (java.awt.Window window : java.awt.Window.getWindows())
             {
-                if ("RouteEditorFrame".equals(window.getClass().getSimpleName())) window.dispose();
+                if ("RouteEditorWindow".equals(window.getClass().getSimpleName())) window.dispose();
             }
         });
     }
@@ -1849,7 +1849,7 @@ public class testTheRouteListShowsWhatRuns
      * A right-click as Windows sends it, the popup trigger on the release and then a click, opens the route's menu and
      * leaves it open, with the power on and off (MT-876).
      *
-     * MUTATION: drop `this.RouteList.addMouseListener(new RightClickRouteMenu(this))` from `TrainControlUI`, and no
+     * MUTATION: drop `this.RouteList.addMouseListener(new RouteContextMenu(this))` from `TrainControlUI`, and no
      * menu opens.
      */
     @Test
@@ -1998,7 +1998,7 @@ public class testTheRouteListShowsWhatRuns
     {
         for (java.awt.Window window : java.awt.Window.getWindows())
         {
-            if ("RouteEditorFrame".equals(window.getClass().getSimpleName()) && window.isShowing()) return true;
+            if ("RouteEditorWindow".equals(window.getClass().getSimpleName()) && window.isShowing()) return true;
         }
 
         return false;

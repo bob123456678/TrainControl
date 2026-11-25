@@ -4,7 +4,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
-import org.traincontrol.gui.RouteEditorFrame;
+import org.traincontrol.gui.RouteEditorWindow;
 import org.traincontrol.util.I18n;
 import support.Display;
 
@@ -25,7 +25,7 @@ public class testCommandTableMarks
     {
         needsADisplay();
 
-        final RouteEditorFrame frame = open();
+        final RouteEditorWindow frame = open();
 
         try
         {
@@ -49,7 +49,7 @@ public class testCommandTableMarks
                 + "which one moved");
 
             // the moves
-            act(frame, 0, RouteEditorFrame.markMoveDown());
+            act(frame, 0, RouteEditorWindow.markMoveDown());
 
             assertEquals(frame.commandRowCountForTest(), 3, "moving a row changed how many there are");
 
@@ -57,14 +57,14 @@ public class testCommandTableMarks
             assertEquals(target(frame, 1), first, "the moved row is not where it was moved to");
             assertEquals(target(frame, 2), third, "a row nobody touched moved");
 
-            act(frame, 1, RouteEditorFrame.markMoveUp());
+            act(frame, 1, RouteEditorWindow.markMoveUp());
 
             assertEquals(target(frame, 0), first, "moving it back up did not restore the order - the "
                 + "arrows must leave a row where they put it, not spring back");
             assertEquals(target(frame, 1), second);
 
             // duplicate
-            act(frame, 0, RouteEditorFrame.markCopy());
+            act(frame, 0, RouteEditorWindow.markCopy());
 
             assertEquals(frame.commandRowCountForTest(), 4,
                 "duplicate made " + (frame.commandRowCountForTest() - 3) + " copies rather than one. "
@@ -76,7 +76,7 @@ public class testCommandTableMarks
                 + "the reason to copy a row is that the next command is nearly the same one");
 
             // delete
-            act(frame, 1, RouteEditorFrame.markDelete());
+            act(frame, 1, RouteEditorWindow.markDelete());
 
             assertEquals(frame.commandRowCountForTest(), 3,
                 "delete removed " + (4 - frame.commandRowCountForTest()) + " rows rather than one");
@@ -91,7 +91,7 @@ public class testCommandTableMarks
         }
     }
 
-    private String target(RouteEditorFrame frame, int row)
+    private String target(RouteEditorWindow frame, int row)
     {
         org.traincontrol.base.CommandRow r = frame.commandRowForTest(row);
 
@@ -100,7 +100,7 @@ public class testCommandTableMarks
         return r.getTarget();
     }
 
-    private void act(final RouteEditorFrame frame, final int row, final String mark) throws Exception
+    private void act(final RouteEditorWindow frame, final int row, final String mark) throws Exception
     {
         javax.swing.SwingUtilities.invokeAndWait(() -> frame.clickCommandMarkForTest(row, mark));
     }
@@ -117,7 +117,7 @@ public class testCommandTableMarks
     {
         needsADisplay();
 
-        final RouteEditorFrame frame = open();
+        final RouteEditorWindow frame = open();
 
         try
         {
@@ -158,16 +158,16 @@ public class testCommandTableMarks
         }
     }
 
-    private static RouteEditorFrame open() throws Exception
+    private static RouteEditorWindow open() throws Exception
     {
-        final RouteEditorFrame[] frame = new RouteEditorFrame[1];
+        final RouteEditorWindow[] frame = new RouteEditorWindow[1];
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> frame[0] = new RouteEditorFrame(null, null));
+        javax.swing.SwingUtilities.invokeAndWait(() -> frame[0] = new RouteEditorWindow(null, null));
 
         return frame[0];
     }
 
-    private static void close(final RouteEditorFrame frame) throws Exception
+    private static void close(final RouteEditorWindow frame) throws Exception
     {
         javax.swing.SwingUtilities.invokeAndWait(() -> frame.dispose());
     }

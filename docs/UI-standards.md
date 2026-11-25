@@ -42,7 +42,7 @@ New hand-written windows take these rather than setting fonts and colors themsel
 
 ## The reference screen
 
-**`RouteEditorFrame`** is the hand-written screen built to this standard, and is the thing to copy
+**`RouteEditorWindow`** is the hand-written screen built to this standard, and is the thing to copy
 rather than this table, with the parts above for anything it does not show.
 
 ## Where this does and does not reach

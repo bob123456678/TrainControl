@@ -13,11 +13,11 @@ import org.traincontrol.util.I18n;
  * This class represents a right-click menu with various utility functions displayed when any route entry is right-clicked
  * @author Adam
  */
-public class RightClickRouteMenu extends PopupListener
+public class RouteContextMenu extends PopupListener
 {    
     protected TrainControlUI ui;
     
-    public RightClickRouteMenu(TrainControlUI u)
+    public RouteContextMenu(TrainControlUI u)
     {
         this.ui = u;
     }
@@ -39,7 +39,7 @@ public class RightClickRouteMenu extends PopupListener
     {
         if (ui.getRouteAtCursor(e) != null)
         {
-            RightClickRouteMenu owner = new RightClickRouteMenu(ui);
+            RouteContextMenu owner = new RouteContextMenu(ui);
 
             RightClickMenu menu = owner.new RightClickMenu(ui, e);
 

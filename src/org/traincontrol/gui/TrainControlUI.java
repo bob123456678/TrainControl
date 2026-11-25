@@ -537,7 +537,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     // source can tell another railway from the same one chosen again.  Null until the window has its model.
     private String railwaySource;
 
-    RouteEditorFrame routeEditor;
+    RouteEditorWindow routeEditor;
 
     /** The Locomotive Settings window while it is open, or null (FR-048). */
     volatile LocomotiveSettingsWindow locomotiveSettings;
@@ -1080,7 +1080,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         this.sortByName.setSelected(prefs.getBoolean(ROUTE_SORT_PREF, false));
         
         // Right-clicks on the route list
-        this.RouteList.addMouseListener(new RightClickRouteMenu(this)); 
+        this.RouteList.addMouseListener(new RouteContextMenu(this)); 
         
         // Right-clicks on the timetable
         this.timetable.addMouseListener(new TimetableContextMenu(this));  
@@ -3644,7 +3644,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         {
             if (window == this || !window.isDisplayable()) continue;
 
-            if (window instanceof LayoutPopupWindow || window instanceof RouteEditorFrame
+            if (window instanceof LayoutPopupWindow || window instanceof RouteEditorWindow
                 || window instanceof LocomotiveSettingsWindow || window instanceof LocomotiveSelector
                 || window instanceof UsageChart)
             {
@@ -14945,7 +14945,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
                         return;
                     }
 
-                    routeEditor = new RouteEditorFrame(this, null, null);
+                    routeEditor = new RouteEditorWindow(this, null, null);
 
                     // Offered, not imposed: ordinary text in the box; Save refuses an empty name.
                     routeEditor.proposeName(newName);

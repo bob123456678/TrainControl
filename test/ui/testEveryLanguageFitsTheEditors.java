@@ -7,7 +7,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.LayoutPopupWindow;
-import org.traincontrol.gui.RouteEditorFrame;
+import org.traincontrol.gui.RouteEditorWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.locomotive.LocomotiveSelector;
@@ -93,7 +93,7 @@ public class testEveryLanguageFitsTheEditors
         String name = routes.get(0);
 
         LanguageFit.assertNothingClipped("route-editor", LanguageFit.everyLanguage(language ->
-            LanguageFit.measureBuilt(LEDGER, "route-editor", language, () -> shown(new RouteEditorFrame(railway.ui, name,
+            LanguageFit.measureBuilt(LEDGER, "route-editor", language, () -> shown(new RouteEditorWindow(railway.ui, name,
                 railway.model.getRoute(name))), 15, LanguageFit::dispose)));
     }
 

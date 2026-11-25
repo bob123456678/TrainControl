@@ -2644,7 +2644,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         // Checked before anything is deleted: this method edits by delete-then-re-add, and newRoute refuses a name that
         // already belongs to another route, so a rename onto an existing name would delete the original and not add it
-        // back.  RouteEditorFrame checks too; the model should not depend on one dialog to protect its data.
+        // back.  RouteEditorWindow checks too; the model should not depend on one dialog to protect its data.
         if (!name.equals(trimmedNewName) && this.routeDB.hasName(trimmedNewName))
         {
             this.logf("route.notAdded", trimmedNewName);
@@ -2658,7 +2658,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         final boolean wasActivated = this.isRouteActivatedByAutonomy(id);
 
         // AND THE LOCK, FOR THE SAME REASON: `newRoute` builds a fresh MarklinRoute whose `locked` defaults to false
-        // (only the sync's import loop writes true), and the lock is what RightClickRouteMenu puts Change Route ID and
+        // (only the sync's import loop writes true), and the lock is what RouteContextMenu puts Change Route ID and
         // Delete behind.  Enable/Disable (via `writeRouteEnabledState`, also BulkEnableOrDisable) is deliberately not
         // gated on the lock, so without this an edit would unlock a Central Station route.
         final boolean wasLocked = existing.isLocked();

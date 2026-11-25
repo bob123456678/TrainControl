@@ -13,7 +13,7 @@ import org.traincontrol.base.ConditionOutline;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.LayoutLabel;
-import org.traincontrol.gui.RouteEditorFrame;
+import org.traincontrol.gui.RouteEditorWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
@@ -48,7 +48,7 @@ public class testAThreeWayIsLitOnce
         support.LayoutSandbox sandbox = null;
 
         MarklinControlStation model = null;
-        final RouteEditorFrame[] frame = new RouteEditorFrame[1];
+        final RouteEditorWindow[] frame = new RouteEditorWindow[1];
 
         try
         {
@@ -117,12 +117,12 @@ public class testAThreeWayIsLitOnce
 
             SwingUtilities.invokeAndWait(() ->
             {
-                frame[0] = new RouteEditorFrame(ui, ROUTE, m.getRoute(ROUTE));
+                frame[0] = new RouteEditorWindow(ui, ROUTE, m.getRoute(ROUTE));
                 frame[0].setConditionRowsForTest(Arrays.asList(ConditionOutline.Row.condition(0,
                     RouteCommand.RouteCommandAccessory(first + 1, protocol, true))));
             });
 
-            final java.lang.reflect.Method highlight = Reflect.method(RouteEditorFrame.class, "highlightOnDiagram");
+            final java.lang.reflect.Method highlight = Reflect.method(RouteEditorWindow.class, "highlightOnDiagram");
 
             SwingUtilities.invokeLater(() ->
             {

@@ -84,7 +84,7 @@ public class testEveryMessageKeyIsAskedFor
         "autosetup.ui.whyCanGoOne",
         "autosetup.ui.whyCanGoFew",
 
-        // RouteEditorFrame.settingLabel -> route.ui.setting.<word>, the setting words a route stores (OB-367)
+        // RouteEditorWindow.settingLabel -> route.ui.setting.<word>, the setting words a route stores (OB-367)
         "route.ui.setting.",
     };
 
