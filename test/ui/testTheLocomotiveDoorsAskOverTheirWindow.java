@@ -25,7 +25,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.RouteCommand;
-import org.traincontrol.gui.LayoutPopupUI;
+import org.traincontrol.gui.LayoutPopupWindow;
 import org.traincontrol.gui.LocomotiveSettingsFrame;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.locomotive.LocomotiveSelector;
@@ -56,7 +56,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
     private static Locomotive one;
     private static Locomotive two;
     private static LocomotiveSelector database;
-    private static LayoutPopupUI page;
+    private static LayoutPopupWindow page;
 
     private static final long PATIENCE_MS = 15000;
 

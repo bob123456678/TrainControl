@@ -29,7 +29,7 @@ import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.Route;
 import org.traincontrol.gui.LayoutLabel;
-import org.traincontrol.gui.LayoutPopupUI;
+import org.traincontrol.gui.LayoutPopupWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomy.DiagramMonitorDriver;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -284,7 +284,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         final MarklinRoute route = (MarklinRoute) square.getRoute();
         final boolean wasLocked = route.isLocked();
         final boolean wasEnabled = route.isEnabled();
-        final LayoutPopupUI window = aKeptWindow();
+        final LayoutPopupWindow window = aKeptWindow();
 
         route.setLocked(false);
 
@@ -405,7 +405,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         final String name = train.getName();
         final String renamed = "Zq" + name.substring(2);
 
-        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+        final LayoutPopupWindow window = AskingWindows.openThePage(ui);
 
         try
         {
@@ -470,7 +470,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     @Test(timeOut = 180000)
     public void testAPageWindowIsRedrawnAfterASync() throws Exception
     {
-        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+        final LayoutPopupWindow window = AskingWindows.openThePage(ui);
 
         try
         {
@@ -524,7 +524,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
      * A page window follows its page when the page is renamed in the folder, outside TrainControl, and synced: it shows
      * the page under its new name, found by its page ID.
      *
-     * MUTATION: in `LayoutPopupUI.showsAPageReadAgain`, look the page up by name alone, and the window keeps the old
+     * MUTATION: in `LayoutPopupWindow.showsAPageReadAgain`, look the page up by name alone, and the window keeps the old
      * page.
      */
     @Test(timeOut = 180000)
@@ -540,7 +540,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
             assertTrue(model.getLayoutList().contains(RENAMED_TO), "precondition: the sync did not read the rename");
 
-            final LayoutPopupUI window = edit.window;
+            final LayoutPopupWindow window = edit.window;
 
             assertTrue(Components.waitFor(() -> window.isShowing() && RENAMED_TO.equals(window.getLayoutTitle()),
                 20000), "the page window does not show " + RENAMED_TO + " after the page was renamed outside and"
@@ -566,7 +566,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         final byte[] pageWas;
         final String text;
         final String entry;
-        final LayoutPopupUI window;
+        final LayoutPopupWindow window;
         final Locomotive train = model.getLocByName(model.getLocList().get(0));
 
         OutsideEdit() throws Exception
@@ -619,7 +619,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
      * a place it once had.  The window is restored as a start restores a remembered one, with the main window on
      * another page.
      *
-     * MUTATION: in `LayoutPopupUI.pageNow`, return the page found by name alone, and the window closes.
+     * MUTATION: in `LayoutPopupWindow.pageNow`, return the page found by name alone, and the window closes.
      */
     @Test(timeOut = 180000)
     public void testAPageWindowFollowsItsPageThroughARename() throws Exception
@@ -631,7 +631,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         prefs.putBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, true);
         prefs.put(key, RENAMED_FROM);
 
-        LayoutPopupUI window = null;
+        LayoutPopupWindow window = null;
 
         try
         {
@@ -647,7 +647,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
             renamePage(RENAMED_FROM, RENAMED_TO);
 
-            final LayoutPopupUI renamed = window;
+            final LayoutPopupWindow renamed = window;
 
             assertTrue(Components.waitFor(() -> renamed.isShowing() && RENAMED_TO.equals(renamed.getLayoutTitle()),
                 20000), "the page window does not show " + RENAMED_TO + " after its page was renamed; showing: "
@@ -670,7 +670,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
      * A page edit that leaves a window's page the same size keeps the size the operator gave the window (OB-466): the
      * window is redrawn, not packed to its page again.
      *
-     * MUTATION: in `LayoutPopupUI.refreshDiagram`, pass true to `goToLayoutPage` again, and the window is packed.
+     * MUTATION: in `LayoutPopupWindow.refreshDiagram`, pass true to `goToLayoutPage` again, and the window is packed.
      */
     @Test(timeOut = 180000)
     public void testAPageEditKeepsTheSizeOfAPageWindow() throws Exception
@@ -678,7 +678,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         Components.select((JComboBox<?>) WindowField.of(ui, "LayoutList"), RENAMED_FROM);
         Settle.theDiagram(ui);
 
-        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+        final LayoutPopupWindow window = AskingWindows.openThePage(ui);
 
         try
         {
@@ -688,7 +688,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
             SwingUtilities.invokeAndWait(() -> window.setSize(chosen));
             Components.settle();
 
-            final Object gridBefore = Reflect.get(LayoutPopupUI.class, window, "grid");
+            final Object gridBefore = Reflect.get(LayoutPopupWindow.class, window, "grid");
 
             renamePage(RENAMED_FROM, RENAMED_TO);
 
@@ -727,7 +727,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         final java.util.logging.Handler tap = support.LogTap.messagesInto(logged);
         final java.util.logging.Logger log = java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
         final DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
-        List<LayoutPopupUI> windows = new ArrayList<>();
+        List<LayoutPopupWindow> windows = new ArrayList<>();
 
         Components.settle();
 
@@ -785,7 +785,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     @Test(timeOut = 180000)
     public void testABusyHandOverKeepsTheTrainsOnTheDiagram() throws Exception
     {
-        final List<LayoutPopupUI> windows = popUpAll();
+        final List<LayoutPopupWindow> windows = popUpAll();
         final javax.swing.JButton edit = WindowField.of(ui, "editLayoutButton");
         final AtomicBoolean held = new AtomicBoolean();
         // Held where the hand-over lights Edit Layout again, after the setup's reload, until a tick has looked
@@ -797,7 +797,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
         try
         {
-            final LayoutPopupUI window = windows.stream().filter(each -> PAGE.equals(each.getLayoutTitle()))
+            final LayoutPopupWindow window = windows.stream().filter(each -> PAGE.equals(each.getLayoutTitle()))
                 .findFirst().get();
             final int trains = trainsIn(window);
 
@@ -863,18 +863,18 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     @Test(timeOut = 180000)
     public void testAnEditDrawsOnlyThatPagesWindowAgain() throws Exception
     {
-        final List<LayoutPopupUI> windows = popUpAll();
+        final List<LayoutPopupWindow> windows = popUpAll();
 
         try
         {
-            final Map<LayoutPopupUI, Object> grids = gridsOf(windows);
-            final Map<LayoutPopupUI, String> titles = new HashMap<>();
+            final Map<LayoutPopupWindow, Object> grids = gridsOf(windows);
+            final Map<LayoutPopupWindow, String> titles = new HashMap<>();
 
-            for (LayoutPopupUI window : windows) titles.put(window, Components.onTheEventThread(window::getTitle));
+            for (LayoutPopupWindow window : windows) titles.put(window, Components.onTheEventThread(window::getTitle));
 
             outAndBackElsewhere(train -> editingComplete(), train ->
             {
-                for (LayoutPopupUI window : windows)
+                for (LayoutPopupWindow window : windows)
                 {
                     final String page = window.getLayoutTitle();
 
@@ -908,7 +908,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
      * Show Addresses draws every page window again, with the addresses and then without (FR-216): the tick changes
      * how every page looks.
      *
-     * MUTATION: in `LayoutPopupUI.sameSquares`, compare the page's flag with that of the page the window holds rather
+     * MUTATION: in `LayoutPopupWindow.sameSquares`, compare the page's flag with that of the page the window holds rather
      * than the one it was drawn with, and the windows keep their old look.
      */
     @Test(timeOut = 180000)
@@ -916,7 +916,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     {
         final javax.swing.JCheckBoxMenuItem tick = WindowField.of(ui, "menuItemShowLayoutAddresses");
         final boolean was = tick.isSelected();
-        final List<LayoutPopupUI> windows = popUpAll();
+        final List<LayoutPopupWindow> windows = popUpAll();
 
         try
         {
@@ -924,7 +924,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
             {
                 SwingUtilities.invokeAndWait(tick::doClick);
 
-                for (LayoutPopupUI window : windows)
+                for (LayoutPopupWindow window : windows)
                 {
                     if (!hasAddresses(window.getLayoutTitle())) continue;
 
@@ -953,13 +953,13 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     {
         final javax.swing.JCheckBoxMenuItem tick = WindowField.of(ui, "menuItemShowLayoutAddresses");
         final boolean was = tick.isSelected();
-        final List<LayoutPopupUI> windows = popUpAll();
+        final List<LayoutPopupWindow> windows = popUpAll();
 
         try
         {
-            final List<LayoutPopupUI> leftOut = new ArrayList<>();
+            final List<LayoutPopupWindow> leftOut = new ArrayList<>();
 
-            for (LayoutPopupUI window : windows)
+            for (LayoutPopupWindow window : windows)
             {
                 if (ui.isPageExcludedFromAutonomy(window.getLayoutTitle()) && hasAddresses(window.getLayoutTitle()))
                 {
@@ -971,7 +971,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
             SwingUtilities.invokeAndWait(tick::doClick);
 
-            for (LayoutPopupUI window : leftOut)
+            for (LayoutPopupWindow window : leftOut)
             {
                 assertTrue(Components.waitFor(() -> showsAddresses(window) != was, 20000), window.getLayoutTitle()
                     + "'s window was not drawn again after Show Addresses");
@@ -1005,7 +1005,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
      * A page renamed draws again its own window, under the new name, and each window whose arrows lead to it, which
      * then name it (FR-216); a window whose page does not lead there keeps its grid.
      *
-     * MUTATION: in `LayoutPopupUI.sameSquares`, leave out the linked page's name, and an arrow to the renamed page
+     * MUTATION: in `LayoutPopupWindow.sameSquares`, leave out the linked page's name, and an arrow to the renamed page
      * still names the old one.
      */
     @Test(timeOut = 180000)
@@ -1013,21 +1013,21 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     {
         final String from = "2 - Bottom";
         final String to = "2 - Bottom renamed";
-        final List<LayoutPopupUI> windows = popUpAll();
+        final List<LayoutPopupWindow> windows = popUpAll();
 
         try
         {
-            final Map<LayoutPopupUI, Object> grids = gridsOf(windows);
-            final Map<LayoutPopupUI, Boolean> leads = new HashMap<>();
+            final Map<LayoutPopupWindow, Object> grids = gridsOf(windows);
+            final Map<LayoutPopupWindow, Boolean> leads = new HashMap<>();
 
-            for (LayoutPopupUI window : windows) leads.put(window, !arrowsIn(window, from).isEmpty());
+            for (LayoutPopupWindow window : windows) leads.put(window, !arrowsIn(window, from).isEmpty());
 
             assertTrue(leads.containsValue(true) && leads.containsValue(false), "precondition: no window, or every"
                 + " window, has an arrow to " + from + ": " + leads);
 
             renamePage(from, to);
 
-            for (LayoutPopupUI window : windows)
+            for (LayoutPopupWindow window : windows)
             {
                 final String page = window.getLayoutTitle();
 
@@ -1061,27 +1061,27 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     /**
      * Moving a page leaves every page window on its own page with its grid, as no page changed (FR-216).
      *
-     * MUTATION: in `LayoutPopupUI.refreshDiagram`, pass false for keeping a page that draws the same, and every window
+     * MUTATION: in `LayoutPopupWindow.refreshDiagram`, pass false for keeping a page that draws the same, and every window
      * is drawn again.
      */
     @Test(timeOut = 180000)
     public void testMovingAPageKeepsEveryPageWindow() throws Exception
     {
         final List<String> order = new ArrayList<>(model.getLayoutList());
-        final List<LayoutPopupUI> windows = popUpAll();
+        final List<LayoutPopupWindow> windows = popUpAll();
 
         try
         {
-            final Map<LayoutPopupUI, Object> grids = gridsOf(windows);
-            final Map<LayoutPopupUI, String> pages = new HashMap<>();
+            final Map<LayoutPopupWindow, Object> grids = gridsOf(windows);
+            final Map<LayoutPopupWindow, String> pages = new HashMap<>();
 
-            for (LayoutPopupUI window : windows) pages.put(window, window.getLayoutTitle());
+            for (LayoutPopupWindow window : windows) pages.put(window, window.getLayoutTitle());
 
             movePage(PAGE, 1);
 
             assertNotEquals(model.getLayoutList(), order, "precondition: the page did not move");
 
-            for (LayoutPopupUI window : windows)
+            for (LayoutPopupWindow window : windows)
             {
                 assertEquals(window.getLayoutTitle(), pages.get(window), "a window left its page after a move");
                 assertSame(gridOf(window), grids.get(window), "moving " + PAGE + " drew " + pages.get(window)
@@ -1113,7 +1113,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         final String name = route.getName();
         final List<org.traincontrol.base.RouteCommand> commands = new ArrayList<>(route.getRoute());
         final boolean wasLocked = route.isLocked();
-        final LayoutPopupUI window = aKeptWindow();
+        final LayoutPopupWindow window = aKeptWindow();
 
         try
         {
@@ -1164,7 +1164,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         final String name = route.getName();
         final int id = route.getId();
         final boolean wasLocked = route.isLocked();
-        final LayoutPopupUI window = aKeptWindow();
+        final LayoutPopupWindow window = aKeptWindow();
         int highest = 999;
 
         for (String each : model.getRouteList()) highest = Math.max(highest, model.getRouteId(each));
@@ -1233,7 +1233,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     @Test(timeOut = 180000)
     public void testAKeptWindowsSquaresStillFollowTheirDevices() throws Exception
     {
-        final LayoutPopupUI window = aKeptWindow();
+        final LayoutPopupWindow window = aKeptWindow();
 
         try
         {
@@ -1380,12 +1380,12 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
      * A square turned on a page draws that page's window again (FR-216): the same squares stand in the same places, but
      * the page reads differently.
      *
-     * MUTATION: in `LayoutPopupUI.sameSquares`, leave out `sameText`, and the window keeps its old drawing.
+     * MUTATION: in `LayoutPopupWindow.sameSquares`, leave out `sameText`, and the window keeps its old drawing.
      */
     @Test(timeOut = 180000)
     public void testATurnedSquareDrawsItsWindowAgain() throws Exception
     {
-        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+        final LayoutPopupWindow window = AskingWindows.openThePage(ui);
 
         try
         {
@@ -1415,7 +1415,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
      * A station renamed on a page draws that page's window again (FR-216): the page reads the same, but its captions do
      * not.
      *
-     * MUTATION: in `LayoutPopupUI.sameSquares`, leave out `captionsAreAsBuilt`, and the window keeps its old captions.
+     * MUTATION: in `LayoutPopupWindow.sameSquares`, leave out `captionsAreAsBuilt`, and the window keeps its old captions.
      */
     @Test(timeOut = 180000)
     public void testARenamedStationDrawsItsWindowAgain() throws Exception
@@ -1434,7 +1434,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
         final TileKey renamed = station;
         final String name = now.getStore().getPointName(renamed);
-        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+        final LayoutPopupWindow window = AskingWindows.openThePage(ui);
 
         try
         {
@@ -1480,7 +1480,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         Components.select((JComboBox<?>) WindowField.of(ui, "LayoutList"), "2 - Bottom");
         Settle.theDiagram(ui);
 
-        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+        final LayoutPopupWindow window = AskingWindows.openThePage(ui);
 
         showTheMainPage();
 
@@ -1554,14 +1554,14 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     }
 
     /** Presses the Layout tab's All button and waits for every page's window, which must open in the list's order. */
-    private static List<LayoutPopupUI> popUpAll() throws Exception
+    private static List<LayoutPopupWindow> popUpAll() throws Exception
     {
-        final List<LayoutPopupUI> opened = java.util.Collections.synchronizedList(new ArrayList<>());
+        final List<LayoutPopupWindow> opened = java.util.Collections.synchronizedList(new ArrayList<>());
         final java.awt.event.AWTEventListener listener = event ->
         {
-            if (event.getID() == java.awt.event.WindowEvent.WINDOW_OPENED && event.getSource() instanceof LayoutPopupUI)
+            if (event.getID() == java.awt.event.WindowEvent.WINDOW_OPENED && event.getSource() instanceof LayoutPopupWindow)
             {
-                opened.add((LayoutPopupUI) event.getSource());
+                opened.add((LayoutPopupWindow) event.getSource());
             }
         };
 
@@ -1583,23 +1583,23 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
         final List<String> titles = new ArrayList<>();
 
-        for (LayoutPopupUI window : opened) titles.add(window.getLayoutTitle());
+        for (LayoutPopupWindow window : opened) titles.add(window.getLayoutTitle());
 
         assertEquals(titles, model.getLayoutList(), "Pop Up All opened the windows in another order");
 
         return new ArrayList<>(opened);
     }
 
-    private static void closeAll(List<LayoutPopupUI> windows) throws Exception
+    private static void closeAll(List<LayoutPopupWindow> windows) throws Exception
     {
-        for (LayoutPopupUI window : windows) SwingUtilities.invokeAndWait(window::dispose);
+        for (LayoutPopupWindow window : windows) SwingUtilities.invokeAndWait(window::dispose);
     }
 
-    private static Map<LayoutPopupUI, Object> gridsOf(List<LayoutPopupUI> windows)
+    private static Map<LayoutPopupWindow, Object> gridsOf(List<LayoutPopupWindow> windows)
     {
-        final Map<LayoutPopupUI, Object> grids = new HashMap<>();
+        final Map<LayoutPopupWindow, Object> grids = new HashMap<>();
 
-        for (LayoutPopupUI window : windows) grids.put(window, gridOf(window));
+        for (LayoutPopupWindow window : windows) grids.put(window, gridOf(window));
 
         return grids;
     }
@@ -1657,22 +1657,22 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         return model.getLayout(page).getAll().stream().anyMatch(c -> !c.isText() && c.isClickable());
     }
 
-    private static boolean showsAddresses(LayoutPopupUI window)
+    private static boolean showsAddresses(LayoutPopupWindow window)
     {
         return !Components.all(window, org.traincontrol.gui.widgets.AddressLabel.class, null).isEmpty();
     }
 
     /** The arrows in a window that lead to this page. */
-    private static List<LayoutLabel> arrowsIn(LayoutPopupUI window, String page)
+    private static List<LayoutLabel> arrowsIn(LayoutPopupWindow window, String page)
     {
         return Components.all(window, LayoutLabel.class, each -> each.getComponent() != null
             && page.equals(each.getComponent().getLinkPageName()));
     }
 
     /** The page shown in its own window, kept through the track editor's hand-over (its Save or Cancel). */
-    private static LayoutPopupUI aKeptWindow() throws Exception
+    private static LayoutPopupWindow aKeptWindow() throws Exception
     {
-        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+        final LayoutPopupWindow window = AskingWindows.openThePage(ui);
         final Object grid = gridOf(window);
 
         editingComplete();
@@ -1683,7 +1683,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     }
 
     /** The label a page window draws where a square of its page is. */
-    private static LayoutLabel squareIn(LayoutPopupUI window, LayoutDiagramComponent square) throws Exception
+    private static LayoutLabel squareIn(LayoutPopupWindow window, LayoutDiagramComponent square) throws Exception
     {
         final LayoutLabel found = Components.onTheEventThread(() -> Components.find(window, LayoutLabel.class, each ->
             each.getComponent() != null && each.getComponent().getX() == square.getX()
@@ -1729,26 +1729,26 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     }
 
     /** The page windows showing that were not open when `before` was taken. */
-    private static List<LayoutPopupUI> openedSince(java.util.Set<java.awt.Window> before)
+    private static List<LayoutPopupWindow> openedSince(java.util.Set<java.awt.Window> before)
     {
-        final List<LayoutPopupUI> opened = new ArrayList<>();
+        final List<LayoutPopupWindow> opened = new ArrayList<>();
 
         for (java.awt.Window window : java.awt.Window.getWindows())
         {
-            if (window instanceof LayoutPopupUI && window.isShowing() && !before.contains(window))
+            if (window instanceof LayoutPopupWindow && window.isShowing() && !before.contains(window))
             {
-                opened.add((LayoutPopupUI) window);
+                opened.add((LayoutPopupWindow) window);
             }
         }
 
         return opened;
     }
 
-    private static Object gridOf(LayoutPopupUI window)
+    private static Object gridOf(LayoutPopupWindow window)
     {
         try
         {
-            return Reflect.get(LayoutPopupUI.class, window, "grid");
+            return Reflect.get(LayoutPopupWindow.class, window, "grid");
         }
         catch (ReflectiveOperationException e)
         {

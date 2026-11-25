@@ -23,7 +23,7 @@ import org.testng.Assert;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.RemoteDeviceCollection;
 import org.traincontrol.gui.LayoutLabel;
-import org.traincontrol.gui.LayoutPopupUI;
+import org.traincontrol.gui.LayoutPopupWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -202,7 +202,7 @@ public final class AskingWindows
      * @param ui the main window
      * @return the window, showing
      */
-    public static LayoutPopupUI openThePage(TrainControlUI ui) throws Exception
+    public static LayoutPopupWindow openThePage(TrainControlUI ui) throws Exception
     {
         final Set<Window> before = new HashSet<>(Arrays.asList(Window.getWindows()));
 
@@ -220,17 +220,17 @@ public final class AskingWindows
      *
      * @return the window, showing; fails with `failure` when none opens
      */
-    public static LayoutPopupUI theNewPageWindow(Set<Window> before, String failure) throws Exception
+    public static LayoutPopupWindow theNewPageWindow(Set<Window> before, String failure) throws Exception
     {
-        final LayoutPopupUI[] opened = new LayoutPopupUI[1];
+        final LayoutPopupWindow[] opened = new LayoutPopupWindow[1];
 
         Assert.assertTrue(Components.waitFor(() ->
         {
             for (Window window : Window.getWindows())
             {
-                if (window instanceof LayoutPopupUI && window.isShowing() && !before.contains(window))
+                if (window instanceof LayoutPopupWindow && window.isShowing() && !before.contains(window))
                 {
-                    opened[0] = (LayoutPopupUI) window;
+                    opened[0] = (LayoutPopupWindow) window;
 
                     return true;
                 }
@@ -359,7 +359,7 @@ public final class AskingWindows
     }
 
     /** Closes a page's window as its close box does, and lets it go. */
-    public static void closeThePage(final LayoutPopupUI page) throws Exception
+    public static void closeThePage(final LayoutPopupWindow page) throws Exception
     {
         if (page == null) return;
 

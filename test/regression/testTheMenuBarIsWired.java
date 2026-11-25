@@ -20,7 +20,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.LayoutPopupUI;
+import org.traincontrol.gui.LayoutPopupWindow;
 import org.traincontrol.gui.RightClickTips;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -945,7 +945,7 @@ public class testTheMenuBarIsWired
         }
         finally
         {
-            for (LayoutPopupUI each : popups()) SwingUtilities.invokeAndWait(each::dispose);
+            for (LayoutPopupWindow each : popups()) SwingUtilities.invokeAndWait(each::dispose);
         }
     }
 
@@ -967,7 +967,7 @@ public class testTheMenuBarIsWired
 
             for (String name : new String[] {"smallButton", "mediumButton", "layoutNewWindow"})
             {
-                List<LayoutPopupUI> before = popups();
+                List<LayoutPopupWindow> before = popups();
                 JButton button = (JButton) Reflect.get(TrainControlUI.class, ui, name);
 
                 try
@@ -982,7 +982,7 @@ public class testTheMenuBarIsWired
                 assertTrue(Components.waitFor(() -> popups().size() > before.size(), PATIENCE_MS),
                     name + " opened no window in German");
 
-                List<LayoutPopupUI> now = popups();
+                List<LayoutPopupWindow> now = popups();
 
                 now.removeAll(before);
                 opened.add(now.get(0).getLayoutSize());
@@ -994,7 +994,7 @@ public class testTheMenuBarIsWired
         {
             I18n.setLocale(was);
 
-            for (LayoutPopupUI each : popups()) SwingUtilities.invokeAndWait(each::dispose);
+            for (LayoutPopupWindow each : popups()) SwingUtilities.invokeAndWait(each::dispose);
         }
     }
 
@@ -1062,15 +1062,15 @@ public class testTheMenuBarIsWired
         return bundle.getProperty(key);
     }
 
-    private static List<LayoutPopupUI> popups()
+    private static List<LayoutPopupWindow> popups()
     {
         return Components.onTheEventThread(() ->
         {
-            List<LayoutPopupUI> found = new ArrayList<>();
+            List<LayoutPopupWindow> found = new ArrayList<>();
 
             for (java.awt.Window each : java.awt.Window.getWindows())
             {
-                if (each instanceof LayoutPopupUI && each.isShowing()) found.add((LayoutPopupUI) each);
+                if (each instanceof LayoutPopupWindow && each.isShowing()) found.add((LayoutPopupWindow) each);
             }
 
             return found;

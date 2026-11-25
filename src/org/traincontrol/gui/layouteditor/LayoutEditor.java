@@ -724,7 +724,7 @@ public class LayoutEditor extends PositionAwareJFrame
     private boolean redrawStarted = false;
     
     // Reference to the right click menu
-    LayoutEditorRightclickMenu popup;
+    LayoutEditorContextMenu popup;
 
     /**
      * `FlowLayout`'s gap around the diagram, included in the panel's size, or a CENTER layout puts the diagram at a
@@ -3160,9 +3160,9 @@ public class LayoutEditor extends PositionAwareJFrame
      * @param lc what is drawn on it, or null
      * @return the menu, not yet shown
      */
-    LayoutEditorRightclickMenu menuFor(LayoutLabel label, LayoutDiagramComponent lc)
+    LayoutEditorContextMenu menuFor(LayoutLabel label, LayoutDiagramComponent lc)
     {
-        LayoutEditorRightclickMenu menu = new LayoutEditorRightclickMenu(this, parent, label, lc);
+        LayoutEditorContextMenu menu = new LayoutEditorContextMenu(this, parent, label, lc);
 
         menu.addPopupMenuListener(new javax.swing.event.PopupMenuListener()
         {

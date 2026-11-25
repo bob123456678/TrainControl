@@ -14,11 +14,11 @@ import org.traincontrol.gui.autonomy.FacingPrompt;
 import org.traincontrol.util.I18n;
 
 /** The diagram's keyboard gestures: cutting, pasting and clearing a train on a square, and writing its turns. */
-public final class DiagramLocGestures
+public final class DiagramTrainKeys
 {
     private final TrainControlUI ui;
 
-    DiagramLocGestures(TrainControlUI ui)
+    DiagramTrainKeys(TrainControlUI ui)
     {
         this.ui = ui;
     }

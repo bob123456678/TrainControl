@@ -344,9 +344,9 @@ public final class LayoutLabel extends JLabel
                             @Override
                             public void mouseClicked(MouseEvent e)  
                             {                  
-                                if (parent instanceof LayoutPopupUI)
+                                if (parent instanceof LayoutPopupWindow)
                                 {
-                                    ((LayoutPopupUI) parent).followLink(component);
+                                    ((LayoutPopupWindow) parent).followLink(component);
                                 }
                                 else
                                 {

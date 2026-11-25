@@ -201,7 +201,7 @@ public class testTheEditorTellsAutonomy
     public void testTheMenuAsksTheSamePredicateTheShiftUses() throws Exception
     {
         // The diagram submenu is built by the menu's constructor.
-        String menu = bodyOf("public LayoutEditorRightclickMenu(LayoutEditor edit, TrainControlUI ui, LayoutLabel label,"
+        String menu = bodyOf("public LayoutEditorContextMenu(LayoutEditor edit, TrainControlUI ui, LayoutLabel label,"
             + " LayoutDiagramComponent component)");
 
         // Each item against its own predicate: swapping which predicate grays which item (Shift Up enabled by

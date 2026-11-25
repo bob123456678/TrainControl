@@ -6,7 +6,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.LayoutPopupUI;
+import org.traincontrol.gui.LayoutPopupWindow;
 import org.traincontrol.gui.RouteEditorFrame;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
@@ -112,7 +112,7 @@ public class testEveryLanguageFitsTheEditors
         LanguageFit.assertNothingClipped("page-window", LanguageFit.everyLanguage(language ->
             LanguageFit.measureBuilt(LEDGER, "page-window", language, () ->
             {
-                LayoutPopupUI built = new LayoutPopupUI(railway.model.getLayout(PAGE), small, railway.ui);
+                LayoutPopupWindow built = new LayoutPopupWindow(railway.model.getLayout(PAGE), small, railway.ui);
 
                 built.render();
                 railway.ui.updateVisiblePoints();

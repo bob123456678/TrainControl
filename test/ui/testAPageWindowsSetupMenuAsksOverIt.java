@@ -18,7 +18,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagramComponent;
-import org.traincontrol.gui.LayoutPopupUI;
+import org.traincontrol.gui.LayoutPopupWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomyeditor.StationSettingsWindow;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -46,7 +46,7 @@ public class testAPageWindowsSetupMenuAsksOverIt
     private static MarklinControlStation model;
     private static TrainControlUI ui;
     private static AutonomySession session;
-    private static LayoutPopupUI page;
+    private static LayoutPopupWindow page;
 
     /** A station on the page the windows show. */
     private static TileKey station;

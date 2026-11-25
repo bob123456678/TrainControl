@@ -20,7 +20,7 @@ import org.traincontrol.util.I18n;
  * Popup representing a track diagram
  * @author Adam
  */
-public class LayoutPopupUI extends PositionAwareJFrame
+public class LayoutPopupWindow extends PositionAwareJFrame
 {
     private final TrainControlUI parent;
     private final int size;
@@ -31,8 +31,10 @@ public class LayoutPopupUI extends PositionAwareJFrame
      * @param l reference to the layout
      * @param size size of each tile, in pixels
      */
-    public LayoutPopupUI(LayoutDiagram l, int size, TrainControlUI ui)
+    public LayoutPopupWindow(LayoutDiagram l, int size, TrainControlUI ui)
     {
+        // Window positions are saved under the key users already have (FR-241)
+        super("LayoutPopupUI");
         initComponents();
         TrainControlUI.applyWindowIcon(this);
         

@@ -1311,7 +1311,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Everything that can be set on a tile, on one menu built like LayoutEditorRightclickMenu's, items in the graph
+     * Everything that can be set on a tile, on one menu built like LayoutEditorContextMenu's, items in the graph
      * window's order and wording.
      */
     public void tileRightClicked(TileKey tile, LayoutDiagramComponent component,

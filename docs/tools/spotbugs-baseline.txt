@@ -79,7 +79,7 @@ AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.base.LayoutDiagram	setEditHi
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.base.LayoutDiagram	setShowAddress	showAddress	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.base.Locomotive	savePreferredSpeed	preferredSpeed	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.base.Locomotive	setPreferredSpeed	preferredSpeed	1
-AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.gui.DiagramLocGestures	dropByPaste	dropping	1
+AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.gui.DiagramTrainKeys	dropByPaste	dropping	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.gui.EditorWindows	openCarryingTheClick	clickCarried	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.gui.LayoutLabel	markSpacer	spacer	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.gui.LayoutLabel	setAutonomySquare	squareX	1
@@ -342,8 +342,8 @@ EI_EXPOSE_REP2	org.traincontrol.gui.LayoutGrid	<init>	window	1
 EI_EXPOSE_REP2	org.traincontrol.gui.LayoutLabel	<init>	component	1
 EI_EXPOSE_REP2	org.traincontrol.gui.LayoutLabel	<init>	parent	1
 EI_EXPOSE_REP2	org.traincontrol.gui.LayoutLabel	<init>	tcUI	1
-EI_EXPOSE_REP2	org.traincontrol.gui.LayoutPopupUI	<init>	layout	1
-EI_EXPOSE_REP2	org.traincontrol.gui.LayoutPopupUI	<init>	parent	1
+EI_EXPOSE_REP2	org.traincontrol.gui.LayoutPopupWindow	<init>	layout	1
+EI_EXPOSE_REP2	org.traincontrol.gui.LayoutPopupWindow	<init>	parent	1
 EI_EXPOSE_REP2	org.traincontrol.gui.RightClickRouteMenu	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.RouteEditorFrame	<init>	parent	1
 EI_EXPOSE_REP2	org.traincontrol.gui.TrainControlUI$CustomTableRenderer	<init>	this$0	1
@@ -468,7 +468,7 @@ NM_CLASS_NAMING_CONVENTION	org.traincontrol.base.Route$s88Triggers			1
 NM_CLASS_NAMING_CONVENTION	org.traincontrol.base.RouteCommand$commandType			1
 NM_CLASS_NAMING_CONVENTION	org.traincontrol.gui.layouteditor.LayoutEditor$tool			1
 NM_CONFUSING	org.traincontrol.automation.Edge	toJSON		1
-NM_FIELD_NAMING_CONVENTION	org.traincontrol.gui.LayoutPopupUI		ExtLayoutPanel	1
+NM_FIELD_NAMING_CONVENTION	org.traincontrol.gui.LayoutPopupWindow		ExtLayoutPanel	1
 NM_FIELD_NAMING_CONVENTION	org.traincontrol.gui.layouteditor.LayoutEditor		ExtLayoutPanel	1
 NM_FIELD_NAMING_CONVENTION	org.traincontrol.gui.locomotive.LocomotiveSelector		LocFilterBox	1
 NM_FIELD_NAMING_CONVENTION	org.traincontrol.gui.locomotive.LocomotiveSelector		LocScroller	1
@@ -487,7 +487,7 @@ NM_METHOD_NAMING_CONVENTION	org.traincontrol.base.RouteCommand	RouteCommandLocom
 NM_METHOD_NAMING_CONVENTION	org.traincontrol.base.RouteCommand	RouteCommandLocomotiveSpeed		1
 NM_METHOD_NAMING_CONVENTION	org.traincontrol.base.RouteCommand	RouteCommandRoute		1
 NM_METHOD_NAMING_CONVENTION	org.traincontrol.base.RouteCommand	RouteCommandStop		1
-NM_METHOD_NAMING_CONVENTION	org.traincontrol.gui.LayoutPopupUI	ExtLayoutPanelMouseClicked		1
+NM_METHOD_NAMING_CONVENTION	org.traincontrol.gui.LayoutPopupWindow	ExtLayoutPanelMouseClicked		1
 NM_METHOD_NAMING_CONVENTION	org.traincontrol.gui.RouteListPanel	BulkEnableOrDisable		1
 NM_METHOD_NAMING_CONVENTION	org.traincontrol.gui.RouteListPanel	RouteListMouseClicked		1
 NM_METHOD_NAMING_CONVENTION	org.traincontrol.gui.layouteditor.LayoutEditor	ExtLayoutPanelMouseEntered		1
@@ -606,8 +606,8 @@ SE_BAD_FIELD	org.traincontrol.gui.LayoutLabel		autonomyAnnotation	1
 SE_BAD_FIELD	org.traincontrol.gui.LayoutLabel		autonomyOverlay	1
 SE_BAD_FIELD	org.traincontrol.gui.LayoutLabel		component	1
 SE_BAD_FIELD	org.traincontrol.gui.LayoutLabel		square	1
-SE_BAD_FIELD	org.traincontrol.gui.LayoutPopupUI		grid	1
-SE_BAD_FIELD	org.traincontrol.gui.LayoutPopupUI		layout	1
+SE_BAD_FIELD	org.traincontrol.gui.LayoutPopupWindow		grid	1
+SE_BAD_FIELD	org.traincontrol.gui.LayoutPopupWindow		layout	1
 SE_BAD_FIELD	org.traincontrol.gui.DiagramAutonomyContextMenu		here	1
 SE_BAD_FIELD	org.traincontrol.gui.DiagramAutonomyContextMenu		session	1
 SE_BAD_FIELD	org.traincontrol.gui.DiagramAutonomyContextMenu		station	1
@@ -715,7 +715,7 @@ SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.automationui.AutonomyCompanionS
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.AccessoryKeyboard$N	buildKey		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.LayoutGrid$N	<init>		2
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.LayoutLabel$N	<init>		3
-SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.LayoutPopupUI$N	render		1
+SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.LayoutPopupWindow$N	render		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.LocomotiveNotesPanel$N	<init>		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.LocomotiveSettingsFrame$N	<init>	strip	1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.MultiUnitPanel$N	buildRow		1
@@ -787,7 +787,7 @@ THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.gui.AutonomySetting
 THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.gui.LayoutFileActions$PageEdit	write		1
 THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.gui.TrainControlUI$ExportText	generate		1
 THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.gui.autonomy.DiagramExport	render		1
-THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.gui.layouteditor.LayoutEditorRightclickMenu$Action	run		1
+THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.gui.layouteditor.LayoutEditorContextMenu$Action	run		1
 THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.marklin.MarklinControlStation	requireTheTypeKnown		1
 THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.marklin.MarklinControlStation	syncLayoutsFromConfiguredSource		1
 THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.marklin.file.CS2File	copyAtomically		1

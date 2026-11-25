@@ -15,7 +15,7 @@ import static org.testng.Assert.assertTrue;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.LayoutPopupUI;
+import org.traincontrol.gui.LayoutPopupWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.widgets.BusyDialog;
 import org.traincontrol.util.I18n;
@@ -77,7 +77,7 @@ public class testEveryWayBackFromALayoutSwitch
 
                 SwingUtilities.invokeAndWait(() ->
                 {
-                    for (java.awt.Window w : java.awt.Window.getWindows()) if (w instanceof LayoutPopupUI) w.dispose();
+                    for (java.awt.Window w : java.awt.Window.getWindows()) if (w instanceof LayoutPopupWindow) w.dispose();
 
                     closing.dispose();
                 });
@@ -392,7 +392,7 @@ public class testEveryWayBackFromALayoutSwitch
 
             for (java.awt.Window w : java.awt.Window.getWindows())
             {
-                if (w instanceof LayoutPopupUI && w.isShowing()) pages.add(((LayoutPopupUI) w).getLayoutTitle());
+                if (w instanceof LayoutPopupWindow && w.isShowing()) pages.add(((LayoutPopupWindow) w).getLayoutTitle());
             }
 
             return pages;

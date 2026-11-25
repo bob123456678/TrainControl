@@ -201,7 +201,7 @@ public class testEditorSurfaceRules
         // And project-wide, as a named LIST rather than a count, following testStuckTrainAdvisory: a list says what
         // is wrong, and adding a writer means saying here which file it is in and why it is allowed to be a second one.
         assertEquals(filesWriting("setFacing("),
-            Arrays.asList("AutonomyEditorPanel.java", "AutonomySession.java", "DiagramLocGestures.java",
+            Arrays.asList("AutonomyEditorPanel.java", "AutonomySession.java", "DiagramTrainKeys.java",
                 "DiagramAutonomyContextMenu.java",
                 // RunningLayoutSync records the facing of a train the rebuild could not put back
                 // (`recordTheTrainsNotPutBack`), and the put-back tells the diagram after.
@@ -217,7 +217,7 @@ public class testEditorSurfaceRules
 
         // THE FOURTH, SAYING WHICH OF THOSE IT IS (Adam, 2026-09-06).
         //
-        // `DiagramLocGestures.rememberPlacement` is the second half of the third one.  The rule already
+        // `DiagramTrainKeys.rememberPlacement` is the second half of the third one.  The rule already
         // knows about the track diagram's right-click menu; this is the same diagram's DRAG, which
         // moves a locomotive by hand and lands in a different class because the drop is handled by the
         // window rather than by the popup.  It redraws the same way - `updateVisiblePoints()` is

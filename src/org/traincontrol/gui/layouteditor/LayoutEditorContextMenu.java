@@ -16,7 +16,7 @@ import org.traincontrol.util.I18n;
  * This class represents a right-click menu on the track editor
  * @author Adam
  */
-final class LayoutEditorRightclickMenu extends JPopupMenu
+final class LayoutEditorContextMenu extends JPopupMenu
 {        
     /**
      * The editor this menu belongs to, and the parent of every message it shows: by the time an item runs the menu has
@@ -52,7 +52,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         return item;
     }
 
-    public LayoutEditorRightclickMenu(LayoutEditor edit, TrainControlUI ui, LayoutLabel label, LayoutDiagramComponent component)
+    public LayoutEditorContextMenu(LayoutEditor edit, TrainControlUI ui, LayoutLabel label, LayoutDiagramComponent component)
     {        
         this.owner = edit;
 

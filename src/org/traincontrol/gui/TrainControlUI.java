@@ -641,7 +641,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     }
 
     // Popup references
-    private List<LayoutPopupUI> popups = new ArrayList<>();
+    private List<LayoutPopupWindow> popups = new ArrayList<>();
     
     // So we can track locomotive (autonomy) locations on track diagrams
     // The diagram labels showing each station, keyed by its SQUARE (what a caption points at).  Concurrent: written on
@@ -2375,7 +2375,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             return;
         }
 
-        for (LayoutPopupUI popup : new ArrayList<>(this.popups))
+        for (LayoutPopupWindow popup : new ArrayList<>(this.popups))
         {
             if (popup.isVisible() && !popup.captionsAreAsBuilt()) popup.refreshCaptions();
         }
@@ -2387,7 +2387,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         // Not while the pages are being read again, when one not read yet looks gone
         if (refreshesUnderWay.get() == 0 && !syncInFlight.get()) closePopupsWhosePagesAreGone();
 
-        for (LayoutPopupUI popup : new ArrayList<>(this.popups))
+        for (LayoutPopupWindow popup : new ArrayList<>(this.popups))
         {
             if (popup.isVisible() && popup.showsAPageReadAgain()) popup.refreshCaptions();
         }
@@ -2396,7 +2396,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     /** Closes the page windows whose page the layout no longer has (OB-466). */
     private void closePopupsWhosePagesAreGone()
     {
-        for (LayoutPopupUI popup : new ArrayList<>(this.popups))
+        for (LayoutPopupWindow popup : new ArrayList<>(this.popups))
         {
             if (popup.isVisible() && popup.showsAPageThatIsGone()) closePopup(popup);
         }
@@ -2405,12 +2405,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     /** Closes every page window and forgets those remembered for the next start: they show the layout left (OB-466). */
     private void closeThePageWindows()
     {
-        for (LayoutPopupUI popup : new ArrayList<>(this.popups)) closePopup(popup);
+        for (LayoutPopupWindow popup : new ArrayList<>(this.popups)) closePopup(popup);
 
         for (Integer size : layoutSizes.values()) prefs.remove(LAYOUT_TITLES_PREF + "_" + size);
     }
 
-    private void closePopup(LayoutPopupUI popup)
+    private void closePopup(LayoutPopupWindow popup)
     {
         popup.close();
 
@@ -3644,7 +3644,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         {
             if (window == this || !window.isDisplayable()) continue;
 
-            if (window instanceof LayoutPopupUI || window instanceof RouteEditorFrame
+            if (window instanceof LayoutPopupWindow || window instanceof RouteEditorFrame
                 || window instanceof LocomotiveSettingsFrame || window instanceof LocomotiveSelector
                 || window instanceof UsageChart)
             {
@@ -3676,9 +3676,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     }
 
     /** The diagram's keyboard gestures and the turns they write. */
-    final DiagramLocGestures diagramLocGestures = new DiagramLocGestures(this);
+    final DiagramTrainKeys diagramLocGestures = new DiagramTrainKeys(this);
 
-    public DiagramLocGestures diagramLocGestures()
+    public DiagramTrainKeys diagramLocGestures()
     {
         return this.diagramLocGestures;
     }
@@ -3721,7 +3721,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     }
 
     /**
-     * Delegates to `DiagramLocGestures.dropByPaste`: a train dragged in the autonomy editor lands as a paste (FR-160).
+     * Delegates to `DiagramTrainKeys.dropByPaste`: a train dragged in the autonomy editor lands as a paste (FR-160).
      *
      * @param locomotive the train's name
      * @param to the station square
@@ -6872,7 +6872,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             return;
         }
 
-        for (LayoutPopupUI popup : this.popups) popup.refreshTitle();
+        for (LayoutPopupWindow popup : this.popups) popup.refreshTitle();
 
         for (Frame frame : Frame.getFrames())
         {
@@ -6960,7 +6960,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
                             // Display active locomotive in autonomy UI
                             String windowTitleString = getWindowTitleString();
                             
-                            for (LayoutPopupUI popup : this.popups)
+                            for (LayoutPopupWindow popup : this.popups)
                             {
                                 popup.setTitle(popup.titleWith(windowTitleString));
                             } 
@@ -7175,7 +7175,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
                         
                         // Clear locomotive from graph UI title
                         
-                        for (LayoutPopupUI popup : this.popups)
+                        for (LayoutPopupWindow popup : this.popups)
                         {
                             popup.setTitle(popup.titleWith("")); 
                         }
@@ -14305,11 +14305,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             if (PositionAwareJFrame.remembersWindowLocations())
             {
                 Map<String, Set<String>> layoutTitlesMap = new HashMap<>();
-                ListIterator<LayoutPopupUI> iter = this.popups.listIterator();
+                ListIterator<LayoutPopupWindow> iter = this.popups.listIterator();
 
                 while (iter.hasNext())
                 {
-                    LayoutPopupUI currentPopup = iter.next();
+                    LayoutPopupWindow currentPopup = iter.next();
                     if (currentPopup.isVisible())
                     {
                         String layoutTitle = currentPopup.getLayoutTitle();
@@ -14356,7 +14356,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     private void updatePopups(boolean doRefresh)
     {
         this.popups.removeIf(popup -> !popup.isVisible());
-        if (doRefresh) for (LayoutPopupUI popup : this.popups) popup.refreshDiagram();
+        if (doRefresh) for (LayoutPopupWindow popup : this.popups) popup.refreshDiagram();
         if (this.model.isDebug()) this.model.logf("layout.ui.infoCurrentlyActivePopups", this.popups.size());
     }
     
@@ -15195,14 +15195,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             }
 
             // Each on its own: a window that cannot be drawn costs only itself, and is thrown once the others are up
-            List<LayoutPopupUI> built = new ArrayList<>();
+            List<LayoutPopupWindow> built = new ArrayList<>();
             RuntimeException failed = null;
             for (Map.Entry<String, Integer> page : asked)
             {
-                LayoutPopupUI popup = null;
+                LayoutPopupWindow popup = null;
                 try
                 {
-                    popup = new LayoutPopupUI(this.model.getLayout(page.getKey()), page.getValue(), this);
+                    popup = new LayoutPopupWindow(this.model.getLayout(page.getKey()), page.getValue(), this);
                     popup.render();
                     built.add(popup);
                 }
@@ -15215,7 +15215,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
             // Update auto layout station labels on the track diagram, then show the windows that have them
             updateVisiblePoints();
-            for (LayoutPopupUI popup : built) popup.setVisible(true);
+            for (LayoutPopupWindow popup : built) popup.setVisible(true);
             popups.addAll(built);
             updatePopups(false);
             repaintLoc();
@@ -19606,7 +19606,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
         for (JPanel page : this.layoutCache.values()) grids.add(LayoutGrid.of(page));
 
-        for (LayoutPopupUI popup : this.popups) if (popup.isVisible()) grids.add(popup.grid());
+        for (LayoutPopupWindow popup : this.popups) if (popup.isVisible()) grids.add(popup.grid());
 
         if (InnerLayoutPanel.getComponentCount() == 1) grids.add(LayoutGrid.of(InnerLayoutPanel.getComponent(0)));
 

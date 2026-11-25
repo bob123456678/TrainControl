@@ -18,7 +18,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.LayoutLabel;
-import org.traincontrol.gui.LayoutPopupUI;
+import org.traincontrol.gui.LayoutPopupWindow;
 import org.traincontrol.gui.RightClickTips;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
@@ -44,7 +44,7 @@ public class testRightClickMenuTipsCanBeHidden
 
     private static AskingWindows.Railway railway;
     private static TrainControlUI ui;
-    private static LayoutPopupUI page;
+    private static LayoutPopupWindow page;
     private static TileKey mainB;
     private static String wasStored;
 

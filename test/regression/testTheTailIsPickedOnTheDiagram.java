@@ -509,7 +509,7 @@ public class testTheTailIsPickedOnTheDiagram
 
             Reflect.set(TrainControlUI.class, ui, "tailAtTheLanding", "N");
 
-            // The paste door is DiagramLocGestures', which the window holds
+            // The paste door is DiagramTrainKeys', which the window holds
             final Object gestures = Reflect.get(TrainControlUI.class, ui, "diagramLocGestures");
 
             final java.lang.reflect.Method remember =
@@ -774,7 +774,7 @@ public class testTheTailIsPickedOnTheDiagram
 
         Reflect.set(TrainControlUI.class, ui, "tailAtTheLanding", "N");
 
-        // The paste door is DiagramLocGestures', which the window holds
+        // The paste door is DiagramTrainKeys', which the window holds
         final Object gestures = Reflect.get(TrainControlUI.class, ui, "diagramLocGestures");
 
         final java.lang.reflect.Method remember =

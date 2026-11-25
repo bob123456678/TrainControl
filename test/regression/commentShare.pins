@@ -56,7 +56,7 @@ src/org/traincontrol/gui/CaptionVisibility.java	497	4
 src/org/traincontrol/gui/CoalescedAsk.java	552	2
 src/org/traincontrol/gui/ConnectingNotice.java	410	4
 src/org/traincontrol/gui/CoveredTrackView.java	511	4
-src/org/traincontrol/gui/DiagramLocGestures.java	367	6
+src/org/traincontrol/gui/DiagramTrainKeys.java	367	6
 src/org/traincontrol/gui/EditorWindows.java	355	4
 src/org/traincontrol/gui/ReturnHomeMenuItem.java	465	2
 src/org/traincontrol/gui/InfoMark.java	261	0
@@ -64,7 +64,7 @@ src/org/traincontrol/gui/LayoutFileActions.java	304	9
 src/org/traincontrol/gui/LayoutGrid.java	261	5
 src/org/traincontrol/gui/LayoutLabel.java	334	20
 src/org/traincontrol/gui/LayoutMenus.java	-	11
-src/org/traincontrol/gui/LayoutPopupUI.java	338	8
+src/org/traincontrol/gui/LayoutPopupWindow.java	338	8
 src/org/traincontrol/gui/DiagramAutonomyContextMenu.java	403	24
 src/org/traincontrol/gui/LocIconActions.java	332	12
 src/org/traincontrol/gui/LocomotiveActions.java	-	4
@@ -114,7 +114,7 @@ src/org/traincontrol/gui/layouteditor/FindAPointPrompt.java	-	2
 src/org/traincontrol/gui/layouteditor/LayoutEditor.java	291	72
 src/org/traincontrol/gui/layouteditor/LayoutEditorAddressPopup.java	-	2
 src/org/traincontrol/gui/layouteditor/LayoutEditorReshape.java	467	11
-src/org/traincontrol/gui/layouteditor/LayoutEditorRightclickMenu.java	252	2
+src/org/traincontrol/gui/layouteditor/LayoutEditorContextMenu.java	252	2
 src/org/traincontrol/gui/layouteditor/LayoutEditorSelection.java	373	16
 src/org/traincontrol/gui/layouteditor/LayoutEditorTrainDrag.java	-	3
 src/org/traincontrol/gui/layouteditor/LayoutEditorUndo.java	396	4

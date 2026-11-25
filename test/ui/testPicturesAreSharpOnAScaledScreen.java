@@ -590,7 +590,7 @@ public class testPicturesAreSharpOnAScaledScreen
         java.util.List<Image> icons = iconsOf(ui);
 
         // Every window that sets the picture in designer code asks for the list in its own
-        for (String file : new String[] {"gui/TrainControlUI", "gui/LayoutPopupUI", "gui/layouteditor/LayoutEditor",
+        for (String file : new String[] {"gui/TrainControlUI", "gui/LayoutPopupWindow", "gui/layouteditor/LayoutEditor",
             "gui/locomotive/LocomotiveSelector"})
         {
             String body = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/org/traincontrol/"

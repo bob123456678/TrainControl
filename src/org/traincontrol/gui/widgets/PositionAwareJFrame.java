@@ -51,8 +51,13 @@ public class PositionAwareJFrame extends JFrame
     
     public PositionAwareJFrame()
     {
-        // Use the class name as the window identifier
-        this.thisWindowName = getClass().getSimpleName();
+        this(null);
+    }
+
+    /** Positions are saved under windowName, or the simple class name when null: a renamed window passes its old one. */
+    protected PositionAwareJFrame(String windowName)
+    {
+        this.thisWindowName = windowName != null ? windowName : getClass().getSimpleName();
 
         // Load the saved position, size, and state
         // Call this manually because we don't know when the window is ready

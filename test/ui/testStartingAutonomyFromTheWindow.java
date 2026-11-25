@@ -414,11 +414,11 @@ public class testStartingAutonomyFromTheWindow
     {
         support.SettingsWindow.power(ui, model, false);
 
-        org.traincontrol.gui.LayoutPopupUI page = null;
+        org.traincontrol.gui.LayoutPopupWindow page = null;
 
         try
         {
-            final org.traincontrol.gui.LayoutPopupUI opened = page = support.AskingWindows.openThePage(ui);
+            final org.traincontrol.gui.LayoutPopupWindow opened = page = support.AskingWindows.openThePage(ui);
 
             final java.awt.Component keyboard = field("KeyboardTab");
 

@@ -166,7 +166,7 @@ public class testTheEditorsDoorsAskOverThem
      * Open in Route Editor, refused while the track editor holds the diagram, says so over the track editor, with the
      * main window minimized too, and opens no route editor.
      *
-     * MUTATION: `ui.routeListPanel().editRoute(...)` alone in `LayoutEditorRightclickMenu`, and it hangs off the main window.
+     * MUTATION: `ui.routeListPanel().editRoute(...)` alone in `LayoutEditorContextMenu`, and it hangs off the main window.
      */
     @Test
     public void testOpenInRouteEditorIsRefusedOverTheEditor() throws Exception

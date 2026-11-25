@@ -194,7 +194,7 @@ public class testWhereHisTrainsMayBeSent
 
         // The panel is built and never shown, so a message parented on it belongs to the hidden frame as a menu's does
         for (String path : new String[] {"final class DiagramAutonomyContextMenu extends JPopupMenu",
-            "final class LayoutEditorRightclickMenu extends JPopupMenu", "public class AutonomyConfigurationsPanel extends JPanel"})
+            "final class LayoutEditorContextMenu extends JPopupMenu", "public class AutonomyConfigurationsPanel extends JPanel"})
         {
             // Each class, found by its declaration
             String[] lines = SourceOf.fileDeclaring(path).split("\n");

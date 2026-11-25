@@ -1207,7 +1207,7 @@ public class testDiagramLooksRight
     }
 
     /** Presses the Medium pop-up button and returns the window it opens, or fails with the message. */
-    private org.traincontrol.gui.LayoutPopupUI openedByTheMediumButton(String notOpened) throws Exception
+    private org.traincontrol.gui.LayoutPopupWindow openedByTheMediumButton(String notOpened) throws Exception
     {
         final javax.swing.JButton medium = (javax.swing.JButton) Reflect.get(TrainControlUI.class, ui, "mediumButton");
 
@@ -1215,7 +1215,7 @@ public class testDiagramLooksRight
 
         javax.swing.SwingUtilities.invokeAndWait(medium::doClick);
 
-        org.traincontrol.gui.LayoutPopupUI opened = null;
+        org.traincontrol.gui.LayoutPopupWindow opened = null;
 
         for (long end = System.currentTimeMillis() + 15000; opened == null && System.currentTimeMillis() < end; )
         {
@@ -1223,9 +1223,9 @@ public class testDiagramLooksRight
 
             for (java.awt.Window w : java.awt.Window.getWindows())
             {
-                if (w instanceof org.traincontrol.gui.LayoutPopupUI && w.isDisplayable() && !before.contains(w))
+                if (w instanceof org.traincontrol.gui.LayoutPopupWindow && w.isDisplayable() && !before.contains(w))
                 {
-                    opened = (org.traincontrol.gui.LayoutPopupUI) w;
+                    opened = (org.traincontrol.gui.LayoutPopupWindow) w;
                 }
             }
         }
@@ -4094,7 +4094,7 @@ public class testDiagramLooksRight
     @Test
     public void testTheMediumButtonOpensAMediumPopUp() throws Exception
     {
-        final org.traincontrol.gui.LayoutPopupUI popup = openedByTheMediumButton("the Medium button opened no pop-up window");
+        final org.traincontrol.gui.LayoutPopupWindow popup = openedByTheMediumButton("the Medium button opened no pop-up window");
 
         try
         {
@@ -4142,7 +4142,7 @@ public class testDiagramLooksRight
 
         assertNotNull(first, "precondition: the start-up resume loaded no configuration, so there is none to name");
 
-        final org.traincontrol.gui.LayoutPopupUI popup = openAMediumPopUp();
+        final org.traincontrol.gui.LayoutPopupWindow popup = openAMediumPopUp();
 
         try
         {
@@ -4226,7 +4226,7 @@ public class testDiagramLooksRight
 
         final org.traincontrol.base.Locomotive loc = shown;
 
-        final org.traincontrol.gui.LayoutPopupUI popup = openAMediumPopUp();
+        final org.traincontrol.gui.LayoutPopupWindow popup = openAMediumPopUp();
 
         try
         {
@@ -4358,7 +4358,7 @@ public class testDiagramLooksRight
      *
      * @return the window
      */
-    private org.traincontrol.gui.LayoutPopupUI openAMediumPopUp() throws Exception
+    private org.traincontrol.gui.LayoutPopupWindow openAMediumPopUp() throws Exception
     {
         final javax.swing.JButton medium = (javax.swing.JButton) Reflect.get(TrainControlUI.class, ui, "mediumButton");
 
@@ -4372,11 +4372,11 @@ public class testDiagramLooksRight
 
             for (java.awt.Window w : java.awt.Window.getWindows())
             {
-                if (w instanceof org.traincontrol.gui.LayoutPopupUI && w.isDisplayable() && !before.contains(w))
+                if (w instanceof org.traincontrol.gui.LayoutPopupWindow && w.isDisplayable() && !before.contains(w))
                 {
                     javax.swing.SwingUtilities.invokeAndWait(() -> { });
 
-                    return (org.traincontrol.gui.LayoutPopupUI) w;
+                    return (org.traincontrol.gui.LayoutPopupWindow) w;
                 }
             }
         }
@@ -4405,7 +4405,7 @@ public class testDiagramLooksRight
      * @param configuration the one loaded, or null for none
      * @param when what has just happened, for the message
      */
-    private void popUpTitleIs(final org.traincontrol.gui.LayoutPopupUI popup, String configuration, String when)
+    private void popUpTitleIs(final org.traincontrol.gui.LayoutPopupWindow popup, String configuration, String when)
         throws Exception
     {
         for (int i = 0; i < 10; i++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
@@ -4528,11 +4528,11 @@ public class testDiagramLooksRight
     @Test
     public void testAPoppedOutDiagramScrollsHalfASquareAtATime() throws Exception
     {
-        final org.traincontrol.gui.LayoutPopupUI popup = openedByTheMediumButton("precondition: the Medium button opened no pop-up window");
+        final org.traincontrol.gui.LayoutPopupWindow popup = openedByTheMediumButton("precondition: the Medium button opened no pop-up window");
 
         try
         {
-            java.lang.reflect.Field paneField = Reflect.field(org.traincontrol.gui.LayoutPopupUI.class, "jScrollPane1");
+            java.lang.reflect.Field paneField = Reflect.field(org.traincontrol.gui.LayoutPopupWindow.class, "jScrollPane1");
 
             final javax.swing.JScrollPane pane = (javax.swing.JScrollPane) paneField.get(popup);
 
