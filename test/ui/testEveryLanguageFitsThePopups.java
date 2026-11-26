@@ -164,7 +164,8 @@ public class testEveryLanguageFitsThePopups
     /**
      * The popups 3.1.0 added or changed, and those the menus open, fit in every language: the failed sync with Retry
      * and Close, About, the update question, the backup question, the restore refusal, the CSV nothing-to-import
-     * message, the editor-open refusals, Clear All's question and the Cancel question that names the trains going back.
+     * message, the setup a rename could not update, the editor-open refusals, Clear All's question and the Cancel
+     * question that names the trains going back.
      * No line of their text, a failed sync's exception text and path included, is wider than the cap (FR-254).
      *
      * MUTATION: put a label of fixed preferred width 20 pixels into `AboutPanel`'s form, and this fails in every language.
@@ -190,6 +191,10 @@ public class testEveryLanguageFitsThePopups
         java.lang.reflect.Method clearAll = Reflect.method(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class,
             "clearAllPlacements");
         java.lang.reflect.Method cancel = Reflect.method(LayoutEditor.class, "confirmExit");
+        java.lang.reflect.Method unrepaired = Reflect.method(org.traincontrol.gui.AutonomyLifecycle.class, "leftUnrepaired",
+            String.class, String.class, boolean.class, List.class);
+        java.lang.reflect.Method sayAfterRenames = Reflect.method(org.traincontrol.gui.AutonomyLifecycle.class,
+            "sayAfterRenames", java.awt.Component.class, String.class, List.class, String.class);
         List<String> unnamed = new ArrayList<>();
 
         LanguageFit.assertNothingClipped("popups", LanguageFit.everyLanguage(language ->
@@ -217,6 +222,13 @@ public class testEveryLanguageFitsThePopups
                 later(() -> { new org.traincontrol.gui.widgets.RestoreAction(railway.ui).restoreFromBackup(); return null; }), null));
             found.addAll(popup("popup-csv-nothing", language, m -> null, csv, later(() -> csvDoor.invoke(null, railway.ui, railway.ui)),
                 null));
+            found.addAll(popup("popup-rename-setup-not-updated", language, m -> Answering.pressAt(1), null, later(() ->
+            {
+                unrepaired.invoke(railway.ui.autonomyLifecycle(), "BR 103 137-6", "BR 103 137-6 Rheingold", true,
+                    java.util.Arrays.asList("Main", "Weekend timetable"));
+                return sayAfterRenames.invoke(railway.ui.autonomyLifecycle(), railway.ui, null, Collections.emptyList(),
+                    I18n.t("sync.ui.title"));
+            }), null));
 
             FrozenEditor.putBack(railway.ui, railway.session, railway.asOpened);
 

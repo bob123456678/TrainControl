@@ -504,8 +504,7 @@ public class testTheLocomotiveSettingsAutonomyTab
     {
         final String was = "AU held name", name = "AU held renamed";
         final String configuration = session.getStore().getActiveConfiguration();
-        final java.io.File file = new java.io.File(ui.localLayoutPath(), "config/autonomy/configuration-" + configuration
-            + ".json");
+        final java.io.File file = configurationFile(configuration);
         final Object excluded = Components.onTheEventThread(() -> session.getPointProperty(square, "excludedLocs"));
         final Locomotive loc = model.newMFXLocomotive(was, 0xCEA);
         final String line = I18n.f("loc.ui.renameSetupNotUpdated", configuration, name);
@@ -590,8 +589,7 @@ public class testTheLocomotiveSettingsAutonomyTab
     {
         final String was = "AU import here", name = "AU import", was2 = "AU import two here", name2 = "AU import two";
         final String configuration = session.getStore().getActiveConfiguration();
-        final java.io.File file = new java.io.File(ui.localLayoutPath(), "config/autonomy/configuration-" + configuration
-            + ".json");
+        final java.io.File file = configurationFile(configuration);
         final Object excluded = Components.onTheEventThread(() -> session.getPointProperty(square, "excludedLocs"));
         final String line = I18n.f("loc.ui.renameSetupNotUpdated", configuration, name);
         final String key = I18n.t("loc.ui.renameSetupNotUpdated");
@@ -710,6 +708,89 @@ public class testTheLocomotiveSettingsAutonomyTab
         }
     }
 
+    /**
+     * A deletion and a rename onto the deleted name that the held setup cannot save, with the session open: Retry once
+     * the file is let go writes what the session holds, the renamed locomotive kept, not the deletion done again over
+     * it.
+     *
+     * MUTATION: in `AutonomyLifecycle.sayAfterRenames`, Retry without setting `again` (the whole repair done again), and
+     * this fails.
+     */
+    @Test
+    public void testARetryAfterADeletionAndARenameOntoItKeepsTheRenamed() throws Exception
+    {
+        final String doomed = "AU held doomed", was = "AU held onto";
+        final String configuration = session.getStore().getActiveConfiguration();
+        final String line = I18n.f("loc.ui.renameSetupNotUpdated", configuration, doomed);
+        model.newMFXLocomotive(doomed, 0xCEB);
+        model.newMFXLocomotive(was, 0xCEC);
+        final java.io.File file = configurationFile(configuration);
+        final Object excluded = Components.onTheEventThread(() -> session.getPointProperty(square, "excludedLocs"));
+
+        try
+        {
+            fixture.quiet();
+            support.Reflect.method(org.traincontrol.gui.AutonomyLifecycle.class, "forgetUnrepaired")
+                .invoke(ui.autonomyLifecycle());
+            Components.onTheEventThread(() ->
+            {
+                session.setPointProperty(square, "excludedLocs", new org.json.JSONArray().put(doomed).put(was));
+                session.getStore().save();
+                return null;
+            });
+            try (java.io.FileInputStream held = new java.io.FileInputStream(file))
+            {
+                Components.onTheEventThread(() ->
+                {
+                    model.deleteLoc(doomed);
+                    model.renameLoc(was, doomed);
+                    return null;
+                });
+            }
+
+            java.lang.reflect.Method say = support.Reflect.method(org.traincontrol.gui.AutonomyLifecycle.class,
+                "sayAfterRenames", java.awt.Component.class, String.class, java.util.List.class, String.class);
+            try (Answering answering = Answering.start(m -> m.contains(line)
+                ? Answering.press(I18n.t("loc.ui.renameSetupRetry")) : null))
+            {
+                SwingUtilities.invokeLater(() ->
+                {
+                    try
+                    {
+                        say.invoke(ui.autonomyLifecycle(), ui, null, java.util.Collections.emptyList(), null);
+                    }
+                    catch (ReflectiveOperationException e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
+                });
+                assertTrue(answering.awaitAsked(1, 15000), "the deletion and rename were not said");
+                support.AskingWindows.awaitAnswered();
+                Components.settle();
+                assertEquals(answering.asked(), java.util.Arrays.asList(line), "not said once, naming the rename");
+            }
+
+            String after = new String(java.nio.file.Files.readAllBytes(file.toPath()), java.nio.charset.StandardCharsets.UTF_8);
+            assertTrue(after.split("\"" + doomed + "\"", -1).length == 2 && !after.contains(was), "Retry did not keep"
+                + " the renamed locomotive alone: " + after);
+        }
+        finally
+        {
+            Components.onTheEventThread(() ->
+            {
+                session.setPointProperty(square, "excludedLocs", excluded);
+                return null;
+            });
+            for (String n : new String[] {doomed, was}) if (model.getLocByName(n) != null) model.deleteLoc(n);
+        }
+    }
+
+    /** The file this configuration of the railway is kept in. */
+    private static java.io.File configurationFile(String configuration)
+    {
+        return new java.io.File(ui.localLayoutPath(), "config/autonomy/configuration-" + configuration + ".json");
+    }
+
     /** Renames `loc` to `name` through Locomotive Settings' Save, which closes the window; `answering` answers it. */
     private static void renameAtSave(Locomotive loc, String name, Answering answering) throws Exception
     {
@@ -734,7 +815,7 @@ public class testTheLocomotiveSettingsAutonomyTab
             });
         }
 
-        assertFalse(((java.util.Map<?, ?>) support.Reflect.get(org.traincontrol.gui.AutonomyLifecycle.class,
+        assertFalse(((java.util.Collection<?>) support.Reflect.get(org.traincontrol.gui.AutonomyLifecycle.class,
             ui.autonomyLifecycle(), "unrepaired")).isEmpty(), "precondition: the held rename left no record");
     }
 
