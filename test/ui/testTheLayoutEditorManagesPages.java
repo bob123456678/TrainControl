@@ -194,6 +194,22 @@ public class testTheLayoutEditorManagesPages
     }
 
     /**
+     * The excluded-page label's gesture opens the autonomy editor when the Edit item would be enabled.
+     *
+     * MUTATION: in `TrainControlUI.openAutonomyEditorIfItCan`, post nothing to open the editor, and this fails.
+     */
+    @Test
+    public void testTheExcludedPageLabelOpensTheAutonomyEditor() throws Exception
+    {
+        assertTrue(editors().isEmpty(), "precondition: an editor is open: " + titles());
+
+        SwingUtilities.invokeAndWait(() -> ui.openAutonomyEditorIfItCan());
+
+        assertTrue(Components.waitFor(() -> !editors().isEmpty(), 15000), "the label's gesture opened no editor: "
+            + titles());
+    }
+
+    /**
      * Delete Current Page, answered Yes to the Layouts menu's own question, removes the page's file, its index entry
      * and its name in the setup, and the same window shows another page.
      *
