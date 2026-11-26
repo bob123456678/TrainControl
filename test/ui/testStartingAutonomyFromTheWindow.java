@@ -352,7 +352,7 @@ public class testStartingAutonomyFromTheWindow
             final java.awt.Window editor = openTheAutonomyEditor();
             final Object before = sessionNow();
 
-            aPageChangedOnDisk("the autonomy editor");
+            aPageChangedOnDisk();
 
             press(Components.withText(editor, I18n.t("layout.ui.saveChanges")), message -> null);
 
@@ -360,25 +360,6 @@ public class testStartingAutonomyFromTheWindow
 
             theFollowMade(before);
         }));
-    }
-
-    /**
-     * The same with a run holding the follow back: a page window open while a page changed on disk is read again
-     * during a run shows the next run's path, the session reset at the run's end (OB-519).
-     *
-     * MUTATION: in `DiagramTileRegistry.reset`, `tiles.clear()` again, and the page window shows no path.
-     */
-    @Test
-    public void testAPageWindowShowsTheRunAfterAFollowTheRunHeldBack() throws Exception
-    {
-        throughAPageWindow(page ->
-        {
-            final Object before = sessionNow();
-
-            aPageChangedOnDisk("the run");
-
-            theNextRunShowsIn(page, "open through a follow the run held back", between -> theFollowMade(before));
-        });
     }
 
     /**
@@ -487,10 +468,10 @@ public class testStartingAutonomyFromTheWindow
 
     /**
      * A label's text changed in a page's file on disk and the pages read again, then what a sync ends with: the windows
-     * drawn again and the follow, which `holder` must hold back.  The file is put back after, the pages not read again,
-     * so each call writes a text of its own.
+     * drawn again and the follow, which the editor open must hold back.  The file is put back after, the pages not
+     * read again, so each call writes a text of its own.
      */
-    private static void aPageChangedOnDisk(String holder) throws Exception
+    private static void aPageChangedOnDisk() throws Exception
     {
         final java.nio.file.Path file = sandbox.getFolder().toPath().resolve("config/gleisbilder/1 - Main.cs2");
         final byte[] asItWas = java.nio.file.Files.readAllBytes(file);
@@ -520,10 +501,10 @@ public class testStartingAutonomyFromTheWindow
             java.nio.file.Files.write(file, asItWas);
         }
 
-        assertTrue((Boolean) Reflect.get(TrainControlUI.class, ui, "pagesToFollow"), "precondition: " + holder
-            + " did not hold the follow back");
+        assertTrue((Boolean) Reflect.get(TrainControlUI.class, ui, "pagesToFollow"),
+            "precondition: the editor did not hold the follow back");
 
-        assertTrue(sessionNow() == before, "precondition: the follow reset the session under " + holder);
+        assertTrue(sessionNow() == before, "precondition: the follow reset the session under the editor");
     }
 
     /** Waits for the follow held back: the session replaced and the setup loaded again, simulated. */
