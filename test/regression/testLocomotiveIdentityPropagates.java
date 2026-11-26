@@ -330,6 +330,7 @@ public class testLocomotiveIdentityPropagates
             // Cleared through a method rather than by name: an exemption is a statement about the code, in a place
             // that fails if it stops being true.
             if ("locomotivePendingS88".equals(field) && sweep.contains("updatePendingS88")) continue;
+            if ("listed".equals(field) && sweep.contains("removeListedLoc")) continue;
 
             missing.add(field);
         }
