@@ -210,11 +210,22 @@ public class DiagramMonitorDriver
     }
 
     /**
-     * Starts looking.  Idempotent.
+     * Starts looking, or looks at once where it already does; a timer an Error has ended (it refuses tasks) is replaced.
      */
     public void start()
     {
-        if (timer != null) return;
+        try
+        {
+            if (timer != null)
+            {
+                timer.schedule(aTick(), 0);
+                return;
+            }
+        }
+        catch (IllegalStateException dead)
+        {
+            // replaced below
+        }
 
         // daemon, so a window closed with monitoring on does not keep the process alive
         timer = new Timer("DiagramMonitor", true);

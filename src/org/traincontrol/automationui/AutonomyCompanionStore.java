@@ -686,7 +686,7 @@ public class AutonomyCompanionStore
     {
         unwritten.clear();
         unwritten.addAll(configurations.keySet());
-        if (!isUsable()) throw new IOException(ERROR_NOT_LOCAL);
+        if (!isUsable()) throw new IOException(I18n.t(ERROR_NOT_LOCAL));
 
         folder().mkdirs();
 

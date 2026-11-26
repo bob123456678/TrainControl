@@ -401,6 +401,32 @@ public class testAutonomyDiagramMonitor
         assertEquals(publishes[0], 3, "the tick after an invalidate did not republish the picture");
     }
 
+    /**
+     * A refresh that throws is owed again, so the next tick retries it: a railway at rest fires nothing more, and its
+     * last picture would stay on screen.
+     *
+     * MUTATION: in `DiagramMonitor.refreshIfDirty`, leave out the `markDirty()` in the catch, and this fails.
+     */
+    @Test
+    public void testARefreshThatThrowsIsRetriedOnTheNextTick()
+    {
+        final int[] asked = {0};
+
+        DiagramMonitor monitor = new DiagramMonitor(() ->
+        {
+            if (asked[0]++ == 0) throw new IllegalStateException("the layout is being replaced");
+
+            return null;
+        }, new LinkedHashMap<String, ReducedEdge>(), new LinkedHashMap<String, TileKey>(), null);
+
+        monitor.markDirty();
+
+        assertThrows(IllegalStateException.class, monitor::refreshIfDirty);
+
+        assertTrue(monitor.refreshIfDirty(), "a refresh that threw was not tried again on the next tick");
+        assertEquals(asked[0], 2, "the retry did not ask the railway again");
+    }
+
     // The monitor actually running: a train on real track, and a picture published about it
 
     /**

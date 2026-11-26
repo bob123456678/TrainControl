@@ -317,8 +317,8 @@ public class testEveryLanguageFitsThePopups
             }
             found.addAll(popup("popup-sync-done", language, m -> null, null, later(() ->
             {
-                JOptionPane.showMessageDialog(railway.ui, ManualSync.syncSummary(12, 2, true, 3, 2, 4, 1,
-                    5));
+                JOptionPane.showMessageDialog(railway.ui, ManualSync.syncSummary(12, 2, true,
+                    "C:\\Users\\Railway\\Documents\\TrainControl\\Main Layout", 3, 2, 4, 1, 5));
                 return null;
             }), null));
             return found;

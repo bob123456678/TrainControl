@@ -401,6 +401,8 @@ public final class AutonomyLifecycle
         // A replaced diagram reuses the registry's page-and-coordinate keys for different track; register() would
         // replay the old badges and arrows.
         if (ui.diagramTileRegistry != null) ui.diagramTileRegistry.reset();
+        // And the captions, which no Point may write again: a destination's orange outlives its run (OB-519).
+        ui.blankLayoutStationLabels();
 
         setAutonomyDependentTabs(false);
 
@@ -579,6 +581,11 @@ public final class AutonomyLifecycle
     /** Says `said` (null: nothing) and `lines` over c, with the configurations renames left; Retry writes them again. */
     void sayAfterRenames(Component c, String said, List<String> lines, String title)
     {
+        sayAfterRenames(c, said, lines, title, JOptionPane.INFORMATION_MESSAGE);
+    }
+    /** As above; `said` alone, with no repair left to say, shows with `type`'s icon. */
+    void sayAfterRenames(Component c, String said, List<String> lines, String title, int type)
+    {
         String heading = title != null ? title : UIManager.getString("OptionPane.messageDialogTitle");
         // Only what this door takes: a repair left while the message is up is its own door's to say
         List<Unrepaired> taken = new ArrayList<>(unrepaired);
@@ -600,7 +607,7 @@ public final class AutonomyLifecycle
             lines = Collections.emptyList();
         }
         if (said != null) JOptionPane.showMessageDialog(c, lines.isEmpty() ? said : DetailsArea.message(said, lines),
-            heading, JOptionPane.INFORMATION_MESSAGE);
+            heading, type);
     }
 
     /** Those of `records` whose files still lack a repair, each narrowed to those configurations. */

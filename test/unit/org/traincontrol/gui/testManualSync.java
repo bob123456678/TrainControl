@@ -292,25 +292,29 @@ public class testManualSync
 
     /**
      * The closing message lists the locomotives and routes added, then the answers that are not zero, then the partial
-     * read's sentence; with none of these, that everything matches.
+     * read's sentence and the unread layout folder's; with none of these, that everything matches.
      *
-     * MUTATION: in `ManualSync.syncSummary`, list every answer, zero or not, and the zeros are said.
+     * MUTATION: in `ManualSync.syncSummary`, list every answer, zero or not, and the zeros are said; or leave out
+     * `folderUnread == null`, and an unread folder is said to match.
      */
     @Test
     public void testTheSummarySaysWhatTheSyncDid()
     {
         String done = I18n.t("ui.infoSyncComplete");
 
-        assertEquals(ManualSync.syncSummary(0, 0, false, 0, 0, 0, 0, 0, 0), I18n.t("ui.infoSyncNothingDiffers"));
-        assertEquals(ManualSync.syncSummary(0, 0, true), done + "\n\n" + I18n.t("ui.infoSyncPartial"));
-        assertEquals(ManualSync.syncSummary(1, 2, false, 0, 3, 0, 0, 1, 0), done + "\n\n"
+        assertEquals(ManualSync.syncSummary(0, 0, false, null, 0, 0, 0, 0, 0, 0), I18n.t("ui.infoSyncNothingDiffers"));
+        assertEquals(ManualSync.syncSummary(0, 0, true, null), done + "\n\n" + I18n.t("ui.infoSyncPartial"));
+        assertEquals(ManualSync.syncSummary(1, 2, false, null, 0, 3, 0, 0, 1, 0), done + "\n\n"
             + I18n.t("ui.infoSyncLocomotiveAdded") + "\n" + I18n.f("ui.infoSyncRoutesAdded", 2) + "\n\n"
             + I18n.f("ui.infoSyncMoved", 3) + "\n" + I18n.f("ui.infoSyncWaiting", 1));
-        assertEquals(ManualSync.syncSummary(2, 1, true, 1, 0, 2, 4, 0, 5), done + "\n\n"
+        assertEquals(ManualSync.syncSummary(2, 1, true, null, 1, 0, 2, 4, 0, 5), done + "\n\n"
             + I18n.f("ui.infoSyncLocomotivesAdded", 2) + "\n" + I18n.t("ui.infoSyncRouteAdded") + "\n\n"
             + I18n.f("ui.infoSyncRenamed", 1) + "\n" + I18n.f("ui.infoSyncKept", 2) + "\n"
             + I18n.f("ui.infoSyncIgnored", 4) + "\n" + I18n.f("ui.infoSyncByHand", 5) + "\n\n"
             + I18n.t("ui.infoSyncPartial"));
+        // A layout folder that would not read is said, by name, and never that everything matches
+        assertEquals(ManualSync.syncSummary(0, 0, false, "F"), done + "\n\n"
+            + I18n.f("layout.ui.errorFolderUnreadLayoutKept", "F"));
     }
 
     /** A row for l: the station's name and address, each null where they agree; a by-hand row when both differ. */
