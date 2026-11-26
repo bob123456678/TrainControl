@@ -35,7 +35,7 @@ TrainControl connects to a Central Station 2, 3, or 3 Plus over your network.  I
 
 *Autonomy on your track diagram.*  Since 3.0.0 you set up automation right on the track diagram, with no files to write: name your stations, click the track to show which way trains may run, and drag each train to the station where it stands.  See [Full Autonomy](#full-autonomy) and [the autonomy guide](Automation.md) to get started, and the [Changelog](#changelog) for everything else in 3.1.0.
 
-*3.1.1* is the first version to support Java 21: on a Windows display set above 100%, the whole window is drawn at the size Windows asks for, with sharp text, pictures and track diagram ([Requirements](#requirements)).  It also brings autonomy improvements and fixes: Ctrl+G, Ctrl+Q and Ctrl+H start, stop and send trains home; `Test a path` and `Why not Moving?` give one answer for automatic and by-hand sends; a white dot marks stations trains must stop at; and a train whose journey fails partway is now recorded where it stopped.  See the [Changelog](#changelog) for everything else.
+*3.1.2* makes syncing with your Central Station clearer: `Sync Database w/ Central Station` shows in one table every locomotive the station has renamed or given another address, and changes only what you choose, and `Import from CSV...` asks the same way about locomotives you may already have.  Windows now reopen where you left them, a small mark in the corner shows how quickly the Central Station answers, and in `Station Settings` one click can open a new way for trains all the way to the next station.  See the [Changelog](#changelog) for everything else.
 
 **Why TrainControl?**
 
@@ -87,7 +87,7 @@ Multi-units can be configured in TrainControl, which can be simpler than using t
 
 **Layout View & Layout Editing**
 
-Track diagrams for your layout are downloaded automatically from the CS2 / CS3 (Track Boards only), or you can customize them in layout files kept on your computer.  All components (switches, signals, S88, routes) are clickable and reflect the layout state.  Multiple pages can be opened across unlimited popup windows.
+Track diagrams for your layout are downloaded automatically from the CS2 / CS3 (Track Boards only), or you can customize them in layout files kept on your computer.  All components (switches, signals, S88, routes) are clickable and reflect the layout state.  Multiple pages can be opened across unlimited popup windows, which reopen where you left them the next time you start TrainControl.
 
 ![Interactive track diagram in TrainControl, with clickable switches, signals, and S88 feedback indicators](assets/layout23.png?raw=true)
 
@@ -178,12 +178,13 @@ Monitor the usage of different locomotives.
 
 **Log**
 
-The Log tab shows what TrainControl is doing.  To scroll it sideways, click in the log text first, then hold Shift and turn the mouse wheel; until the log has the keyboard, Shift is the slow stop for the current locomotive.  A trackpad's sideways swipe only works on Java 9 or later.
+The Log tab shows what TrainControl is doing.  To scroll it sideways, click in the log text first, then hold Shift and turn the mouse wheel; until the log has the keyboard, Shift is the slow stop for the current locomotive.  A trackpad's sideways swipe only works on Java 9 or later.  A yellow triangle marks each warning and a red one each error.
 
 ## Features
 
 * Easily control locomotives (MM2, MFX, DCC), multi-units, signals/switches (MM2, DCC), and routes
 * Download locomotive, layout, and route information from the CS2/CS3
+* See in one table what the Central Station changed, such as a renamed locomotive or a new address, and choose what to take
 * Customize locomotive icons and function icons without needing to set them in the CS2/CS3
 * Edit a locomotive's name, address, picture, functions, notes, multi-unit and autonomy settings in one window, and add locomotives there
 * Export locomotives to a CSV file and import them into another TrainControl
@@ -465,21 +466,38 @@ Tab icons provided by Freepik.
 * v3.1.2
     - New Features
         - Autonomy
-            - In `Station Settings`, clicking the arrow of the track beside the station so trains can go a new way now offers to set the track further along the line as well, up to the next station, so trains can keep going.  Every square that would change is highlighted while it asks, and `This Run Alone` changes only the track you clicked.
+            - In `Station Settings`, clicking the arrow of the track beside the station so trains can go a new way now offers to change the track further along the line too, up to the next station or switch, so trains can get past it.  Every square that would change is highlighted while it asks `Change the rest of the line too?`: `Up to Next Station` changes them all, and `Only Clicked Track` changes only the track you clicked.
+            - In the picture in `Station Settings`, clicking the station itself changes `May depart` to its next choice.
+            - A station's `Priority` is now called `Importance`, and its (i) says that a higher importance is preferred, so 2 beats 1.  The ways of picking a route that use it are renamed to match, such as `At Random, Respecting Importance`.
             - `Manage Configurations` has a new `Save As...` that duplicates the current configuration, with its trains and timetable, and can replace another configuration after a warning and a confirmation, and `New Configuration...` now makes a blank one without locomotives or a timetable.
         - Locomotive Control
             - `Sync Database w/ Central Station` lists in one table every locomotive the Central Station has renamed or moved to another address, and changes only the rows you answer: keep it as it is, take the station's name or address, keep both, ignore it at every sync, or ask again next time.  Click a column's heading to answer every row, or its (i) for what it does.  The `Sync` button in Locomotive Settings asks the same about its own locomotive, and the automatic syncs at start-up and on reconnecting no longer change a locomotive's address.
-            - While a sync leaves a difference unanswered, the `Locomotives` menu and its `Sync` item show `*`; hover over `Sync` to see how many locomotives differ.
-            - `Import from CSV...` asks in a table about locomotives in the file that may already be here: `Merge`, the default, renames the one here to the file's name and keeps its functions, running time and multi-unit links; `Replace` renames it too but takes every other detail from the file, functions included; `Keep Both` adds the file's beside it; and `Ignore` leaves it out.
+            - While a sync leaves a difference unanswered, the `Locomotives` menu and its `Sync Database w/ Central Station` item show `*`; hover over the item to see how many locomotives differ.
+            - `Import from CSV...` asks in a table about locomotives in the file that may already be in the database under another name: `Merge`, the default, renames the one here to the file's name and keeps its functions, running time and multi-unit links; `Replace` renames it too but takes every other detail from the file, functions included; `Keep Both` adds the file's beside it; and `Ignore` leaves it out.
         - Interface
-            - While a Central Station answers, the lower right of the main window shows how quickly it answers, for example `12 ms`: in soft green, then yellow past 100 ms and red past 300 ms.  Hover over it to see the station and the connection.  The line right of `Primary Keyboard Controls` now names the Central Station instead, with its firmware when the station gives it, and the log shows its serial number once.
-            - Windows now remember where you left them, and page windows you had open reopen at start-up.  You can turn this off under `Preferences`, `Remember Window Locations`.
-            - Long messages wrap onto several lines instead of making a popup wider than the screen, and many messages are shorter and clearer, in every language.
+            - While a Central Station answers, the lower right of the main window shows how quickly it answers, for example `12 ms`: in pale green, then pale yellow past 100 ms and pale red past 300 ms.  Hover over it to see the station and the connection.  The line right of `Primary Keyboard Controls` now names the Central Station instead, with its firmware when the station gives it, and the log shows its serial number once.
+            - Windows now remember where you left them, and page windows you had open reopen at start-up; a window closed while minimized comes back open.  You can turn this off under `Preferences`, `Remember Window Locations`.
+            - Long messages wrap onto several lines instead of making a popup wider than the screen, and many messages are shorter and clearer, in every language.  Very long help, such as the route editor's, scrolls in a white box.
+            - The `Log` tab marks each warning with a yellow triangle and each error with a red one.
+            - In `Station Settings`, the window where you pick guard signals shows a hand over the X that removes a signal.
     - Bug Fixes
         - Autonomy
-            - A setup file whose maximum number of active trains is negative now runs with no limit, and the log says so.
+            - Page windows follow every autonomy run.  Before, after `Stop Using Autonomy`, switching or reloading a configuration, or pages read again while the autonomy editor was open, page windows stopped showing the blue routes and trains in later runs, and an orange destination label could stay behind.
+            - The picture in `Station Settings` shows the same red and green arrows as the track diagram, on the station too; a green arrow the diagram showed could be missing.
+            - A train standing where the track has only one way out shows its direction arrow on its caption, as its icon does, and `Change Direction` there offers only that way.
+            - In an imported JSON autonomy file, a negative maximum number of active trains now means no limit, and the log says so.  A file with a malformed lock is refused with a message instead of an unexpected error, and a maximum that is not a number is refused with the right reason.
         - Locomotive Control
             - A locomotive that is already part of a multi-unit can no longer be made the head of another one.  If a saved database already has such a pair, the outer multi-unit keeps the locomotive, whatever the names, and the log says which list was not applied.
+            - Renaming a Central Station multi-unit in TrainControl no longer adds a second copy under the station's name at the next sync: the sync asks about a multi-unit's name and address like any other locomotive.
+            - When a rename cannot update the autonomy setup's files, for example because another program has one open, a message says so and offers `Retry`, instead of only writing it to the log.
+        - Interface
+            - Train icons on the track diagram and in page windows no longer vanish after you close an editor soon after opening the page windows.
+            - When `Open Layout...`, `Recent Layouts`, `Download Central Station Layout Files...` or `Create New Layout...` cannot read the new layout, the layout in use stays as it was, and a message says so.  Before, the old pages showed under the new layout's name.
+            - When the layout folder cannot be read during a sync, the track diagram in use is kept and the sync says so with a warning, instead of switching to the Central Station's layout.  A sync that read only part of the Central Station's data now ends with a warning icon.
+            - With `Show Addresses` ticked, a square that links to another page no longer shows that page's name as an address.
+            - On the accessory keyboard, the pointer is a hand over a key's red and green halves too, not only over its number.
+            - On Java 21 with a Windows display set above 100%, the last stretched pictures are drawn sharp (squares, station names and trains you drag in the track editor, and the red arrows of a blocked curved sensor), and every (i) mark has the same size and shape.
+            - At those scales, four-digit addresses and tight station names are no longer cut short, and a parked train no longer covers the tips of a small curved sensor's arrows.
 * v3.1.1 [11/21/2026]
     - New Features
         - Java 21
