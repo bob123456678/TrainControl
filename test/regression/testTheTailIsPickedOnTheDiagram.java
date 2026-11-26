@@ -316,6 +316,77 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
+     * A click on a square that is not one of the lit sensors does not answer the question, and lights the sensors
+     * again to say where to click.
+     *
+     * MUTATION: drop the `DiagramHighlights.hold` call that ends `TailCrossedPrompt.DiagramPick.clicked`, and this
+     * fails.
+     */
+    @Test
+    public void testAClickAwayFromTheLitSensorsLightsThemAgain() throws Exception
+    {
+        TailCrossedPrompt.answerForTests(null);
+
+        final TunnelQuestion q = tunnelQuestion();
+
+        java.util.Set<LayoutLabel> lit = new java.util.HashSet<>();
+
+        for (TailCrossedPrompt.Choice choice : TailCrossedPrompt.choicesFor(q.layout, q.tunnel, "N", 5, null))
+        {
+            lit.addAll(ui.getDiagramTileRegistry().labelsFor(
+                ui.getAutonomySession().getStationIndex().squareOf(choice.getFarthest())));
+        }
+
+        LayoutLabel away = null;
+
+        for (TileKey square : ui.getAutonomySession().getReducer().getPoints().keySet())
+        {
+            for (LayoutLabel candidate : ui.getDiagramTileRegistry().labelsFor(square))
+            {
+                if (away == null && !lit.contains(candidate)) away = candidate;
+            }
+        }
+
+        assertNotNull(away, "precondition: no square on the diagram is away from the lit ones");
+
+        final LayoutLabel elsewhere = away;
+
+        ExecutorService asker = Executors.newSingleThreadExecutor();
+
+        try
+        {
+            Future<TailCrossedPrompt.Answer> asked = asker.submit(() ->
+                TailCrossedPrompt.askAfterPlacement(q.layout, q.tunnel, "N", 5, "FR-100 train", ui, null));
+
+            Thread.sleep(2000);
+
+            assertTrue(q.label.isFlashOutstanding(), "precondition: TunnelPre is not lit while the tail question waits");
+
+            javax.swing.SwingUtilities.invokeAndWait(q.label::endFlash);
+
+            assertFalse(q.label.isFlashOutstanding(), "precondition: the light did not go out");
+
+            click(elsewhere, 1);
+
+            for (int turn = 0; turn < 4; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+            assertFalse(asked.isDone(), "a click away from the lit sensors answered the question");
+
+            assertTrue(q.label.isFlashOutstanding(), "a click away from the lit sensors did not light them again");
+
+            click(q.label, 1);
+
+            assertTrue(asked.get(10, TimeUnit.SECONDS).wasAnswered(), "the click on TunnelPre did not answer afterwards");
+        }
+        finally
+        {
+            takeDownDialogs();
+
+            asker.shutdownNow();
+        }
+    }
+
+    /**
      * The paste door reads every part of its landing before the question is asked: a second Control+V in the wait
      * writes the same fields for its own train.  Asked of the source, since the wait cannot be held open.
      *

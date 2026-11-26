@@ -2161,4 +2161,60 @@ public class testTheRouteListShowsWhatRuns
 
         return route != null && route.isEnabled() == enabled;
     }
+
+    /**
+     * A route that has been marked running longer than the play button's minimum gets the button back at once when it
+     * ends, not after another wait.
+     *
+     * MUTATION: drop the closing `clearRunningRoute(route);` of `RouteListPanel.releaseTheRoutePlayButton`, and this
+     * fails.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testARouteThatRanLongEnoughHasItsPlayButtonBackAtOnce() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "ran long", 246);
+
+        final Color atRest = backgroundOf(route);
+
+        final java.util.Set<String> running = (java.util.Set<String>) Reflect.get(TrainControlUI.class, ui,
+            "routesExecuting");
+        final java.util.Map<String, Long> since = (java.util.Map<String, Long>) Reflect.get(TrainControlUI.class, ui,
+            "startedRunningAt");
+        final java.lang.reflect.Method release = Reflect.method(org.traincontrol.gui.RouteListPanel.class,
+            "releaseTheRoutePlayButton", String.class);
+
+        try
+        {
+            running.add(route);
+            since.put(route, System.currentTimeMillis() - 10 * 60000L);
+
+            refresh();
+
+            assertNotEquals(backgroundOf(route), atRest, "precondition: a running route's cell is not gray");
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    release.invoke(ui.routeListPanel(), route);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            assertFalse(running.contains(route), "a route that ran long enough was still marked running at its end");
+
+            refresh();
+
+            assertEquals(backgroundOf(route), atRest, "the play button stayed gray after the route ended");
+        }
+        finally
+        {
+            running.remove(route);
+            since.remove(route);
+        }
+    }
 }

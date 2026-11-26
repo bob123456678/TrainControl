@@ -304,6 +304,66 @@ public class testARunsCaptionsSpeakInItsColours
         }
     }
 
+    /** The frozen railway's window with its setup built and its captions drawn; closing puts everything away. */
+    private static final class Open implements AutoCloseable
+    {
+        support.LayoutSandbox sandbox;
+        MarklinControlStation model;
+        TrainControlUI ui;
+
+        /** @param standing the one train to stand on TopMainR2Inter first, or null to keep the railway's own */
+        Open(String standing) throws Exception
+        {
+            try
+            {
+                sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+                sandbox.simulated();
+
+                if (standing != null)
+                {
+                    sandbox.withNoTrains().standing(
+                        new org.traincontrol.automationui.TileGraph.TileKey("1 - Main", 0, 11), standing, "E", "N");
+                }
+
+                model = support.TestStation.simulatedWithWindowInDebug();
+                model.setNetworkCommState(false);
+
+                ui = (TrainControlUI) model.getGUI();
+
+                assertNotNull(ui, "there is no window");
+
+                settle(300);
+
+                AutonomySession session = ui.getAutonomySession();
+
+                if (session == null) throw new AssertionError("no autonomy setup on this railway");
+
+                model.parseAuto(session.buildConfiguration());
+
+                ui.updateVisiblePoints();
+
+                settle(1000);
+            }
+            catch (Exception | Error failed)
+            {
+                close();
+
+                throw failed;
+            }
+        }
+
+        @Override
+        public void close() throws Exception
+        {
+            if (model != null) model.stop();
+
+            if (ui != null) SwingUtilities.invokeAndWait(() -> ui.dispose());
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
     /**
      * An empty station's dash is drawn dimmer than a name on the running diagram (D1 of the look's design pass; Adam:
      * "Do D1 and D2"): `StationCaption.onPill` dims a placeholder, and the running diagram asked it with black.
@@ -316,34 +376,9 @@ public class testARunsCaptionsSpeakInItsColours
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("needs a display");
 
-        support.LayoutSandbox sandbox = null;
-        MarklinControlStation model = null;
-        TrainControlUI ui = null;
-
-        try
+        try (Open open = new Open(null))
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
-
-            sandbox.simulated();
-
-            model = support.TestStation.simulatedWithWindowInDebug();
-            model.setNetworkCommState(false);
-
-            ui = (TrainControlUI) model.getGUI();
-
-            assertNotNull(ui, "there is no window");
-
-            settle(300);
-
-            AutonomySession session = ui.getAutonomySession();
-
-            if (session == null) throw new AssertionError("no autonomy setup on this railway");
-
-            model.parseAuto(session.buildConfiguration());
-
-            ui.updateVisiblePoints();
-
-            settle(1000);
+            final TrainControlUI ui = open.ui;
 
             Field stations = Reflect.field(TrainControlUI.class, "layoutStations");
 
@@ -393,19 +428,6 @@ public class testARunsCaptionsSpeakInItsColours
                 + Math.round(dashContrast) + ", a train's name by " + Math.round(nameContrast) + " - the placeholder is as"
                 + " loud as a name");
         }
-        finally
-        {
-            if (model != null) model.stop();
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
-        }
     }
 
     /** The square the main window believes the pointer is over, or null. */
@@ -432,38 +454,10 @@ public class testARunsCaptionsSpeakInItsColours
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("needs a display");
 
-        support.LayoutSandbox sandbox = null;
-        MarklinControlStation model = null;
-        TrainControlUI ui = null;
-
-        try
+        try (Open open = new Open(MOVER))
         {
-            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
-
-            sandbox.simulated();
-
-            // One train standing, named, so the station it stands on shows a name (FR-136)
-            sandbox.withNoTrains()
-                .standing(new org.traincontrol.automationui.TileGraph.TileKey("1 - Main", 0, 11), MOVER, "E", "N");
-
-            model = support.TestStation.simulatedWithWindowInDebug();
-            model.setNetworkCommState(false);
-
-            ui = (TrainControlUI) model.getGUI();
-
-            assertNotNull(ui, "there is no window");
-
-            settle(300);
-
-            AutonomySession session = ui.getAutonomySession();
-
-            if (session == null) throw new AssertionError("no autonomy setup on this railway");
-
-            model.parseAuto(session.buildConfiguration());
-
-            ui.updateVisiblePoints();
-
-            settle(1000);
+            final TrainControlUI ui = open.ui;
+            final MarklinControlStation model = open.model;
 
             final TrainControlUI window = ui;
             final MarklinControlStation station = model;
@@ -575,19 +569,6 @@ public class testARunsCaptionsSpeakInItsColours
             settle(200);
 
             assertNull(hovered(ui), "the pointer leaving a square still reports it");
-        }
-        finally
-        {
-            if (model != null) model.stop();
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (sandbox != null) sandbox.close();
         }
     }
 }

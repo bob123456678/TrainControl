@@ -5865,4 +5865,37 @@ public class testRouteEditorValidation
     {
         return org.traincontrol.base.RouteCommand.RouteCommandFeedback(address, true);
     }
+
+    /**
+     * The window's Help button explains how its two halves fit together, in a dialog titled Help.
+     *
+     * MUTATION: empty `RouteEditorWindow.showHelp`, and this fails.
+     */
+    @Test
+    public void testTheHelpButtonOpensTheHelp() throws Exception
+    {
+        needsADisplay();
+
+        org.traincontrol.gui.RouteEditorWindow frame = open();
+
+        try (support.Answering answering = support.Answering.start(asked -> support.Answering.pressAt(0)))
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            support.Components.press(support.Components.withText(frame, org.traincontrol.util.I18n.t("ui.help")));
+
+            assertTrue(answering.awaitAsked(1, 10000), "the Help button opened no dialog");
+
+            assertEquals(answering.questions().get(0).title, org.traincontrol.util.I18n.t("ui.help"),
+                "the Help button opened another dialog");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
 }

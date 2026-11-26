@@ -205,8 +205,12 @@ public class testTheLayoutEditorManagesPages
 
         SwingUtilities.invokeAndWait(() -> ui.openAutonomyEditorIfItCan());
 
-        assertTrue(Components.waitFor(() -> !editors().isEmpty(), 15000), "the label's gesture opened no editor: "
-            + titles());
+        assertTrue(Components.waitFor(() -> editors().size() == 1
+            && Components.onTheEventThread(editors().get(0)::isAutonomyMode), 15000),
+            "the label's gesture did not open the autonomy editor: " + titles());
+
+        // Opened for good before the window is put away, or a late one shows in the next claim's window
+        Components.settle();
     }
 
     /**
@@ -270,6 +274,43 @@ public class testTheLayoutEditorManagesPages
 
         assertEquals(model.getLayoutList().size(), 4, "the delete took more than the one page: "
             + model.getLayoutList());
+    }
+
+    /**
+     * Delete Current Page that cannot remove the file says so, keeps the page listed and its file, and leaves the
+     * editor open.
+     *
+     * MUTATION: drop the message dialog from the `catch` of `LayoutFileActions.deleteConfirmedPage`, and this fails.
+     */
+    @Test
+    public void testDeleteThatCannotRemoveTheFileSaysSo() throws Exception
+    {
+        final String page = "4 - Combined";
+
+        Watched editor = editPage(page, false);
+
+        try (java.io.FileInputStream held = new java.io.FileInputStream(pageFile(page));
+            Answering answering = Answering.start(message ->
+                Answering.press(I18n.t(message.startsWith(I18n.t("layout.ui.errorSavingLayoutWithMessage")
+                    .replace("{0}", "")) ? "ui.ok" : "ui.yes"))))
+        {
+            click(editor, "ui.main.toolbar.deleteCurrentPage");
+
+            assertTrue(answering.awaitAsked(2, 15000), "a delete that could not remove the file said nothing: "
+                + answering.asked());
+
+            assertTrue(answering.asked().get(1).startsWith(I18n.t("layout.ui.errorSavingLayoutWithMessage")
+                .replace("{0}", "")), "what the refused delete said: " + answering.asked().get(1));
+        }
+
+        assertTrue(model.getLayoutList().contains(page), "the page left the list though its file stayed");
+
+        assertTrue(pageFile(page).exists(), "the file went though it was held");
+
+        // Its arrival, which a refused delete still makes, has finished before the window is put away
+        Components.settle();
+
+        editor.wasNeverClosed();
     }
 
     /**
