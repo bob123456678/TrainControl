@@ -3,6 +3,7 @@ package org.traincontrol.gui.app;
 import java.awt.event.MouseEvent;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
+import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
@@ -12,7 +13,7 @@ import org.traincontrol.util.I18n;
 import support.Components;
 
 /**
- * `LogPanel` on its own (FR-190): the level a key names, newest on top, the plain text, the triangles beside the first
+ * `LogPanel` on its own (FR-190, FR-257): the level a key names, the boxes that hide a type, newest on top, the plain text, the triangles beside the first
  * line of warnings and errors, and the cap.  `regression.testTheLogIsStampedAndExports` is its integration test,
  * through the real window.
  */
@@ -221,5 +222,136 @@ public class testLogPanel
 
         assertTrue(text.endsWith(String.format("%090d", 0) + "\n"), "the cut is not at a line break");
         assertEquals(levels(panel, 1001)[1000], Level.INFO, "the empty line left by the cut is marked");
+    }
+
+    private static void tick(JCheckBox box, boolean on) throws Exception
+    {
+        Components.onTheEventThread(() ->
+        {
+            if (box.isSelected() != on) box.doClick();
+
+            return null;
+        });
+    }
+
+    private static String shown(LogPanel panel) throws Exception
+    {
+        return Components.onTheEventThread(settled(panel)::text).replaceAll(STAMP, "").replace('\n', '|');
+    }
+
+    /**
+     * Each box hides its type and shows it again, the rest in their order, nothing lost while hidden; all three are
+     * ticked at the start (FR-257).
+     *
+     * MUTATION: in `LogPanel.shows`, test `infoBox` for a warning, and Warnings hides the wrong lines.
+     */
+    @Test
+    public void testEachBoxHidesItsTypeAndTickingShowsItInOrder() throws Exception
+    {
+        LogPanel panel = Components.onTheEventThread(LogPanel::new);
+
+        panel.log("n1", Level.INFO);
+        panel.log("w1", Level.WARNING);
+        panel.log("e1", Level.SEVERE);
+        panel.log("n2", Level.CONFIG);
+        assertEquals(shown(panel), "n2|e1|w1|n1|", "not all shown at the start");
+
+        tick(panel.warningBox, false);
+        assertEquals(shown(panel), "n2|e1|n1|");
+        tick(panel.warningBox, true);
+        tick(panel.errorBox, false);
+        assertEquals(shown(panel), "n2|w1|n1|");
+        tick(panel.errorBox, true);
+        tick(panel.infoBox, false);
+        assertEquals(shown(panel), "e1|w1|");
+        tick(panel.warningBox, false);
+        tick(panel.errorBox, false);
+        assertEquals(shown(panel), "", "everything hidden still shows something");
+        tick(panel.infoBox, true);
+        tick(panel.warningBox, true);
+        tick(panel.errorBox, true);
+        assertEquals(shown(panel), "n2|e1|w1|n1|", "the hidden lines did not come back as they were");
+    }
+
+    /**
+     * A line logged while its type is hidden stays hidden, and shows in its place when the box is ticked; one of a
+     * shown type still shows at once.
+     *
+     * MUTATION: in `LogPanel.log`, keep an entry only when `shows(level)`, and the hidden line never comes back.
+     */
+    @Test
+    public void testALineArrivingWhileHiddenAppearsOnTick() throws Exception
+    {
+        LogPanel panel = Components.onTheEventThread(LogPanel::new);
+
+        panel.log("w1", Level.WARNING);
+        tick(panel.warningBox, false);
+        panel.log("w2", Level.WARNING);
+        panel.log("n1", Level.INFO);
+        assertEquals(shown(panel), "n1|", "a hidden line showed, or a shown one did not");
+        tick(panel.warningBox, true);
+        assertEquals(shown(panel), "n1|w2|w1|");
+    }
+
+    /**
+     * The triangles follow the lines shown: with notices hidden the first line is the warning's.
+     *
+     * MUTATION: in `LogPanel.levelAt`, drop `if (!shows(entry.level)) continue;`, and the marks sit on hidden lines.
+     */
+    @Test
+    public void testTheMarksFollowTheLinesShown() throws Exception
+    {
+        LogPanel panel = Components.onTheEventThread(LogPanel::new);
+
+        panel.log("a warning", Level.WARNING);
+        panel.log("a notice\nmore", Level.INFO);
+        panel.log("an error", Level.SEVERE);
+        tick(panel.infoBox, false);
+        settled(panel);
+
+        assertEquals(levels(panel, 2), new Level[] {Level.SEVERE, Level.WARNING});
+    }
+
+    /**
+     * The cap counts the hidden lines too: with notices hidden, a thousand of them cut the older warning, and ticking
+     * Info shows exactly the capped text.
+     *
+     * MUTATION: in `LogPanel.trim`, count only the shown lines, and the older warning is still there.
+     */
+    @Test
+    public void testTheCapHoldsWithAFilterOn() throws Exception
+    {
+        LogPanel panel = Components.onTheEventThread(LogPanel::new);
+
+        panel.log("older warning", Level.WARNING);
+        tick(panel.infoBox, false);
+        hundreds(panel, 1000);
+        assertEquals(shown(panel), "", "the warning outlived the cap");
+
+        tick(panel.infoBox, true);
+        assertEquals(Components.onTheEventThread(settled(panel)::text).length(), LogPanel.MAX_CHARS);
+    }
+
+    /**
+     * A cut that falls in a hidden line leaves the shown text alone, and one that falls in a shown line cuts the shown
+     * text at its end.
+     *
+     * MUTATION: in `LogPanel.trim`, remove from the document whether or not the oldest line is shown, and a shown line
+     * loses its end for a hidden one's cut.
+     */
+    @Test
+    public void testACutInAHiddenLineLeavesTheShownTextWhole() throws Exception
+    {
+        LogPanel panel = Components.onTheEventThread(LogPanel::new);
+
+        panel.log(new String(new char[200]).replace('\0', 'w'), Level.WARNING);
+        tick(panel.warningBox, false);
+        hundreds(panel, 999);
+
+        // 210 and 99900 are 110 over the cap, all taken from the hidden warning
+        assertEquals(Components.onTheEventThread(settled(panel)::text).length(), 99900, "the shown text was cut");
+
+        tick(panel.warningBox, true);
+        assertEquals(Components.onTheEventThread(settled(panel)::text).length(), LogPanel.MAX_CHARS);
     }
 }

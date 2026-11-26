@@ -557,4 +557,43 @@ public class testTheLogIsStampedAndExports
             assertEquals(read.toString(), want.toString(), "the File menu is not the four groups, top to bottom");
         });
     }
+
+    /**
+     * The Log tab's three boxes hide and show a type of line in the real window (FR-257): unticking `Info` hides a
+     * notice and not a warning, and ticking it brings the notice back below the warning logged after it.
+     *
+     * MUTATION: `LogPanel.shows` answers true, or the boxes are not added to the tab, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testTheLogTabBoxesHideAType() throws Exception
+    {
+        inAWindow(() -> (TrainControlUI) support.TestStation.simulatedWithWindowInDebug().getGUI(), ui ->
+        {
+            Object view = Reflect.get(TrainControlUI.class, ui, "logView");
+            javax.swing.JCheckBox info = (javax.swing.JCheckBox) Reflect.get(view.getClass(), view, "infoBox");
+
+            assertEquals(info.getText(), I18n.t("ui.log.showInfo"));
+
+            ui.log("FR257 notice");
+            assertTrue(stamped(logOf(ui), "FR257 notice").find(), "the notice is not shown to begin with");
+
+            SwingUtilities.invokeAndWait(info::doClick);
+            ui.getModel().logf("layout.warnPowerNotConfirmed", "FR257");
+
+            String warned = I18n.f("layout.warnPowerNotConfirmed", "FR257");
+
+            assertTrue(support.Components.waitFor(() ->
+            {
+                try { return stamped(logOf(ui), warned).find(); } catch (Exception e) { return false; }
+            }, 5000), "the warning is not shown with Info unticked");
+
+            String hidden = logOf(ui);
+
+            assertFalse(stamped(hidden, "FR257 notice").find(), "the notice shows with Info unticked");
+
+            SwingUtilities.invokeAndWait(info::doClick);
+
+            assertTrue(stamped(logOf(ui), "FR257 notice").find(), "the notice did not come back");
+        });
+    }
 }

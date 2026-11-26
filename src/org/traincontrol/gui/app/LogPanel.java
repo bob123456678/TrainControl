@@ -2,6 +2,7 @@ package org.traincontrol.gui.app;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Rectangle;
@@ -11,7 +12,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayDeque;
 import java.util.logging.Level;
 import javax.swing.Icon;
+import javax.swing.JCheckBox;
 import javax.swing.JComponent;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -21,6 +24,7 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.text.Element;
 import org.traincontrol.gui.widgets.RowIcons;
+import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.util.I18n;
 
 /**
@@ -29,7 +33,9 @@ import org.traincontrol.util.I18n;
  * A message's level (FR-190) is passed by its caller: SEVERE an error, WARNING a warning, less a notice; one logged by
  * key takes the level the key names ({@link #levelOf}), so it is the same in every language.  A gutter shows the red
  * or yellow triangle beside an error's or a warning's first line, a blank of the same width beside a notice.  The text
- * stays plain for selection, copy and Export Log.  {@link #log} takes any thread; the rest is event thread.
+ * stays plain for selection, copy and Export Log.  Three boxes above the text (FR-257) hide the notices, the warnings
+ * or the errors: every message stays kept, in order, and shows again when its box is ticked again.  The cap counts the
+ * hidden messages too.  {@link #log} takes any thread; the rest is event thread.
  */
 public final class LogPanel extends JPanel
 {
@@ -41,21 +47,37 @@ public final class LogPanel extends JPanel
     final Gutter gutter = new Gutter();
     private final Icon warning;
     private final Icon error;
-    /** One per message, newest first, while its first line is in the text. */
+    /** One per message, newest first, shown or not, while its first line is kept. */
     private final ArrayDeque<Entry> entries = new ArrayDeque<>();
-    /** The lines the entries span. */
-    private int lines = 0;
+    /** The characters the entries hold. */
+    private int chars = 0;
+    final JCheckBox infoBox;
+    final JCheckBox warningBox;
+    final JCheckBox errorBox;
 
     private static final class Entry implements java.io.Serializable
     {
         private static final long serialVersionUID = 1L;
         final Level level;
-        final int lines;
-
-        Entry(Level level, int lines)
+        String text;
+        int lines;
+        Entry(Level level, String text)
         {
             this.level = level;
-            this.lines = lines;
+            this.text = text;
+            this.lines = count(text);
+        }
+
+        /** Keeps the first `keep` characters: the cap's cut. */
+        void keep(int keep)
+        {
+            this.text = this.text.substring(0, keep);
+            this.lines = count(this.text);
+        }
+        /** The lines a text spans, the last one cut short by the cap included. */
+        private static int count(String text)
+        {
+            return text.length() - text.replace("\n", "").length() + (text.endsWith("\n") ? 0 : 1);
         }
     }
 
@@ -71,7 +93,43 @@ public final class LogPanel extends JPanel
         ToolTipManager.sharedInstance().registerComponent(this.gutter);
         this.scroll.setRowHeaderView(this.gutter);
         setOpaque(false);
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
+        row.setOpaque(false);
+        this.infoBox = box(row, "ui.log.showInfo", null);
+        this.warningBox = box(row, "ui.log.showWarnings", this.warning);
+        this.errorBox = box(row, "ui.log.showErrors", this.error);
+        add(row, BorderLayout.NORTH);
         add(this.scroll, BorderLayout.CENTER);
+    }
+
+    /** A ticked box that shows or hides its type, followed by the type's triangle when it has one. */
+    private JCheckBox box(JPanel row, String key, Icon icon)
+    {
+        JCheckBox box = new JCheckBox(I18n.t(key), true);
+        box.setFont(UiStyle.LABEL_FONT);
+        box.setOpaque(false);
+        box.addActionListener(e -> refilter());
+        row.add(box);
+        if (icon != null) row.add(new JLabel(icon));
+        return box;
+    }
+
+    /** Whether a message of this level is on show: an error's box, a warning's, else the notices'. */
+    private boolean shows(Level level)
+    {
+        if (level.intValue() >= Level.SEVERE.intValue()) return this.errorBox.isSelected();
+        return (level.intValue() >= Level.WARNING.intValue() ? this.warningBox : this.infoBox).isSelected();
+    }
+
+    /** Shows the messages whose boxes are ticked, in their order, and no others. */
+    private void refilter()
+    {
+        StringBuilder shown = new StringBuilder();
+        for (Entry entry : this.entries) if (shows(entry.level)) shown.append(entry.text);
+        this.area.setText(shown.toString());
+        this.area.setCaretPosition(0);
+        this.gutter.revalidate();
+        this.gutter.repaint();
     }
 
     /** A key's level: SEVERE when its last part starts "error" or "fatalError", WARNING when "warn", else INFO. */
@@ -88,43 +146,49 @@ public final class LogPanel extends JPanel
         final String entry = LocalTime.now().format(STAMP) + " " + message + "\n";
         SwingUtilities.invokeLater(() ->
         {
-            // The newest line shows at the top, but a sideways position the reader chose stays (OB-471)
-            int across = this.scroll.getHorizontalScrollBar().getValue();
-            this.area.insert(entry, 0);
-            this.area.setCaretPosition(0);
-            // After the caret's own scroll, which is queued by the insert
-            SwingUtilities.invokeLater(() -> this.scroll.getHorizontalScrollBar().setValue(across));
-
-            int spans = entry.length() - entry.replace("\n", "").length();
-            this.entries.addFirst(new Entry(level, spans));
-            this.lines += spans;
+            this.entries.addFirst(new Entry(level, entry));
+            this.chars += entry.length();
+            if (shows(level))
+            {
+                // The newest line shows at the top, but a sideways position the reader chose stays (OB-471)
+                int across = this.scroll.getHorizontalScrollBar().getValue();
+                this.area.insert(entry, 0);
+                this.area.setCaretPosition(0);
+                // After the caret's own scroll, which is queued by the insert
+                SwingUtilities.invokeLater(() -> this.scroll.getHorizontalScrollBar().setValue(across));
+            }
             trim();
             this.gutter.revalidate();
             this.gutter.repaint();
         });
     }
 
-    /** Cuts the text at the cap, as every insert at the front shifts it all, and forgets the entries cut. */
+    /** Cuts the oldest messages' text at the cap, as every insert at the front shifts it all, and forgets the empty. */
     private void trim()
     {
         Document document = this.area.getDocument();
-        int length = document.getLength();
-
-        if (length <= MAX_CHARS) return;
-        try
+        int excess = this.chars - MAX_CHARS;
+        while (excess > 0)
         {
-            document.remove(MAX_CHARS, length - MAX_CHARS);
+            Entry last = this.entries.getLast();
+            int cut = Math.min(excess, last.text.length());
+            // The oldest message's text ends the shown text only while it is shown
+            if (shows(last.level))
+            {
+                try
+                {
+                    document.remove(document.getLength() - cut, cut);
+                }
+                catch (BadLocationException e)
+                {
+                    // Unreachable: both offsets come from the document itself
+                }
+            }
+            this.chars -= cut;
+            excess -= cut;
+            if (cut == last.text.length()) this.entries.removeLast();
+            else last.keep(last.text.length() - cut);
         }
-        catch (BadLocationException e)
-        {
-            // Unreachable: both offsets come from the document itself
-        }
-
-        // A last line left empty by a cut just after a line break holds no entry
-        Element root = document.getDefaultRootElement();
-        int kept = root.getElementCount();
-        if (root.getElement(kept - 1).getStartOffset() == document.getLength()) kept--;
-        while (this.lines - this.entries.getLast().lines >= kept) this.lines -= this.entries.removeLast().lines;
     }
 
     /** The log as it shows, newest first, stamps included: plain text, as copied and exported. */
@@ -140,6 +204,7 @@ public final class LogPanel extends JPanel
 
         for (Entry entry : this.entries)
         {
+            if (!shows(entry.level)) continue;
             if (start == line) return entry.level;
             start += entry.lines;
             if (start > line) break;

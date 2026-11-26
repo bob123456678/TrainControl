@@ -463,6 +463,11 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
+* v3.1.3
+    - New Features
+        - Interface
+            - The `Log` tab has `Info`, `Warnings` and `Errors` boxes: untick one to hide those messages, tick it to see them again.
+
 * v3.1.2
     - New Features
         - Autonomy
