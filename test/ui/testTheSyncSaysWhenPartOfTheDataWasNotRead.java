@@ -166,6 +166,116 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
     }
 
     /**
+     * While a start holds an unreadable layout folder, Switch to Central Station Layout is offered and lets the folder
+     * go, as for any local folder: the preference is emptied and nothing is held, so the next start says nothing
+     * (FR-245).
+     *
+     * MUTATION: in `TrainControlUI.repaintPathLabel`, keep the switch gray while the folder is held; or leave out the
+     * `layoutFolderHeld = null` of `MarklinControlStation.syncLayoutsFromConfiguredSource`; each fails its assertion.
+     */
+    @Test(timeOut = 240000)
+    public void testSwitchToTheStationsLayoutLetsAHeldFolderGo() throws Exception
+    {
+        final java.io.File root = Files.createTempDirectory("tc-start-held").toFile();
+        final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+        final java.lang.reflect.Field simulation = Reflect.field(org.traincontrol.marklin.MarklinControlStation.class,
+            "simulation");
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0));
+            StationRig rig = new StationRig(root, StandInStation.cs3("260", INFO), true, true,
+                new java.io.File(root, "none")))
+        {
+            TrainControlUI ui = (TrainControlUI) rig.model.getGUI();
+            javax.swing.JMenuItem door = (javax.swing.JMenuItem) Reflect.field(TrainControlUI.class,
+                "switchCSLayoutMenuItem").get(ui);
+            String folder = prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+
+            try
+            {
+                startUpSyncDone(ui);
+                assertEquals(rig.model.getLayoutFolderHeld(), folder, "precondition: the start held no folder");
+                ui.repaintPathLabel();
+                Components.settle();
+                assertEquals(Components.onTheEventThread(door::getToolTipText), I18n.t(
+                    "ui.main.toolbar.tooltip.centralStationNotConnected"), "gray in a simulation, it says the wrong why");
+
+                // A station on the wire, which the stand-in is and a simulation is not
+                simulation.setBoolean(rig.model, false);
+                rig.model.setNetworkCommState(true);
+                ui.repaintPathLabel();
+                Components.settle();
+                assertTrue(Components.onTheEventThread(door::isEnabled), "the switch is gray while the folder is"
+                    + " held: " + door.getToolTipText());
+
+                SwingUtilities.invokeAndWait(door::doClick);
+                assertTrue(Settle.until(() -> prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "").isEmpty(), 30000),
+                    "the switch kept the folder");
+                assertTrue(syncEnded(ui), "the switch's sync did not end; log " + logTail(rig));
+                assertTrue(Settle.until(() -> rig.model.getLayoutList().contains("Startpackung"), 30000),
+                    "the station's layout is not shown: " + rig.model.getLayoutList());
+                assertNull(rig.model.getLayoutFolderHeld(), "the folder is still held, so the next start says so again");
+                assertTrue(ui.isRemoteLayout(), "the station's layout is not the one in use");
+            }
+            finally
+            {
+                simulation.setBoolean(rig.model, true);
+                SwingUtilities.invokeAndWait(ui::dispose);
+            }
+        }
+    }
+
+    /**
+     * A start with no station whose layout folder will not read keeps the folder: nobody there takes the default No,
+     * and the question, as the start asks it, names the folder and starts on No, which keeps it too (FR-245).
+     *
+     * MUTATION: in `TrainControlUI.createAndApplyEmptyLayout`, take Yes unattended (`proceed = true`), or ask the old
+     * question starting on Yes; each fails its assertion.
+     */
+    @Test(timeOut = 240000)
+    public void testAStartWithNoStationNamesTheUnreadFolderAndKeepsIt() throws Exception
+    {
+        final java.io.File root = Files.createTempDirectory("tc-start-alone").toFile();
+        final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+        final String[] no = {null};
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(message.equals(no[0]) ? 1 : 0));
+            StationRig rig = new StationRig(root, StandInStation.cs3("260", INFO), true, false,
+                new java.io.File(root, "none")))
+        {
+            TrainControlUI ui = (TrainControlUI) rig.model.getGUI();
+            String folder = prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+
+            try
+            {
+                startUpSyncDone(ui);
+                Components.settle();
+                assertFalse(folder.isEmpty(), "precondition: no layout folder set");
+                assertEquals(prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, ""), folder, "the start let the folder"
+                    + " go for a demo layout; said " + answering.asked());
+
+                // Somebody there is asked, and answers No
+                no[0] = I18n.f("layout.ui.confirmDemoLayoutFolderUnread", folder,
+                    new java.io.File(TrainControlUI.DEMO_LAYOUT_OUTPUT_PATH).getAbsolutePath());
+                int before = answering.asked().size();
+                TrainControlUI.setUnattended(false);
+                SwingUtilities.invokeLater(() -> ui.createAndApplyEmptyLayout(TrainControlUI.DEMO_LAYOUT_OUTPUT_PATH,
+                    true));
+                assertTrue(answering.awaitAsked(before + 1, 30000), "nothing was asked");
+                assertEquals(answering.asked().get(before), no[0], "the question does not name the folder");
+                assertEquals(answering.questions().get(before).startsOn, String.valueOf(TrainControlUI.YES_NO_OPTS[1]),
+                    "the question does not start on No");
+                Components.settle();
+                assertEquals(prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, ""), folder, "No let the folder go");
+            }
+            finally
+            {
+                TrainControlUI.setUnattended(true);
+                SwingUtilities.invokeAndWait(ui::dispose);
+            }
+        }
+    }
+
+    /**
      * The window lays out its demo diagram as it opens and syncs behind a spinner, posted from its start-up; a Sync
      * pressed meanwhile is rightly turned away as already running, so a claim starts once that sync has ended.
      */

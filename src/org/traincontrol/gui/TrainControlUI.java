@@ -4857,8 +4857,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
         if (!editorWindows.isLayoutLoaded())
         {
-            // Only with somebody to ask: a first launch with no layout creates one; later starts still ask.
-            createAndApplyEmptyLayout(TrainControlUI.DEMO_LAYOUT_OUTPUT_PATH, !isFirstLaunch());
+            // Only with somebody to ask: a first launch with no layout creates one; later starts, or a layout folder
+            // that would not read, still ask.
+            if (!prefs.get(LAYOUT_OVERRIDE_PATH_PREF, "").isEmpty()) createAndApplyEmptyLayout(DEMO_LAYOUT_OUTPUT_PATH, true);
+            else createAndApplyEmptyLayout(TrainControlUI.DEMO_LAYOUT_OUTPUT_PATH, !isFirstLaunch());
         }
         
         // Populate statistics tab
@@ -5571,27 +5573,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     public void createAndApplyEmptyLayout(String folderName, boolean verify)
     {
         boolean proceed;
+        // A layout folder set that would not read is named, and No, the default, keeps it (FR-245)
+        String unread = verify ? prefs.get(LAYOUT_OVERRIDE_PATH_PREF, "") : "";
 
-        // Nobody to ask is not an answer of no: take the first-launch answer (make the diagram).
+        // Nobody to ask is not an answer of no: take the first-launch answer (make the diagram), or that default.
         if (!verify || isUnattended())
         {
-            proceed = true;
+            proceed = unread.isEmpty();
         }
         else
         {
-            // Attempt to create an empty layout if needed
-            int dialogResult = JOptionPane.showOptionDialog(
-                this,
-                I18n.f(
-                    "layout.ui.confirmInitializeTrackDiagram",
-                    new File(folderName).getAbsolutePath()
-                ),
+            String into = new File(folderName).getAbsolutePath();
+            int dialogResult = JOptionPane.showOptionDialog(this, unread.isEmpty()
+                ? I18n.f("layout.ui.confirmInitializeTrackDiagram", into)
+                : I18n.f("layout.ui.confirmDemoLayoutFolderUnread", unread, into),
                 I18n.t("layout.ui.dialogCreateNewTrackDiagram"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 YES_NO_OPTS,
-                YES_NO_OPTS[0]
+                YES_NO_OPTS[unread.isEmpty() ? 0 : 1]
             );
 
             proceed = (dialogResult == JOptionPane.YES_OPTION);
@@ -19483,10 +19484,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             this.editorWindows.applyLayoutEditingAvailability();
 
             // Set UI label
+            // A held folder is let go by the switch, as a local one is (FR-245)
+            final boolean held = layoutFolderHeld();
             if (!isLocalLayout())
             {
                 // LayoutPathLabel.setText("Central Station: " + prefs.get(IP_PREF, "(none loaded)"));
-                this.switchCSLayoutMenuItem.setEnabled(false);
+                this.switchCSLayoutMenuItem.setEnabled(connected && held);
                 this.downloadCSLayoutMenuItem.setEnabled(connected && editorWindows.isLayoutLoaded());
             }
             else
@@ -19500,7 +19503,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
             // Grayed, each says why.
             LayoutMenus.sayWhy(this.switchCSLayoutMenuItem, "ui.main.toolbar.tooltip.switchToCSLayout",
-                isLocalLayout() ? "ui.main.toolbar.tooltip.centralStationNotConnected"
+                isLocalLayout() || held ? "ui.main.toolbar.tooltip.centralStationNotConnected"
                     : "ui.main.toolbar.tooltip.alreadyInUse");
             LayoutMenus.sayWhy(this.downloadCSLayoutMenuItem, "ui.main.toolbar.tooltip.downloadCSLayout",
                 isLocalLayout() ? "ui.main.toolbar.tooltip.downloadNeedsCSLayout"

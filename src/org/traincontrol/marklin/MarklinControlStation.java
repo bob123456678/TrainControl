@@ -625,7 +625,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
             }
             else
-            {      
+            {
+                // No folder set, none held: Switch to CS Layout lets a held one go
+                this.layoutFolderHeld = null;
                 if (this.layoutDB.getItemNames().isEmpty())
                 {
                     requireTheTypeKnown();
