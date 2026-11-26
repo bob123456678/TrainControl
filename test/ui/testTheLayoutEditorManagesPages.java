@@ -210,6 +210,27 @@ public class testTheLayoutEditorManagesPages
     }
 
     /**
+     * A right-click on the diagram's background opens the autonomy menu, which carries the setup itself.
+     *
+     * MUTATION: in `TrainControlUI.InnerLayoutPanelMouseClicked`, answer another button, and this fails.
+     */
+    @Test
+    public void testARightClickOnTheDiagramOpensTheAutonomyMenu() throws Exception
+    {
+        final java.awt.Component panel = (java.awt.Component) support.Reflect.get(TrainControlUI.class, ui,
+            "InnerLayoutPanel");
+
+        try
+        {
+            assertNotNull(support.Mouse.rightClick(panel, 15000), "a right-click on the diagram opened no menu");
+        }
+        finally
+        {
+            support.Mouse.closeMenus();
+        }
+    }
+
+    /**
      * Delete Current Page, answered Yes to the Layouts menu's own question, removes the page's file, its index entry
      * and its name in the setup, and the same window shows another page.
      *
