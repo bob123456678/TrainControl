@@ -661,6 +661,87 @@ public class testTheLocomotiveSettingsAutonomyTab
         }
     }
 
+    /**
+     * A record of an unwritten rename that no door said, as a rename the model makes for itself leaves, is not said by
+     * the next door's own rename: neither at a Locomotive Settings Save nor at a CSV import's end.
+     *
+     * MUTATION: leave out `forgetUnrepaired()` in `LocomotiveActions.writeNameAndAddress` or in
+     * `LocomotiveCsvImport`; each fails its own assertion.
+     */
+    @Test
+    public void testARecordNoDoorSaidIsNotSaidAtTheNextDoor() throws Exception
+    {
+        final String stray = "AU stray", strayTo = "AU stray renamed", was = "AU next", name = "AU next renamed",
+            was2 = "AU next import here", name2 = "AU next import";
+        final java.io.File file = new java.io.File(ui.localLayoutPath(), "config/autonomy/configuration-"
+            + session.getStore().getActiveConfiguration() + ".json");
+        final String key = I18n.t("loc.ui.renameSetupNotUpdated");
+        final String start = key.substring(key.indexOf("{1}") + 3, key.indexOf("{0}"));
+        final int address2 = freeAddress(12000);
+        final java.io.File csv = rows(name2, address2);
+
+        model.newMFXLocomotive(stray, 0xCEB);
+        model.newMFXLocomotive(was, 0xCEC);
+        model.newMFXLocomotive(was2, address2);
+
+        try
+        {
+            leftUnsaid(stray, strayTo, file);
+            fixture.quiet();
+
+            try (Answering answering = Answering.start(message -> message.contains(start) ? Answering.pressAt(1) : null))
+            {
+                assertTrue(SettingsWindow.open(ui, model.getLocByName(was), LocomotiveSettingsWindow.Tab.values()[0],
+                    null), "the window did not open");
+                assertNotNull(SettingsWindow.awaited(), "the window is not on screen");
+
+                SettingsWindow.type("settings.name", name);
+                SettingsWindow.press(SettingsWindow.save());
+
+                assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, 8000), "Save did not close the"
+                    + " window: " + answering.asked());
+                Components.settle();
+
+                assertNotNull(model.getLocByName(name), "precondition: Save did not rename");
+                assertFalse(answering.asked().stream().anyMatch(message -> message.contains(start)), "a record left"
+                    + " elsewhere was said at Save: " + answering.asked());
+            }
+
+            leftUnsaid(strayTo, stray, file);
+
+            java.util.List<String> said = importThroughTheMenu(csv, start);
+
+            assertNotNull(model.getLocByName(name2), "precondition: the import's Merge did not rename");
+            assertFalse(said.stream().anyMatch(message -> message.contains(start)), "a record left elsewhere was said"
+                + " at the import's end: " + said);
+        }
+        finally
+        {
+            csv.delete();
+
+            for (String n : new String[] {stray, strayTo, was, name, was2, name2})
+            {
+                if (model.getLocByName(n) != null) model.deleteLoc(n);
+            }
+        }
+    }
+
+    /** Renames through the model alone, as no door does, while `file` is held: a record that no door has said. */
+    private static void leftUnsaid(String from, String to, java.io.File file) throws Exception
+    {
+        try (java.io.FileInputStream held = new java.io.FileInputStream(file))
+        {
+            Components.onTheEventThread(() ->
+            {
+                model.renameLoc(from, to);
+                return null;
+            });
+        }
+
+        assertFalse(((java.util.Map<?, ?>) support.Reflect.get(org.traincontrol.gui.AutonomyLifecycle.class,
+            ui.autonomyLifecycle(), "unrepaired")).isEmpty(), "precondition: the held rename left no record");
+    }
+
     /** Puts `built` in the window as the setup it has built, null as none, as a user's first opening would. */
     private static void setupBuilt(AutonomySession built)
     {
