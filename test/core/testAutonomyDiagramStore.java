@@ -1292,6 +1292,60 @@ public class testAutonomyDiagramStore
     }
 
     /**
+     * A configuration renamed away and back rewrites its file whole, so the repairs a failed save left that file
+     * lacking go: the next read does not do them again over what was written.
+     *
+     * MUTATION: in `renameConfiguration`, leave out removing the files' repairs from the record, and this fails.
+     */
+    @Test
+    public void testARenamedConfigurationsFileLacksNothing() throws IOException
+    {
+        AutonomyCompanionStore.Lacking record = new AutonomyCompanionStore.Lacking();
+        store.shareLacking(record);
+        store.createConfiguration("Main", null);
+        place(store.getConfiguration("Main"), "1:4,4", "Kept");
+        store.save();
+
+        // As a failed save of a deletion of Kept and a rename onto it leaves the file
+        store.lacks(record, java.util.Arrays.asList("Main"), "Kept", null);
+        store.lacks(record, java.util.Arrays.asList("Main"), "Was", "Kept");
+        store.renameConfiguration("Main", "Tmp");
+        store.renameConfiguration("Tmp", "Main");
+        store.load();
+
+        assertTrue(store.getConfiguration("Main").toString().contains("\"Kept\""), "the read did the repairs again"
+            + " over the written file: " + store.getConfiguration("Main"));
+    }
+
+    /**
+     * A deleted configuration takes the repairs its file lacked with it: a file of that name brought back, as a sync
+     * client can, is read as it was written.
+     *
+     * MUTATION: in `deleteConfiguration`, leave out removing the file's repairs from the record, and this fails.
+     */
+    @Test
+    public void testADeletedConfigurationsFileLacksNothing() throws IOException
+    {
+        AutonomyCompanionStore.Lacking record = new AutonomyCompanionStore.Lacking();
+        File file = new File(layout, "config/autonomy/configuration-Other.json");
+        store.shareLacking(record);
+        store.createConfiguration("Main", null);
+        store.createConfiguration("Other", null);
+        place(store.getConfiguration("Other"), "1:4,4", "Kept");
+        store.save();
+        assertTrue(file.isFile(), "precondition: the configuration is not kept in " + file);
+
+        byte[] written = Files.readAllBytes(file.toPath());
+        store.lacks(record, java.util.Arrays.asList("Other"), "Kept", null);
+        store.deleteConfiguration("Other");
+        Files.write(file.toPath(), written);
+        store.load();
+
+        assertTrue(store.getConfiguration("Other").toString().contains("\"Kept\""), "the read did a deleted file's"
+            + " repair over the file brought back: " + store.getConfiguration("Other"));
+    }
+
+    /**
      * Deleting everything removes the files and the decisions, and leaves the track diagram alone.
      */
     @Test

@@ -199,39 +199,16 @@ public class testTheAutoTabKeepsItsCards
     public void testACardsSearchBuildsNoSetup() throws Exception
     {
         AutonomyLocomotiveStatus card = card(alpha);
-        java.util.concurrent.CountDownLatch holding = new java.util.concurrent.CountDownLatch(1),
-            release = new java.util.concurrent.CountDownLatch(1);
 
         // None built, and the event thread held meanwhile, so a build seen is the search's and not one there
-        SwingUtilities.invokeLater(() ->
+        Object[] seen = Components.withTheEventThreadHeld(() ->
         {
-            try
-            {
-                Reflect.set(TrainControlUI.class, ui, "autonomySession", null);
-                holding.countDown();
-                release.await(10, java.util.concurrent.TimeUnit.SECONDS);
-            }
-            catch (ReflectiveOperationException | InterruptedException e)
-            {
-                throw new IllegalStateException(e);
-            }
-        });
+            Reflect.set(TrainControlUI.class, ui, "autonomySession", null);
+            return null;
+        }, () -> new Object[] {card.findPaths(), Reflect.get(TrainControlUI.class, ui, "autonomySession")});
 
-        try
-        {
-            assertTrue(holding.await(10, java.util.concurrent.TimeUnit.SECONDS), "precondition: not held");
-
-            List<List<Edge>> found = card.findPaths();
-            Object built = Reflect.get(TrainControlUI.class, ui, "autonomySession");
-
-            release.countDown();
-            assertNotNull(found, "precondition: the card did not search");
-            assertNull(built, "the card's search built a setup off the event thread");
-        }
-        finally
-        {
-            release.countDown();
-        }
+        assertNotNull(seen[0], "precondition: the card did not search");
+        assertNull(seen[1], "the card's search built a setup off the event thread");
     }
 
     // ---------------------------------------------------------------- the railway

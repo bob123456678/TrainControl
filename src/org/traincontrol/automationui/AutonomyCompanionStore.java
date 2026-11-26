@@ -736,6 +736,13 @@ public class AutonomyCompanionStore
             record.files.computeIfAbsent(configurationFile(name), k -> new ArrayList<>()).add(new String[] {from, to});
         }
     }
+    /** Those of these configurations whose files `record` says lack a repair. */
+    public List<String> lacking(Lacking record, List<String> configurations)
+    {
+        List<String> out = new ArrayList<>(configurations);
+        out.removeIf(name -> !record.files.containsKey(configurationFile(name)));
+        return out;
+    }
 
     // shared data
 
@@ -2078,6 +2085,8 @@ public class AutonomyCompanionStore
                 if (!old.equals(now)) Files.move(old.toPath(), now.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
                 writeJson(now, configuration);
+                lacking.files.remove(old);
+                lacking.files.remove(now);
             }
             catch (IOException e)
             {
@@ -2123,6 +2132,7 @@ public class AutonomyCompanionStore
             throw new IOException(I18n.f("autosetup.ui.errorDeleteConfigurationFailed", name));
         }
 
+        lacking.files.remove(file);
         configurations.remove(name);
 
         if (name.equals(activeConfiguration))

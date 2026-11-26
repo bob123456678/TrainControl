@@ -580,7 +580,10 @@ public final class AutonomyLifecycle
     void sayAfterRenames(Component c, String said, List<String> lines, String title)
     {
         String heading = title != null ? title : UIManager.getString("OptionPane.messageDialogTitle");
-        List<Unrepaired> shown = new ArrayList<>(unrepaired);
+        // Only what this door takes: a repair left while the message is up is its own door's to say
+        List<Unrepaired> taken = new ArrayList<>(unrepaired);
+        unrepaired.removeAll(taken);
+        List<Unrepaired> shown = stillLacking(taken);
         while (shown.stream().anyMatch(r -> r.to != null))
         {
             String text = I18n.f("loc.ui.renameSetupNotUpdated", shown.stream().flatMap(r -> r.in.stream()).distinct()
@@ -590,18 +593,9 @@ public final class AutonomyLifecycle
             if (said != null) text = said + "\n\n" + text;
             int answer = JOptionPane.showOptionDialog(c, lines.isEmpty() ? text : DetailsArea.message(text, lines),
                 heading, JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
-            // Only what was said: a repair left while the message was up is its own door's to say
-            unrepaired.removeAll(shown);
             if (answer != 0) return;
-            List<String> left = writeAgain();
-            List<Unrepaired> still = new ArrayList<>();
-            for (Unrepaired r : shown)
-            {
-                List<String> in = new ArrayList<>(r.in);
-                in.retainAll(left);
-                if (!in.isEmpty()) still.add(new Unrepaired(r.from, r.to, in));
-            }
-            shown = still;
+            writeAgain();
+            shown = stillLacking(shown);
             said = null;
             lines = Collections.emptyList();
         }
@@ -609,8 +603,22 @@ public final class AutonomyLifecycle
             heading, JOptionPane.INFORMATION_MESSAGE);
     }
 
-    /** Writes the setup's files again, with what they lack: the session's store, or a bare one; what is still left. */
-    private List<String> writeAgain()
+    /** Those of `records` whose files still lack a repair, each narrowed to those configurations. */
+    private List<Unrepaired> stillLacking(List<Unrepaired> records)
+    {
+        String path = ui.localLayoutPath();
+        List<Unrepaired> still = new ArrayList<>();
+        if (path == null || path.isEmpty()) return still;
+        AutonomyCompanionStore store = new AutonomyCompanionStore(new File(path));
+        for (Unrepaired r : records)
+        {
+            List<String> in = store.lacking(lacking, r.in);
+            if (!in.isEmpty()) still.add(new Unrepaired(r.from, r.to, in));
+        }
+        return still;
+    }
+    /** Writes the setup's files again, with what they lack: the session's store, or a bare one. */
+    private void writeAgain()
     {
         AutonomySession session = ui.autonomySession;
         String path = ui.localLayoutPath();
@@ -618,17 +626,10 @@ public final class AutonomyLifecycle
         {
             if (session != null) session.getStore().save();
             else AutonomyCompanionStore.saveOnDisk(path == null ? null : new File(path), lacking);
-            return Collections.emptyList();
-        }
-        catch (AutonomyCompanionStore.NotWritten e)
-        {
-            ui.getModel().log(e);
-            return e.configurations;
         }
         catch (java.io.IOException e)
         {
             ui.getModel().log(e);
-            return session == null ? Collections.emptyList() : session.getStore().getUnwritten();
         }
     }
 

@@ -586,7 +586,7 @@ final class DiagramAutonomyContextMenu extends JPopupMenu
      */
     private static List<List<Edge>> withoutGoingNowhere(TrainControlUI ui, List<List<Edge>> paths)
     {
-        org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+        org.traincontrol.automationui.AutonomySession session = ui.autonomySession();
 
         return session == null ? paths : session.getStationIndex().distinctDestinations(paths);
     }

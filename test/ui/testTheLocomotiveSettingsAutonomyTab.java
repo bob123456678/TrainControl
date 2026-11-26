@@ -17,6 +17,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;
@@ -765,8 +766,7 @@ public class testTheLocomotiveSettingsAutonomyTab
      * rename; and a setup built from the files afterwards and saved keeps them so.
      *
      * MUTATION: in `AutonomyCompanionStore.load`, apply every file's pending repairs to every configuration; or, in
-     * `save`, keep a written file's; or, in `AutonomyLifecycle.writeAgain`, return nothing left from the bare store's
-     * failure; and this fails.
+     * `save`, keep a written file's; or, in `AutonomyLifecycle.stillLacking`, keep every record; and this fails.
      */
     @Test
     public void testARetryGivesEachConfigurationOnlyWhatItsFileLacked() throws Exception
@@ -803,12 +803,17 @@ public class testTheLocomotiveSettingsAutonomyTab
             });
 
             // Retry with no setup built (a showing dialog may build one) meets Zzz still held
-            assertEquals(Components.onTheEventThread(() ->
+            Components.onTheEventThread(() ->
             {
                 support.Reflect.set(TrainControlUI.class, ui, "autonomySession", null);
                 return support.Reflect.method(org.traincontrol.gui.AutonomyLifecycle.class, "writeAgain")
                     .invoke(ui.autonomyLifecycle());
-            }), java.util.Arrays.asList("Zzz"), "a Retry through a bare store did not keep Zzz as left");
+            });
+            assertEquals(new org.traincontrol.automationui.AutonomyCompanionStore(new java.io.File(ui.localLayoutPath()))
+                .lacking((org.traincontrol.automationui.AutonomyCompanionStore.Lacking) support.Reflect.get(
+                org.traincontrol.gui.AutonomyLifecycle.class, ui.autonomyLifecycle(), "lacking"), java.util.Arrays.asList(
+                session.getStore().getActiveConfiguration(), "Zzz")), java.util.Arrays.asList("Zzz"),
+                "a Retry through a bare store did not keep Zzz as left");
             assertEquals(retried(line, held), java.util.Arrays.asList(line, line), "not said once, naming Zzz and the"
                 + " rename, and again at the Retry that met it still held");
             Components.onTheEventThread(() ->
@@ -882,6 +887,111 @@ public class testTheLocomotiveSettingsAutonomyTab
             setupBuilt(session);
             excludedHere(excluded, true);
             deleteAll(was, name);
+        }
+    }
+
+    /**
+     * A rename the held setup cannot save while the autonomy editor is open, the file let go, then the editor canceled
+     * over an edit of its own: Cancel puts back the setup as the editor opened it and saves, with the new name.
+     *
+     * MUTATION: in `AutonomyLifecycle.repairAutonomyLocomotive`, follow the rename into the editor only when the save
+     * worked, and this fails.
+     */
+    @Test
+    public void testCancelingTheEditorAfterAnUnsavedRenameKeepsTheNewName() throws Exception
+    {
+        final String was = "AU cancel was", name = "AU cancel renamed";
+        final java.io.File file = configurationFile(session.getStore().getActiveConfiguration());
+        final Object excluded = Components.onTheEventThread(() -> session.getPointProperty(square, "excludedLocs"));
+        final java.lang.reflect.Field open = support.Reflect.field(TrainControlUI.class, "openEditor");
+        final Object before = open.get(ui);
+        final LayoutEditor[] editor = new LayoutEditor[1];
+        model.newMFXLocomotive(was, freeAddress(11000));
+
+        try
+        {
+            fixture.quiet();
+            excludedHere(new org.json.JSONArray().put(was), true);
+            SwingUtilities.invokeAndWait(() ->
+            {
+                editor[0] = new LayoutEditor(model.getLayout("1 - Main"), 30, ui, 0);
+                editor[0].render();
+                editor[0].setAutonomyMode(session);
+            });
+            Components.settle();
+            assertTrue(editor[0].isDisplayable() && editor[0].isAutonomyMode(), "precondition: no autonomy editor");
+            open.set(ui, editor[0]);
+            leftUnsaid(was, name, file);
+
+            // An edit of the editor's own, so Cancel asks and puts its snapshot back
+            excludedHere(new org.json.JSONArray().put(name).put(TRAIN), false);
+
+            final String confirm = I18n.t("autosetup.ui.confirmExitWithoutSaving");
+            final java.util.List<String> asked;
+            try (Answering answering = Answering.start(m -> m.contains(confirm)
+                ? Answering.press(String.valueOf(TrainControlUI.YES_NO_OPTS[0])) : Answering.pressAt(0)))
+            {
+                Components.onTheEventThread(() -> support.Reflect.method(LayoutEditor.class, "confirmExit").invoke(editor[0]));
+                Components.settle();
+                asked = answering.asked();
+            }
+
+            String after = new String(java.nio.file.Files.readAllBytes(file.toPath()), java.nio.charset.StandardCharsets.UTF_8);
+            assertTrue(asked.stream().anyMatch(m -> m.contains(confirm)), "precondition: Cancel did not ask: " + asked);
+            assertTrue(after.contains(name) && !after.contains(was), "Cancel wrote the old name back: " + after + asked);
+        }
+        finally
+        {
+            open.set(ui, before);
+            if (editor[0] != null) SwingUtilities.invokeAndWait(editor[0]::dispose);
+            excludedHere(excluded, true);
+            deleteAll(was, name);
+        }
+    }
+
+    /**
+     * A rename the held setup cannot save, then, the file let go, a second rename whose save writes it whole: the door
+     * says nothing, as the file no longer lacks the first.
+     *
+     * MUTATION: in `AutonomyLifecycle.sayAfterRenames`, show every record taken, not `stillLacking(taken)`, and this
+     * fails.
+     */
+    @Test
+    public void testARenameItsFileWasWrittenWithSinceIsNotSaid() throws Exception
+    {
+        final String a = "AU since one", b = "AU since one renamed", c = "AU since two", d = "AU since two renamed";
+        final java.io.File file = configurationFile(session.getStore().getActiveConfiguration());
+        final Object excluded = Components.onTheEventThread(() -> session.getPointProperty(square, "excludedLocs"));
+        final String key = I18n.t("loc.ui.renameSetupNotUpdated");
+        final String start = key.substring(key.indexOf("{1}") + 3, key.indexOf("{0}"));
+        model.newMFXLocomotive(a, freeAddress(11000));
+        model.newMFXLocomotive(c, freeAddress(11000));
+
+        try
+        {
+            fixture.quiet();
+            excludedHere(new org.json.JSONArray().put(a).put(c), true);
+            leftUnsaid(a, b, file);
+            Components.onTheEventThread(() -> model.renameLoc(c, d));
+
+            String now = new String(java.nio.file.Files.readAllBytes(file.toPath()), java.nio.charset.StandardCharsets.UTF_8);
+            assertTrue(now.contains(b) && now.contains(d) && !now.contains("\"" + a + "\""), "precondition: the second"
+                + " rename's save did not write both: " + now);
+
+            try (Answering answering = Answering.start(m -> m.contains(start) ? Answering.pressAt(1) : null))
+            {
+                Components.onTheEventThread(() -> support.Reflect.method(org.traincontrol.gui.AutonomyLifecycle.class,
+                    "sayAfterRenames", java.awt.Component.class, String.class, java.util.List.class, String.class)
+                    .invoke(ui.autonomyLifecycle(), ui, null, java.util.Collections.emptyList(), null));
+                Components.settle();
+                assertEquals(answering.asked(), java.util.Collections.emptyList(), "a rename its file was written with"
+                    + " since was said");
+            }
+        }
+        finally
+        {
+            excludedHere(excluded, true);
+            deleteAll(a, b, c, d);
         }
     }
 
