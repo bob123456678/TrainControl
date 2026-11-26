@@ -410,12 +410,23 @@ public class testTrainsBySide
      * A renamed or deleted locomotive is followed into each cell, as on the one list, and one the database lacks is let
      * go of there too.
      *
-     * MUTATION: in the store's rename, walk only the square (not `Point.listsIn`) and this fails.
+     * MUTATION: in the store's rename, walk only the square (not `Point.listsIn`), or take `removeListedLoc` out of
+     * `Layout.locDeleted`, and this fails.
      */
     @Test
     public void testTheCellsFollowARenameAndADeletion() throws Exception
     {
         st31();
+
+        Layout railway = build();
+
+        railway.locDeleted(mx);
+
+        for (Point each : copies(railway))
+        {
+            assertFalse(each.allowedToStop().getListed().contains(mx) || each.allowedToPass() != null
+                && each.allowedToPass().getListed().contains(mx), "the running layout kept a deleted train on a cell");
+        }
 
         session.getStore().locomotiveRenamed(mx.getName(), "Sides MX renamed");
 

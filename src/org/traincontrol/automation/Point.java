@@ -138,6 +138,14 @@ public class Point
             else out.addAll(other.listed);
             return new Allowed(out, only || other.only);
         }
+
+        /** This cell without a locomotive the database no longer holds. */
+        public Allowed without(Locomotive loc)
+        {
+            Set<Locomotive> out = new HashSet<>(listed);
+            out.remove(loc);
+            return new Allowed(out, only);
+        }
     }
 
     private double speedMultiplier = 1.0;
@@ -368,7 +376,7 @@ public class Point
      */
     public void setCellsBySide(JSONObject bySide, String side, Allowed stop, Allowed through)
     {
-        this.trainsBySide = bySide;
+        this.trainsBySide = bySide == null ? null : new JSONObject(bySide.toString());
         this.arrivalSide = side;
         this.stopCell = stop;
         this.throughCell = stop == null ? null : through;
@@ -384,6 +392,13 @@ public class Point
     public void setAllowOnlyListed(boolean allowOnlyListed)
     {
         this.allowOnlyListed = allowOnlyListed;
+    }
+
+    /** Lets go of a deleted locomotive in this copy's cells per side, as `removeExcludedLoc` does in its one list. */
+    public void removeListedLoc(Locomotive l)
+    {
+        if (stopCell != null) stopCell = stopCell.without(l);
+        if (throughCell != null) throughCell = throughCell.without(l);
     }
 
     /**
@@ -1067,12 +1082,10 @@ public class Point
         {
             jsonObj.put("maxTrainLength", this.maxTrainLength);
         }
-        
         if (this.isTerminus)
         {
             jsonObj.put("terminus", this.isTerminus);
         }
-                
         if (this.isReversing)
         {
             jsonObj.put("reversing", this.isReversing);

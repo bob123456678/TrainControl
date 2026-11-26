@@ -826,6 +826,7 @@ public class Layout
         for (Point p : this.getPoints())
         {
             p.removeExcludedLoc(l);
+            p.removeListedLoc(l);
 
             if (l.equals(p.getHomeLoc())) p.setHomeLoc(null);
 
