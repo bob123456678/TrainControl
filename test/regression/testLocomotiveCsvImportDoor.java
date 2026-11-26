@@ -1770,4 +1770,47 @@ public class testLocomotiveCsvImportDoor
             }
         });
     }
+
+    /**
+     * A skipped row's line gives the reason for its kind: a name no route can store, a multi-unit row, an address no
+     * decoder holds.
+     *
+     * MUTATION: in `LocomotiveCsvImport.reasonKey`, send the name, multi-unit or address case to the unreadable
+     * reason, and this fails.
+     */
+    @Test
+    public void testASkippedRowGivesTheReasonForItsKind() throws Exception
+    {
+        List<String> lines = detailsOfImporting("\"FR262 a,b\",,MFX,50,0,0:00:00,0,0,,,\n"
+            + "FR262 multi,,Multi-Unit,51,0,0:00:00,0,0,,,\n" + "FR262 no address,,MFX,0,0,0:00:00,0,0,,,\n");
+
+        assertEquals(lines, java.util.Arrays.asList(
+            I18n.f("loc.ui.importCsvSkippedLine", 2) + ": " + I18n.t("loc.ui.importCsvReasonName"),
+            I18n.f("loc.ui.importCsvSkippedLine", 3) + ": " + I18n.t("loc.ui.importCsvReasonMultiUnit"),
+            I18n.f("loc.ui.importCsvSkippedLine", 4) + ": " + I18n.t("loc.ui.importCsvReasonAddress")),
+            "a skipped row does not give its own reason");
+    }
+
+    /**
+     * A file that cannot be read says so, naming why, and changes nothing.
+     *
+     * MUTATION: in `LocomotiveCsvImport.open`, take out the unreadable message (or go on to read the empty text), and
+     * this fails.
+     */
+    @Test
+    public void testAFileThatCannotBeReadIsSaidSo() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            File missing = unwritten("fr262-missing");
+            int before = model.getLocomotives().size();
+            Seen seen = press(ui, missing, IMPORT, s -> !s.said.isEmpty());
+
+            assertEquals(seen.said.size(), 1, "an unreadable file did not give one message: " + seen.said);
+            assertTrue(seen.said.get(0).startsWith(I18n.f("loc.ui.errorImportCsvUnreadable", "").trim()),
+                "the message does not say the file could not be read: " + seen.said);
+            assertTrue(seen.said.get(0).contains(missing.getName()), "the message does not say why: " + seen.said);
+            assertEquals(model.getLocomotives().size(), before, "an unreadable file changed the locomotives");
+        });
+    }
 }
