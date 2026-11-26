@@ -632,6 +632,61 @@ public class testTheSyncAsksAboutRenamedLocomotives
         Components.settle();
     }
 
+    /**
+     * A rename answered in the table while the layout folder will not read, with no setup built and with one: the
+     * Sync's summary says the folder was not read and the setup was not updated, naming the configuration.
+     *
+     * MUTATION: in `AutonomyCompanionStore.repairOnDisk`, return false for every setup that does not exist; or in
+     * `AutonomyLifecycle.repairAutonomyLocomotive`, return for every session whose setup does not exist; and this fails.
+     */
+    @Test(timeOut = 400000)
+    public void testARenameWhileTheFolderWillNotReadIsSaidAtTheSync() throws Exception
+    {
+        final String old = "RV2 away old";
+        final String key = I18n.t("loc.ui.renameSetupNotUpdated");
+        final String start = key.substring(key.indexOf("{1}") + 3, key.indexOf("{0}"));
+
+        inAWindow(Files.createTempDirectory("tc-sync-renames").toFile(), StandInStation.cs3("260", INFO),
+            Scenario.folderFor("live-snapshot"), (rig, ui) ->
+        {
+            java.io.File layout = new java.io.File(ui.localLayoutPath());
+            java.io.File away = new java.io.File(layout.getPath() + "-away");
+            String folderLine = I18n.f("layout.ui.errorFolderUnreadLayoutKept", ui.localLayoutPath());
+
+            assertTrue(rig.model.syncWithCS2() >= 0, "precondition: the sync that imports the fixtures failed");
+
+            for (boolean built : new boolean[] {false, true})
+            {
+                renamedHere(rig, old);
+                Components.onTheEventThread(() ->
+                {
+                    Reflect.set(TrainControlUI.class, ui, "autonomySession", null);
+                    if (built) ui.getAutonomySession();
+                    return null;
+                });
+
+                List<Answering.Question> asked;
+
+                assertTrue(layout.renameTo(away), "precondition: the folder could not be taken away");
+                try
+                {
+                    asked = pressSync(rig, ui, SyncTable.answer(old, "RENAME"), m -> Answering.pressAt(m.contains(start)
+                        ? 1 : 0), testTheSyncAsksAboutRenamedLocomotives::saidDone);
+                }
+                finally
+                {
+                    away.renameTo(layout);
+                }
+
+                assertNotNull(rig.model.getLocByName(STATION_NAME), "precondition: the table did not rename " + old);
+                Answering.Question summary = said(asked, I18n.t("ui.infoSyncComplete"));
+                assertTrue(summary.message.contains(folderLine) && summary.message.contains(I18n.f(
+                    "loc.ui.renameSetupNotUpdated", "Main", STATION_NAME)), "the summary does not say the folder and the setup, with the"
+                    + " setup built: " + built + ": " + summary.message);
+            }
+        });
+    }
+
     /** The station's locomotive at address 10 held here as `old`, as though renamed at the station since. */
     private static void renamedHere(StationRig rig, String old)
     {

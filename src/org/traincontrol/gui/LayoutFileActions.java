@@ -221,8 +221,7 @@ public final class LayoutFileActions
 
             for (int i = 0; same && i < now.size(); i++) same = now.get(i) == pages.get(i);
 
-            if (!same && folder.equals(TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "")))
-                return true;
+            if (!same && folder.equals(this.ui.localLayoutPath())) return true;
 
             for (int i = 0; i < was.length; i++)
             {

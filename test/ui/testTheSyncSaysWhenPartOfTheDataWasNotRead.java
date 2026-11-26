@@ -97,6 +97,75 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
     }
 
     /**
+     * A start whose layout folder will not read, with the station answering, keeps the folder: the preference still
+     * names it, the station's layout stands in as the layout in use for the session, the start says so once by the
+     * folder's name, the exit keeps the folder's page windows remembered, and the next start reads the folder once it
+     * is back (FR-245).
+     *
+     * MUTATION: in `MarklinControlStation.syncLayoutsFromConfiguredSource`, empty the preference again at a start; or
+     * leave out the `view.showLayoutFolderHeld` call of `MarklinControlStation.init`; or `!layoutFolderHeld()` in
+     * `TrainControlUI.saveLayoutTitles`; each fails its own assertion.
+     */
+    @Test(timeOut = 240000)
+    @SuppressWarnings("unchecked")
+    public void testAStartWhoseLayoutFolderWillNotReadKeepsItAndSaysSo() throws Exception
+    {
+        final java.io.File root = Files.createTempDirectory("tc-start-unread").toFile();
+        final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+        final boolean rememberWas = prefs.getBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, true);
+        String titles = null;
+
+        // An empty folder: its index cannot be read
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0));
+            StationRig rig = new StationRig(root, StandInStation.cs3("260", INFO), true, true,
+                new java.io.File(root, "none")))
+        {
+            TrainControlUI ui = (TrainControlUI) rig.model.getGUI();
+            String folder = prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+            String said = I18n.f("layout.ui.warnFolderUnreadAtStart", folder);
+
+            try
+            {
+                startUpSyncDone(ui);
+                assertFalse(folder.isEmpty(), "the start let the layout folder go");
+                assertTrue(Components.waitFor(() -> answering.asked().contains(said), 30000), "the start did not say"
+                    + " the folder could not be read: " + answering.asked());
+                Components.settle();
+                assertEquals(answering.asked().stream().filter(said::equals).count(), 1L, "not said once");
+                assertEquals(answering.questions().get(answering.asked().indexOf(said)).type,
+                    JOptionPane.WARNING_MESSAGE, "not as a warning");
+                assertTrue(rig.model.getLayoutList().contains("Startpackung") && ui.isRemoteLayout(),
+                    "the station's layout does not stand in: " + rig.model.getLayoutList());
+
+                // The exit
+                titles = TrainControlUI.LAYOUT_TITLES_PREF + "_" + ((java.util.Map<String, Integer>) Reflect.get(
+                    TrainControlUI.class, ui, "layoutSizes")).values().iterator().next();
+                prefs.putBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, true);
+                prefs.put(titles, "1 - Main");
+                SwingUtilities.invokeAndWait(() -> ui.saveState(false));
+
+                assertEquals(prefs.get(titles, null), "1 - Main", "the exit forgot the folder's page windows");
+                assertEquals(prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, ""), folder, "the exit let the folder"
+                    + " go");
+
+                // The next start, the folder back
+                support.Trees.copyForTheRun(new java.io.File("test/test_layout"), new java.io.File(folder));
+                rig.model.clearLayouts();
+
+                assertTrue(rig.model.syncWithCS2() >= 0, "the next start's sync failed");
+                assertTrue(rig.model.getLayoutList().contains("1 - Main") && !ui.isRemoteLayout(), "the folder back,"
+                    + " the next start did not read it: " + rig.model.getLayoutList());
+            }
+            finally
+            {
+                prefs.putBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, rememberWas);
+                if (titles != null) prefs.remove(titles);
+                SwingUtilities.invokeAndWait(ui::dispose);
+            }
+        }
+    }
+
+    /**
      * The window lays out its demo diagram as it opens and syncs behind a spinner, posted from its start-up; a Sync
      * pressed meanwhile is rightly turned away as already running, so a claim starts once that sync has ended.
      */

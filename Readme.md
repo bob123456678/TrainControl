@@ -488,11 +488,11 @@ Tab icons provided by Freepik.
         - Locomotive Control
             - A locomotive already in a multi-unit can no longer head another one; in a saved database with such a pair, the outer multi-unit keeps it.
             - Renaming a Central Station multi-unit no longer adds a second copy at the next sync.
-            - When a rename cannot update the autonomy files, for example because another program has one open, a message says so and offers `Retry`.
+            - When a rename cannot update the autonomy files, for example because another program has one open or its folder can't be reached, a message says so and offers `Retry`.
         - Interface
             - Train icons no longer vanish from the track diagram and page windows when you close an editor soon after opening the page windows.
             - When `Open Layout...`, `Recent Layouts`, `Download Central Station Layout Files...` or `Create New Layout...` cannot read the new layout, the current one stays and a message says so.
-            - When a sync cannot read the layout folder, it keeps your track diagram and warns you, and a sync that read only part of the Central Station's data ends with a warning icon.
+            - When a sync cannot read the layout folder, it keeps your track diagram and warns you; at start-up, TrainControl shows the Central Station's layout for now, says so, and keeps the folder for the next start.  A sync that read only part of the Central Station's data ends with a warning icon.
             - With `Show Addresses` ticked, a square that links to another page no longer shows that page's name as an address.
             - On the accessory keyboard, the pointer is a hand over a key's red and green halves too.
             - On Java 21 with a Windows display set above 100%, the last stretched pictures are drawn sharp, every (i) mark has the same size, four-digit addresses and tight station names are no longer cut short, and a parked train no longer covers a small curved sensor's arrows.

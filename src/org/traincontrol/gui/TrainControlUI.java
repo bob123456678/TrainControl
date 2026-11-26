@@ -14306,7 +14306,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         try
         {
             // A session with no pages could show no page window, so the ones remembered are kept for the next
-            if (PositionAwareJFrame.remembersWindowLocations() && !this.model.getLayoutList().isEmpty())
+            if (PositionAwareJFrame.remembersWindowLocations() && !this.model.getLayoutList().isEmpty() && !layoutFolderHeld())
             {
                 Map<String, Set<String>> layoutTitlesMap = new HashMap<>();
                 ListIterator<LayoutPopupWindow> iter = this.popups.listIterator();
@@ -18451,6 +18451,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     }
 
     @Override
+    public void showLayoutFolderHeld(String folder)
+    {
+        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this,
+            I18n.f("layout.ui.warnFolderUnreadAtStart", folder), I18n.t("layout.ui.warnFolderUnreadAtStartTitle"),
+            JOptionPane.WARNING_MESSAGE));
+    }
+
+    @Override
     public void showPowerCut(int channel)
     {
         javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.f("ui.powerCut", channel),
@@ -19367,7 +19375,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     /** Whether layout files are loaded from the local filesystem. */
     boolean isLocalLayout()
     {
-        return !"".equals(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
+        return getLocalLayoutPath() != null;
+    }
+
+    /** Whether the preference's folder would not read at the start, so the station's layout stands in (FR-245). */
+    private boolean layoutFolderHeld()
+    {
+        String held = this.model == null ? null : this.model.getLayoutFolderHeld();
+
+        return held != null && held.equals(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
     }
     
     /**
@@ -19379,7 +19395,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     {
         String path = prefs.get(LAYOUT_OVERRIDE_PATH_PREF, null);
 
-        return path == null || path.isEmpty() ? null : path;
+        return path == null || path.isEmpty() || layoutFolderHeld() ? null : path;
     }
 
     /** `getLocalLayoutPath`, for the window's collaborators in this package. */

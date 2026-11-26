@@ -578,6 +578,69 @@ public class testDownloadingTheStationsLayout
     }
 
     /**
+     * Open Layout on a folder that then fails in the sync's read leaves the parser on the pages in use: the Download
+     * door then copies the station's pages, not the folder that failed, and from a folder of this computer's the parser
+     * reads that folder again (FR-245).
+     *
+     * MUTATION: in `MarklinControlStation.syncLayoutsFromConfiguredSource`, leave out putting the parser back before the
+     * return while a layout is in use, and the download copies the one page of the folder that failed.
+     */
+    @Test(timeOut = 240000)
+    public void testADownloadAfterARefusedOpenCopiesThePagesInUse() throws Exception
+    {
+        final File local = new File(root, "local");
+        final File changing = new File(root, "changing");
+        final File into = aFolder("dl");
+        final byte[] onePage = "[gleisbild]\nversion\n .major=1\ngroesse\nseite\n .id=5\n .name=1 - Main\n"
+            .getBytes(StandardCharsets.UTF_8);
+        final List<String> expected = new ArrayList<>();
+
+        for (String page : rig.model.getLayoutList()) expected.add(page + ".cs2");
+
+        Trees.copyForTheRun(new File("test/test_layout"), local);
+        Trees.copyForTheRun(new File("test/test_layout"), changing);
+
+        for (boolean fromLocal : new boolean[] {false, true})
+        {
+            if (fromLocal) openTheFolder(local);
+
+            // The folder that fails names one page, so a copy of it shows
+            Files.write(new File(changing, "config/gleisbild.cs2").toPath(), onePage);
+
+            try (AutoCloseable hook = testRecentLayouts.indexGoneWhenTheSyncReads(changing))
+            {
+                assertEquals(testRecentLayouts.openLayout(ui, changing), testRecentLayouts.REFUSED,
+                    "precondition: the folder that failed in the sync was not refused");
+            }
+
+            Components.settle();
+            Files.write(new File(changing, "config/gleisbild.cs2").toPath(), onePage);
+
+            if (fromLocal)
+            {
+                String master = ((org.traincontrol.marklin.file.CS2File) Reflect.get(
+                    org.traincontrol.marklin.MarklinControlStation.class, rig.model, "fileParser")).getLayoutMasterURL();
+
+                assertTrue(master.contains(local.getAbsolutePath()), "from a folder, the parser reads " + master);
+                continue;
+            }
+
+            try (Answering answering = press(into, message -> Answering.pressAt(0)))
+            {
+                assertTrue(Components.waitFor(() -> answering.asked().contains(completeFor(into)), 60000),
+                    "the download did not complete: " + answering.asked());
+                Components.settle();
+            }
+
+            List<String> got = new ArrayList<>(java.util.Arrays.asList(new File(into, "config/gleisbilder").list()));
+
+            got.sort(null);
+            expected.sort(null);
+            assertEquals(got, expected, "after a refused open, the download did not copy the station's pages");
+        }
+    }
+
+    /**
      * A Sync while the layout folder in use will not read keeps the layout, its preference, pages, page window,
      * autonomy and sensors, says so by the folder's name rather than that everything matches, and still syncs the
      * locomotives; once the folder is back, the next Sync reads it (FR-245).
