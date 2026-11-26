@@ -2120,7 +2120,7 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        assertTrue(AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name"),
+        assertTrue(AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name", null),
             "the setup on disk was not found, so nothing below tests anything");
 
         AutonomyCompanionStore reloaded = reloadedStore();
@@ -2164,7 +2164,7 @@ public class testAutonomyDiagramStore
 
         try (java.io.FileInputStream held = new java.io.FileInputStream(night))
         {
-            AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name");
+            AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name", null);
         }
         catch (AutonomyCompanionStore.NotWritten e)
         {
@@ -2179,7 +2179,7 @@ public class testAutonomyDiagramStore
         try (java.io.RandomAccessFile held = new java.io.RandomAccessFile(night, "rw");
             java.nio.channels.FileLock lock = held.getChannel().lock())
         {
-            AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name");
+            AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name", null);
         }
         catch (AutonomyCompanionStore.NotWritten e)
         {
@@ -2203,7 +2203,7 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        assertTrue(AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Going", null),
+        assertTrue(AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Going", null, null),
             "the setup on disk was not found, so nothing below tests anything");
 
         AutonomyCompanionStore reloaded = reloadedStore();
@@ -2227,7 +2227,7 @@ public class testAutonomyDiagramStore
 
         try
         {
-            assertFalse(AutonomyCompanionStore.repairLocomotiveOnDisk(bare, "Old Name", "New Name"),
+            assertFalse(AutonomyCompanionStore.repairLocomotiveOnDisk(bare, "Old Name", "New Name", null),
                 "a layout with no setup reported that it had repaired one");
 
             assertFalse(new File(bare, "config").exists(),
@@ -2266,7 +2266,7 @@ public class testAutonomyDiagramStore
         assertTrue(before.contains("\"Main\""),
             "the fixture never recorded its page names, so nothing below tests anything: " + before);
 
-        assertTrue(AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name"));
+        assertTrue(AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name", null));
 
         AutonomyCompanionStore reloaded = reloadedUnder(twoPages());
 

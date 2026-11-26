@@ -658,6 +658,13 @@ public class AutonomyCompanionStore
             activeConfiguration = root.optString("activeConfiguration", null);
 
             configurations.putAll(loaded);
+            for (Map.Entry<String, JSONObject> c : configurations.entrySet())
+            {
+                for (String[] r : lacking.getOrDefault(configurationFile(c.getKey()), Collections.emptyList()))
+                {
+                    repairLocomotiveIn(c.getValue(), r[0], r[1]);
+                }
+            }
         }
         catch (RuntimeException e)
         {
@@ -697,6 +704,7 @@ public class AutonomyCompanionStore
 
             writeJson(configurationFile(entry.getKey()), configuration);
             unwritten.remove(entry.getKey());
+            lacking.remove(configurationFile(entry.getKey()));
         }
     }
 
@@ -705,6 +713,24 @@ public class AutonomyCompanionStore
     public List<String> getUnwritten()
     {
         return new ArrayList<>(unwritten);
+    }
+
+    /** Per configuration file, the locomotive repairs ({from, to}, to null: deleted) a failed save left it lacking, in
+     * order; shared by a window's stores, so a load applies them and a write of the file clears them. */
+    private Map<File, List<String[]>> lacking = new LinkedHashMap<>();
+    /** Uses a window's record of what its files lack (see `lacking`); null keeps this store's own. */
+    public void shareLacking(Map<File, List<String[]>> record)
+    {
+        if (record != null) lacking = record;
+    }
+
+    /** Notes in `record` that these configurations' files lack a repair. */
+    public void lacks(Map<File, List<String[]>> record, List<String> configurations, String from, String to)
+    {
+        for (String name : configurations)
+        {
+            record.computeIfAbsent(configurationFile(name), k -> new ArrayList<>()).add(new String[] {from, to});
+        }
     }
 
     // shared data
@@ -969,12 +995,12 @@ public class AutonomyCompanionStore
      * @return true when a setup was found and rewritten, false when there was nothing to repair
      * @throws IOException if the setup exists but cannot be read or written
      */
-    public static boolean repairLocomotiveOnDisk(File layoutFolder, String from, String to)
-        throws IOException
+    public static boolean repairLocomotiveOnDisk(File layoutFolder, String from, String to,
+        Map<File, List<String[]>> lacking) throws IOException
     {
         if (from == null) return false;
 
-        return repairOnDisk(layoutFolder, store ->
+        return repairOnDisk(layoutFolder, lacking, store ->
         {
             if (to == null) store.locomotiveDeleted(from);
             else store.locomotiveRenamed(from, to);
@@ -987,7 +1013,7 @@ public class AutonomyCompanionStore
     {
         if (from == null || to == null) return false;
 
-        return repairOnDisk(layoutFolder, store -> store.renamePage(from, to));
+        return repairOnDisk(layoutFolder, null, store -> store.renamePage(from, to));
     }
 
     /** Forgets a deleted page in a setup nothing has open (see renamePageOnDisk). */
@@ -995,7 +1021,13 @@ public class AutonomyCompanionStore
     {
         if (page == null) return false;
 
-        return repairOnDisk(layoutFolder, store -> store.deletePage(page));
+        return repairOnDisk(layoutFolder, null, store -> store.deletePage(page));
+    }
+
+    /** Writes a setup nothing has open again, with what its files lack (see `lacking`). */
+    public static boolean saveOnDisk(File layoutFolder, Map<File, List<String[]>> lacking) throws IOException
+    {
+        return repairOnDisk(layoutFolder, lacking, store -> { });
     }
 
     /** Something that can be done to a store. */
@@ -1005,11 +1037,13 @@ public class AutonomyCompanionStore
     }
 
     /** Opens a setup nothing has open, changes one thing about it, and puts it back; true when one was rewritten. */
-    private static boolean repairOnDisk(File layoutFolder, Repair what) throws IOException
+    private static boolean repairOnDisk(File layoutFolder, Map<File, List<String[]>> lacking, Repair what)
+        throws IOException
     {
         if (layoutFolder == null) return false;
 
         AutonomyCompanionStore store = new AutonomyCompanionStore(layoutFolder);
+        store.shareLacking(lacking);
 
         // Nothing is created for a layout that has never had a setup.
         if (!store.exists()) return false;

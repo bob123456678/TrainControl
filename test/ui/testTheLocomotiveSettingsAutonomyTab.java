@@ -496,7 +496,7 @@ public class testTheLocomotiveSettingsAutonomyTab
      * naming the configuration.  Retry while the file is still held says it again and leaves the file as it was; Retry
      * once it is let go writes the new name.
      *
-     * MUTATION: in `AutonomyLifecycle.repairAutonomyLocomotive`, only log the failed save again; or leave the repairs
+     * MUTATION: in `AutonomyLifecycle.repairAutonomyLocomotive`, only log the failed save again; or leave the write
      * out of `sayAfterRenames`' Retry; and this fails.
      */
     @Test
@@ -514,12 +514,7 @@ public class testTheLocomotiveSettingsAutonomyTab
 
         try
         {
-            Components.onTheEventThread(() ->
-            {
-                session.setPointProperty(square, "excludedLocs", new org.json.JSONArray().put(was));
-                session.getStore().save();
-                return null;
-            });
+            excludedHere(new org.json.JSONArray().put(was), true);
 
             final byte[] before = java.nio.file.Files.readAllBytes(file.toPath());
             final java.io.FileInputStream holding = held = new java.io.FileInputStream(file);
@@ -566,13 +561,9 @@ public class testTheLocomotiveSettingsAutonomyTab
         {
             if (held != null) held.close();
 
-            Components.onTheEventThread(() ->
-            {
-                session.setPointProperty(square, "excludedLocs", excluded);
-                return null;
-            });
+            excludedHere(excluded, false);
 
-            for (String n : new String[] {was, name}) if (model.getLocByName(n) != null) model.deleteLoc(n);
+            deleteAll(was, name);
         }
     }
 
@@ -602,12 +593,7 @@ public class testTheLocomotiveSettingsAutonomyTab
 
         try
         {
-            Components.onTheEventThread(() ->
-            {
-                session.setPointProperty(square, "excludedLocs", new org.json.JSONArray().put(was));
-                session.getStore().save();
-                return null;
-            });
+            excludedHere(new org.json.JSONArray().put(was), true);
 
             final byte[] before = java.nio.file.Files.readAllBytes(file.toPath());
             java.util.List<String> said;
@@ -638,16 +624,12 @@ public class testTheLocomotiveSettingsAutonomyTab
         {
             setupBuilt(session);
 
-            Components.onTheEventThread(() ->
-            {
-                session.setPointProperty(square, "excludedLocs", excluded);
-                return null;
-            });
+            excludedHere(excluded, false);
 
             csv.delete();
             csv2.delete();
 
-            for (String n : new String[] {was, name, was2, name2}) if (model.getLocByName(n) != null) model.deleteLoc(n);
+            deleteAll(was, name, was2, name2);
         }
     }
 
@@ -713,8 +695,8 @@ public class testTheLocomotiveSettingsAutonomyTab
      * the file is let go writes what the session holds, the renamed locomotive kept, not the deletion done again over
      * it.
      *
-     * MUTATION: in `AutonomyLifecycle.sayAfterRenames`, Retry without setting `again` (the whole repair done again), and
-     * this fails.
+     * MUTATION: in `AutonomyLifecycle.sayAfterRenames`, Retry by doing the door's repairs again over the session's
+     * store before writing it, and this fails.
      */
     @Test
     public void testARetryAfterADeletionAndARenameOntoItKeepsTheRenamed() throws Exception
@@ -732,12 +714,7 @@ public class testTheLocomotiveSettingsAutonomyTab
             fixture.quiet();
             support.Reflect.method(org.traincontrol.gui.AutonomyLifecycle.class, "forgetUnrepaired")
                 .invoke(ui.autonomyLifecycle());
-            Components.onTheEventThread(() ->
-            {
-                session.setPointProperty(square, "excludedLocs", new org.json.JSONArray().put(doomed).put(was));
-                session.getStore().save();
-                return null;
-            });
+            excludedHere(new org.json.JSONArray().put(doomed).put(was), true);
             try (java.io.FileInputStream held = new java.io.FileInputStream(file))
             {
                 Components.onTheEventThread(() ->
@@ -776,13 +753,202 @@ public class testTheLocomotiveSettingsAutonomyTab
         }
         finally
         {
+            excludedHere(excluded, false);
+            deleteAll(doomed, was);
+        }
+    }
+
+    /**
+     * Two configurations with no setup built, the second's file held: a deletion and a rename onto the deleted name
+     * reach the first and miss the second.  Retry while it is still held says it again; Retry once it is let go gives
+     * each file only what it lacked: the first keeps the renamed locomotive, the second takes the deletion, then the
+     * rename; and a setup built from the files afterwards and saved keeps them so.
+     *
+     * MUTATION: in `AutonomyCompanionStore.load`, apply every file's pending repairs to every configuration; or, in
+     * `save`, keep a written file's; or, in `AutonomyLifecycle.writeAgain`, return nothing left from the bare store's
+     * failure; and this fails.
+     */
+    @Test
+    public void testARetryGivesEachConfigurationOnlyWhatItsFileLacked() throws Exception
+    {
+        final String doomed = "AU two doomed", was = "AU two onto";
+        final String line = I18n.f("loc.ui.renameSetupNotUpdated", "Zzz", doomed);
+        final java.io.File file = configurationFile(session.getStore().getActiveConfiguration()),
+            second = configurationFile("Zzz"), setupFile = new java.io.File(ui.localLayoutPath(),
+            "config/autonomy/setup.json");
+        final Object excluded = Components.onTheEventThread(() -> session.getPointProperty(square, "excludedLocs"));
+        final byte[] setup = java.nio.file.Files.readAllBytes(setupFile.toPath());
+        java.io.FileInputStream held = null;
+        model.newMFXLocomotive(doomed, 0xCEB);
+        model.newMFXLocomotive(was, 0xCEC);
+
+        try
+        {
+            fixture.quiet();
+            excludedHere(new org.json.JSONArray().put(doomed).put(was), true);
+            org.json.JSONObject copy = new org.json.JSONObject(new String(java.nio.file.Files.readAllBytes(
+                file.toPath()), java.nio.charset.StandardCharsets.UTF_8));
+            copy.put("name", "Zzz");
+            java.nio.file.Files.write(second.toPath(), copy.toString(2).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            held = new java.io.FileInputStream(second);
+            setupBuilt(null);
             Components.onTheEventThread(() ->
             {
-                session.setPointProperty(square, "excludedLocs", excluded);
+                support.Reflect.method(org.traincontrol.gui.AutonomyLifecycle.class, "forgetUnrepaired")
+                    .invoke(ui.autonomyLifecycle());
+                model.deleteLoc(doomed);
+                model.renameLoc(was, doomed);
                 return null;
             });
-            for (String n : new String[] {doomed, was}) if (model.getLocByName(n) != null) model.deleteLoc(n);
+
+            // Retry with no setup built (a showing dialog may build one) meets Zzz still held
+            assertEquals(Components.onTheEventThread(() ->
+            {
+                support.Reflect.set(TrainControlUI.class, ui, "autonomySession", null);
+                return support.Reflect.method(org.traincontrol.gui.AutonomyLifecycle.class, "writeAgain")
+                    .invoke(ui.autonomyLifecycle());
+            }), java.util.Arrays.asList("Zzz"), "a Retry through a bare store did not keep Zzz as left");
+            assertEquals(retried(line, held), java.util.Arrays.asList(line, line), "not said once, naming Zzz and the"
+                + " rename, and again at the Retry that met it still held");
+            Components.onTheEventThread(() ->
+            {
+                support.Reflect.set(TrainControlUI.class, ui, "autonomySession", null);
+                ui.getAutonomySession().getStore().save();
+                return null;
+            });
+
+            for (java.io.File f : new java.io.File[] {file, second})
+            {
+                String after = new String(java.nio.file.Files.readAllBytes(f.toPath()),
+                    java.nio.charset.StandardCharsets.UTF_8);
+                assertTrue(after.split("\"" + doomed + "\"", -1).length == 2 && !after.contains(was), "after Retry "
+                    + f.getName() + " does not keep the renamed locomotive alone: " + after);
+            }
         }
+        finally
+        {
+            if (held != null) held.close();
+            setupBuilt(session);
+            second.delete();
+            java.nio.file.Files.write(setupFile.toPath(), setup);
+            excludedHere(excluded, true);
+            deleteAll(doomed, was);
+        }
+    }
+
+    /**
+     * A rename the held setup cannot save, then the setup built again from its files before Retry, as a layout reload
+     * does: the new setup reads the rename its file lacks, and Retry once the file is let go writes the new name.
+     *
+     * MUTATION: in `AutonomyLifecycle.getAutonomySession`, leave out `shareLacking`, and this fails.
+     */
+    @Test
+    public void testARetryAfterTheSetupIsBuiltAgainWritesTheRename() throws Exception
+    {
+        final String was = "AU again was", name = "AU again renamed";
+        final String configuration = session.getStore().getActiveConfiguration();
+        final String line = I18n.f("loc.ui.renameSetupNotUpdated", configuration, name);
+        final java.io.File file = configurationFile(configuration);
+        final Object excluded = Components.onTheEventThread(() -> session.getPointProperty(square, "excludedLocs"));
+        model.newMFXLocomotive(was, 0xCED);
+
+        try
+        {
+            fixture.quiet();
+            excludedHere(new org.json.JSONArray().put(was), true);
+
+            try (java.io.FileInputStream held = new java.io.FileInputStream(file))
+            {
+                Components.onTheEventThread(() ->
+                {
+                    support.Reflect.method(org.traincontrol.gui.AutonomyLifecycle.class, "forgetUnrepaired")
+                        .invoke(ui.autonomyLifecycle());
+                    model.renameLoc(was, name);
+                    return null;
+                });
+            }
+
+            setupBuilt(null);
+            assertNotNull(Components.onTheEventThread(ui::getAutonomySession), "precondition: no setup was built");
+            assertEquals(retried(line, null), java.util.Arrays.asList(line), "not said once, naming the rename");
+
+            String after = new String(java.nio.file.Files.readAllBytes(file.toPath()), java.nio.charset.StandardCharsets.UTF_8);
+            assertTrue(after.contains(name) && !after.contains(was), "Retry over the setup built again did not write"
+                + " the new name: " + after);
+        }
+        finally
+        {
+            setupBuilt(session);
+            excludedHere(excluded, true);
+            deleteAll(was, name);
+        }
+    }
+
+    /**
+     * Says what renames left through `sayAfterRenames`, pressing Retry at `line`, letting `held` go (null: none) as it
+     * is said the second time; what was said.
+     */
+    private static java.util.List<String> retried(String line, java.io.Closeable held) throws Exception
+    {
+        final java.util.concurrent.atomic.AtomicInteger said = new java.util.concurrent.atomic.AtomicInteger();
+
+        try (java.io.Closeable holding = held; Answering answering = Answering.start(m ->
+        {
+            if (!m.contains(line)) return null;
+
+            if (held != null && said.incrementAndGet() == 2)
+            {
+                try
+                {
+                    held.close();
+                }
+                catch (java.io.IOException e)
+                {
+                    throw new java.io.UncheckedIOException(e);
+                }
+            }
+
+            return Answering.press(I18n.t("loc.ui.renameSetupRetry"));
+        }))
+        {
+            java.lang.reflect.Method say = support.Reflect.method(org.traincontrol.gui.AutonomyLifecycle.class,
+                "sayAfterRenames", java.awt.Component.class, String.class, java.util.List.class, String.class);
+            SwingUtilities.invokeLater(() ->
+            {
+                try
+                {
+                    say.invoke(ui.autonomyLifecycle(), ui, null, java.util.Collections.emptyList(), null);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+            assertTrue(answering.awaitAsked(held == null ? 1 : 2, 15000), "the renames were not said: "
+                + answering.asked());
+            support.AskingWindows.awaitAnswered();
+            Components.settle();
+
+            return answering.asked();
+        }
+    }
+
+    /** Sets the square's excluded locomotives on the event thread, and saves the setup when `save`. */
+    private static void excludedHere(Object value, boolean save)
+    {
+        Components.onTheEventThread(() ->
+        {
+            session.setPointProperty(square, "excludedLocs", value);
+            if (save) session.getStore().save();
+            return null;
+        });
+    }
+
+    /** Deletes those of these locomotives that exist. */
+    private static void deleteAll(String... names)
+    {
+        for (String n : names) if (model.getLocByName(n) != null) model.deleteLoc(n);
     }
 
     /** The file this configuration of the railway is kept in. */

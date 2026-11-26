@@ -192,7 +192,7 @@ public class testEveryLanguageFitsThePopups
             "clearAllPlacements");
         java.lang.reflect.Method cancel = Reflect.method(LayoutEditor.class, "confirmExit");
         java.lang.reflect.Method unrepaired = Reflect.method(org.traincontrol.gui.AutonomyLifecycle.class, "leftUnrepaired",
-            String.class, String.class, boolean.class, List.class);
+            String.class, String.class, List.class);
         java.lang.reflect.Method sayAfterRenames = Reflect.method(org.traincontrol.gui.AutonomyLifecycle.class,
             "sayAfterRenames", java.awt.Component.class, String.class, List.class, String.class);
         List<String> unnamed = new ArrayList<>();
@@ -224,7 +224,7 @@ public class testEveryLanguageFitsThePopups
                 null));
             found.addAll(popup("popup-rename-setup-not-updated", language, m -> Answering.pressAt(1), null, later(() ->
             {
-                unrepaired.invoke(railway.ui.autonomyLifecycle(), "BR 103 137-6", "BR 103 137-6 Rheingold", true,
+                unrepaired.invoke(railway.ui.autonomyLifecycle(), "BR 103 137-6", "BR 103 137-6 Rheingold",
                     java.util.Arrays.asList("Main", "Weekend timetable"));
                 return sayAfterRenames.invoke(railway.ui.autonomyLifecycle(), railway.ui, null, Collections.emptyList(),
                     I18n.t("sync.ui.title"));

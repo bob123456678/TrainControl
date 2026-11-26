@@ -10,9 +10,7 @@ import org.traincontrol.gui.widgets.DetailsArea;
 import org.traincontrol.gui.widgets.RestoreAction;
 import java.awt.Component;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import javax.swing.GroupLayout;
@@ -310,6 +308,8 @@ public final class AutonomyLifecycle
         AutonomySession session = new AutonomySession(new File(path));
 
         if (!session.isUsable()) return null;
+        // Its reads take the repairs failed saves left its files lacking.
+        session.getStore().shareLacking(lacking);
 
         try
         {
@@ -380,10 +380,6 @@ public final class AutonomyLifecycle
         // The running railway from the moment the session is made: refusing a direction or a link asks where its trains
         // stand, which a session told only by the editor would judge against the setup alone.
         session.setRunningLayoutSource(() -> ui.getModel() == null ? null : ui.getModel().getAutoLayoutIfLoaded());
-
-        // Read from a file a failed repair left: it takes those repairs first, in order, so later ones land on them
-        for (Unrepaired r : unrepaired) if (r.onDisk) repairIn(session.getStore(), r.from, r.to);
-        for (Unrepaired r : unrepaired) r.onDisk = false;
 
         ui.autonomySession = session;
 
@@ -467,9 +463,6 @@ public final class AutonomyLifecycle
         return true;
     }
 
-    /** While a Retry writes again: in memory the setup, its folds and the paused record already hold the repairs. */
-    private boolean again;
-
     void repairAutonomyLocomotive(String from, String to)
     {
         // The session already built, not the lazy getter, which would create a setup out of nothing and then save it.
@@ -477,10 +470,9 @@ public final class AutonomyLifecycle
 
         // The paused-trains record and the edit session's folds also name locomotives (OB-343); the fold applies them
         // by name to the setup's list, so a stale name pauses the wrong train.
-        if (ui.settingsAsBuilt != null && !again) AutonomyCompanionStore.repairLocomotiveInPausedList(
-            ui.settingsAsBuilt, from, to);
+        if (ui.settingsAsBuilt != null) AutonomyCompanionStore.repairLocomotiveInPausedList(ui.settingsAsBuilt, from, to);
 
-        if (session != null && !again) session.followALocomotiveName(from, to);
+        if (session != null) session.followALocomotiveName(from, to);
 
         // No session: repair the FILE without building one (OB-062), which would open pages, migrate and raise dialogs.
         if (session == null)
@@ -491,13 +483,17 @@ public final class AutonomyLifecycle
 
             try
             {
-                AutonomyCompanionStore.repairLocomotiveOnDisk(new File(path), from, to);
+                AutonomyCompanionStore.repairLocomotiveOnDisk(new File(path), from, to, lacking);
             }
             catch (Exception e)
             {
-                // Kept before the log line, whose window may build a setup, which takes what is kept
-                if (e instanceof AutonomyCompanionStore.NotWritten) leftUnrepaired(from, to, true,
-                    ((AutonomyCompanionStore.NotWritten) e).configurations);
+                // Kept before the log line, whose window may build a setup, which reads what its files lack
+                if (e instanceof AutonomyCompanionStore.NotWritten)
+                {
+                    List<String> left = ((AutonomyCompanionStore.NotWritten) e).configurations;
+                    new AutonomyCompanionStore(new File(path)).lacks(lacking, left, from, to);
+                    leftUnrepaired(from, to, left);
+                }
                 ui.getModel().log(e);
             }
 
@@ -509,39 +505,38 @@ public final class AutonomyLifecycle
 
         try
         {
-            if (!again) repairIn(session.getStore(), from, to);
+            repairIn(session.getStore(), from, to);
 
             // The note repair records its failure in a field; read it, or the next start's revert restores a deleted
             // locomotive.
             if (session.getStore().didTheNoteRepairFail()) ui.getModel().logf(java.util.logging.Level.WARNING, "autosetup.log.noteRepairFailed");
 
             session.getStore().save();
-
-            // The editor's Cancel snapshot still names the old locomotive; canceling would write it back over the
-            // repair.
-            if (ui.openEditor != null && ui.openEditor.isDisplayable())
-            {
-                ui.openEditor.autonomyLocomotiveRenamed(from, to);
-            }
-
-            // The window still shows the old name (MT-153).  Posted, not called: this runs on the event thread inside a
-            // rename dialog, and updateVisiblePoints is synchronized on the main window and reaches into the layout, so
-            // taking both locks in that order deadlocks.
-            SwingUtilities.invokeLater(() ->
-            {
-                ui.updateVisiblePoints();
-                ui.repaintAutoLocListLite();
-
-                // Every timetable row names a locomotive (MT-149).
-                ui.timetableTab().repaintTimetable();
-            });
         }
         catch (Exception e)
         {
             // The rename has already happened; the door that made it says which configurations kept the old name.
             ui.getModel().log(e);
-            leftUnrepaired(from, to, false, session.getStore().getUnwritten());
+            List<String> left = session.getStore().getUnwritten();
+            session.getStore().lacks(lacking, left, from, to);
+            leftUnrepaired(from, to, left);
         }
+        // The editor's Cancel snapshot still names the old locomotive; canceling would write it back over the repair.
+        if (ui.openEditor != null && ui.openEditor.isDisplayable())
+        {
+            ui.openEditor.autonomyLocomotiveRenamed(from, to);
+        }
+        // The window still shows the old name (MT-153).  Posted, not called: this runs on the event thread inside a
+        // rename dialog, and updateVisiblePoints is synchronized on the main window and reaches into the layout, so
+        // taking both locks in that order deadlocks.
+        SwingUtilities.invokeLater(() ->
+        {
+            ui.updateVisiblePoints();
+            ui.repaintAutoLocListLite();
+
+            // Every timetable row names a locomotive (MT-149).
+            ui.timetableTab().repaintTimetable();
+        });
     }
 
     /** A locomotive repair in a store's memory: a rename, or a deletion when `to` is null. */
@@ -551,68 +546,90 @@ public final class AutonomyLifecycle
         else store.locomotiveRenamed(from, to);
     }
 
-    /** A repair that could not be written; `onDisk` while no session holds it in memory either. */
+    /** Per configuration file, what failed saves left it lacking (see `AutonomyCompanionStore.lacking`). */
+    private final java.util.Map<File, List<String[]>> lacking = Collections.synchronizedMap(new java.util.HashMap<>());
+    /** A failed repair a door has yet to say, and the configurations whose files it did not reach. */
     private static final class Unrepaired
     {
         final String from, to;
-        boolean onDisk;
-        Unrepaired(String from, String to, boolean onDisk)
+        final List<String> in;
+        Unrepaired(String from, String to, List<String> in)
         {
             this.from = from;
             this.to = to;
-            this.onDisk = onDisk;
+            this.in = in;
         }
     }
 
-    /** Repairs that failed since a door last said so, in order, and the configurations they left. */
+    /** Failed repairs since a door last said so, in order. */
     private final List<Unrepaired> unrepaired = new ArrayList<>();
-    private final Set<String> unrepairedIn = new LinkedHashSet<>();
 
     /** Keeps a failed repair for its door; a deletion too, as a rename in the same door may take the deleted name. */
-    private void leftUnrepaired(String from, String to, boolean onDisk, List<String> configurations)
+    private void leftUnrepaired(String from, String to, List<String> configurations)
     {
-        if (configurations.isEmpty()) return;
-        unrepaired.add(new Unrepaired(from, to, onDisk));
-        unrepairedIn.addAll(configurations);
+        if (!configurations.isEmpty()) unrepaired.add(new Unrepaired(from, to, configurations));
     }
 
     /** Forgets what earlier renames left, as a door's renames begin: it is said at its own door or not at all. */
     void forgetUnrepaired()
     {
         unrepaired.clear();
-        unrepairedIn.clear();
     }
 
-    /** Says `said` (null: nothing) and `lines` over c, with the configurations renames left; Retry repeats them. */
+    /** Says `said` (null: nothing) and `lines` over c, with the configurations renames left; Retry writes them again. */
     void sayAfterRenames(Component c, String said, List<String> lines, String title)
     {
         String heading = title != null ? title : UIManager.getString("OptionPane.messageDialogTitle");
-        while (unrepaired.stream().anyMatch(r -> r.to != null))
+        List<Unrepaired> shown = new ArrayList<>(unrepaired);
+        while (shown.stream().anyMatch(r -> r.to != null))
         {
-            String text = I18n.f("loc.ui.renameSetupNotUpdated", String.join(", ", unrepairedIn), unrepaired.stream()
-                .map(r -> r.to).filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.joining(", ")));
-            List<Unrepaired> retried = new ArrayList<>(unrepaired);
+            String text = I18n.f("loc.ui.renameSetupNotUpdated", shown.stream().flatMap(r -> r.in.stream()).distinct()
+                .collect(java.util.stream.Collectors.joining(", ")), shown.stream().map(r -> r.to)
+                .filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.joining(", ")));
             Object[] options = {I18n.t("loc.ui.renameSetupRetry"), I18n.t("ui.ok")};
             if (said != null) text = said + "\n\n" + text;
             int answer = JOptionPane.showOptionDialog(c, lines.isEmpty() ? text : DetailsArea.message(text, lines),
                 heading, JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
-            // Kept while shown, for a setup built meanwhile to take; forgotten once said, so no later door says it
-            forgetUnrepaired();
+            // Only what was said: a repair left while the message was up is its own door's to say
+            unrepaired.removeAll(shown);
             if (answer != 0) return;
-            again = true;
-            try
+            List<String> left = writeAgain();
+            List<Unrepaired> still = new ArrayList<>();
+            for (Unrepaired r : shown)
             {
-                for (Unrepaired r : retried) repairAutonomyLocomotive(r.from, r.to);
+                List<String> in = new ArrayList<>(r.in);
+                in.retainAll(left);
+                if (!in.isEmpty()) still.add(new Unrepaired(r.from, r.to, in));
             }
-            finally
-            {
-                again = false;
-            }
+            shown = still;
             said = null;
             lines = Collections.emptyList();
         }
         if (said != null) JOptionPane.showMessageDialog(c, lines.isEmpty() ? said : DetailsArea.message(said, lines),
             heading, JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    /** Writes the setup's files again, with what they lack: the session's store, or a bare one; what is still left. */
+    private List<String> writeAgain()
+    {
+        AutonomySession session = ui.autonomySession;
+        String path = ui.localLayoutPath();
+        try
+        {
+            if (session != null) session.getStore().save();
+            else AutonomyCompanionStore.saveOnDisk(path == null ? null : new File(path), lacking);
+            return Collections.emptyList();
+        }
+        catch (AutonomyCompanionStore.NotWritten e)
+        {
+            ui.getModel().log(e);
+            return e.configurations;
+        }
+        catch (java.io.IOException e)
+        {
+            ui.getModel().log(e);
+            return session.getStore().getUnwritten();
+        }
     }
 
     /** Re-runs the checks and shows the result beside the overlay checkbox; cheap enough for every autonomy action. */
