@@ -14302,7 +14302,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     {
         try
         {
-            if (PositionAwareJFrame.remembersWindowLocations())
+            // A session with no pages could show no page window, so the ones remembered are kept for the next
+            if (PositionAwareJFrame.remembersWindowLocations() && !this.model.getLayoutList().isEmpty())
             {
                 Map<String, Set<String>> layoutTitlesMap = new HashMap<>();
                 ListIterator<LayoutPopupWindow> iter = this.popups.listIterator();
@@ -14640,7 +14641,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      */
     boolean openLayoutFolder(File folder)
     {
-        // Refused before anything changes: a folder that will not read sends the sync back to the station's layout
+        // Refused before anything changes, so a folder that will not read never reaches the sync
         if (!org.traincontrol.marklin.file.CS2File.opensAsALayout(folder))
         {
             JOptionPane.showMessageDialog(this, I18n.t("layout.ui.errorInvalidPathOrCorruptData"));

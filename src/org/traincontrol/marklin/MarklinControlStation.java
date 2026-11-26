@@ -553,9 +553,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
        
     /**
      * Re-reads the track diagrams from wherever they are configured to come from - a local folder when
-     * one is set, the Central Station otherwise - reverting to the Central Station if the local folder
-     * cannot be read.  The station's diagram is not read while the station's type is unknown, as the type decides which
-     * protocol a CS3 tile at an address with two takes; a local folder is read either way.
+     * one is set, the Central Station otherwise - keeping the layout in use if the local folder cannot be read, or
+     * reverting to the Central Station when there is none.  The station's diagram is not read while the station's
+     * type is unknown, as the type decides which protocol a CS3 tile at an address with two takes; a local folder is
+     * read either way.
      *
      * Not a full sync, which also re-imports every route and locomotive: slow and side-effecting (routes are deleted
      * and re-added, addresses and function types adopted), none of it wanted after renaming a page.
@@ -591,14 +592,26 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     // syncLayouts clears for itself, once it has something to put back
                     syncLayouts();
+                    this.layoutFolderRead = overrideLayoutPath;
                 }
                 catch (Exception e)
                 {
                     this.log(e);
+                    // A layout in use is kept.  Its own folder is read again at the next sync, which is said; another
+                    // folder is a switch, which switchTo puts back and its door reports.  With none yet, at a start,
+                    // the station's layout stands in and the folder is let go (FR-245)
+                    if (!this.layoutDB.getItemNames().isEmpty())
+                    {
+                        if (overrideLayoutPath.equals(this.layoutFolderRead))
+                        {
+                            this.layoutFolderUnread = overrideLayoutPath;
+                            this.logf(Level.SEVERE, "layout.ui.errorFolderUnreadLayoutKept", overrideLayoutPath);
+                        }
+                        return;
+                    }
 
                     // The folder is tried again at the next sync, by when the type may be known
                     requireTheTypeKnown();
-                   
                     this.logf(java.util.logging.Level.SEVERE, "layout.revertToDefaultSource", !debug ? " Enable debug mode for details." : "");
                     TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
                     fileParser.setDefaultLayoutDataLoc();
@@ -782,7 +795,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         final int couldNotBeRead = parser.getPagesThatCouldNotBeRead();
 
         // Nothing read is still a failure, thrown BEFORE clearLayouts so the diagram on screen survives:
-        // syncLayoutsFromConfiguredSource reverts to the Central Station in a catch.
+        // syncLayoutsFromConfiguredSource keeps the layout in use, or with none reads the Central Station's.
         if (parser.readNoPage(parsed))
         {
             throw new PlainFailure(I18n.f("layout.errorNoPageCouldBeRead",
@@ -1555,6 +1568,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /** Whether the last sync left part of the Central Station's data as it was because it could not be read (FR-169). */
     private volatile boolean lastSyncPartial = false;
+    private volatile String layoutFolderUnread;
+    /** The layout folder whose pages are in use, cleared with them; under `layoutRefreshLock`. */
+    private String layoutFolderRead;
     /** The routes the last sync added or replaced, which its count includes. */
     private volatile int lastSyncRoutes;
 
@@ -1583,6 +1599,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public boolean wasLastSyncPartial()
     {
         return this.lastSyncPartial;
+    }
+
+    @Override
+    public String getLayoutFolderUnread()
+    {
+        return this.layoutFolderUnread;
     }
 
     /**
@@ -1734,6 +1756,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {        
         this.lastSyncError = null;
         this.lastSyncPartial = false;
+        this.layoutFolderUnread = null;
         this.lastSyncRoutes = 0;
 
         // Read remote config files, each one once for the whole sync (FR-207)
@@ -1880,16 +1903,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
             // A station locomotive at the address of one here under another name is not added beside it, and the one
             // here stands for it as a multi-unit member, until a pressed Sync answers; a partial read can set the mark
-            // but never clear it, as the station's name may be in what did not read (FR-249)
-            if (!this.lastSyncPartial) for (MarklinLocomotive here : this.locDB.getItems()) here.setHeldBackStationName(null);
+            // but never clear it, as the station's name may be in what did not read (FR-249).  Each mark goes straight to
+            // its new value, so no reader, and no throw, finds every mark cleared.
             RenameProposals left = differences(parsedLocs, this.lastSyncPartial, false);
+            Map<Locomotive, String> marks = new HashMap<>();
+            for (RenameProposals.Row row : left.getRows()) if (row.stationName != null) marks.put(row.loco, row.stationName);
+            for (MarklinLocomotive here : this.locDB.getItems())
+                if (!this.lastSyncPartial || marks.containsKey(here)) here.setHeldBackStationName(marks.get(here));
             // The menu's count likewise: a partial read can raise it, never lower it
             this.unsettled = this.lastSyncPartial ? Math.max(this.unsettled, left.getUnsettledCount())
                 : left.getUnsettledCount();
             for (RenameProposals.Row row : left.getRows())
             {
                 if (row.stationName == null) continue;
-                row.loco.setHeldBackStationName(row.stationName);
                 if (row.byHand) this.logf("loc.syncByHand", row.loco.getName(), row.stationName,
                     row.loco.getAddress(), row.stationAddress);
                 else if (!this.locDB.hasName(row.stationName) && !row.isNameKept() && !row.loco.isSyncIgnored())
@@ -2260,6 +2286,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 this.layoutDB.delete(name);
             }
+            this.layoutFolderRead = null;
         }
     }
     

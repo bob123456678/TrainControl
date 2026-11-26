@@ -110,6 +110,8 @@ public interface ViewListener
     public int getUnsettledCount();
     public void setUnsettledCount(int count);
     public String getLastSyncError();
+    /** The layout folder the last sync could not read, so the layout in use was kept; null when there was none. */
+    public String getLayoutFolderUnread();
     public List<String> getLayoutList();
     public List<String> getLayoutListByName();
     public String getPageNameForId(int id);

@@ -664,7 +664,7 @@ public class AutonomyCompanionStore
     /** Writes the setup and every configuration through Util.writeAtomically, so no half-written file is left. */
     public void save() throws IOException
     {
-        if (!isUsable()) throw new IOException(ERROR_NOT_LOCAL);
+        if (!isUsable()) throw new IOException(I18n.t(ERROR_NOT_LOCAL));
 
         folder().mkdirs();
 
