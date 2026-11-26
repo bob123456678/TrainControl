@@ -22,7 +22,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
-import javax.swing.text.Element;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.util.I18n;
