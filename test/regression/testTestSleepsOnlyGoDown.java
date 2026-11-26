@@ -26,10 +26,10 @@ import org.testng.annotations.Test;
  */
 public class testTestSleepsOnlyGoDown
 {
-    private static final int SLEEPS_ALLOWED = 409;
+    private static final int SLEEPS_ALLOWED = 408;
 
     /** The milliseconds those sleeps and the quiet waits over 1,000 ms add up to, as far as they are plain numbers. */
-    private static final long SLEEP_MS_ALLOWED = 177082;
+    private static final long SLEEP_MS_ALLOWED = 176582;
 
     /** The waits with no plain number, which the sum cannot see: a swap to a constant lands here. */
     private static final long UNSUMMED_ALLOWED = 40;

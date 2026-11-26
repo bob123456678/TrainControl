@@ -1031,8 +1031,21 @@ public class testAPendingTurnSurvivesTheRebuild
             assertTrue(sized[0].width < natural[0].width && sized[0].height < natural[0].height,
                 "precondition: the pop-up was not made smaller: " + natural[0] + " then " + sized[0]);
 
+            final String keptName = kept;
+
+            Components.waitFor(() -> prefs.getInt(keptName + "_width", -1) == sized[0].width, 5000);
+
+            final StringBuilder rememberedNow = new StringBuilder();
+
+            for (String suffix : new String[] {"_x", "_y", "_width", "_height", "_state"})
+                rememberedNow.append(' ').append(suffix).append('=').append(prefs.getInt(keptName + suffix, -1));
+
             assertEquals(prefs.getInt(kept + "_width", -1), sized[0].width,
-                "precondition: the size the operator chose is not what is remembered for the window");
+                "precondition: the size the operator chose is not what is remembered for the window (visible "
+                + window.isVisible() + ", remembers locations "
+                + org.traincontrol.gui.widgets.PositionAwareJFrame.remembersWindowLocations() + ", key " + kept + ", kept"
+                + rememberedNow + ", popups saved " + savedPopUps(prefs) + ", window " + window.getTitle() + " "
+                + window.getBounds() + ")");
 
             // A CAPTION OF ITS PAGE TAKEN OFF, the window told as the editor tells it
             session.setCaption(square, null);
@@ -1041,7 +1054,17 @@ public class testAPendingTurnSurvivesTheRebuild
 
             for (int i = 0; i < 20; i++) Components.drain(1);
 
-            Thread.sleep(500);
+            Components.waitFor(() ->
+            {
+                try
+                {
+                    return labelsInPopup(station, window) == 0;
+                }
+                catch (Exception e)
+                {
+                    return false;
+                }
+            }, 5000);
 
             for (int i = 0; i < 5; i++) Components.drain(1);
 
@@ -1124,6 +1147,23 @@ public class testAPendingTurnSurvivesTheRebuild
         });
 
         return count[0];
+    }
+
+    /** The pop-up size keys now in the preferences, for a failure message. */
+    private static String savedPopUps(java.util.prefs.Preferences prefs)
+    {
+        try
+        {
+            StringBuilder keys = new StringBuilder();
+
+            for (String key : prefs.keys()) if (key.startsWith("LayoutPopupUI") && key.endsWith("_width")) keys.append(key).append(' ');
+
+            return keys.toString();
+        }
+        catch (java.util.prefs.BackingStoreException e)
+        {
+            return e.toString();
+        }
     }
 
     /** The Medium button's pop-up of the page shown, once it is up. */
