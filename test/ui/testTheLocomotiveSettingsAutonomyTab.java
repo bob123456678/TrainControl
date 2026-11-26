@@ -551,15 +551,7 @@ public class testTheLocomotiveSettingsAutonomyTab
                 return Answering.press(I18n.t("loc.ui.renameSetupRetry"));
             }))
             {
-                assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsWindow.Tab.values()[0], null),
-                    "the window did not open");
-                assertNotNull(SettingsWindow.awaited(), "the window is not on screen");
-
-                SettingsWindow.type("settings.name", name);
-                SettingsWindow.press(SettingsWindow.save());
-
-                assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, 8000), "Save did not close the"
-                    + " window: " + answering.asked());
+                renameAtSave(loc, name, answering);
                 assertEquals(answering.asked(), java.util.Arrays.asList(line, line), "the held configuration was not"
                     + " said once at Save and once at the Retry that met it still held");
             }
@@ -691,15 +683,7 @@ public class testTheLocomotiveSettingsAutonomyTab
 
             try (Answering answering = Answering.start(message -> message.contains(start) ? Answering.pressAt(1) : null))
             {
-                assertTrue(SettingsWindow.open(ui, model.getLocByName(was), LocomotiveSettingsWindow.Tab.values()[0],
-                    null), "the window did not open");
-                assertNotNull(SettingsWindow.awaited(), "the window is not on screen");
-
-                SettingsWindow.type("settings.name", name);
-                SettingsWindow.press(SettingsWindow.save());
-
-                assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, 8000), "Save did not close the"
-                    + " window: " + answering.asked());
+                renameAtSave(model.getLocByName(was), name, answering);
                 Components.settle();
 
                 assertNotNull(model.getLocByName(name), "precondition: Save did not rename");
@@ -724,6 +708,18 @@ public class testTheLocomotiveSettingsAutonomyTab
                 if (model.getLocByName(n) != null) model.deleteLoc(n);
             }
         }
+    }
+
+    /** Renames `loc` to `name` through Locomotive Settings' Save, which closes the window; `answering` answers it. */
+    private static void renameAtSave(Locomotive loc, String name, Answering answering) throws Exception
+    {
+        assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsWindow.Tab.values()[0], null),
+            "the window did not open");
+        assertNotNull(SettingsWindow.awaited(), "the window is not on screen");
+        SettingsWindow.type("settings.name", name);
+        SettingsWindow.press(SettingsWindow.save());
+        assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, 8000), "Save did not close the"
+            + " window: " + answering.asked());
     }
 
     /** Renames through the model alone, as no door does, while `file` is held: a record that no door has said. */
