@@ -17603,8 +17603,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         return this.InnerLayoutPanel;
     }
 
-    /** The autonomy session as the field holds it now; null until one is built. */
-    org.traincontrol.automationui.AutonomySession autonomySession()
+    /** The autonomy session as it is now, never built here (the cards' worker asks this); null until built. */
+    public org.traincontrol.automationui.AutonomySession autonomySession()
     {
         return this.autonomySession;
     }

@@ -189,6 +189,51 @@ public class testTheAutoTabKeepsItsCards
             40)));
     }
 
+    /**
+     * A card's path search, off the event thread as the cards' worker runs it, with no setup built, builds none: a
+     * build there would race the doors on the event thread.
+     *
+     * MUTATION: in `AutonomyLocomotiveStatus.withoutGoingNowhere`, ask `getAutonomySession()` again, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testACardsSearchBuildsNoSetup() throws Exception
+    {
+        AutonomyLocomotiveStatus card = card(alpha);
+        java.util.concurrent.CountDownLatch holding = new java.util.concurrent.CountDownLatch(1),
+            release = new java.util.concurrent.CountDownLatch(1);
+
+        // None built, and the event thread held meanwhile, so a build seen is the search's and not one there
+        SwingUtilities.invokeLater(() ->
+        {
+            try
+            {
+                Reflect.set(TrainControlUI.class, ui, "autonomySession", null);
+                holding.countDown();
+                release.await(10, java.util.concurrent.TimeUnit.SECONDS);
+            }
+            catch (ReflectiveOperationException | InterruptedException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+
+        try
+        {
+            assertTrue(holding.await(10, java.util.concurrent.TimeUnit.SECONDS), "precondition: not held");
+
+            List<List<Edge>> found = card.findPaths();
+            Object built = Reflect.get(TrainControlUI.class, ui, "autonomySession");
+
+            release.countDown();
+            assertNotNull(found, "precondition: the card did not search");
+            assertNull(built, "the card's search built a setup off the event thread");
+        }
+        finally
+        {
+            release.countDown();
+        }
+    }
+
     // ---------------------------------------------------------------- the railway
 
     @BeforeMethod

@@ -833,7 +833,7 @@ public final class AutonomyLocomotiveStatus extends javax.swing.JPanel
      */
     private String stationName(Point point)
     {
-        AutonomySession session = parent.getAutonomySession();
+        AutonomySession session = parent.autonomySession();
 
         return session == null ? (point == null ? "" : point.getName())
             : session.getStationIndex().describe(point);
@@ -847,7 +847,7 @@ public final class AutonomyLocomotiveStatus extends javax.swing.JPanel
      */
     private List<List<Edge>> withoutGoingNowhere(List<List<Edge>> paths)
     {
-        AutonomySession session = parent.getAutonomySession();
+        AutonomySession session = parent.autonomySession();
 
         List<List<Edge>> distinct =
             session == null ? paths : session.getStationIndex().distinctDestinations(paths);
