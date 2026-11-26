@@ -133,7 +133,6 @@ public interface View
      * was (FR-169).  Must not block the calling thread.
      */
     public void showSyncPartial();
-
     /** Tells the user the layout folder would not read at the start, so the station's layout stands in (FR-245). */
     public void showLayoutFolderHeld(String folder);
 

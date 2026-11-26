@@ -1613,7 +1613,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         return this.layoutFolderUnread;
     }
-
     @Override
     public String getLayoutFolderHeld()
     {

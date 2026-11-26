@@ -18457,7 +18457,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             I18n.f("layout.ui.warnFolderUnreadAtStart", folder), I18n.t("layout.ui.warnFolderUnreadAtStartTitle"),
             JOptionPane.WARNING_MESSAGE));
     }
-
     @Override
     public void showPowerCut(int channel)
     {
@@ -19377,12 +19376,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     {
         return getLocalLayoutPath() != null;
     }
-
     /** Whether the preference's folder would not read at the start, so the station's layout stands in (FR-245). */
     private boolean layoutFolderHeld()
     {
         String held = this.model == null ? null : this.model.getLayoutFolderHeld();
-
         return held != null && held.equals(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
     }
     
