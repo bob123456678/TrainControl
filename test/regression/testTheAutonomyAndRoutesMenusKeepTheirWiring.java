@@ -787,4 +787,48 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
             return false;
         });
     }
+
+    /**
+     * Export Routes shows the export panel, and once it is closed the routes' JSON is on the clipboard.
+     *
+     * MUTATION: in `TrainControlUI.showExport`, show no panel, or leave out the copy, and this fails.
+     */
+    @Test
+    public void testExportRoutesShowsThePanelAndCopiesTheJson() throws Exception
+    {
+        onItsOwnWindow(ui ->
+        {
+            final java.awt.datatransfer.Clipboard clipboard = java.awt.Toolkit.getDefaultToolkit().getSystemClipboard();
+            final java.awt.datatransfer.Transferable before = clipboard.getContents(null);
+            final String marker = "FR-262 marker";
+
+            try (Doors doors = new Doors())
+            {
+                clipboard.setContents(new java.awt.datatransfer.StringSelection(marker), null);
+
+                SwingUtilities.invokeLater(((JMenuItem) Reflect.get(TrainControlUI.class, ui, "exportRoutesMenuItem"))::doClick);
+
+                assertTrue(Components.waitFor(() -> !doors.seen.isEmpty(), 30000), "Export Routes showed no panel");
+
+                assertTrue(Components.waitFor(() ->
+                {
+                    try
+                    {
+                        return !marker.equals(clipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor));
+                    }
+                    catch (Exception e)
+                    {
+                        return false;
+                    }
+                }, 15000), "the routes' JSON was not copied once the panel closed");
+
+                assertEquals(clipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor),
+                    ui.getModel().exportRoutes(), "the clipboard does not hold the routes' JSON");
+            }
+            finally
+            {
+                if (before != null) clipboard.setContents(before, null);
+            }
+        });
+    }
 }
