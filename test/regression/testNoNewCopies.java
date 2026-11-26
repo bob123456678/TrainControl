@@ -97,7 +97,7 @@ public class testNoNewCopies
         "TileGraph:1,TileSelection:1 (72)",
         "TrainControlUI:2 (225)",
         "TrainControlUI:2 (209)",
-        "TrainControlUI:4 (192)", // the form-accessor runs the gui collaborators read through, lately AutonomyLifecycle
+        "TrainControlUI:4 (179)", // the form-accessor runs the gui collaborators read through, lately AutonomyLifecycle
         "TrainControlUI:2 (93)",
         "TrainControlUI:2 (81)",
         "TrainControlUI:2 (62)",

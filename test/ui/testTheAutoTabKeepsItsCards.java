@@ -189,6 +189,28 @@ public class testTheAutoTabKeepsItsCards
             40)));
     }
 
+    /**
+     * A card's path search, off the event thread as the cards' worker runs it, with no setup built, builds none: a
+     * build there would race the doors on the event thread.
+     *
+     * MUTATION: in `AutonomyLocomotiveStatus.withoutGoingNowhere`, ask `getAutonomySession()` again, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testACardsSearchBuildsNoSetup() throws Exception
+    {
+        AutonomyLocomotiveStatus card = card(alpha);
+
+        // None built, and the event thread held meanwhile, so a build seen is the search's and not one there
+        Object[] seen = Components.withTheEventThreadHeld(() ->
+        {
+            Reflect.set(TrainControlUI.class, ui, "autonomySession", null);
+            return null;
+        }, () -> new Object[] {card.findPaths(), Reflect.get(TrainControlUI.class, ui, "autonomySession")});
+
+        assertNotNull(seen[0], "precondition: the card did not search");
+        assertNull(seen[1], "the card's search built a setup off the event thread");
+    }
+
     // ---------------------------------------------------------------- the railway
 
     @BeforeMethod

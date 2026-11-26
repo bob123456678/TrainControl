@@ -89,6 +89,19 @@ public class AutonomyCompanionStore
         }
     }
 
+    /** A repair of a setup nothing has open that left these configurations as they were on disk. */
+    public static final class NotWritten extends IOException
+    {
+        private static final long serialVersionUID = 1L;
+        public final List<String> configurations;
+
+        NotWritten(List<String> configurations, IOException cause)
+        {
+            super(cause.getMessage(), cause);
+            this.configurations = configurations;
+        }
+    }
+
     private static final String FOLDER = "config/autonomy";
     private static final String SETUP_FILE = "setup.json";
     private static final String CONFIGURATION_PREFIX = "configuration-";
@@ -645,6 +658,13 @@ public class AutonomyCompanionStore
             activeConfiguration = root.optString("activeConfiguration", null);
 
             configurations.putAll(loaded);
+            for (Map.Entry<String, JSONObject> c : configurations.entrySet())
+            {
+                for (String[] r : lacking.files.getOrDefault(configurationFile(c.getKey()), Collections.emptyList()))
+                {
+                    repairLocomotiveIn(c.getValue(), r[0], r[1]);
+                }
+            }
         }
         catch (RuntimeException e)
         {
@@ -664,6 +684,8 @@ public class AutonomyCompanionStore
     /** Writes the setup and every configuration through Util.writeAtomically, so no half-written file is left. */
     public void save() throws IOException
     {
+        unwritten.clear();
+        unwritten.addAll(configurations.keySet());
         if (!isUsable()) throw new IOException(I18n.t(ERROR_NOT_LOCAL));
 
         folder().mkdirs();
@@ -681,7 +703,45 @@ public class AutonomyCompanionStore
             configuration.put("name", entry.getKey());
 
             writeJson(configurationFile(entry.getKey()), configuration);
+            unwritten.remove(entry.getKey());
+            lacking.files.remove(configurationFile(entry.getKey()));
         }
+    }
+
+    /** The configurations the last save left as they were on disk (it stops at the first write that fails). */
+    private final List<String> unwritten = new ArrayList<>();
+    public List<String> getUnwritten()
+    {
+        return new ArrayList<>(unwritten);
+    }
+
+    /** Per configuration file, the locomotive repairs ({from, to}, to null: deleted) a failed save left it lacking, in
+     * order; one per window, shared by its stores, so a load applies them and a write of the file clears them. */
+    public static final class Lacking
+    {
+        private final Map<File, List<String[]>> files = Collections.synchronizedMap(new LinkedHashMap<>());
+    }
+    private Lacking lacking = new Lacking();
+    /** Uses a window's record of what its files lack (see `Lacking`); null keeps this store's own. */
+    public void shareLacking(Lacking record)
+    {
+        if (record != null) lacking = record;
+    }
+
+    /** Notes in `record` that these configurations' files lack a repair. */
+    public void lacks(Lacking record, List<String> configurations, String from, String to)
+    {
+        for (String name : configurations)
+        {
+            record.files.computeIfAbsent(configurationFile(name), k -> new ArrayList<>()).add(new String[] {from, to});
+        }
+    }
+    /** Those of these configurations whose files `record` says lack a repair. */
+    public List<String> lacking(Lacking record, List<String> configurations)
+    {
+        List<String> out = new ArrayList<>(configurations);
+        out.removeIf(name -> !record.files.containsKey(configurationFile(name)));
+        return out;
     }
 
     // shared data
@@ -946,12 +1006,12 @@ public class AutonomyCompanionStore
      * @return true when a setup was found and rewritten, false when there was nothing to repair
      * @throws IOException if the setup exists but cannot be read or written
      */
-    public static boolean repairLocomotiveOnDisk(File layoutFolder, String from, String to)
-        throws IOException
+    public static boolean repairLocomotiveOnDisk(File layoutFolder, String from, String to,
+        Lacking lacking) throws IOException
     {
         if (from == null) return false;
 
-        return repairOnDisk(layoutFolder, store ->
+        return repairOnDisk(layoutFolder, lacking, store ->
         {
             if (to == null) store.locomotiveDeleted(from);
             else store.locomotiveRenamed(from, to);
@@ -964,7 +1024,7 @@ public class AutonomyCompanionStore
     {
         if (from == null || to == null) return false;
 
-        return repairOnDisk(layoutFolder, store -> store.renamePage(from, to));
+        return repairOnDisk(layoutFolder, null, store -> store.renamePage(from, to));
     }
 
     /** Forgets a deleted page in a setup nothing has open (see renamePageOnDisk). */
@@ -972,7 +1032,13 @@ public class AutonomyCompanionStore
     {
         if (page == null) return false;
 
-        return repairOnDisk(layoutFolder, store -> store.deletePage(page));
+        return repairOnDisk(layoutFolder, null, store -> store.deletePage(page));
+    }
+
+    /** Writes a setup nothing has open again, with what its files lack (see `Lacking`). */
+    public static boolean saveOnDisk(File layoutFolder, Lacking lacking) throws IOException
+    {
+        return repairOnDisk(layoutFolder, lacking, store -> { });
     }
 
     /** Something that can be done to a store. */
@@ -982,35 +1048,52 @@ public class AutonomyCompanionStore
     }
 
     /** Opens a setup nothing has open, changes one thing about it, and puts it back; true when one was rewritten. */
-    private static boolean repairOnDisk(File layoutFolder, Repair what) throws IOException
+    private static boolean repairOnDisk(File layoutFolder, Lacking lacking, Repair what)
+        throws IOException
     {
         if (layoutFolder == null) return false;
 
         AutonomyCompanionStore store = new AutonomyCompanionStore(layoutFolder);
+        store.shareLacking(lacking);
 
         // Nothing is created for a layout that has never had a setup.
         if (!store.exists()) return false;
 
-        store.load();
-
-        // Restore the numbering the FILE was written under, or saving replaces its id-to-name record with {}.
-        Map<String, String> nameToId = new LinkedHashMap<>();
-
-        for (Map.Entry<String, String> page : store.pageNamesWhenWritten.entrySet())
+        try
         {
-            nameToId.put(page.getValue(), page.getKey());
+            store.load();
+            // Restore the numbering the FILE was written under, or saving replaces its id-to-name record with {}.
+            Map<String, String> nameToId = new LinkedHashMap<>();
+            for (Map.Entry<String, String> page : store.pageNamesWhenWritten.entrySet())
+            {
+                nameToId.put(page.getValue(), page.getKey());
+            }
+            store.setPageIds(nameToId);
+            // Read AGAIN now that pages have names: the first read returned id-form keys that name-based edits ignore.
+            store.load();
+            what.apply(store);
+            store.save();
         }
-
-        store.setPageIds(nameToId);
-
-        // Read AGAIN now that pages have names: the first read returned id-form keys that name-based edits ignore.
-        store.load();
-
-        what.apply(store);
-
-        store.save();
-
+        catch (IOException e)
+        {
+            // A read that failed wrote nothing, so every configuration in the folder is left
+            throw new NotWritten(store.unwritten.isEmpty() ? store.namesOnDisk() : store.getUnwritten(), e);
+        }
         return true;
+    }
+
+    /** The configurations in the folder, by their file names. */
+    private List<String> namesOnDisk()
+    {
+        List<String> out = new ArrayList<>();
+        File[] files = folder().listFiles();
+        for (File file : files == null ? new File[0] : files)
+        {
+            String name = file.getName();
+            if (name.startsWith(CONFIGURATION_PREFIX) && name.endsWith(".json"))
+                out.add(name.substring(CONFIGURATION_PREFIX.length(), name.length() - 5));
+        }
+        return out;
     }
 
     /**
@@ -2002,6 +2085,8 @@ public class AutonomyCompanionStore
                 if (!old.equals(now)) Files.move(old.toPath(), now.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
                 writeJson(now, configuration);
+                lacking.files.remove(old);
+                lacking.files.remove(now);
             }
             catch (IOException e)
             {
@@ -2047,6 +2132,7 @@ public class AutonomyCompanionStore
             throw new IOException(I18n.f("autosetup.ui.errorDeleteConfigurationFailed", name));
         }
 
+        lacking.files.remove(file);
         configurations.remove(name);
 
         if (name.equals(activeConfiguration))

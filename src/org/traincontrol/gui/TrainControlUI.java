@@ -13936,6 +13936,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
                 JOptionPane.showMessageDialog(c, I18n.t("ui.infoSyncAlreadyRunning")));
         }
         else if (synced == -1) offerSyncRetry(c, null, retry);
+        // The table's renames happened before the sync; what they left is said here, at their door
+        if (synced < 0) javax.swing.SwingUtilities.invokeLater(() -> autonomyLifecycle.sayAfterRenames(c, null,
+            Collections.emptyList(), I18n.t("sync.ui.title")));
         return synced < 0;
     }
 
@@ -17601,8 +17604,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         return this.InnerLayoutPanel;
     }
 
-    /** The autonomy session as the field holds it now; null until one is built. */
-    org.traincontrol.automationui.AutonomySession autonomySession()
+    /** The autonomy session as it is now, never built here (the cards' worker asks this); null until built. */
+    public org.traincontrol.automationui.AutonomySession autonomySession()
     {
         return this.autonomySession;
     }

@@ -404,6 +404,44 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
+     * The right-click menu's path search, off the event thread as `showFor`'s worker runs it, with no setup built,
+     * builds none: a build there would race the doors on the event thread.
+     *
+     * MUTATION: in `DiagramAutonomyContextMenu.withoutGoingNowhere`, ask `getAutonomySession()` again, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheRightClickMenusSearchBuildsNoSetup() throws Exception
+    {
+        final org.traincontrol.automation.Point standing =
+            ui.stationCaptions().getAutonomyPointForTile(squareWithATrainOnIt());
+        final java.lang.reflect.Method gather = Reflect.method(Class.forName(
+            "org.traincontrol.gui.DiagramAutonomyContextMenu"), "gatherPathOptions", TrainControlUI.class,
+            org.traincontrol.automation.Point.class);
+        final java.lang.reflect.Field built = Reflect.field(TrainControlUI.class, "autonomySession");
+
+        try
+        {
+            // None built, and the event thread held meanwhile, so a build seen is the search's and not one there
+            Object[] seen = Components.withTheEventThreadHeld(() ->
+            {
+                built.set(ui, null);
+                return null;
+            }, () -> new Object[] {gather.invoke(null, ui, standing), built.get(ui)});
+
+            assertNotNull(seen[0], "precondition: the menu found nothing to offer");
+            assertNull(seen[1], "the menu's search built a setup off the event thread");
+        }
+        finally
+        {
+            Components.onTheEventThread(() ->
+            {
+                built.set(ui, session);
+                return null;
+            });
+        }
+    }
+
+    /**
      * The sixth door: the autonomy editor's "why is this train not moving" tool.  `AutonomyEditorPanel.applyWhy` must
      * not ask the synchronized `Layout.explainDestinations` straight from the click, as `findPaths` can hold the
      * monitor with nothing running (OB-047); the question goes to `WhyRenderer` and the answer is painted by an

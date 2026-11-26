@@ -261,6 +261,191 @@ public class testTheSyncAsksAboutRenamedLocomotives
     }
 
     /**
+     * A rename answered in the table that the setup cannot write, its configuration files held, is said at the Sync,
+     * under its title: after a sync that then fails, and in the summary of one that ends.  A record a rename made
+     * elsewhere left unsaid is not said at the next Sync.
+     *
+     * MUTATION: in `TrainControlUI.saidTheSyncDidNotRun`, leave out the `sayAfterRenames` line; or, in
+     * `ManualSync.apply`, the `forgetUnrepaired()` call; each fails its own assertion.
+     */
+    @Test(timeOut = 240000)
+    public void testARenameTheHeldSetupCannotTakeIsSaidAtTheSync() throws Exception
+    {
+        final String old = "RV2 held old", old2 = "RV2 held old two", stray = "RV2 stray";
+        final String key = I18n.t("loc.ui.renameSetupNotUpdated");
+        final String start = key.substring(key.indexOf("{1}") + 3, key.indexOf("{0}"));
+        final AtomicBoolean dropping = new AtomicBoolean();
+        final BiFunction<String, Integer, byte[]> cs3 = StandInStation.cs3("260", INFO);
+        final java.util.function.Function<String, Answering.Answer> closing = m -> Answering.pressAt(m.contains(start)
+            || m.startsWith(I18n.f("ui.syncFailedRetry", "").split("\n")[0]) ? 1 : 0);
+
+        inAWindow(Files.createTempDirectory("tc-sync-renames").toFile(), (path, n) ->
+        {
+            if (dropping.get() && "/config/geraet.vrs".equals(path)) throw new IllegalStateException("dropped");
+            return cs3.apply(path, n);
+        }, Scenario.folderFor("live-snapshot"), (rig, ui) ->
+        {
+            java.io.File[] files = new java.io.File(ui.localLayoutPath(), "config/autonomy").listFiles((d, f) ->
+                f.startsWith("configuration-") && f.endsWith(".json"));
+            assertTrue(files != null && files.length > 0, "precondition: the railway has no configuration file");
+            String configuration = files[0].getName().replace("configuration-", "").replace(".json", "");
+
+            // Over this railway the start-up sync reads nothing, so the station's type and locomotives come from one here
+            assertTrue(rig.model.syncWithCS2() >= 0, "precondition: the sync that imports the fixtures failed");
+
+            // The sync after the table fails: the line is said alone, under the Sync's title
+            renamedHere(rig, old);
+            byte[] before = Files.readAllBytes(files[0].toPath());
+            List<Answering.Question> asked;
+            try (Holding held = new Holding(files))
+            {
+                asked = pressSync(rig, ui, SyncTable.answer(old, "RENAME"), shown -> dropping.set(true), closing,
+                    a -> a.asked().stream().anyMatch(m -> m.contains(start)));
+                assertEquals(Files.readAllBytes(files[0].toPath()), before, "the held configuration was written");
+            }
+            finally
+            {
+                dropping.set(false);
+            }
+            assertNotNull(rig.model.getLocByName(STATION_NAME), "precondition: the table did not rename " + old);
+            assertTrue(asked.stream().anyMatch(q -> q.message.startsWith(I18n.f("ui.syncFailedRetry", "")
+                .split("\n")[0])), "precondition: the sync did not fail");
+            Answering.Question line = said(asked, start);
+            assertTrue(line.message.startsWith(key.substring(0, key.indexOf("{1}"))) && line.message.contains(STATION_NAME)
+                && line.message.contains(configuration), "not the line alone, naming both: " + line.message);
+            assertEquals(line.title, I18n.t("sync.ui.title"), "not under the Sync's title");
+
+            // The sync ends: the line sits in its summary
+            if (rig.model.getLocByName(AT_3) == null) rig.model.newMM2Locomotive(old2, 3);
+            else rig.model.renameLoc(AT_3, old2);
+            try (Holding held = new Holding(files))
+            {
+                asked = pressSync(rig, ui, SyncTable.answer(old2, "RENAME"), closing,
+                    a -> a.asked().stream().anyMatch(m -> m.contains(start)));
+            }
+            line = said(asked, start);
+            assertTrue(line.message.startsWith(I18n.t("ui.infoSyncComplete")) && line.message.contains(AT_3)
+                && line.message.contains(I18n.f("ui.infoSyncRenamed", 1)), "not in the summary: " + line.message);
+            assertEquals(line.title, I18n.t("sync.ui.title"), "the summary is not under the Sync's title");
+
+            // A rename no door said leaves its record; the next Sync's rename says nothing of it
+            rig.model.newMM2Locomotive(stray, 77);
+            try (Holding held = new Holding(files))
+            {
+                rig.model.renameLoc(stray, stray + " renamed");
+            }
+            assertFalse(((java.util.Collection<?>) Reflect.get(org.traincontrol.gui.AutonomyLifecycle.class,
+                ui.autonomyLifecycle(), "unrepaired")).isEmpty(), "precondition: the held rename left no record");
+            renamedHere(rig, old);
+            asked = pressSync(rig, ui, SyncTable.answer(old, "RENAME"), closing,
+                testTheSyncAsksAboutRenamedLocomotives::saidDone);
+            assertNotNull(rig.model.getLocByName(STATION_NAME), "precondition: the last table did not rename " + old);
+            assertFalse(asked.stream().anyMatch(q -> q.message != null && q.message.contains(start)), "a record left"
+                + " elsewhere was said at this Sync: " + asked.stream().map(q -> q.message).collect(
+                java.util.stream.Collectors.toList()));
+        });
+    }
+
+    /**
+     * A table rename onto a held name, its delete answered Yes, that the setup cannot write, no session open as the door
+     * begins, names the rename alone; Retry once the file is let go writes the deletion before the rename, so the
+     * deleted locomotive's place goes and the renamed one keeps its home and timetable row.  The deletion's refresh
+     * opens a session over the held file, which is why the session takes the failed deletion as it opens.
+     *
+     * MUTATION: in `AutonomyLifecycle.leftUnrepaired`, keep no deletion (`to == null`); or, in `getAutonomySession`,
+     * leave out the loop that applies the repairs only the file lacked; each fails.
+     */
+    @Test(timeOut = 240000)
+    public void testARenameOntoAHeldNameTheSetupCannotTakeRetriesTheDeleteFirst() throws Exception
+    {
+        final String old = "RV2 onto held", yes = String.valueOf(TrainControlUI.YES_NO_OPTS[0]);
+        final String key = I18n.t("loc.ui.renameSetupNotUpdated");
+        final String start = key.substring(key.indexOf("{1}") + 3, key.indexOf("{0}"));
+        final List<String> said = new java.util.concurrent.CopyOnWriteArrayList<>();
+        final List<byte[]> whileHeld = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        inAWindow(Files.createTempDirectory("tc-sync-renames").toFile(), StandInStation.cs3("260", INFO),
+            Scenario.folderFor("live-snapshot"), (rig, ui) ->
+        {
+            java.io.File file = new java.io.File(ui.localLayoutPath(), "config/autonomy/configuration-Main.json");
+            assertTrue(rig.model.syncWithCS2() >= 0, "precondition: the sync that imports the fixtures failed");
+            renamedHere(rig, old);
+            if (rig.model.getLocByName(STATION_NAME) == null) rig.model.newMM2Locomotive(STATION_NAME, 10);
+
+            // The doomed locomotive takes the train placed and homed at 1 - Main:20,12; the renamed one takes the train
+            // homed at 20,13 with the timetable row
+            String text = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+            Files.write(file.toPath(), text.replace("\"75 407 DB\"", "\"" + STATION_NAME + "\"")
+                .replace("\"EN57-947\"", "\"" + old + "\"").getBytes(StandardCharsets.UTF_8));
+            byte[] before = Files.readAllBytes(file.toPath());
+            // No setup built yet, as before a user's first opening: the repair goes to the file
+            Components.onTheEventThread(() ->
+            {
+                Reflect.set(TrainControlUI.class, ui, "autonomySession", null);
+                return null;
+            });
+
+            try (Holding held = new Holding(new java.io.File[] {file}))
+            {
+                pressSync(rig, ui, SyncTable.answer(old, "RENAME"), m ->
+                {
+                    if (!m.contains(start)) return m.contains(old) ? Answering.press(yes) : Answering.pressAt(0);
+                    said.add(m);
+                    try
+                    {
+                        whileHeld.add(Files.readAllBytes(file.toPath()));
+                        held.close();
+                    }
+                    catch (java.io.IOException e)
+                    {
+                        throw new java.io.UncheckedIOException(e);
+                    }
+                    return Answering.pressAt(0);
+                }, a -> a.asked().stream().anyMatch(m -> m.contains(start)));
+            }
+
+            assertNull(rig.model.getLocByName(old), "precondition: the table did not rename " + old);
+            assertEquals(said.size(), 1, "not said once, then Retry written: " + said);
+            assertTrue(!said.get(0).contains("null") && said.get(0).contains(STATION_NAME + start), "not the rename"
+                + " alone: " + said.get(0));
+            assertEquals(whileHeld.get(0), before, "the held configuration was written");
+
+            org.json.JSONObject after = new org.json.JSONObject(new String(Files.readAllBytes(file.toPath()),
+                StandardCharsets.UTF_8));
+            org.json.JSONObject points = after.getJSONObject("points");
+            assertFalse(points.getJSONObject("1 - Main:20,12").has("loc") || points.getJSONObject("1 - Main:20,12")
+                .has("home"), "the deleted locomotive's place survived Retry: " + points.getJSONObject("1 - Main:20,12"));
+            assertEquals(points.getJSONObject("1 - Main:20,13").optString("home"), STATION_NAME, "the renamed home");
+            assertEquals(after.getJSONObject("globals").getJSONArray("timetable").getJSONObject(0).getString("loc"),
+                STATION_NAME, "the renamed locomotive's timetable row");
+        });
+    }
+
+    /** The question that says what renames left unwritten. */
+    private static Answering.Question said(List<Answering.Question> asked, String start)
+    {
+        return asked.stream().filter(q -> q.message != null && q.message.contains(start)).findFirst()
+            .orElseThrow(() -> new AssertionError("nothing said the configuration kept the old name"));
+    }
+
+    /** These files held open, as another program would, until closed. */
+    private static final class Holding implements AutoCloseable
+    {
+        private final List<java.io.FileInputStream> streams = new ArrayList<>();
+
+        Holding(java.io.File[] files) throws java.io.IOException
+        {
+            for (java.io.File f : files) streams.add(new java.io.FileInputStream(f));
+        }
+
+        @Override
+        public void close() throws java.io.IOException
+        {
+            for (java.io.FileInputStream s : streams) s.close();
+        }
+    }
+
+    /**
      * Only a pressed Sync asks: the sync an edit owes, run as an editor closes, leaves a locomotive renamed at the
      * station as it is, adds no copy, opens no table, logs only that it held the station's locomotive back, and reads
      * the station's locomotives once, for itself (D171, FR-249).

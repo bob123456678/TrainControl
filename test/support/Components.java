@@ -273,6 +273,41 @@ public final class Components
     }
 
     /**
+     * Runs `first` on the event thread and holds it there while `work` runs on this thread, so what `work` finds done
+     * was not done on the event thread meanwhile; what `work` returned.
+     */
+    public static <T> T withTheEventThreadHeld(final Callable<?> first, final Callable<T> work) throws Exception
+    {
+        final java.util.concurrent.CountDownLatch holding = new java.util.concurrent.CountDownLatch(1),
+            release = new java.util.concurrent.CountDownLatch(1);
+
+        SwingUtilities.invokeLater(() ->
+        {
+            try
+            {
+                first.call();
+                holding.countDown();
+                release.await(10, java.util.concurrent.TimeUnit.SECONDS);
+            }
+            catch (Exception e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+
+        try
+        {
+            if (!holding.await(10, java.util.concurrent.TimeUnit.SECONDS)) throw new AssertionError("not held");
+
+            return work.call();
+        }
+        finally
+        {
+            release.countDown();
+        }
+    }
+
+    /**
      * Runs this on the event thread, waiting for it, and gives back what it returned; a failure inside comes out as an
      * unchecked exception.
      */

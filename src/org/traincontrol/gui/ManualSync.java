@@ -61,7 +61,8 @@ public final class ManualSync
         boolean partial = model.wasLastSyncPartial();
         String text = syncSummary(synced - model.getLastSyncRoutes(), model.getLastSyncRoutes(), partial, folder,
             answers);
-        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(c, text, I18n.t("sync.ui.title"),
+        SwingUtilities.invokeLater(() -> ui.autonomyLifecycle.sayAfterRenames(c, text, java.util.Collections.emptyList(),
+            I18n.t("sync.ui.title"),
             partial || folder != null ? JOptionPane.WARNING_MESSAGE : JOptionPane.INFORMATION_MESSAGE));
     }
 
@@ -208,6 +209,7 @@ public final class ManualSync
         Map<RenameProposals.Row, Answer> answers, Map<Locomotive, String> names, List<RenameProposals.Row> taken)
     {
         ViewListener model = ui.getModel();
+        if (ui instanceof TrainControlUI) ((TrainControlUI) ui).autonomyLifecycle.forgetUnrepaired();
         // A Keep the station no longer offers is forgotten, so nothing is left to hold back a later offer; on a partial
         // read, one with no row is kept, as its record may be what did not read
         Map<Locomotive, RenameProposals.Row> differing = new HashMap<>(), current = new HashMap<>();
@@ -309,20 +311,7 @@ public final class ManualSync
         }
         model.renameLoc(currentName, newName);
         l.setDeclinedStationName(null);
-        ui.clearCopyTarget();
-        ui.repaintLoc(true, null);
-        ui.repaintMappings(null, false);
-        ui.routeListPanel.refreshRouteList();
-        ui.getLocSelector().refreshLocSelectorList();
-        if (model.hasAutoLayout())
-        {
-            model.getAutoLayout().sanitizeMultiUnits(l);
-            model.getAutoLayout().refreshUI();
-            // And the station labels, as the rename dialog does (OB-081)
-            ui.updateVisiblePoints();
-            ui.repaintAutoLocList(false);
-            ui.timetableTab().repaintTimetable();
-        }
+        ui.locomotiveActions.refreshAfterEdit(java.util.Collections.singletonList(l));
         return "loc.renameApplied";
     }
 
