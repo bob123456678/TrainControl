@@ -546,8 +546,8 @@ public final class AutonomyLifecycle
         else store.locomotiveRenamed(from, to);
     }
 
-    /** Per configuration file, what failed saves left it lacking (see `AutonomyCompanionStore.lacking`). */
-    private final java.util.Map<File, List<String[]>> lacking = Collections.synchronizedMap(new java.util.HashMap<>());
+    /** Per configuration file, what failed saves left it lacking. */
+    private final AutonomyCompanionStore.Lacking lacking = new AutonomyCompanionStore.Lacking();
     /** A failed repair a door has yet to say, and the configurations whose files it did not reach. */
     private static final class Unrepaired
     {
@@ -628,7 +628,7 @@ public final class AutonomyLifecycle
         catch (java.io.IOException e)
         {
             ui.getModel().log(e);
-            return session.getStore().getUnwritten();
+            return session == null ? Collections.emptyList() : session.getStore().getUnwritten();
         }
     }
 

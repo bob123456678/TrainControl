@@ -660,7 +660,7 @@ public class AutonomyCompanionStore
             configurations.putAll(loaded);
             for (Map.Entry<String, JSONObject> c : configurations.entrySet())
             {
-                for (String[] r : lacking.getOrDefault(configurationFile(c.getKey()), Collections.emptyList()))
+                for (String[] r : lacking.files.getOrDefault(configurationFile(c.getKey()), Collections.emptyList()))
                 {
                     repairLocomotiveIn(c.getValue(), r[0], r[1]);
                 }
@@ -704,7 +704,7 @@ public class AutonomyCompanionStore
 
             writeJson(configurationFile(entry.getKey()), configuration);
             unwritten.remove(entry.getKey());
-            lacking.remove(configurationFile(entry.getKey()));
+            lacking.files.remove(configurationFile(entry.getKey()));
         }
     }
 
@@ -716,20 +716,24 @@ public class AutonomyCompanionStore
     }
 
     /** Per configuration file, the locomotive repairs ({from, to}, to null: deleted) a failed save left it lacking, in
-     * order; shared by a window's stores, so a load applies them and a write of the file clears them. */
-    private Map<File, List<String[]>> lacking = new LinkedHashMap<>();
-    /** Uses a window's record of what its files lack (see `lacking`); null keeps this store's own. */
-    public void shareLacking(Map<File, List<String[]>> record)
+     * order; one per window, shared by its stores, so a load applies them and a write of the file clears them. */
+    public static final class Lacking
+    {
+        private final Map<File, List<String[]>> files = Collections.synchronizedMap(new LinkedHashMap<>());
+    }
+    private Lacking lacking = new Lacking();
+    /** Uses a window's record of what its files lack (see `Lacking`); null keeps this store's own. */
+    public void shareLacking(Lacking record)
     {
         if (record != null) lacking = record;
     }
 
     /** Notes in `record` that these configurations' files lack a repair. */
-    public void lacks(Map<File, List<String[]>> record, List<String> configurations, String from, String to)
+    public void lacks(Lacking record, List<String> configurations, String from, String to)
     {
         for (String name : configurations)
         {
-            record.computeIfAbsent(configurationFile(name), k -> new ArrayList<>()).add(new String[] {from, to});
+            record.files.computeIfAbsent(configurationFile(name), k -> new ArrayList<>()).add(new String[] {from, to});
         }
     }
 
@@ -996,7 +1000,7 @@ public class AutonomyCompanionStore
      * @throws IOException if the setup exists but cannot be read or written
      */
     public static boolean repairLocomotiveOnDisk(File layoutFolder, String from, String to,
-        Map<File, List<String[]>> lacking) throws IOException
+        Lacking lacking) throws IOException
     {
         if (from == null) return false;
 
@@ -1024,8 +1028,8 @@ public class AutonomyCompanionStore
         return repairOnDisk(layoutFolder, null, store -> store.deletePage(page));
     }
 
-    /** Writes a setup nothing has open again, with what its files lack (see `lacking`). */
-    public static boolean saveOnDisk(File layoutFolder, Map<File, List<String[]>> lacking) throws IOException
+    /** Writes a setup nothing has open again, with what its files lack (see `Lacking`). */
+    public static boolean saveOnDisk(File layoutFolder, Lacking lacking) throws IOException
     {
         return repairOnDisk(layoutFolder, lacking, store -> { });
     }
@@ -1037,7 +1041,7 @@ public class AutonomyCompanionStore
     }
 
     /** Opens a setup nothing has open, changes one thing about it, and puts it back; true when one was rewritten. */
-    private static boolean repairOnDisk(File layoutFolder, Map<File, List<String[]>> lacking, Repair what)
+    private static boolean repairOnDisk(File layoutFolder, Lacking lacking, Repair what)
         throws IOException
     {
         if (layoutFolder == null) return false;

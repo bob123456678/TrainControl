@@ -51,7 +51,6 @@ public class testStoreCollectionsAreHandledEverywhere
         NOT_KEPT.put("pageIdToName", "page identity bookkeeping, rebuilt on load");
         NOT_KEPT.put("pageNamesWhenWritten", "page identity bookkeeping, rebuilt on load");
         NOT_KEPT.put("pageIdConflicts", "diagnostics about a load, not setup");
-        NOT_KEPT.put("lacking", "repairs failed saves left files lacking, the window's record, not setup");
         // The one collection no bookkeeping site may touch: it holds the file's own JSON for pages that are not loaded,
         // keyed by FIELD name and written back exactly as it came in, so a rename, move or delete acting on it would
         // lose what it exists to keep (OB-067).
