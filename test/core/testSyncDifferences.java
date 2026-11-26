@@ -460,6 +460,30 @@ public class testSyncDifferences
         }
     }
 
+    /**
+     * A full sync clears the station name held back once the station no longer lists it (FR-249).
+     *
+     * MUTATION: in `MarklinControlStation.syncThroughTheNewParser`, set only the marks the differences name.
+     */
+    @Test(timeOut = 120000)
+    public void testAFullSyncClearsANameTheStationNoLongerLists() throws Exception
+    {
+        AtomicReference<String> list = station("SD Y", 10);
+
+        try (StationRig rig = rig(list))
+        {
+            synced(rig, "SD X", 10);
+            Locomotive x = rig.model.getLocByName("SD X");
+            assertTrue(x.keepsItsNameOver("SD Y"), "precondition: the sync held back no station name");
+
+            list.set(station("SD Z", 20).get());
+            sync(rig);
+
+            assertFalse(rig.model.wasLastSyncPartial(), "precondition: the locomotive list did not read");
+            assertFalse(x.keepsItsNameOver("SD Y"), "a full sync kept a station name the station no longer lists");
+        }
+    }
+
     /** The row of the locomotive here by this name, which must differ. */
     private static Row row(StationRig rig, RenameProposals d, String name)
     {
