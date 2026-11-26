@@ -169,6 +169,7 @@ not fix it. Name the square.
 - `ui.testPageLinksGoByPageId`
 - `regression.testTheAutonomyTabSavesWhatTheDialogDid`
 - `ui.testTheLocomotiveSettingsAutonomyTab`
+- `ui.testTheSyncAsksAboutRenamedLocomotives`
 - `ui.testRightClickMenuTipsCanBeHidden`
 - `ui.testChangeDirectionIsOneClick`
 - `regression.testTheLogIsStampedAndExports`
