@@ -53,15 +53,16 @@ public final class ManualSync
     }
 
     /**
-     * Says on c, under the Sync's title, what the sync added and answers not zero; a warning if the folder is unread.
+     * Says on c, under the Sync's title, what the sync added and answers not zero; a warning if anything went unread.
      */
     void saySynced(Component c, int synced, int... answers)
     {
         String folder = model.getLayoutFolderUnread();
-        String text = syncSummary(synced - model.getLastSyncRoutes(), model.getLastSyncRoutes(),
-            model.wasLastSyncPartial(), folder, answers);
+        boolean partial = model.wasLastSyncPartial();
+        String text = syncSummary(synced - model.getLastSyncRoutes(), model.getLastSyncRoutes(), partial, folder,
+            answers);
         SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(c, text, I18n.t("sync.ui.title"),
-            folder == null ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE));
+            partial || folder != null ? JOptionPane.WARNING_MESSAGE : JOptionPane.INFORMATION_MESSAGE));
     }
 
     /**

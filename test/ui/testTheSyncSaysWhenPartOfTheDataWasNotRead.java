@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
+import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
@@ -28,7 +29,7 @@ import support.StationRig;
  *
  * MUTATION: have ManualSync.saySynced always pass `partial` false, and the sync with an unreadable route list
  * says everything matches; drop the `view.showSyncPartial()` call of MarklinControlStation.init, and the start-up says
- * nothing.
+ * nothing; show a partial read as information in ManualSync.saySynced, and it is not a warning.
  *
  * @author Adam
  */
@@ -75,6 +76,10 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
                     String notice = answering.asked().get(2);
 
                     assertEquals(plain, I18n.t("ui.infoSyncNothingDiffers"), "a sync that read everything says so");
+                    assertEquals(answering.questions().get(0).type, JOptionPane.INFORMATION_MESSAGE,
+                        "all read, not information");
+                    assertEquals(answering.questions().get(1).type, JOptionPane.WARNING_MESSAGE,
+                        "part read, not a warning");
                     assertEquals(answering.questions().get(0).title, I18n.t("sync.ui.title"), "the message's title");
                     assertEquals(partial, I18n.t("ui.infoSyncComplete") + "\n\n" + I18n.t("ui.infoSyncPartial"));
                     assertTrue(partial.contains("could not be read") && partial.contains("log"), "it says part was not read: " + partial);
@@ -260,6 +265,8 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
                 assertTrue(first.await(60, TimeUnit.SECONDS), "the first sync did not end; log " + logTail(rig));
                 assertTrue(answering.awaitAsked(1, 60000), "a sync that read everything said nothing");
                 assertEquals(answering.asked().get(0), I18n.t("ui.infoSyncNothingDiffers"));
+                assertEquals(answering.questions().get(0).type, JOptionPane.INFORMATION_MESSAGE,
+                    "all read, not information");
 
                 replaced.put("/app/api/automatics", "<html>not json</html>".getBytes(StandardCharsets.UTF_8));
                 ui.syncLocomotiveFrom(loc, window, second::countDown);
@@ -269,6 +276,8 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
                 assertEquals(answering.asked().get(1), I18n.t("ui.infoSyncComplete") + "\n\n"
                     + I18n.t("ui.infoSyncPartial"));
                 assertSame(answering.questions().get(1).owner, window, "not on the window that asked");
+                assertEquals(answering.questions().get(1).type, JOptionPane.WARNING_MESSAGE,
+                    "part read, not a warning");
             }
             finally
             {
