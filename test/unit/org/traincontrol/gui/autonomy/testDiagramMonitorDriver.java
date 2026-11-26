@@ -47,17 +47,7 @@ public class testDiagramMonitorDriver
             assertTrue(support.Components.waitFor(() -> refusesTasks(first), 10000),
                 "precondition: the Error did not end the timer");
 
-            // A tick asks the monitor's railway; that asking is what is watched for
-            final CountDownLatch ticked = new CountDownLatch(1);
-
-            DiagramMonitor monitor = new DiagramMonitor(() ->
-            {
-                ticked.countDown();
-                return null;
-            }, new LinkedHashMap<String, ReducedEdge>(), Collections.<String, TileKey>emptyMap(), null);
-
-            field(driver, "monitor").set(driver, monitor);
-            monitor.markDirty();
+            final CountDownLatch ticked = watched(driver);
 
             driver.start();
 
@@ -67,6 +57,51 @@ public class testDiagramMonitorDriver
         {
             driver.stop();
         }
+    }
+
+    /**
+     * start() on a timer still running (a load with monitoring on) looks at once, rather than leaving the setup just
+     * loaded unshown until a pass that may not come.
+     *
+     * MUTATION: in `DiagramMonitorDriver.start`, leave out `timer.schedule(aTick(), 0)`, and this fails.
+     */
+    @Test
+    public void testStartOnARunningTimerLooksAtOnce() throws Exception
+    {
+        DiagramMonitorDriver driver = new DiagramMonitorDriver(null, null);
+
+        try
+        {
+            // A live timer with nothing scheduled, so only start()'s own look can tick
+            field(driver, "timer").set(driver, new Timer("idle", true));
+
+            final CountDownLatch ticked = watched(driver);
+
+            driver.start();
+
+            assertTrue(ticked.await(5, TimeUnit.SECONDS), "start() on a running timer did not look at once");
+        }
+        finally
+        {
+            driver.stop();
+        }
+    }
+
+    /** Hands the driver a dirty monitor whose tick (it asks the monitor's railway) counts the latch down. */
+    private static CountDownLatch watched(DiagramMonitorDriver driver) throws ReflectiveOperationException
+    {
+        final CountDownLatch ticked = new CountDownLatch(1);
+
+        DiagramMonitor monitor = new DiagramMonitor(() ->
+        {
+            ticked.countDown();
+            return null;
+        }, new LinkedHashMap<String, ReducedEdge>(), Collections.<String, TileKey>emptyMap(), null);
+
+        field(driver, "monitor").set(driver, monitor);
+        monitor.markDirty();
+
+        return ticked;
     }
 
     private static java.lang.reflect.Field field(DiagramMonitorDriver driver, String name)

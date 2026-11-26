@@ -297,7 +297,8 @@ public class testStartingAutonomyFromTheWindow
     /**
      * Stop Using Autonomy while a path is lit leaves nothing of the run in a page window: no path, no train.
      *
-     * MUTATION: in `DiagramTileRegistry.reset`, forget the labels without blanking them, and the path stays.
+     * MUTATION: in `DiagramTileRegistry.reset`, `tiles.clear()` again, and the path stays.  The reset's own blanking
+     * is proven by `testDiagramTileRegistry.testAResetBlanksALabelOnScreenAndKeepsIt`: the stop clears it here too.
      */
     @Test
     public void testStopUsingAutonomyMidRunEmptiesAPageWindow() throws Exception
@@ -335,6 +336,49 @@ public class testStartingAutonomyFromTheWindow
 
             Settle.simulate(model.getAutoLayout());
         }));
+    }
+
+    /**
+     * A page window open while a page changed on disk is read again under the autonomy editor shows the next run's
+     * path: the follow the editor held back resets the session once its Save closes it (OB-519).
+     *
+     * MUTATION: in `DiagramTileRegistry.reset`, `tiles.clear()` again, and the page window shows no path.
+     */
+    @Test
+    public void testAPageWindowShowsTheRunAfterAFollowTheEditorHeldBack() throws Exception
+    {
+        throughAPageWindow(page -> theNextRunShowsIn(page, "open through a follow the editor held back", between ->
+        {
+            final java.awt.Window editor = openTheAutonomyEditor();
+            final Object before = sessionNow();
+
+            aPageChangedOnDisk("the autonomy editor");
+
+            press(Components.withText(editor, I18n.t("layout.ui.saveChanges")), message -> null);
+
+            assertTrue(Settle.until(() -> !editor.isDisplayable(), 30000), "precondition: Save left the editor open");
+
+            theFollowMade(before);
+        }));
+    }
+
+    /**
+     * The same with a run holding the follow back: a page window open while a page changed on disk is read again
+     * during a run shows the next run's path, the session reset at the run's end (OB-519).
+     *
+     * MUTATION: in `DiagramTileRegistry.reset`, `tiles.clear()` again, and the page window shows no path.
+     */
+    @Test
+    public void testAPageWindowShowsTheRunAfterAFollowTheRunHeldBack() throws Exception
+    {
+        throughAPageWindow(page ->
+        {
+            final Object before = sessionNow();
+
+            aPageChangedOnDisk("the run");
+
+            theNextRunShowsIn(page, "open through a follow the run held back", between -> theFollowMade(before));
+        });
     }
 
     /**
@@ -412,8 +456,92 @@ public class testStartingAutonomyFromTheWindow
 
         startTheRun(() -> press(start(), message -> null));
 
-        assertTrue(Settle.until(() -> squaresShowing(page, true) > 0, 30000), "a page window " + how + " shows no train's"
-            + " path in the next run (OB-519)");
+        // Every square the registry published a path for, and only those
+        assertTrue(Settle.until(() -> squaresShowing(page, true) > 0 && squaresShowing(page, true) == pathPublishedIn(page),
+            30000), "a page window " + how + " shows no train's path in the next run (OB-519): it shows "
+            + squaresShowing(page, true) + " squares of the " + pathPublishedIn(page) + " published, the main window "
+            + squaresShowing(ui, true) + " of " + pathPublishedIn(ui));
+    }
+
+    /** The autonomy editor, opened on the main page as the Autonomy menu opens it. */
+    private static java.awt.Window openTheAutonomyEditor() throws Exception
+    {
+        javax.swing.SwingUtilities.invokeLater(() -> ui.editorWindows().openAutonomyEditorOnPage("1 - Main"));
+
+        final java.awt.Window[] open = new java.awt.Window[1];
+
+        assertTrue(Components.waitFor(() ->
+        {
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (window.isShowing() && window instanceof org.traincontrol.gui.layouteditor.LayoutEditor) open[0] = window;
+            }
+
+            return open[0] != null;
+        }, 60000), "precondition: the autonomy editor did not open");
+
+        Components.settle();
+
+        return open[0];
+    }
+
+    /**
+     * A label's text changed in a page's file on disk and the pages read again, then what a sync ends with: the windows
+     * drawn again and the follow, which `holder` must hold back.  The file is put back after, the pages not read again,
+     * so each call writes a text of its own.
+     */
+    private static void aPageChangedOnDisk(String holder) throws Exception
+    {
+        final java.nio.file.Path file = sandbox.getFolder().toPath().resolve("config/gleisbilder/1 - Main.cs2");
+        final byte[] asItWas = java.nio.file.Files.readAllBytes(file);
+        final String text = new String(asItWas, java.nio.charset.StandardCharsets.ISO_8859_1);
+        final Object before = sessionNow();
+
+        assertTrue(text.contains(".text=Inner Loop"), "precondition: the page has no label Inner Loop");
+
+        try
+        {
+            java.nio.file.Files.write(file, text.replace(".text=Inner Loop", ".text=Inner Loop " + System.nanoTime())
+                .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1));
+
+            final Object shown = Components.onTheEventThread(() ->
+                Reflect.method(TrainControlUI.class, "shownDiagram").invoke(ui));
+
+            model.refreshLayouts();
+
+            // As a sync ends: the windows drawn again at once, the follow posted
+            Components.onTheEventThread(() -> Reflect.method(TrainControlUI.class, "redrawRouteSquaresOrRebuild",
+                org.traincontrol.base.LayoutDiagram.class).invoke(ui, shown));
+
+            Settle.theDiagram(ui);
+        }
+        finally
+        {
+            java.nio.file.Files.write(file, asItWas);
+        }
+
+        assertTrue((Boolean) Reflect.get(TrainControlUI.class, ui, "pagesToFollow"), "precondition: " + holder
+            + " did not hold the follow back");
+
+        assertTrue(sessionNow() == before, "precondition: the follow reset the session under " + holder);
+    }
+
+    /** Waits for the follow held back: the session replaced and the setup loaded again, simulated. */
+    private static void theFollowMade(Object before) throws Exception
+    {
+        final String name = session.getStore().getActiveConfiguration();
+
+        assertTrue(Settle.until(() -> sessionNow() != before && name.equals(ui.getActiveDiagramConfiguration()), 30000),
+            "the follow held back was never made");
+
+        Settle.theDiagram(ui);
+
+        Settle.simulate(model.getAutoLayout());
+    }
+
+    private static Object sessionNow()
+    {
+        return Components.onTheEventThread(() -> ui.getAutonomySession());
     }
 
     /** Stop Using Autonomy, as the Autonomy menu's item does it, answering Yes to stopping the trains. */
@@ -449,6 +577,19 @@ public class testStartingAutonomyFromTheWindow
     /** How many of a window's squares show a path ahead (`ahead`), or anything of a run at all. */
     private static int squaresShowing(java.awt.Window window, boolean ahead)
     {
+        return squaresWhere(window, (key, shown) -> shown != null && (!ahead || ahead(shown)));
+    }
+
+    /** How many of a window's squares the registry last published a path ahead for. */
+    private static int pathPublishedIn(java.awt.Window window)
+    {
+        return squaresWhere(window, (key, shown) -> key != null && ahead(ui.getDiagramTileRegistry().overlayAt(key)));
+    }
+
+    /** How many of a window's squares pass `which`, given each one's square and what it shows. */
+    private static int squaresWhere(java.awt.Window window,
+        java.util.function.BiPredicate<TileKey, org.traincontrol.automationui.TileOverlay> which)
+    {
         return Components.onTheEventThread(() ->
         {
             int count = 0;
@@ -456,15 +597,19 @@ public class testStartingAutonomyFromTheWindow
             for (org.traincontrol.gui.LayoutLabel square
                 : Components.all(window, org.traincontrol.gui.LayoutLabel.class, label -> true))
             {
-                org.traincontrol.automationui.TileOverlay shown = (org.traincontrol.automationui.TileOverlay)
-                    Reflect.get(org.traincontrol.gui.LayoutLabel.class, square, "autonomyOverlay");
-
-                if (shown != null && (!ahead || shown.getSegments().stream().anyMatch(each ->
-                    each.getState() == org.traincontrol.automationui.TileOverlay.State.ACTIVE))) count++;
+                if (which.test((TileKey) Reflect.get(org.traincontrol.gui.LayoutLabel.class, square, "square"),
+                    (org.traincontrol.automationui.TileOverlay) Reflect.get(org.traincontrol.gui.LayoutLabel.class, square,
+                    "autonomyOverlay"))) count++;
             }
 
             return count;
         });
+    }
+
+    private static boolean ahead(org.traincontrol.automationui.TileOverlay overlay)
+    {
+        return overlay != null && overlay.getSegments().stream().anyMatch(each ->
+            each.getState() == org.traincontrol.automationui.TileOverlay.State.ACTIVE);
     }
 
     /** The captions on screen drawn as a destination (a caption with no text draws nothing), with their windows. */

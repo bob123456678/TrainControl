@@ -1443,14 +1443,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         }
     }
 
-    /** Puts every station caption, in every window, back as built: no text, no fill of a run (OB-519). */
+    /** Puts every station caption, in every window, back as built: no text, no fill painted (OB-519). */
     void blankLayoutStationLabels()
     {
         for (Set<JLabel> labelSet : layoutStations.values()) for (JLabel j : labelSet)
         {
             j.setText("");
             j.setOpaque(false);
-            j.setBackground(org.traincontrol.gui.widgets.StationCaption.restingFill());
         }
     }
     
