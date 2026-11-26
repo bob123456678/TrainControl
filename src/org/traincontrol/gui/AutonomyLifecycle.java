@@ -394,6 +394,8 @@ public final class AutonomyLifecycle
         // A replaced diagram reuses the registry's page-and-coordinate keys for different track; register() would
         // replay the old badges and arrows.
         if (ui.diagramTileRegistry != null) ui.diagramTileRegistry.reset();
+        // And the captions, which no Point may write again: a destination's orange outlives its run (OB-519).
+        ui.blankLayoutStationLabels();
 
         setAutonomyDependentTabs(false);
 
