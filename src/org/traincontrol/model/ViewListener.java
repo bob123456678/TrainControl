@@ -112,6 +112,8 @@ public interface ViewListener
     public String getLastSyncError();
     /** The layout folder the last sync could not read, so the layout in use was kept; null when there was none. */
     public String getLayoutFolderUnread();
+    /** The layout folder a start could not read; null once one is. */
+    public String getLayoutFolderHeld();
     public List<String> getLayoutList();
     public List<String> getLayoutListByName();
     public String getPageNameForId(int id);

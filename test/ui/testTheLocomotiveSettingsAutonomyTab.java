@@ -996,6 +996,69 @@ public class testTheLocomotiveSettingsAutonomyTab
     }
 
     /**
+     * A rename at Save while the layout folder cannot be reached, with no setup built and with one, is said over the
+     * window like a held file, naming the configuration; Retry once the folder is back writes the new name, which the
+     * setup built keeps in memory too.
+     *
+     * MUTATION: in `AutonomyCompanionStore.repairOnDisk`, return false for every setup that does not exist; or in
+     * `AutonomyLifecycle.repairAutonomyLocomotive`, return for every session whose setup does not exist; and this fails.
+     */
+    @Test
+    public void testARenameWhileTheLayoutFolderIsAwayIsSaidAndRetried() throws Exception
+    {
+        final String configuration = session.getStore().getActiveConfiguration();
+        final java.io.File file = configurationFile(configuration);
+        final java.io.File layout = new java.io.File(ui.localLayoutPath());
+        final java.io.File away = new java.io.File(layout.getPath() + "-away");
+        final Object excluded = Components.onTheEventThread(() -> session.getPointProperty(square, "excludedLocs"));
+
+        for (boolean built : new boolean[] {false, true})
+        {
+            final String was = "AU away was " + built, name = "AU away renamed " + built;
+            final String line = I18n.f("loc.ui.renameSetupNotUpdated", configuration, name);
+            final Locomotive loc = model.newMFXLocomotive(was, built ? 0xCF2 : 0xCF1);
+
+            try
+            {
+                excludedHere(new org.json.JSONArray().put(was), true);
+                if (!built) setupBuilt(null);
+                fixture.quiet();
+                assertTrue(layout.renameTo(away), "precondition: the layout folder could not be taken away");
+
+                try (Answering answering = Answering.start(m ->
+                {
+                    if (!m.contains(line)) return null;
+
+                    // Back before Retry
+                    away.renameTo(layout);
+                    return Answering.press(I18n.t("loc.ui.renameSetupRetry"));
+                }))
+                {
+                    renameAtSave(loc, name, answering);
+                    assertEquals(answering.asked(), java.util.Arrays.asList(line), "the rename was not said once, with"
+                        + " the setup built: " + built);
+                }
+                finally
+                {
+                    if (away.isDirectory()) away.renameTo(layout);
+                }
+
+                String after = new String(java.nio.file.Files.readAllBytes(file.toPath()), java.nio.charset.StandardCharsets.UTF_8);
+                assertTrue(after.contains(name) && !after.contains(was), "Retry did not write the new name, with the"
+                    + " setup built: " + built);
+                if (built) assertTrue(String.valueOf(Components.onTheEventThread(() -> session.getPointProperty(square,
+                    "excludedLocs"))).contains(name), "the setup built kept the old name in memory");
+            }
+            finally
+            {
+                setupBuilt(session);
+                excludedHere(excluded, true);
+                deleteAll(was, name);
+            }
+        }
+    }
+
+    /**
      * Says what renames left through `sayAfterRenames`, pressing Retry at `line`, letting `held` go (null: none) as it
      * is said the second time; what was said.
      */

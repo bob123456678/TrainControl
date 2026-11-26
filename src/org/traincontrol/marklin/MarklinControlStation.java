@@ -492,6 +492,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
             // Connected, so a second try would meet the same answer: the operator is told instead, and can sync again
             if (this.lastSyncPartial && view != null && !GraphicsEnvironment.isHeadless()) view.showSyncPartial();
+            if (this.layoutFolderHeld != null && view != null && !GraphicsEnvironment.isHeadless())
+                view.showLayoutFolderHeld(this.layoutFolderHeld);
 
             // Turn on network communication and turn on the power
             this.on = true;
@@ -593,13 +595,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     // syncLayouts clears for itself, once it has something to put back
                     syncLayouts();
                     this.layoutFolderRead = overrideLayoutPath;
+                    this.layoutFolderHeld = null;
                 }
                 catch (Exception e)
                 {
                     this.log(e);
-                    // A layout in use is kept.  Its own folder is read again at the next sync, which is said; another
-                    // folder is a switch, which switchTo puts back and its door reports.  With none yet, at a start,
-                    // the station's layout stands in and the folder is let go (FR-245)
+                    // A layout in use is kept, and the parser goes back to its pages, which a download copies.  Its own
+                    // folder is read again at the next sync, which is said; another folder is a switch, which switchTo
+                    // puts back and its door reports.  With none yet, at a start, the station's layout stands in while
+                    // the preference keeps the folder (FR-245)
                     if (!this.layoutDB.getItemNames().isEmpty())
                     {
                         if (overrideLayoutPath.equals(this.layoutFolderRead))
@@ -607,19 +611,23 @@ public class MarklinControlStation implements ViewListener, ModelListener
                             this.layoutFolderUnread = overrideLayoutPath;
                             this.logf(Level.SEVERE, "layout.ui.errorFolderUnreadLayoutKept", overrideLayoutPath);
                         }
+                        if (this.layoutFolderRead != null) fileParser.setLayoutDataLoc("file:///" + this.layoutFolderRead + "/");
+                        else fileParser.setDefaultLayoutDataLoc();
                         return;
                     }
 
                     // The folder is tried again at the next sync, by when the type may be known
                     requireTheTypeKnown();
                     this.logf(java.util.logging.Level.SEVERE, "layout.revertToDefaultSource", !debug ? " Enable debug mode for details." : "");
-                    TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+                    this.layoutFolderHeld = overrideLayoutPath;
                     fileParser.setDefaultLayoutDataLoc();
                     syncLayouts();
                 }
             }
             else
-            {      
+            {
+                // No folder set, none held: Switch to CS Layout lets a held one go
+                this.layoutFolderHeld = null;
                 if (this.layoutDB.getItemNames().isEmpty())
                 {
                     requireTheTypeKnown();
@@ -1571,6 +1579,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private volatile String layoutFolderUnread;
     /** The layout folder whose pages are in use, cleared with them; under `layoutRefreshLock`. */
     private String layoutFolderRead;
+    private volatile String layoutFolderHeld;
     /** The routes the last sync added or replaced, which its count includes. */
     private volatile int lastSyncRoutes;
 
@@ -1605,6 +1614,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public String getLayoutFolderUnread()
     {
         return this.layoutFolderUnread;
+    }
+    @Override
+    public String getLayoutFolderHeld()
+    {
+        return this.layoutFolderHeld;
     }
 
     /**

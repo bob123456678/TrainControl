@@ -679,6 +679,7 @@ public class AutonomyCompanionStore
         {
             activeConfiguration = configurations.keySet().iterator().next();
         }
+        lacking.read.put(folder(), new ArrayList<>(configurations.keySet()));
     }
 
     /** Writes the setup and every configuration through Util.writeAtomically, so no half-written file is left. */
@@ -706,6 +707,7 @@ public class AutonomyCompanionStore
             unwritten.remove(entry.getKey());
             lacking.files.remove(configurationFile(entry.getKey()));
         }
+        lacking.read.put(folder(), new ArrayList<>(configurations.keySet()));
     }
 
     /** The configurations the last save left as they were on disk (it stops at the first write that fails). */
@@ -716,10 +718,12 @@ public class AutonomyCompanionStore
     }
 
     /** Per configuration file, the locomotive repairs ({from, to}, to null: deleted) a failed save left it lacking, in
-     * order; one per window, shared by its stores, so a load applies them and a write of the file clears them. */
+     * order; one per window, shared by its stores, so a load applies them and a write of the file clears them.  Also
+     * the configurations each setup folder held when last read or written, to name when it cannot be reached. */
     public static final class Lacking
     {
         private final Map<File, List<String[]>> files = Collections.synchronizedMap(new LinkedHashMap<>());
+        private final Map<File, List<String>> read = Collections.synchronizedMap(new LinkedHashMap<>());
     }
     private Lacking lacking = new Lacking();
     /** Uses a window's record of what its files lack (see `Lacking`); null keeps this store's own. */
@@ -1056,8 +1060,13 @@ public class AutonomyCompanionStore
         AutonomyCompanionStore store = new AutonomyCompanionStore(layoutFolder);
         store.shareLacking(lacking);
 
-        // Nothing is created for a layout that has never had a setup.
-        if (!store.exists()) return false;
+        // Nothing is created for a layout that has never had a setup; one read before and out of reach now is left
+        if (!store.exists())
+        {
+            List<String> held = store.lacking.read.get(store.folder());
+            if (store.isUsable() || held == null || held.isEmpty()) return false;
+            throw new NotWritten(held, new IOException(I18n.t(ERROR_NOT_LOCAL)));
+        }
 
         try
         {

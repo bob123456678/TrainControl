@@ -502,8 +502,9 @@ public final class AutonomyLifecycle
             return;
         }
 
-        // Nothing is written for a setup never saved: save() would create the folder and the file.
-        if (!session.exists()) return;
+        // Nothing is written for a setup never saved: save() would create the folder and the file.  One whose folder
+        // cannot be reached is repaired in memory, and its failed save is recorded and said
+        if (!session.exists() && session.isUsable()) return;
 
         try
         {
