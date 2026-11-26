@@ -81,3 +81,4 @@ It also produces something else the suite has never had by hand: **a split squar
 - `core.testATimetableAtRunTime`
 - `ui.testTheAutoTabKeepsItsCards`
 - `ui.testTheSyncAsksAboutRenamedLocomotives` - a rename from the Sync table with a train standing at MainPlatform
+- `core.testTrainsBySide`

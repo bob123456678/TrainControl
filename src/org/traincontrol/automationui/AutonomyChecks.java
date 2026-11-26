@@ -252,6 +252,7 @@ public class AutonomyChecks
     public static final String FACING_IMPOSSIBLE = "autosetup.ui.checkFacingImpossible";
     public static final String TRAIN_FACES_TRACK_TOWARDS_IT = "autosetup.ui.checkTrainFacesTrackTowardsIt";
     public static final String STATION_AT_THE_END_OF_A_LINE = "autosetup.ui.checkStationAtTheEndOfALine";
+    public static final String TRAINS_CANNOT_TURN = "autosetup.ui.checkTrainsCannotTurn";
 
     public static final String SIGNAL_GONE = "autosetup.ui.checkProtectingSignalGone";
 
@@ -500,6 +501,17 @@ public class AutonomyChecks
     static List<Finding> checkTrainsFacingTrackTowardsThem(GraphReducer reducer, Set<TileKey> squares)
     {
         return onePerSquare(reducer, squares, Severity.WARNING, TRAIN_FACES_TRACK_TOWARDS_IT);
+    }
+
+    /** A WARNING per square where trains may stop from a side but not run through, and cannot reverse (FR-260). */
+    static List<Finding> checkTrainsThatCannotTurn(Map<TileKey, String> stuck)
+    {
+        List<Finding> findings = new ArrayList<>();
+        for (Map.Entry<TileKey, String> each : stuck.entrySet())
+        {
+            findings.add(new Finding(Severity.WARNING, TRAINS_CANNOT_TURN, each.getValue(), each.getKey()));
+        }
+        return findings;
     }
 
     /** One finding per square, about the square, whose name is the sentence's `{0}`. */

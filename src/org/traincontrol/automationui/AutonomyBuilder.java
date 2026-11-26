@@ -922,6 +922,12 @@ public class AutonomyBuilder
                     }
                 }
 
+                // Which row of the square's cells per side is this copy's (FR-260)
+                if (extras != null && extras.has(org.traincontrol.automation.Point.TRAINS_BY_SIDE)
+                    && node.getArrival() != null && !node.nothingArrives)
+                {
+                    json.put(org.traincontrol.automation.Point.ARRIVAL_SIDE, node.getArrival().name());
+                }
                 // A station turns at a terminus (a destination that reverses on arrival), anything else at a reversing
                 // point (one autonomy never stops at): the copy that turns trains, or, where the square was marked and
                 // nothing arrives by a side of the grid, the single Point it became: must, as every arriving train

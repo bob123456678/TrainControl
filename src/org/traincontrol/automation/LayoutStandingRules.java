@@ -508,9 +508,12 @@ final class LayoutStandingRules
      */
     private Cell limited(Cell yes, Point at, boolean ending)
     {
-        if (!ending && owner.isAStationSquare(at)) return yes;
+        // The copy's own cell where it has cells per side (FR-260); otherwise a station's list bars only stopping
+        Point.Allowed rule = ending ? at.allowedToStop() : at.allowedToPass();
 
-        if (yes.getAnswer() != Answer.NO && at.isAllowOnlyListed() && at.getExcludedLocs().isEmpty())
+        if (rule == null && owner.isAStationSquare(at)) return yes;
+        if (rule == null) rule = at.allowedToStop();
+        if (yes.getAnswer() != Answer.NO && rule.isOnly() && rule.getListed().isEmpty())
         {
             return cell(Answer.NO, ending ? "autolayout.rules.limitNoneAllowed" : "autolayout.rules.limitNoneThrough");
         }
@@ -524,15 +527,15 @@ final class LayoutStandingRules
             limits.put(Limit.LENGTH, I18n.f("autolayout.rules.limitLength", at.getMaxTrainLength()));
         }
 
-        if (at.isAllowOnlyListed() || !at.getExcludedLocs().isEmpty())
+        if (rule.isOnly() || !rule.getListed().isEmpty())
         {
             List<String> names = new ArrayList<>();
 
-            for (org.traincontrol.base.Locomotive each : at.getExcludedLocs()) names.add(each.getName());
+            for (org.traincontrol.base.Locomotive each : rule.getListed()) names.add(each.getName());
 
             java.util.Collections.sort(names);
 
-            limits.put(Limit.LIST, I18n.f(at.isAllowOnlyListed() ? "autolayout.rules.limitWhitelist"
+            limits.put(Limit.LIST, I18n.f(rule.isOnly() ? "autolayout.rules.limitWhitelist"
                 : "autolayout.rules.limitBlacklist", String.join(", ", names)));
         }
 

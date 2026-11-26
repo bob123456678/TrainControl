@@ -760,6 +760,7 @@
         <test-one-class class="testEveryCandidateRouteIsJudgedAsBefore"/>
         <test-one-class class="testSyncDifferences"/>
         <test-one-class class="testTheSyncDifferencesWindow"/>
+        <test-one-class class="testTrainsBySide"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

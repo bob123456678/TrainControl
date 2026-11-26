@@ -4472,22 +4472,80 @@ public class AutonomySession
     /** @return which trains this square lets in; a square with no list in force reads ALL */
     public WhichTrains getWhichTrains(TileKey tile)
     {
-        if (Point.ALLOW_ONLY_LISTED.equals(
-            getPointProperty(tile, Point.EXCLUDED_LOCS_MODE)))
-        {
-            return WhichTrains.WHITELIST;
-        }
-
-        return namesUnder(tile, "excludedLocs").isEmpty() ? WhichTrains.ALL : WhichTrains.BLACKLIST;
+        return whichIn(listOf(tile));
     }
 
     /** @return this square's one list of locomotives, by name, whichever of the three is chosen */
     public List<String> getTrainList(TileKey tile)
     {
-        List<String> inForce = namesUnder(tile, "excludedLocs");
+        return listIn(listOf(tile));
+    }
 
-        return !inForce.isEmpty() || getWhichTrains(tile) != WhichTrains.ALL
-            ? inForce : namesUnder(tile, AutonomyBuilder.REMEMBERED_LOCS);
+    /** Whether this square's Allowed trains differ by arrival side or by stopping and running through (FR-260). */
+    public boolean hasTrainsBySide(TileKey tile)
+    {
+        return getPointProperty(tile, Point.TRAINS_BY_SIDE) instanceof JSONObject;
+    }
+
+    /**
+     * Which trains may stop, or run through, arriving by a side (FR-260).  Without cells per side the one list reads
+     * as it always has: on a station it bars stopping and every train runs through; elsewhere it bars running through.
+     */
+    public WhichTrains getWhichTrains(TileKey tile, Side side, boolean through)
+    {
+        return whichIn(cellAt(tile, side, through));
+    }
+
+    /** @return one cell's list, by name, whichever of the three it chooses */
+    public List<String> getTrainList(TileKey tile, Side side, boolean through)
+    {
+        return listIn(cellAt(tile, side, through));
+    }
+
+    /**
+     * Sets one cell, keeping the others.  Cells that read as one list are written as it, without the grid, so a setup
+     * whose cells agree saves as an older build reads it.
+     */
+    public void setWhichTrains(TileKey tile, Side side, boolean through, WhichTrains which, Collection<String> names)
+    {
+        boolean station = store.isStation(tile);
+        List<Side> sides = new ArrayList<>(getStationIndex().arrivalSidesAt(tile));
+        if (!sides.contains(side)) sides.add(side);
+        JSONObject grid = new JSONObject();
+        for (Side each : sides)
+        {
+            grid.put(each.name(), new JSONObject().put(Point.STOP, cellAt(tile, each, false))
+                .put(Point.THROUGH, cellAt(tile, each, true)));
+        }
+        grid.getJSONObject(side.name()).put(through ? Point.THROUGH : Point.STOP, cellOf(which, names));
+        JSONObject one = grid.getJSONObject(sides.get(0).name()).getJSONObject(station ? Point.STOP : Point.THROUGH);
+        boolean uniform = true;
+        for (Side each : sides)
+        {
+            JSONObject row = grid.getJSONObject(each.name());
+            uniform &= sameCell(row.getJSONObject(Point.THROUGH), station ? new JSONObject() : one)
+                && (!station || sameCell(row.getJSONObject(Point.STOP), one));
+        }
+
+        if (uniform) storeTrains(tile, whichIn(one), listIn(one));
+        else setPointProperty(tile, Point.TRAINS_BY_SIDE, grid);
+    }
+
+    /** One cell, a copy: the grid's, or else the one list as it reads there. */
+    private JSONObject cellAt(TileKey tile, Side side, boolean through)
+    {
+        Object grid = getPointProperty(tile, Point.TRAINS_BY_SIDE);
+        JSONObject row = grid instanceof JSONObject ? ((JSONObject) grid).optJSONObject(side.name()) : null;
+        JSONObject cell = row == null ? null : row.optJSONObject(through ? Point.THROUGH : Point.STOP);
+
+        if (cell != null) return new JSONObject(cell.toString());
+        return through && store.isStation(tile) ? new JSONObject() : listOf(tile);
+    }
+
+    private static boolean sameCell(JSONObject one, JSONObject other)
+    {
+        return whichIn(one) == whichIn(other)
+            && (whichIn(one) == WhichTrains.ALL || new HashSet<>(listIn(one)).equals(new HashSet<>(listIn(other))));
     }
 
     /** Replaces this square's one list, under whichever of the three is chosen. */
@@ -4512,24 +4570,59 @@ public class AutonomySession
         storeTrains(tile, which, names);
     }
 
+    /** The one list, the grid per side dropped. */
     private void storeTrains(TileKey tile, WhichTrains which, Collection<String> names)
     {
-        JSONArray listed = names == null || names.isEmpty() ? null : new JSONArray(names);
-
-        setPointProperty(tile, "excludedLocs", which == WhichTrains.ALL ? null : listed);
-
-        setPointProperty(tile, Point.EXCLUDED_LOCS_MODE,
-            which == WhichTrains.WHITELIST ? Point.ALLOW_ONLY_LISTED : null);
-
-        setPointProperty(tile, AutonomyBuilder.REMEMBERED_LOCS, which == WhichTrains.ALL ? listed : null);
+        JSONObject cell = cellOf(which, names);
+        for (String key : LIST_KEYS) setPointProperty(tile, key, cell.opt(key));
+        setPointProperty(tile, Point.TRAINS_BY_SIDE, null);
     }
 
-    /** The names stored under a key of this square, in order; empty where there are none. */
-    private List<String> namesUnder(TileKey tile, String key)
+    /** The keys a list is written under, the square's one list and each cell per side alike. */
+    private static final List<String> LIST_KEYS =
+        Arrays.asList("excludedLocs", Point.EXCLUDED_LOCS_MODE, AutonomyBuilder.REMEMBERED_LOCS);
+
+    /** A list in its keys: All keeps it under a key the build leaves out, so a list held back is never in force. */
+    private static JSONObject cellOf(WhichTrains which, Collection<String> names)
+    {
+        JSONArray listed = names == null || names.isEmpty() ? null : new JSONArray(names);
+        JSONObject cell = new JSONObject();
+        String key = which == WhichTrains.ALL ? AutonomyBuilder.REMEMBERED_LOCS : "excludedLocs";
+        if (listed != null) cell.put(key, listed);
+        if (which == WhichTrains.WHITELIST) cell.put(Point.EXCLUDED_LOCS_MODE, Point.ALLOW_ONLY_LISTED);
+
+        return cell;
+    }
+
+    /** The square's one list in its keys, a copy. */
+    private JSONObject listOf(TileKey tile)
+    {
+        JSONObject out = new JSONObject();
+
+        for (String key : LIST_KEYS) out.putOpt(key, getPointProperty(tile, key));
+
+        return new JSONObject(out.toString());
+    }
+
+    private static WhichTrains whichIn(JSONObject cell)
+    {
+        if (Point.ALLOW_ONLY_LISTED.equals(cell.opt(Point.EXCLUDED_LOCS_MODE))) return WhichTrains.WHITELIST;
+        return namesUnder(cell, "excludedLocs").isEmpty() ? WhichTrains.ALL : WhichTrains.BLACKLIST;
+    }
+
+    private static List<String> listIn(JSONObject cell)
+    {
+        List<String> inForce = namesUnder(cell, "excludedLocs");
+        return !inForce.isEmpty() || whichIn(cell) != WhichTrains.ALL
+            ? inForce : namesUnder(cell, AutonomyBuilder.REMEMBERED_LOCS);
+    }
+
+    /** The names stored under a key of a list, in order; empty where there are none. */
+    private static List<String> namesUnder(JSONObject cell, String key)
     {
         List<String> out = new ArrayList<>();
 
-        Object value = getPointProperty(tile, key);
+        Object value = cell.opt(key);
 
         if (value instanceof JSONArray)
         {
@@ -5774,6 +5867,7 @@ public class AutonomySession
 
         found.addAll(AutonomyChecks.checkStationsAtTheEndOfALine(reducer, endsOfLines));
 
+        found.addAll(AutonomyChecks.checkTrainsThatCannotTurn(trainsThatCannotTurn()));
         found.addAll(AutonomyChecks.checkStationsNamedTwice(stationsShownMoreThanOnce()));
 
         found.addAll(AutonomyChecks.checkRunsPointingOppositeWays(runsPointingOppositeWays()));
@@ -5792,6 +5886,35 @@ public class AutonomySession
         AutonomyChecks.bySeverity(found);
 
         return found;
+    }
+
+    /** May-turn stations' trains a side lets stop, not run through, that cannot reverse (FR-260), by square. */
+    private Map<TileKey, String> trainsThatCannotTurn()
+    {
+        Map<TileKey, String> out = new LinkedHashMap<>();
+        for (TileKey tile : reversibleTiles())
+        {
+            if (!hasTrainsBySide(tile) || !store.isStation(tile) || isMustTurnAround(tile)) continue;
+            Set<String> names = new TreeSet<>();
+            for (Side side : getStationIndex().arrivalSidesAt(tile))
+            {
+                if (getBarredArrivals(tile).contains(side)
+                    || getWhichTrains(tile, side, false) != WhichTrains.WHITELIST) continue;
+                WhichTrains through = getWhichTrains(tile, side, true);
+                List<String> listed = getTrainList(tile, side, true);
+                for (String name : getTrainList(tile, side, false))
+                {
+                    Locomotive loc = locomotives == null ? null : locomotives.apply(name);
+                    if (loc != null && !loc.isReversible() && through != WhichTrains.ALL
+                        && listed.contains(name) == (through == WhichTrains.BLACKLIST))
+                    {
+                        names.add(name);
+                    }
+                }
+            }
+            if (!names.isEmpty()) out.put(tile, String.join(", ", names));
+        }
+        return out;
     }
 
     /** Runs whose squares point opposite ways, first square to squares, off stationless track (OB-361). */
@@ -6760,36 +6883,37 @@ public class AutonomySession
                 out.add(new LocomotiveLeftOut(home, LocomotiveLeftOut.What.HOME, square));
             }
 
-            // The square's list, either mode (FR-121); emptied as the editor empties it, mode kept.
-            JSONArray listed = point.optJSONArray("excludedLocs");
-
-            if (listed != null)
+            // The square's list and its cells per side, either mode (FR-121); emptied as the editor does, mode kept.
+            for (JSONObject list : Point.listsIn(point))
             {
-                boolean allowOnly = Point.ALLOW_ONLY_LISTED.equals(point.optString(Point.EXCLUDED_LOCS_MODE, null));
+                JSONArray listed = list.optJSONArray("excludedLocs");
 
-                JSONArray kept = new JSONArray();
-
-                for (int at = 0; at < listed.length(); at++)
+                if (listed != null)
                 {
-                    Object name = listed.opt(at);
+                    boolean allowOnly = Point.ALLOW_ONLY_LISTED.equals(list.optString(Point.EXCLUDED_LOCS_MODE, null));
 
-                    if (!(name instanceof String) || known.contains(name))
+                    JSONArray kept = new JSONArray();
+                    for (int at = 0; at < listed.length(); at++)
                     {
-                        kept.put(name);
+                        Object name = listed.opt(at);
+                        if (!(name instanceof String) || known.contains(name))
+                        {
+                            kept.put(name);
+                        }
+                        else if (!((String) name).trim().isEmpty())
+                        {
+                            out.add(new LocomotiveLeftOut((String) name,
+                                allowOnly ? LocomotiveLeftOut.What.ALLOWED : LocomotiveLeftOut.What.EXCLUDED, square));
+                        }
                     }
-                    else if (!((String) name).trim().isEmpty())
+
+                    if (kept.length() != listed.length())
                     {
-                        out.add(new LocomotiveLeftOut((String) name,
-                            allowOnly ? LocomotiveLeftOut.What.ALLOWED : LocomotiveLeftOut.What.EXCLUDED, square));
+                        if (kept.length() == 0) list.remove("excludedLocs");
+                        else list.put("excludedLocs", kept);
+
+                        changed = true;
                     }
-                }
-
-                if (kept.length() != listed.length())
-                {
-                    if (kept.length() == 0) point.remove("excludedLocs");
-                    else point.put("excludedLocs", kept);
-
-                    changed = true;
                 }
             }
         }

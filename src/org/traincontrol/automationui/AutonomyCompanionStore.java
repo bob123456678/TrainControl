@@ -1433,10 +1433,12 @@ public class AutonomyCompanionStore
                 else point.put(HOME_KEY, to);
             }
 
-            renameInList(point, EXCLUDED_LOCS_KEY, from, to);
-
-            // And a list remembered while Allowed trains says All (FR-111), or it comes back naming a train that is gone
-            renameInList(point, AutonomyBuilder.REMEMBERED_LOCS, from, to);
+            // The square's lists and its cells per side, with any remembered while one says All (FR-111)
+            for (JSONObject list : org.traincontrol.automation.Point.listsIn(point))
+            {
+                renameInList(list, EXCLUDED_LOCS_KEY, from, to);
+                renameInList(list, AutonomyBuilder.REMEMBERED_LOCS, from, to);
+            }
         }
     }
 

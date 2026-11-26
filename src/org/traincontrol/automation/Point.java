@@ -67,6 +67,79 @@ public class Point
     /** The value of `EXCLUDED_LOCS_MODE` that makes the list the locomotives allowed (Adam's word for it). */
     public static final String ALLOW_ONLY_LISTED = "whitelist";
 
+    /**
+     * The square's Allowed trains per arrival side (FR-260), written only while its cells differ from the one list:
+     * side name to `stop` and `through` cells, each in the list's own keys.  `arrivalSide` names this copy's row.
+     */
+    public static final String TRAINS_BY_SIDE = "trainsBySide";
+    public static final String ARRIVAL_SIDE = "arrivalSide";
+    public static final String STOP = "stop";
+    public static final String THROUGH = "through";
+
+    private JSONObject trainsBySide = null;
+    private String arrivalSide = null;
+
+    /** This copy's two cells from `trainsBySide`; null where the one list rules. */
+    private Allowed stopCell = null;
+    private Allowed throughCell = null;
+
+    /** A setup's square and each of its cells per side: every place it keeps a list of locomotives by name. */
+    public static List<JSONObject> listsIn(JSONObject point)
+    {
+        List<JSONObject> out = new ArrayList<>(Collections.singletonList(point));
+        JSONObject bySide = point.optJSONObject(TRAINS_BY_SIDE);
+        for (String side : bySide == null ? Collections.<String>emptySet() : bySide.keySet())
+        {
+            JSONObject row = bySide.optJSONObject(side);
+            for (String action : new String[] {STOP, THROUGH})
+            {
+                if (row != null && row.optJSONObject(action) != null) out.add(row.getJSONObject(action));
+            }
+        }
+        return out;
+    }
+
+    /** One Allowed trains cell (FR-260): the locomotives listed, and whether they are the only ones allowed. */
+    public static final class Allowed
+    {
+        public static final Allowed ALL = new Allowed(Collections.<Locomotive>emptySet(), false);
+
+        private final Set<Locomotive> listed;
+        private final boolean only;
+
+        public Allowed(Set<Locomotive> listed, boolean only)
+        {
+            this.listed = Collections.unmodifiableSet(new HashSet<>(listed));
+            this.only = only;
+        }
+
+        public boolean excludes(Locomotive loc)
+        {
+            return loc != null && listed.contains(loc) != only;
+        }
+
+        public Set<Locomotive> getListed()
+        {
+            return listed;
+        }
+
+        public boolean isOnly()
+        {
+            return only;
+        }
+
+        /** The trains both cells allow, as one cell: a whitelist less a blacklist is still a whitelist. */
+        public Allowed and(Allowed other)
+        {
+            Set<Locomotive> out = new HashSet<>(only || !other.only ? listed : other.listed);
+            if (only && other.only) out.retainAll(other.listed);
+            else if (only) out.removeAll(other.listed);
+            else if (other.only) out.removeAll(listed);
+            else out.addAll(other.listed);
+            return new Allowed(out, only || other.only);
+        }
+    }
+
     private double speedMultiplier = 1.0;
 
     /**
@@ -121,7 +194,6 @@ public class Point
                 );
             }
         }
-        
         // Save the immutable unique ID
         this.uniqueId = ID_ALLOCATOR.incrementAndGet();
     }
@@ -211,7 +283,6 @@ public class Point
                 I18n.f("autolayout.errorStationMustHaveValidS88Address")
             );
         }
-        
         if (value != null)
         {
             this.s88 = Integer.toString(Math.abs(value));
@@ -220,7 +291,6 @@ public class Point
         {
             this.s88 = null;
         }
-        
         return this;
     }
     
@@ -259,9 +329,49 @@ public class Point
     {
         if (loc == null) return false;
 
+        // With cells per side, a train barred from running through may not stop on a copy it would carry on out of
+        if (stopCell != null) return stopCell.excludes(loc) || barsPassingBySide(loc);
         boolean listed = excludedLocs.contains(loc);
 
         return allowOnlyListed ? !listed : listed;
+    }
+
+    /** Whether this copy has its own cells (FR-260); without, `Layout.barsPassing` reads the one list. */
+    public boolean hasCellsBySide()
+    {
+        return stopCell != null;
+    }
+
+    /** Whether this copy's through cell bars a train from running over it or carrying on out of it; never a turn. */
+    public boolean barsPassingBySide(Locomotive loc)
+    {
+        return throughCell != null && !isTerminus && !isReversing && throughCell.excludes(loc);
+    }
+
+    /** The cell a train ending here meets: the one list, or this copy's stop cell and, on a plain copy, its through. */
+    public Allowed allowedToStop()
+    {
+        if (stopCell == null) return new Allowed(excludedLocs, allowOnlyListed);
+        return isTerminus || isReversing ? stopCell : stopCell.and(throughCell);
+    }
+
+    /** The cell a train running over this copy meets: its through cell, or null where the one list rules. */
+    public Allowed allowedToPass()
+    {
+        if (throughCell == null) return null;
+        return isTerminus || isReversing ? Allowed.ALL : throughCell;
+    }
+
+    /**
+     * The square's cells per side as the setup wrote them, kept for `toJSON`, and this copy's own two: where `stop` is
+     * null the one list rules.
+     */
+    public void setCellsBySide(JSONObject bySide, String side, Allowed stop, Allowed through)
+    {
+        this.trainsBySide = bySide;
+        this.arrivalSide = side;
+        this.stopCell = stop;
+        this.throughCell = stop == null ? null : through;
     }
 
     /** Whether the list names the only locomotives allowed here (FR-121), rather than the ones kept out. */
@@ -310,12 +420,9 @@ public class Point
                 I18n.f("autolayout.errorStationMustHaveS88SensorSetAddressFirst")
             );
         }
-        
         this.isDestination = state;
-        
         // Reset terminus status
         if (!this.isDestination) this.isTerminus = false;
-        
         return this;
     }
     
@@ -341,7 +448,6 @@ public class Point
         {
             this.isTerminus = state;
         }
-        
         return this;
     }
     
@@ -361,7 +467,6 @@ public class Point
         {
             this.isReversing = state;
         }
-        
         return this;
     }
     
@@ -382,7 +487,6 @@ public class Point
         {
             return false;
         }
-        
         return this.name.equals(((Point) other).getName());
     }
 
@@ -853,7 +957,6 @@ public class Point
 
         // A train of unknown length is not too long.
         if (loc.getTrainLength() == null) return true;
-        
         return loc.getTrainLength() <= this.getMaxTrainLength();   
     }
     
@@ -950,20 +1053,16 @@ public class Point
         NoSuchFieldException
     {		
         JSONObject jsonObj = Util.orderedJSON();
-        
         jsonObj.put("name", this.getName());
         jsonObj.put("station", this.isDestination);
-        
         if (!this.isActive())
         {
             jsonObj.put("active", this.active);
         }
-        
         if (this.hasS88())
         {
             jsonObj.put("s88", Integer.valueOf(this.s88));
         }
-        
         if (this.isDestination || this.maxTrainLength > 0)
         {
             jsonObj.put("maxTrainLength", this.maxTrainLength);
@@ -1078,6 +1177,8 @@ public class Point
         // Only where it names the locomotives allowed (FR-121): an empty list then keeps every locomotive out.
         if (this.allowOnlyListed) jsonObj.put(EXCLUDED_LOCS_MODE, ALLOW_ONLY_LISTED);
 
+        if (this.trainsBySide != null) jsonObj.put(TRAINS_BY_SIDE, this.trainsBySide);
+        if (this.arrivalSide != null) jsonObj.put(ARRIVAL_SIDE, this.arrivalSide);
         if (!this.blockedBy.isEmpty())
         {
             // By NAME, because a file has to; Layout.parseAuto resolves them once every point exists.

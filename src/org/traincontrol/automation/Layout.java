@@ -2350,9 +2350,8 @@ public class Layout
                 return false;
             }
 
-            // Excluded intermediate points cannot be traversed; a station's exclusion only bars stopping there (see
-            // HomeStaging.canEnter), so it is asked of the square.
-            if (e.getStart().excludes(loc) && !isAStationSquare(e.getStart()))
+            // Excluded points cannot be traversed, nor left onward from (see HomeStaging.canEnter)
+            if (barsPassing(e.getStart(), loc))
             {
                 logPathError(loc, path, logFailures,
                     I18n.f("autolayout.errorIntermediatePointExcluded", placeNameOf(e.getStart()))
@@ -5955,6 +5954,15 @@ public class Layout
     }
 
     /**
+     * Whether a locomotive may not run over this point, nor carry on out of it once stopped: the copy's through cell
+     * where its square has cells per side (FR-260), else the one list, which on a station bars only stopping.
+     */
+    public boolean barsPassing(Point point, Locomotive loc)
+    {
+        return point.hasCellsBySide() ? point.barsPassingBySide(loc) : point.excludes(loc) && !isAStationSquare(point);
+    }
+
+    /**
      * Whether trains may turn around at this piece of track, on any of its copies: a may-turn square is expressed by a
      * split, with only the turning copy marked reversing.
      */
@@ -8618,7 +8626,6 @@ public class Layout
 
                 control.logf("autolayout.infoPausedLocomotives", String.join(", ", nowPaused));
             }
-        
             return read(o, "atomicRoutes", JSONObject::getBoolean, atomic ->
             {
                 layout.setAtomicRoutes(atomic);
@@ -8639,6 +8646,38 @@ public class Layout
 
                 control.logf("autolayout.warnLocomotivePlacedOnNonStation", placed[0]);
             }
+        }
+
+        /** The locomotives a list in `holder` names, any the database lacks logged and left out. */
+        private Set<Locomotive> listed(JSONObject holder, JSONObject point)
+        {
+            Set<Locomotive> out = new HashSet<>();
+            JSONArray locs = holder.optJSONArray("excludedLocs");
+            for (int at = 0; locs != null && at < locs.length(); at++)
+            {
+                try
+                {
+                    String locName = (String) locs.get(at);
+                    // Named in the log when dropped (OB-349).
+                    Locomotive excluded = control.getLocByName(locName);
+                    if (excluded != null) out.add(excluded);
+                    else control.logf("autolayout.warnExcludedLocomotiveNotInDatabase", locName);
+                }
+                catch (Exception e)
+                {
+                    layout.invalidate(
+                        I18n.f("autolayout.errorInvalidExcludedLocomotive", point.toString(), e.getMessage()));
+                }
+            }
+            return out;
+        }
+
+        /** One cell of the cells per side (FR-260), in the list's own keys; none is All. */
+        private Point.Allowed cell(JSONObject cell, JSONObject point)
+        {
+            if (cell == null) return Point.Allowed.ALL;
+            return new Point.Allowed(listed(cell, point),
+                Point.ALLOW_ONLY_LISTED.equals(cell.optString(Point.EXCLUDED_LOCS_MODE, null)));
         }
 
         private void readPoint(JSONObject point)
@@ -8666,10 +8705,8 @@ public class Layout
                     );
                 }
             }
-            
             Integer x = typed(point, "x", Integer.class, "autolayout.errorNotValidInteger", "x", point.toString());
             Integer y = typed(point, "y", Integer.class, "autolayout.errorNotValidInteger", "y", point.toString());
-            
             try 
             {
                 // A missing "station" defaults like every other optional field.
@@ -8750,7 +8787,6 @@ public class Layout
                 {
                     layout.getPoint(point.getString("name")).setCopyFacing(point.optString("copyFacing", null));
                 }
-                
                 // Only a boolean false: anything else, or nothing, is a station trips may run through (FR-111).
                 if (Boolean.FALSE.equals(point.opt(Point.RUN_THROUGH)))
                 {
@@ -8759,31 +8795,7 @@ public class Layout
 
                 if (point.has("excludedLocs") && point.get("excludedLocs") instanceof JSONArray)
                 {
-                    JSONArray locs = point.getJSONArray("excludedLocs");
-                
-                    Set<Locomotive> excludedLocs = new HashSet<>();
-                    
-                    for(Object loc : locs)
-                    {
-                        try
-                        {
-                            String locName = (String) loc;
-
-                            // Named in the log when dropped (OB-349).
-                            Locomotive excluded = control.getLocByName(locName);
-
-                            if (excluded != null) excludedLocs.add(excluded);
-                            else control.logf("autolayout.warnExcludedLocomotiveNotInDatabase", locName);
-                        }
-                        catch (Exception e)
-                        {
-                            layout.invalidate(
-                                I18n.f("autolayout.errorInvalidExcludedLocomotive", point.toString(), e.getMessage())
-                            );
-                        }
-                    }
-                    
-                    layout.getPoint(point.getString("name")).setExcludedLocs(excludedLocs);
+                    layout.getPoint(point.getString("name")).setExcludedLocs(listed(point, point));
                 }
 
                 // The list's mode (FR-121): the locomotives allowed rather than the ones kept out
@@ -8792,7 +8804,6 @@ public class Layout
                     layout.getPoint(point.getString("name")).setAllowOnlyListed(
                         Point.ALLOW_ONLY_LISTED.equals(point.optString(Point.EXCLUDED_LOCS_MODE, null)));
                 }
-                
                 Integer longest = count(point, "maxTrainLength", 0, "autolayout.errorMaxTrainLengthInvalid",
                     point.getString("name"));
 
@@ -8807,13 +8818,11 @@ public class Layout
                         control.logf("autolayout.infoSetMaxTrainLength", longest, place);
                     }
                 }
-     
                 if (x != null && y != null)
                 {
                     layout.getPoint(point.getString("name")).setX(x);
                     layout.getPoint(point.getString("name")).setY(y);
                 }
-                
                 readSetting(point, "terminus", Boolean.class, "autolayout.errorTerminusInvalidValue",
                     Point::setTerminus);
                 readSetting(point, "active", Boolean.class, "autolayout.errorActiveInvalidValue", Point::setActive);
@@ -8821,6 +8830,16 @@ public class Layout
                     Point::setAutoDestination);
                 readSetting(point, "reversing", Boolean.class, "autolayout.errorReversingInvalidValue",
                     Point::setReversing);
+                // This copy's row of the square's cells per side (FR-260)
+                JSONObject bySide = point.optJSONObject(Point.TRAINS_BY_SIDE);
+                String arrival = point.optString(Point.ARRIVAL_SIDE, null);
+                JSONObject row = bySide == null || arrival == null ? null : bySide.optJSONObject(arrival);
+                if (bySide != null)
+                {
+                    layout.getPoint(point.getString("name")).setCellsBySide(bySide, arrival,
+                        row == null ? null : cell(row.optJSONObject(Point.STOP), point),
+                        row == null ? null : cell(row.optJSONObject(Point.THROUGH), point));
+                }
                 readSetting(point, "speedMultiplier", Number.class, "autolayout.errorSpeedMultiplierInvalidValue",
                     (at, n) -> at.setSpeedMultiplier(n.doubleValue()));
                 readSetting(point, "priority", Integer.class, "autolayout.errorPriorityInvalidValue",
@@ -8829,7 +8848,6 @@ public class Layout
             catch (Exception ex)
             {
                 control.log(ex);
-                
                 layout.invalidate(
                     I18n.f("autolayout.errorPointErrorWithMessage", point.toString(), ex.getMessage())
                 );
@@ -8845,7 +8863,6 @@ public class Layout
                 if (point.get("loc") instanceof JSONObject)
                 {
                     JSONObject locInfo = point.getJSONObject("loc");
-                    
                     if (locInfo.has("name") && locInfo.get("name") instanceof String)
                     {
                         String loc = locInfo.getString("name");
@@ -8889,7 +8906,6 @@ public class Layout
                             layout.clearBlockExcept(placeOn);
 
                             placeOn.setLocomotive(l);
-                            
                             // Not reset: a function set in the locomotive window survives.
 
                             read(locInfo, "speed", JSONObject::getInt, speed ->

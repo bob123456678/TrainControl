@@ -956,6 +956,8 @@ public final class HomeStaging
         {
             Candidate current = queue.poll();
 
+            // Nor onward out of a copy it may not carry on out of (FR-260), as isPathClear asks of a path's first edge
+            if (current.at == from && from.barsPassingBySide(loc)) continue;
             // By name, not as the railway shuffles them: `Layout.getNeighbors` shuffles deliberately and this returns
             // the FIRST clear route, so a plan would flip between READY and NO_PLAN_FOUND.
             List<Edge> outward = new ArrayList<>(this.layout.getNeighbors(current.at));
@@ -1307,10 +1309,8 @@ public final class HomeStaging
             }
         }
 
-        // The two exclusion lists differ.  On a NON-station, exclusion means the locomotive may not pass.  On a station
-        // it means may not STOP (`canRest`); driving through is allowed, as an operator puts "not this one, not here"
-        // on a through station.  Asked of the square, as isPathClear asks it.
-        return !p.excludes(loc) || this.layout.isAStationSquare(p);
+        // Passing, not stopping (`canRest`): the rule isPathClear asks.
+        return !this.layout.barsPassing(p, loc);
     }
 
     /**
