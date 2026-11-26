@@ -592,16 +592,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     // syncLayouts clears for itself, once it has something to put back
                     syncLayouts();
+                    this.layoutFolderRead = overrideLayoutPath;
                 }
                 catch (Exception e)
                 {
                     this.log(e);
-                    // A layout in use is kept, the folder read again at the next sync; with none yet, at a start, the
-                    // station's layout stands in and the folder is let go (FR-245)
+                    // A layout in use is kept.  Its own folder is read again at the next sync, which is said; another
+                    // folder is a switch, which switchTo puts back and its door reports.  With none yet, at a start,
+                    // the station's layout stands in and the folder is let go (FR-245)
                     if (!this.layoutDB.getItemNames().isEmpty())
                     {
-                        this.layoutFolderUnread = overrideLayoutPath;
-                        this.logf(Level.SEVERE, "layout.ui.errorFolderUnreadLayoutKept", overrideLayoutPath);
+                        if (overrideLayoutPath.equals(this.layoutFolderRead))
+                        {
+                            this.layoutFolderUnread = overrideLayoutPath;
+                            this.logf(Level.SEVERE, "layout.ui.errorFolderUnreadLayoutKept", overrideLayoutPath);
+                        }
                         return;
                     }
 
@@ -790,7 +795,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         final int couldNotBeRead = parser.getPagesThatCouldNotBeRead();
 
         // Nothing read is still a failure, thrown BEFORE clearLayouts so the diagram on screen survives:
-        // syncLayoutsFromConfiguredSource reverts to the Central Station in a catch.
+        // syncLayoutsFromConfiguredSource keeps the layout in use, or with none reads the Central Station's.
         if (parser.readNoPage(parsed))
         {
             throw new PlainFailure(I18n.f("layout.errorNoPageCouldBeRead",
@@ -1564,6 +1569,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /** Whether the last sync left part of the Central Station's data as it was because it could not be read (FR-169). */
     private volatile boolean lastSyncPartial = false;
     private volatile String layoutFolderUnread;
+    /** The layout folder whose pages are in use, cleared with them; under `layoutRefreshLock`. */
+    private String layoutFolderRead;
     /** The routes the last sync added or replaced, which its count includes. */
     private volatile int lastSyncRoutes;
 
@@ -2279,6 +2286,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 this.layoutDB.delete(name);
             }
+            this.layoutFolderRead = null;
         }
     }
     

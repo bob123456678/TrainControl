@@ -841,7 +841,8 @@ public class testRecentLayouts
      * Open Layout on a folder that passes its check and then fails in the sync's read (it changed in between) says the
      * folder will not open, and nothing changes (`everythingAbout`), nor does any file of the layout in use (FR-245).
      *
-     * MUTATION: in `LayoutFileActions.switchTo`, answer true always, and the layout in use becomes the station's.
+     * MUTATION: in `LayoutFileActions.switchTo`, answer true always, and the old pages stand under the folder that
+     * failed, with nothing said.
      */
     @Test(timeOut = 180000)
     public void testAFolderThatFailsInTheSyncIsSaidAndNothingChanges() throws Exception
@@ -953,7 +954,7 @@ public class testRecentLayouts
      * its preferences and pages stay, as after a layout that will not unpack (FR-245).
      *
      * MUTATION: in `TrainControlUI.createAndApplyEmptyLayout`, ignore `switchTo`'s answer, and the old pages stand under
-     * the station's layout.
+     * the new folder's name, with nothing said.
      */
     @Test(timeOut = 180000)
     public void testANewLayoutThatFailsInTheSyncIsSaidAndNothingChanges() throws Exception

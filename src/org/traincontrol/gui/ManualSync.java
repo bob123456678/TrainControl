@@ -52,13 +52,16 @@ public final class ManualSync
         this.model = ui.getModel();
     }
 
-    /** Says on c, under the Sync's title, what the sync just ended added, the answers given that are not zero. */
+    /**
+     * Says on c, under the Sync's title, what the sync added and answers not zero; a warning if the folder is unread.
+     */
     void saySynced(Component c, int synced, int... answers)
     {
+        String folder = model.getLayoutFolderUnread();
         String text = syncSummary(synced - model.getLastSyncRoutes(), model.getLastSyncRoutes(),
-            model.wasLastSyncPartial(), model.getLayoutFolderUnread(), answers);
+            model.wasLastSyncPartial(), folder, answers);
         SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(c, text, I18n.t("sync.ui.title"),
-            JOptionPane.INFORMATION_MESSAGE));
+            folder == null ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE));
     }
 
     /**
