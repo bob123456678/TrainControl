@@ -463,6 +463,10 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
+* v3.1.3
+    - Bug Fixes
+        - Interface
+            - The locomotive picture's tooltip, `Turn the power off to manage the icon.`, now shows while the power is on, also for a locomotive without a picture.
 * v3.1.2
     - New Features
         - Autonomy

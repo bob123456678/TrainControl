@@ -7025,6 +7025,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
                                         locIcon.setText("");
                                         locIcon.setVisible(true);
+                                        SwingUtilities.invokeLater(() -> showIconWrench());
                                     }
                                 });
 

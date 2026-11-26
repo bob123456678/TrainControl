@@ -1217,8 +1217,8 @@ public class testLocIconCrop
      * cannot be read, so its refusal says the chooser opened.
      *
      * MUTATION: offer the tools whatever the power, say nothing while it is on, open the chooser on a right-click
-     * whatever the power in `locIconMouseReleased`, or leave the tooltip when `renderActiveLoc` lets the locomotive go,
-     * and this fails.
+     * whatever the power in `locIconMouseReleased`, leave the tooltip when `renderActiveLoc` lets the locomotive go, or
+     * leave the fit out of its no-picture branch (OB-517), and this fails.
      */
     @Test
     public void testTheIconToolsWaitForThePowerOff() throws Exception
@@ -1307,6 +1307,39 @@ public class testLocIconCrop
             Components.drain(4);
 
             assertNull(picture.getToolTipText(), "with no locomotive, the picture still says to right-click it");
+
+            // THE POWER TOLD BEFORE A LOCOMOTIVE WITH NO PICTURE IS SHOWN, and after (OB-517): no image load fits it
+            org.traincontrol.base.Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+            loc.setImageURL(null);
+            loc.setLocalImageURL(null);
+
+            java.lang.reflect.Field heard = Reflect.field(TrainControlUI.class, "powerHeard");
+            final String on = org.traincontrol.util.I18n.t("loc.ui.tooltip.powerOffToManageIcon");
+
+            power.set(model, true);
+
+            for (boolean powerFirst : new boolean[] {true, false})
+            {
+                heard.set(ui, false);
+                active.set(ui, null);
+                ui.repaintLoc(true, null);
+                if (powerFirst) ui.updatePowerState();
+                Components.drain(4);
+
+                active.set(ui, loc);
+                ui.repaintLoc(true, null);
+                Components.drain(4);
+                if (!powerFirst) ui.updatePowerState();
+
+                assertTrue(Settle.until(() -> on.equals(picture.getToolTipText()), 5000),
+                    "power told " + (powerFirst ? "before" : "after") + " the locomotive was shown: no tooltip");
+            }
+
+            power.set(model, false);
+            ui.updatePowerState();
+
+            assertTrue(Settle.until(() -> !on.equals(picture.getToolTipText()), 5000), "power off: the tooltip stays");
         }
         finally
         {
