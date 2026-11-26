@@ -17,3 +17,11 @@ release	review	prefix	A	B	C	note
 3.1.1	final validation, docs and languages (Fable)	F311G	0	1	7	B1 my changelog wording; C1 D195 finished in six languages; recheck 0 A 0 B 4 C, converged
 3.1.1	final validation, behavior (Fable)	F311U	0	3	7	B1 B2 regressions from D198 B and D200; B3 opened by B2's first fix; converged in round 3
 3.1.1	final validation, drawing and windows (Fable)	F311M	0	3	4	B1 = F311U-B2; B2 in 3.1.0 too; B3 Java 21 grayed triangle; recheck converged
+3.1.2	cross-feature (Opus)	XFO3	0	0	3	C2 remembered page windows forgotten after a start with no pages; C3 one post-rename refresh
+3.1.2	cross-feature (Fable)	XFF3	0	1	2	B1 a Sync whose layout folder will not read switched to the station's layout (D220)
+3.1.2	data safety	WFL3	0	1	0	B1 a rename whose setup repair failed was only logged; took five fix rounds (FR-249)
+3.1.2	concurrency	THR3	0	0	2	
+3.1.2	upgrade path	FRU3	0	1	3	B1 the layouts gate not run; run: 247 identical
+3.1.2	translation wording	TR3	0	0	13	
+3.1.2	fix review (Opus)	FXO4-6	0	3	9	converged in round 3; one Opus reviewer from round 3 on (Adam)
+3.1.2	fix review (Fable)	FXF4-5	1	3	8	A1 a regression from the D220 fix (Download after a refused Open); rounds 1-2 only
