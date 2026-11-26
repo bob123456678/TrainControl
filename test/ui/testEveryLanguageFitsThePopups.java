@@ -224,8 +224,13 @@ public class testEveryLanguageFitsThePopups
                 null));
             found.addAll(popup("popup-rename-setup-not-updated", language, m -> Answering.pressAt(1), null, later(() ->
             {
-                unrepaired.invoke(railway.ui.autonomyLifecycle(), "BR 103 137-6", "BR 103 137-6 Rheingold",
-                    java.util.Arrays.asList("Main", "Weekend timetable"));
+                List<String> left = java.util.Arrays.asList("Main", "Weekend timetable");
+                // The door says only files its record still lists as lacking the rename
+                new org.traincontrol.automationui.AutonomyCompanionStore(new File(railway.ui.localLayoutPath())).lacks(
+                    (org.traincontrol.automationui.AutonomyCompanionStore.Lacking) Reflect.get(
+                    org.traincontrol.gui.AutonomyLifecycle.class, railway.ui.autonomyLifecycle(), "lacking"), left,
+                    "BR 103 137-6", "BR 103 137-6 Rheingold");
+                unrepaired.invoke(railway.ui.autonomyLifecycle(), "BR 103 137-6", "BR 103 137-6 Rheingold", left);
                 return sayAfterRenames.invoke(railway.ui.autonomyLifecycle(), railway.ui, null, Collections.emptyList(),
                     I18n.t("sync.ui.title"));
             }), null));
