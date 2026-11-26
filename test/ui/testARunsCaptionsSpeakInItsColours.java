@@ -407,4 +407,187 @@ public class testARunsCaptionsSpeakInItsColours
             if (sandbox != null) sandbox.close();
         }
     }
+
+    /** The square the main window believes the pointer is over, or null. */
+    private static String hovered(TrainControlUI ui) throws Exception
+    {
+        Object tile = Reflect.get(org.traincontrol.gui.DiagramTrainKeys.class, ui.diagramLocGestures(),
+            "hoveredDiagramTile");
+
+        return tile == null ? null : tile.toString();
+    }
+
+    /**
+     * The pointer on a live station name reports that station's square, leaving it reports none, a right-click opens
+     * the autonomy menu, and a left-click on a train's name makes that train the selected one.  A plain track square
+     * reports and clears its own square the same way.
+     *
+     * MUTATION: in `LayoutGrid` (the live caption's `MouseAdapter`), empty `mouseEntered`, `mouseExited` or the BUTTON3
+     * branch of `mouseClicked`, or the `jumpToLocomotive` call, and this fails; in `LayoutLabel`, empty the hover
+     * listener's `mouseExited`.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testThePointerOnACaptionAndASquareIsHeard() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("needs a display");
+
+        support.LayoutSandbox sandbox = null;
+        MarklinControlStation model = null;
+        TrainControlUI ui = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            sandbox.simulated();
+
+            // One train standing, named, so the station it stands on shows a name (FR-136)
+            sandbox.withNoTrains()
+                .standing(new org.traincontrol.automationui.TileGraph.TileKey("1 - Main", 0, 11), MOVER, "E", "N");
+
+            model = support.TestStation.simulatedWithWindowInDebug();
+            model.setNetworkCommState(false);
+
+            ui = (TrainControlUI) model.getGUI();
+
+            assertNotNull(ui, "there is no window");
+
+            settle(300);
+
+            AutonomySession session = ui.getAutonomySession();
+
+            if (session == null) throw new AssertionError("no autonomy setup on this railway");
+
+            model.parseAuto(session.buildConfiguration());
+
+            ui.updateVisiblePoints();
+
+            settle(1000);
+
+            final TrainControlUI window = ui;
+            final MarklinControlStation station = model;
+            final Field stations = Reflect.field(TrainControlUI.class, "layoutStations");
+            final Object[] named = new Object[2];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    for (Map.Entry<Object, Set<JLabel>> e : ((Map<Object, Set<JLabel>>) stations.get(window)).entrySet())
+                    {
+                        for (JLabel label : e.getValue())
+                        {
+                            if (named[0] == null && label instanceof StationCaption && label.isShowing()
+                                && e.getKey().toString().equals(new org.traincontrol.automationui.TileGraph.TileKey(
+                                    "1 - Main", 0, 11).toString()))
+                            {
+                                named[0] = label;
+                                named[1] = e.getKey();
+                            }
+                        }
+                    }
+                }
+                catch (IllegalAccessException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            assertNotNull(named[0], "precondition: no train's name is shown on a station of the frozen railway");
+
+            final JLabel caption = (JLabel) named[0];
+
+            support.Mouse.enter(caption);
+
+            settle(200);
+
+            assertEquals(hovered(ui), named[1].toString(), "the pointer on a station's name did not report its square");
+
+            support.Mouse.exit(caption);
+
+            settle(200);
+
+            assertNull(hovered(ui), "the pointer leaving a station's name still reports its square");
+
+            try
+            {
+                assertNotNull(support.Mouse.rightClick(caption, 15000), "a right-click on a station's name opened no menu");
+            }
+            finally
+            {
+                support.Mouse.closeMenus();
+            }
+
+            final Locomotive train = model.getLocByName(MOVER);
+
+            assertNotNull(train, "precondition: the database has no " + MOVER);
+
+            // The train on one button and another train on the next, which is the one on show: a name is found by
+            // the buttons it is mapped to.
+            final String other = "75 407 DB";
+            final java.awt.Component[] first = new java.awt.Component[1];
+
+            support.Components.onTheEventThread(() ->
+            {
+                window.mapLocToCurrentButton(MOVER);
+
+                try
+                {
+                    for (Object b : ((Map<?, ?>) Reflect.get(TrainControlUI.class, window, "labelMapping")).keySet())
+                    {
+                        if (!train.equals(window.currentLocMapping().get(b)) && first[0] == null) first[0] = (java.awt.Component) b;
+                    }
+
+                    Reflect.set(TrainControlUI.class, window, "currentButton", first[0]);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+
+                window.mapLocToCurrentButton(other);
+
+                return null;
+            });
+
+            assertTrue(support.Components.waitFor(() -> window.getActiveLoc() != null
+                && other.equals(window.getActiveLoc().getName()), 10000), "precondition: the other train is not on show");
+
+            support.Mouse.click(caption);
+
+            assertTrue(support.Components.waitFor(() -> train.equals(window.getActiveLoc()), 10000),
+                "a click on a train's name on the diagram did not select that train");
+
+            final org.traincontrol.gui.LayoutLabel square = support.Components.find(ui.getContentPane(),
+                org.traincontrol.gui.LayoutLabel.class, l -> l.isShowing() && l.getWidth() > 0);
+
+            assertNotNull(square, "precondition: no square is drawn on the diagram");
+
+            support.Mouse.enter(square);
+
+            settle(200);
+
+            assertNotNull(hovered(ui), "the pointer on a square did not report it");
+
+            support.Mouse.exit(square);
+
+            settle(200);
+
+            assertNull(hovered(ui), "the pointer leaving a square still reports it");
+        }
+        finally
+        {
+            if (model != null) model.stop();
+
+            if (ui != null)
+            {
+                final TrainControlUI closing = ui;
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
 }
