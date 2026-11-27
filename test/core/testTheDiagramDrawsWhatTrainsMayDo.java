@@ -1889,4 +1889,53 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
             }
         }
     }
+
+    /** How many pixels of the green arrows' fill a station square draws, with the diagram's open-green rule or not. */
+    private static int greenPixels(Direction way, boolean diagram)
+    {
+        TileAnnotation.Badge station = new TileAnnotation.Badge(true, false, false, false, true, Side.W, Side.E);
+
+        TileAnnotation square = new TileAnnotation(
+            Arrays.asList(new TileAnnotation.Mark(Side.W, Side.E, way)), -1, false, station, false, false, false, null, true)
+            .withAllowedDirections();
+
+        BufferedImage image = new BufferedImage(60, 60, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = image.createGraphics();
+
+        g.setColor(Color.WHITE);
+        g.fillRect(0, 0, 60, 60);
+
+        (diagram ? square.withoutOpenGreen() : square).paint(g, 60, 60);
+        g.dispose();
+
+        int count = 0;
+
+        for (int x = 0; x < 60; x++)
+        {
+            for (int y = 0; y < 60; y++)
+            {
+                if (image.getRGB(x, y) == new Color(70, 205, 90).getRGB()) count++;
+            }
+        }
+
+        return count;
+    }
+
+    /**
+     * On the track diagram a station open every way draws no green arrows, as that is the default; one that keeps a
+     * way shut keeps its greens beside the red; the same square without the diagram's rule (Station Settings' picture)
+     * keeps its marks.
+     *
+     * MUTATION: drop the early return in `TileAnnotation.paintArrows`, and this fails.
+     */
+    @Test
+    public void testAStationOpenEveryWayDrawsNoGreenOnTheDiagram()
+    {
+        assertTrue(greenPixels(Direction.BOTH, false) > 0, "precondition: a station open both ways draws no green"
+            + " arrows outside the diagram");
+
+        assertEquals(greenPixels(Direction.BOTH, true), 0, "the diagram's open station still draws green arrows");
+
+        assertTrue(greenPixels(Direction.TOWARD_B, true) > 0, "a one-way station lost its green arrows on the diagram");
+    }
 }

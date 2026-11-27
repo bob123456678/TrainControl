@@ -720,7 +720,7 @@ Per-station settings (importance, speed, train length, which trains are kept out
 A few more autonomy settings are under Preferences → Autonomy, because they belong to this computer and not to the configuration:
 
 - `Path Integrity Validation` (on, and recommended) makes each train wait until the Central Station confirms every switch and signal on its route. If it cannot, the train does not leave, autonomy tries again, and a message names the accessories. While the Central Station is still switching other accessories, the train waits longer for its own, up to 30 seconds.
-- `Display Travel Restrictions` and `Display Allowed Directions` draw the red and green direction marks on the ordinary track diagram.
+- `Display Travel Restrictions` and `Display Allowed Directions` draw the red and green direction marks on the ordinary track diagram.  A station that lets trains leave every way, the default, draws no green; a station with a red side keeps its green ones beside it.
 - `Show Inactive Labels` and `Gray Station Labels` decide which station captions are shown, and in what color.
 
 ---

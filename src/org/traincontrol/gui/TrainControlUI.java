@@ -3069,7 +3069,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         for (Map.Entry<TileGraph.TileKey,
             org.traincontrol.automationui.TileAnnotation> mark : session.staticAnnotations(marked, arrows, allowedToo).entrySet())
         {
-            getDiagramTileRegistry().annotate(mark.getKey(), mark.getValue());
+            // The diagram's stations open every way say nothing in green; Station Settings' picture keeps its marks
+            getDiagramTileRegistry().annotate(mark.getKey(),
+                mark.getValue() == null || !allowedToo ? mark.getValue() : mark.getValue().withoutOpenGreen());
         }
 
         getDiagramTileRegistry().clearAnnotationsExcept(marked);
