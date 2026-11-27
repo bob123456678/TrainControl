@@ -625,6 +625,28 @@ public class testLocomotiveCsvImportDoor
     }
 
     /**
+     * Canceling the Save window an export opens at once ends the export: no panel and no message follow (OB-525), for
+     * Export to CSV and Export Routes alike.
+     *
+     * MUTATION: show the panel whatever `JsonExportPanel.isCancelled()` says and the export window opens after Cancel.
+     */
+    @Test
+    public void testCancelingTheExportsSaveWindowEndsTheExport() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            for (String door : new String[] {"exportLocsToCSVMenuItem", "exportRoutesMenuItem"})
+            {
+                Seen seen = press(ui, door, null, null, s -> s.chose, null);
+
+                assertTrue(seen.chose, door + ": the export's chooser never showed");
+                assertEquals(seen.titles.size(), 1, door + ": a window opened after Cancel: " + seen.titles);
+                assertEquals(seen.said, Collections.emptyList(), door + ": a message followed Cancel");
+            }
+        });
+    }
+
+    /**
      * Presses Locomotives > Export to CSV, saves into `file` in its chooser, closes the panel showing the export, and
      * waits for the file to be written.
      */
