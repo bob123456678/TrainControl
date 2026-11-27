@@ -34,7 +34,15 @@ final class LayoutExplanations
 
         if (owner.getLocomotiveLocation(loc) == null) return I18n.t("autolayout.why.notOnGraph");
 
-        return owner.isAutoRunning() ? whyTheStartIsRefused(loc) : null;
+        return owner.isAutoRunning() ? whyTheStartIsRefused(loc)
+            : whyItCannotGoOnNorTurn(owner.getLocomotiveLocation(loc), loc);
+    }
+
+    /** Why a train may neither carry on out of the copy it stands on nor turn on its square (FR-260), or null. */
+    private String whyItCannotGoOnNorTurn(Point at, Locomotive loc)
+    {
+        return owner.turningCopyBarring(at, loc) == null || owner.setsOffFrom(at, loc) != at ? null
+            : I18n.f("autolayout.why.startMayNotRunThroughNorTurn", Layout.placeNameOf(at));
     }
 
     /** The body of `Layout.explainCannotStart(Locomotive)`. */
@@ -108,7 +116,9 @@ final class LayoutExplanations
 
         if (at == null) return I18n.t("autolayout.why.notOnGraph");
 
-        return whyNoTrainIsStartedFrom(at);
+        String stuck = whyItCannotGoOnNorTurn(at, loc);
+
+        return stuck != null ? stuck : whyNoTrainIsStartedFrom(at);
     }
 
     /**

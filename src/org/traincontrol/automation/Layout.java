@@ -4119,12 +4119,14 @@ public class Layout
             return p2.getPriority() < p1.getPriority() ? -1 : 1;
         });
 
-        for (Point start : this.points.values())
+        for (Point standing : this.points.values())
         {
-            if (loc.equals(start.getCurrentLocomotive()) 
-                    && start.isActive() && start.isDestination() // not needed from a validation perspective, but will speed things up
+            if (loc.equals(standing.getCurrentLocomotive()) 
+                    && standing.isActive() && standing.isDestination() // not needed from a validation perspective, but will speed things up
             )
             {
+                Point start = setsOffFrom(standing, loc);
+
                 // The best route so far within one band of station priority: priority still wins between bands.
                 List<Edge> best = null;
                 OnePass pass = new OnePass(loc);
@@ -4601,7 +4603,7 @@ public class Layout
 
         if (loc == null) return out;
 
-        Point start = this.getLocomotiveLocation(loc);
+        Point start = this.setsOffFrom(this.getLocomotiveLocation(loc), loc);
 
         if (start == null) return out;
 
@@ -4932,8 +4934,10 @@ public class Layout
             {
                 if (loc.equals(start.getCurrentLocomotive()))
                 {
+                    final Point from = setsOffFrom(start, loc);
+
                     // The same block rule as above - a copy of an occupied square is occupied.
-                    routesFrom(start, goingHome, end -> end.getBlockLocomotive() == null,
+                    routesFrom(from, goingHome, end -> end.getBlockLocomotive() == null,
                         path -> this.isPathClear(path, loc, false, false, goingHome, new OnePass(loc)), path ->
                         {
                             // Only return unique starts and ends
@@ -4941,7 +4945,7 @@ public class Layout
                             {
                                 for (List<Edge> e : output)
                                 {
-                                    if (e.get(0).getStart().equals(start)
+                                    if (e.get(0).getStart().equals(from)
                                         && e.get(e.size() - 1).getEnd().equals(path.get(path.size() - 1).getEnd()))
                                     {
                                         return false;
@@ -5964,6 +5968,52 @@ public class Layout
     }
 
     /**
+     * Where a train standing on this copy sets off from: here, or, where the copy's through cell bars it and it may turn
+     * on its square's turning copy for the same side, that copy (FR-260, D222: "May reverse should always reverse if
+     * there's otherwise no way out for the train").
+     */
+    Point setsOffFrom(Point standing, Locomotive loc)
+    {
+        Point turning = turningCopyBarring(standing, loc);
+
+        return turning != null && (loc.isReversible() || !turning.isTerminus()) ? turning : standing;
+    }
+
+    /** The turning copy for the same side of a copy whose through cell bars this train, or null. */
+    Point turningCopyBarring(Point standing, Locomotive loc)
+    {
+        if (standing == null || loc == null || !standing.barsPassingBySide(loc)) return null;
+
+        for (Point copy : this.points.values())
+        {
+            if (copy != standing && copy.isSamePlaceAs(standing) && (copy.isTerminus() || copy.isReversing())
+                && java.util.Objects.equals(copy.getArrivalSide(), standing.getArrivalSide()))
+            {
+                return copy;
+            }
+        }
+
+        return null;
+    }
+
+    /** Turns a train where it stands onto the copy its route sets off from (`setsOffFrom`); false if it does not. */
+    private boolean turnToSetOff(Point start, Locomotive loc)
+    {
+        Point standing = this.getLocomotiveLocation(loc);
+
+        if (standing == null || standing == start || setsOffFrom(standing, loc) != start) return false;
+
+        loc.switchDirection();
+
+        start.reserve(loc);
+        start.setArrivedFrom(standing.getArrivedFrom());
+        start.setArrivedAlong(standing.getArrivedAlong());
+        clearLocomotiveExcept(loc, start);
+
+        return true;
+    }
+
+    /**
      * Whether trains may turn around at this piece of track, on any of its copies: a may-turn square is expressed by a
      * split, with only the turning copy marked reversing.
      */
@@ -6260,7 +6310,7 @@ public class Layout
 
         Point start = path.get(0).getStart();
 
-        if (!loc.equals(start.getCurrentLocomotive()))
+        if (!loc.equals(start.getCurrentLocomotive()) && !turnToSetOff(start, loc))
         {
             this.control.logf("autolayout.errorLocomotiveNotAtPathStart", loc.getName());
             return false;

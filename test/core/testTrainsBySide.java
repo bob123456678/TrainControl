@@ -41,7 +41,7 @@ public class testTrainsBySide
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        scenario = support.Scenario.open("single-switch");
+        scenario = support.Scenario.openSimulated("single-switch");
         session = scenario.getSession();
         pristine = session.snapshotSetup();
         approach = scenario.tile(3, 3);
@@ -157,7 +157,8 @@ public class testTrainsBySide
      * may not carry on west (stopping, then going on, would be running through in two steps).
      *
      * MUTATION: put back `e.getStart().excludes(loc) && !isAStationSquare(e.getStart())` in `Layout.isPathClear` and Q
-     * runs east to west; drop the through cell from `Point.excludes` and Q is offered the plain copy.
+     * runs east to west; drop the through cell from `Point.excludes` and Q is offered the plain copy; have
+     * `Layout.setsOffFrom` answer `standing` and Q standing on the plain copy has no route.
      */
     @Test
     public void testTheSt31RuleRunsEndToEnd() throws Exception
@@ -187,8 +188,19 @@ public class testTrainsBySide
         assertEquals(endsFrom(railway, mx, "MainPlatform"), Collections.emptyList(),
             "MX 26 may stop at Approach coming from the east, where only Q may stop");
 
-        assertEquals(pathsFrom(railway, q, copy(railway, "W", false)), Collections.emptyList(),
-            "Q standing on Approach after coming from the east may carry on west");
+        // Q standing on the plain copy may not carry on west, so it sets off turned, from the turning copy (D222)
+        List<List<Edge>> turning = pathsFrom(railway, q, copy(railway, "W", false));
+
+        assertFalse(turning.isEmpty(), "Q standing on the plain copy, which may turn there, has no route");
+
+        for (List<Edge> path : turning)
+        {
+            assertEquals(path.get(0).getStart(), copy(railway, "E", true), "Q set off from elsewhere: " + path);
+            assertNotEquals(path.get(path.size() - 1).getEnd(), railway.getPoint("WestEnd"), "Q carried on west");
+        }
+
+        assertEquals(pathsFrom(railway, plain, copy(railway, "W", false)), Collections.emptyList(),
+            "a train that cannot reverse, standing on the plain copy, may carry on west or turn");
         assertFalse(pathsFrom(railway, mx, copy(railway, "W", false)).isEmpty(),
             "MX 26 standing there may not carry on west, which it may run through");
         assertFalse(pathsFrom(railway, q, copy(railway, "E", true)).isEmpty(), "Q, turned there, may not leave east");
@@ -320,6 +332,100 @@ public class testTrainsBySide
             assertEquals(plan.getOutcome() == HomeStaging.Outcome.READY, loc == mx,
                 loc.getName() + " going home on from the plain copy: " + plan.getOutcome() + plan.getReasons());
         }
+
+        // Homed east, a train on the plain copy goes home by turning if it may turn, as getPossiblePaths sets off
+        for (Locomotive loc : Arrays.asList(q, plain))
+        {
+            st31();
+            session.setPointProperty(scenario.tile(7, 3), "home", loc.getName());
+
+            Layout railway = build();
+
+            pathsFrom(railway, loc, copy(railway, "W", false));
+
+            HomeStaging.Plan plan = railway.planReturnToHome();
+
+            assertEquals(plan.getOutcome() == HomeStaging.Outcome.READY, loc == q,
+                loc.getName() + " going home east from the plain copy: " + plan.getOutcome() + plan.getReasons());
+        }
+    }
+
+    /**
+     * A train standing on the plain copy that may not run through sets off by turning where it may (D222): Q's trip
+     * leaves back east, turned; a train that cannot reverse stays, and why it does not move names the square.
+     *
+     * MUTATION: take `turnToSetOff` out of `Layout.executePathInternal` and Q's trip is refused; take
+     * `whyItCannotGoOnNorTurn` out of `LayoutExplanations` and the train that cannot reverse is given no reason; start
+     * `pickPath` or `explainDestinations` where the train stands and they find Q no trip.
+     */
+    @Test(timeOut = 120000)
+    public void testATrainThatMayNotGoOnSetsOffByTurning() throws Exception
+    {
+        st31();
+
+        Layout railway = scenario.buildSimulated();
+
+        pathsFrom(railway, plain, copy(railway, "W", false));
+
+        String why = org.traincontrol.util.I18n.f("autolayout.why.startMayNotRunThroughNorTurn", "Approach");
+
+        assertEquals(railway.explainCannotStart(plain), why, "autonomy's reason the train that cannot reverse waits");
+        assertEquals(railway.explainCannotStart(plain, true), why, "the reason by hand");
+
+        List<Edge> trip = null;
+
+        for (List<Edge> path : pathsFrom(railway, q, copy(railway, "W", false)))
+        {
+            if (path.get(path.size() - 1).getEnd() == railway.getPoint("MainPlatform")) trip = path;
+        }
+
+        assertNotNull(trip, "Q on the plain copy has no trip to MainPlatform");
+        assertNull(railway.explainCannotStart(q), "Q, which may turn there, was given a reason not to start");
+        assertNull(railway.explainDestinations(q, true).get("MainPlatform"), "why Q may not be sent to MainPlatform");
+        assertNotNull(railway.pickPath(q), "autonomy finds Q no trip from the plain copy");
+
+        boolean forward = q.goingForward();
+
+        assertTrue(railway.executePath(trip, q, 30, null), "Q's trip from the plain copy was refused");
+        assertEquals(q.goingForward(), forward, "Q was not turned both where it set off and at MainPlatform's buffer");
+        assertEquals(railway.getPoint("MainPlatform").getCurrentLocomotive(), q, "Q did not arrive");
+    }
+
+    /**
+     * A square that is no station but may turn trains turns one its run-through cell from that side bars: a train
+     * standing there sets off turned, even one that cannot reverse, and What's allowed here lets any train leave turned.
+     *
+     * MUTATION: drop `!isReversing` from `Point.barsPassingBySide` and the train cannot set off; have
+     * `Point.allowedToPass` answer the through cell on a turning copy and the rules say Some trains.
+     */
+    @Test
+    public void testANonStationThatMayTurnTurnsATrainItBarsFromRunningThrough() throws Exception
+    {
+        session.restoreSetup(new JSONObject(pristine.toString()));
+        session.setStopsAndRunsThrough(approach, false, true);
+        session.setPointFlag(approach, AutonomyBuilder.CAN_REVERSE, true);
+        session.setWhichTrains(approach, Side.E, true, WhichTrains.WHITELIST, Collections.singletonList(mx.getName()));
+        session.setWhichTrains(approach, Side.W, true, WhichTrains.WHITELIST, Arrays.asList(mx.getName(), plain.getName()));
+
+        Layout railway = build();
+
+        assertFalse(runsOver(railway, q, "MainPlatform", "WestEnd"), "Q runs through Approach from the east");
+
+        // Standing there, even a train that cannot reverse sets off from the copy that turns every train
+        List<List<Edge>> turning = pathsFrom(railway, plain, railway.getPoint("Approach (westbound)"));
+
+        assertFalse(turning.isEmpty(), "a train standing on Approach from the east cannot turn there");
+
+        for (List<Edge> path : turning)
+        {
+            assertEquals(path.get(0).getStart().getName(), "Approach (westbound, reverse)", "it set off: " + path);
+        }
+
+        // Sent out east by hand: a train that turned there leaves whatever the run-through cell from the east says
+        StandingRules.Cell out = railway.standingRulesAt(session.getStationIndex().pointNamesAt(approach))
+            .cells(StandingRules.Row.SENT_FROM, true).get("E");
+
+        assertEquals(out.getAnswer(), StandingRules.Answer.YES, "sent out east: " + out.getWhy());
     }
 
     /**
@@ -353,10 +459,40 @@ public class testTrainsBySide
     }
 
     /**
+     * At a station that never turns trains, a train the stop cell names but the run-through cell bars may not be sent
+     * there from that side: it could not leave.
+     *
+     * MUTATION: have `Point.allowedToStop` answer the stop cell alone and the rules say Q may be sent there.
+     */
+    @Test
+    public void testWhatIsAllowedHereAtAStationThatNeverTurns() throws Exception
+    {
+        session.restoreSetup(new JSONObject(pristine.toString()));
+        session.setStopsAndRunsThrough(approach, true, true);
+        session.setAutoDestination(approach, true);
+        session.setWhichTrains(approach, Side.E, false, WhichTrains.WHITELIST, Collections.singletonList(q.getName()));
+        session.setWhichTrains(approach, Side.E, true, WhichTrains.WHITELIST, Collections.singletonList(mx.getName()));
+
+        Layout railway = build();
+
+        assertEquals(endsFrom(railway, q, "MainPlatform"), Collections.emptyList(), "Q may stop at Approach");
+
+        StandingRules rules = railway.standingRulesAt(session.getStationIndex().pointNamesAt(approach));
+
+        for (boolean byHand : new boolean[] {true, false})
+        {
+            StandingRules.Cell here = rules.cells(StandingRules.Row.SENT_HERE, byHand).get("E");
+
+            assertEquals(here.getAnswer(), StandingRules.Answer.NO, "Q sent there from the east: " + here);
+        }
+    }
+
+    /**
      * The setup's checks name a train that may stop from a side, may not run through from it, and cannot reverse: it
      * could neither carry on nor turn.  Q, which can reverse, is not named.
      *
-     * MUTATION: take `checkTrainsThatCannotTurn` out of `AutonomySession.check` and this fails.
+     * MUTATION: take `checkTrainsThatCannotTurn` out of `AutonomySession.check`, its Blacklist arm, or its arm for a
+     * square that never turns, and this fails.
      */
     @Test
     public void testTheChecksNameATrainThatCouldNeitherGoOnNorTurn() throws Exception
@@ -366,17 +502,20 @@ public class testTrainsBySide
         session.setWhichTrains(approach, Side.E, false, WhichTrains.WHITELIST,
             Arrays.asList(q.getName(), plain.getName()));
 
-        List<String> said = new ArrayList<>();
+        assertEquals(said(), Collections.singletonList(plain.getName()), "the checks said: " + said());
 
-        for (AutonomyChecks.Finding finding : session.check())
-        {
-            if (AutonomyChecks.TRAINS_CANNOT_TURN.equals(finding.getMessageKey()) && approach.equals(finding.getTile()))
-            {
-                said.add(finding.getSubject());
-            }
-        }
+        session.setWhichTrains(approach, Side.E, true, WhichTrains.BLACKLIST, Collections.singletonList(plain.getName()));
 
-        assertEquals(said, Collections.singletonList(plain.getName()), "the checks said: " + said);
+        assertEquals(said(), Collections.singletonList(plain.getName()), "a blacklist from the east: " + said());
+
+        // Where trains never turn, every train the stop cell names and the run-through cell bars is named
+        session.setWhichTrains(approach, Side.E, true, WhichTrains.WHITELIST, Collections.singletonList(mx.getName()));
+        session.setPointFlag(approach, AutonomyBuilder.CAN_REVERSE, false);
+
+        assertEquals(said(), Collections.singletonList(q.getName() + ", " + plain.getName()),
+            "where trains never turn: " + said());
+
+        session.setPointFlag(approach, AutonomyBuilder.CAN_REVERSE, true);
 
         // Not where nothing arrives from the east, nor where every train must turn, nor at a square that is no station
         int[] none = new int[3];
@@ -392,6 +531,21 @@ public class testTrainsBySide
 
         assertEquals(none, new int[3], "findings where trains may not arrive by the east side, where every train must"
             + " turn, and where the square is no station: " + Arrays.toString(none));
+    }
+
+    private static List<String> said()
+    {
+        List<String> out = new ArrayList<>();
+
+        for (AutonomyChecks.Finding finding : session.check())
+        {
+            if (AutonomyChecks.TRAINS_CANNOT_TURN.equals(finding.getMessageKey()) && approach.equals(finding.getTile()))
+            {
+                out.add(finding.getSubject());
+            }
+        }
+
+        return out;
     }
 
     private static int cannotTurn()
@@ -410,8 +564,8 @@ public class testTrainsBySide
      * A renamed or deleted locomotive is followed into each cell, as on the one list, and one the database lacks is let
      * go of there too.
      *
-     * MUTATION: in the store's rename, walk only the square (not `Point.listsIn`), or take `removeListedLoc` out of
-     * `Layout.locDeleted`, and this fails.
+     * MUTATION: in the store's rename, walk only the square (not `Point.listsIn`), take `removeListedLoc` out of
+     * `Layout.locDeleted`, or its stop cell or `trainsBySide` sweep out of it, and this fails.
      */
     @Test
     public void testTheCellsFollowARenameAndADeletion() throws Exception
@@ -421,11 +575,14 @@ public class testTrainsBySide
         Layout railway = build();
 
         railway.locDeleted(mx);
+        railway.locDeleted(q);
 
         for (Point each : copies(railway))
         {
             assertFalse(each.allowedToStop().getListed().contains(mx) || each.allowedToPass() != null
                 && each.allowedToPass().getListed().contains(mx), "the running layout kept a deleted train on a cell");
+            assertFalse(each.allowedToStop().getListed().contains(q), "the running layout kept Q on a stop cell");
+            assertFalse(each.toJSON().toString().contains("Sides "), "an export names a deleted train: " + each.toJSON());
         }
 
         session.getStore().locomotiveRenamed(mx.getName(), "Sides MX renamed");

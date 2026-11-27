@@ -946,8 +946,12 @@ public final class HomeStaging
         //
         // `turned` only keeps two routes to one square apart in the visited key; not seeded at a TERMINUS, where
         // `executePath`'s flip turns a backed-in train to face out, so seeding true would count it twice.
-        queue.add(new Candidate(from, new LinkedList<Edge>(),
-            new HashMap<String, Accessory.accessorySetting>(), from.isReversing(), 0));
+        //
+        // From the copy it turns on where it may not carry on and may turn there (FR-260), as getPossiblePaths sets off
+        final Point setOff = this.layout.setsOffFrom(from, loc);
+
+        queue.add(new Candidate(setOff, new LinkedList<Edge>(),
+            new HashMap<String, Accessory.accessorySetting>(), setOff.isReversing(), 0));
 
         // The own-tail walk below returns at once for a train with no length, and costs nothing then.
         boolean walksItsBody = loc.getTrainLength() != null && loc.getTrainLength() > 0;

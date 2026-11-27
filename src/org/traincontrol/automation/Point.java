@@ -394,11 +394,29 @@ public class Point
         this.allowOnlyListed = allowOnlyListed;
     }
 
-    /** Lets go of a deleted locomotive in this copy's cells per side, as `removeExcludedLoc` does in its one list. */
+    /** The side this copy's trains arrive by, its row of the cells per side (FR-260); null without cells. */
+    public String getArrivalSide()
+    {
+        return arrivalSide;
+    }
+
+    /**
+     * Lets go of a deleted locomotive in this copy's cells per side, and in the cells `toJSON` writes, as
+     * `removeExcludedLoc` does in its one list.
+     */
     public void removeListedLoc(Locomotive l)
     {
         if (stopCell != null) stopCell = stopCell.without(l);
         if (throughCell != null) throughCell = throughCell.without(l);
+        for (JSONObject cell : trainsBySide == null ? Collections.<JSONObject>emptyList()
+            : listsIn(new JSONObject().put(TRAINS_BY_SIDE, trainsBySide)))
+        {
+            JSONArray names = cell.optJSONArray("excludedLocs");
+            for (int at = names == null ? -1 : names.length() - 1; at >= 0; at--)
+            {
+                if (names.optString(at).equals(l.getName())) names.remove(at);
+            }
+        }
     }
 
     /**

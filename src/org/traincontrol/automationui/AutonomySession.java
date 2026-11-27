@@ -5888,13 +5888,17 @@ public class AutonomySession
         return found;
     }
 
-    /** May-turn stations' trains a side lets stop, not run through, that cannot reverse (FR-260), by square. */
+    /**
+     * Stations' trains a side lets stop, not run through, that cannot turn there (FR-260), by square: at a may-turn
+     * square those that cannot reverse, at one that never turns every one.
+     */
     private Map<TileKey, String> trainsThatCannotTurn()
     {
         Map<TileKey, String> out = new LinkedHashMap<>();
-        for (TileKey tile : reversibleTiles())
+        for (TileKey tile : reducer == null ? Collections.<TileKey>emptySet() : reducer.getPoints().keySet())
         {
             if (!hasTrainsBySide(tile) || !store.isStation(tile) || isMustTurnAround(tile)) continue;
+            boolean mayTurn = isTurnAround(tile);
             Set<String> names = new TreeSet<>();
             for (Side side : getStationIndex().arrivalSidesAt(tile))
             {
@@ -5905,7 +5909,7 @@ public class AutonomySession
                 for (String name : getTrainList(tile, side, false))
                 {
                     Locomotive loc = locomotives == null ? null : locomotives.apply(name);
-                    if (loc != null && !loc.isReversible() && through != WhichTrains.ALL
+                    if ((!mayTurn || loc != null && !loc.isReversible()) && through != WhichTrains.ALL
                         && listed.contains(name) == (through == WhichTrains.BLACKLIST))
                     {
                         names.add(name);
