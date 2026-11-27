@@ -422,13 +422,6 @@ final class ReturnHomeController extends SettledQuestion
 
         AutonomyEditorPanel panel = this.ui.autonomyLifecycle.liveSetupPanel();
 
-        if (panel == null)
-        {
-            JOptionPane.showMessageDialog(this.ui, I18n.t("autosetup.ui.menuEditorOpen"));
-
-            return;
-        }
-
         panel.placeEveryTrainAtHome("autolayout.ui.confirmPlaceEveryTrainAtHomeByHand",
             this::whyTheTrainsCannotBePlacedAtTheirHomes, said -> this.ui.getModel().log(said));
     }
