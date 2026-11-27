@@ -493,14 +493,6 @@ public class TileAnnotation
     }
 
     private boolean allowedToo = false;
-    private volatile boolean hideOpenGreen = false;
-
-    /** Draws no green on a station's own road while trains may leave it every way: on the diagram that is the default, so it says nothing. */
-    public TileAnnotation withoutOpenGreen()
-    {
-        this.hideOpenGreen = true;
-        return this;
-    }
 
     /** Draws the station's icon at this share of its size, for a picture whose arrows are read first (FR-111). */
     public TileAnnotation withSmallerIcon(float share)
@@ -1126,6 +1118,7 @@ public class TileAnnotation
     {
         // NONE ON A SQUARE OUT OF SERVICE: nothing can pass it, so a way through says nothing; the X says it all.
         if (outOfService()) return;
+
         Map<Side, Boolean> out = new LinkedHashMap<>();
 
         for (Mark mark : marks)
@@ -1136,13 +1129,6 @@ public class TileAnnotation
             allow(out, mark.getB(), direction == Direction.BOTH || direction == Direction.TOWARD_B);
         }
 
-        // A STATION OPEN EVERY WAY SAYS NOTHING ON ITS OWN ROAD (a double curve's plain road is judged and drawn on its own).
-        Set<Side> quiet = Collections.emptySet();
-        if (hideOpenGreen && badge != null && badge.isStation())
-        {
-            Set<Side> road = EnumSet.of(badge.getA(), badge.getB());
-            if (!road.stream().anyMatch(side -> Boolean.FALSE.equals(out.get(side)))) quiet = road;
-        }
         // Full strength whatever the state: pale arrows on open track read as track gone wrong.
         for (Map.Entry<Side, Boolean> entry : out.entrySet())
         {
@@ -1150,7 +1136,7 @@ public class TileAnnotation
 
             if (target == null) continue;
 
-            if (entry.getKey() == bareSide || quiet.contains(entry.getKey())) continue;
+            if (entry.getKey() == bareSide) continue;
 
             if (blockedOnly && !allowedToo && Boolean.TRUE.equals(entry.getValue())) continue;
 
@@ -2025,8 +2011,7 @@ public class TileAnnotation
             && traces.equals(other.traces) && blockedOnly == other.blockedOnly
             && occupied == other.occupied && unmeasured == other.unmeasured
             && toolMark == other.toolMark && gray == other.gray
-            && allowedToo == other.allowedToo && hideOpenGreen == other.hideOpenGreen
-            && allowedOnly == other.allowedOnly && bareSide == other.bareSide
+            && allowedToo == other.allowedToo && allowedOnly == other.allowedOnly && bareSide == other.bareSide
             && marks.equals(other.marks) && arrivals.equals(other.arrivals) && empty == other.empty;
     }
 
@@ -2037,8 +2022,7 @@ public class TileAnnotation
             + (selected ? 1 : 0) + (badge == null ? 0 : badge.hashCode() * 4)
             + (ignored ? 16 : 0) + (curved ? 64 : 0) + (portal ? 256 : 0) + (occupied ? 1024 : 0)
             + traces.hashCode() * 3
-            + (blockedOnly ? 512 : 0) + (unmeasured ? 4096 : 0) + (allowedToo ? 8192 : 0) + (hideOpenGreen ? 524288 : 0)
-            + (allowedOnly ? 16384 : 0)
+            + (blockedOnly ? 512 : 0) + (unmeasured ? 4096 : 0) + (allowedToo ? 8192 : 0) + (allowedOnly ? 16384 : 0)
             + (bareSide == null ? 0 : (bareSide.ordinal() + 1) * 32768) + (stationless ? 131072 : 0)
             + arrivals.hashCode() * 7 + (toolMark == null ? 0 : (toolMark.ordinal() + 1) * 262144) + (gray ? 8 : 0)
             + (empty ? 32 : 0);
@@ -2051,7 +2035,6 @@ public class TileAnnotation
             + (badge == null ? "" : " " + badge)
             + (arrivals.isEmpty() ? "" : " " + arrivals)
             + (ignored ? " ignored" : "") + (empty ? " empty" : "") + (stationless ? " no station" : "")
-            + (hideOpenGreen ? " no open green" : "")
             + (toolMark == null ? "" : " " + toolMark);
     }
 }

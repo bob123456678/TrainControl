@@ -48,8 +48,8 @@ import org.traincontrol.util.I18n;
 
 /**
  * The station and the track squares its track meets, as the track diagram draws them at 60 pixels (FR-111): the station
- * with the diagram's arrows, and its ways in to stop, from `Layout.standingRulesAt`; the next squares with the arrows in
- * effect on them.  A click on a mark goes to the window, which presses the control that owns it.  Holds no rule.
+ * with every arrow, whatever the diagram's options, and its ways in to stop, from `Layout.standingRulesAt`; the next
+ * squares with the arrows in effect on them.  A click on a mark goes to the window, which presses the control that owns it.  Holds no rule.
  */
 final class StationPicture extends JPanel
 {
@@ -276,21 +276,12 @@ final class StationPicture extends JPanel
         block.repaint();
     }
 
-    /** The station's square as the track diagram draws it, under the diagram's settings (OB-511); the ways in are ours. */
+    /** The station's square with every arrow, whatever the diagram's settings (MT-1106); the ways in are ours. */
     private void drawStation()
     {
-        TileAnnotation diagram = session.staticAnnotations(Collections.singleton(showing),
-            TrainControlUI.diagramShowsRestrictionArrows(), TrainControlUI.diagramShowsAllowedDirections()).get(showing);
+        TileAnnotation diagram = session.staticAnnotations(Collections.singleton(showing), true, true).get(showing);
         drawn = diagram == null ? null : diagram.withoutArrivals().withSmallerIcon(diagram.isCurved() ? 1f : ICON);
         square.setAutonomyAnnotation(drawn);
-    }
-
-    /** Draws the station's square again under the diagram's settings, which the main window may have changed meanwhile. */
-    void refresh()
-    {
-        if (square == null || showing == null || session == null) return;
-        drawStation();
-        block.repaint();
     }
 
     /** The railway's answer about the station, or null where there is none: the station then wears no ways. */

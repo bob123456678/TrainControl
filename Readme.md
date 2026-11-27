@@ -482,8 +482,7 @@ Tab icons provided by Freepik.
     - Bug Fixes
         - Autonomy
             - Page windows keep showing routes and trains after `Stop Using Autonomy` or a configuration switch.
-            - The `Station Settings` picture shows the same arrows as the track diagram.
-            - With `Display Allowed Directions` ticked, a station that trains may leave in every direction no longer shows green arrows.
+            - The `Station Settings` picture shows all of the station's arrows, green too, whatever the track diagram's display settings.
             - A train on track with only one way out shows that direction on its caption, and `Change Direction` offers only that way.
             - An autonomy file with a negative maximum number of active trains loads with no limit, and a damaged file gets a clear message.
         - Locomotive Control
@@ -493,6 +492,7 @@ Tab icons provided by Freepik.
         - Interface
             - Train icons no longer vanish from the track diagram and page windows when an editor closes soon after the page windows open.
             - With `Window Always on Top` ticked, file windows such as `Export to CSV...` no longer open hidden behind TrainControl and lock every window.
+            - Canceling the Save window of `Export to CSV...` or `Export Routes...` now ends the export instead of opening a second window.
             - When a layout cannot be read, whether opened, created, downloaded or synced, the current layout stays and a message says so.
             - When the layout folder cannot be read at start-up, TrainControl says so and keeps the folder, showing the Central Station's layout meanwhile.
             - A sync that read only part of the Central Station's data ends with a warning.

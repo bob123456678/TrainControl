@@ -22,6 +22,7 @@ public class JsonExportPanel extends javax.swing.JPanel
     TrainControlUI tcui;
     String prefix;
     String extension;
+    private boolean cancelled;
     
     /**
      * Creates new form JsonExportPanel
@@ -37,7 +38,13 @@ public class JsonExportPanel extends javax.swing.JPanel
         this.extension = extension;
         
         // Automatically save
-        jsonSaveAsActionPerformed(null);
+        this.cancelled = !save();
+    }
+
+    /** The user canceled the Save window the export opened at once: nothing more should show. */
+    public boolean isCancelled()
+    {
+        return cancelled;
     }
 
     /**
@@ -90,7 +97,11 @@ public class JsonExportPanel extends javax.swing.JPanel
     }// </editor-fold>//GEN-END:initComponents
 
     private void jsonSaveAsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jsonSaveAsActionPerformed
+        save();
+    }//GEN-LAST:event_jsonSaveAsActionPerformed
 
+    /** Asks for the file and writes it; false when the user canceled the Save window. */
+    private boolean save() {
         // THE CHOOSER IS ON THE EVENT THREAD: an action handler already is, so it needs no marshalling (the shape
         // OB-137 was reported for, one class over).  Only the write goes off it.
         JFileChooser fc = this.tcui.getFileChooser(JFileChooser.FILES_ONLY, extension);
@@ -99,7 +110,7 @@ public class JsonExportPanel extends javax.swing.JPanel
             + new SimpleDateFormat("yyyyMMdd_HHmmss").format(System.currentTimeMillis())
             + "." + extension));
 
-        if (fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return;
+        if (fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return false;
 
         final File f = fc.getSelectedFile();
         final byte[] json = this.jsonTextArea.getText().getBytes(StandardCharsets.UTF_8);
@@ -109,7 +120,6 @@ public class JsonExportPanel extends javax.swing.JPanel
         new Thread(() ->
         {
             IOException failed = null;
-
             try
             {
                 Files.write(Paths.get(f.getPath()), json);
@@ -120,7 +130,6 @@ public class JsonExportPanel extends javax.swing.JPanel
             }
 
             final IOException threw = failed;
-
             SwingUtilities.invokeLater(() ->
             {
                 this.jsonSaveAs.setEnabled(true);
@@ -148,7 +157,8 @@ public class JsonExportPanel extends javax.swing.JPanel
                 }
             });
         }).start();
-    }//GEN-LAST:event_jsonSaveAsActionPerformed
+        return true;
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JScrollPane jScrollPane1;
