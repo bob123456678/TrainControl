@@ -117,7 +117,6 @@ final class LayoutExplanations
         if (at == null) return I18n.t("autolayout.why.notOnGraph");
 
         String stuck = whyItCannotGoOnNorTurn(at, loc);
-
         return stuck != null ? stuck : whyNoTrainIsStartedFrom(at);
     }
 

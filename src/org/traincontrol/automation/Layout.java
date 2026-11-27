@@ -4098,7 +4098,6 @@ public class Layout
     public List<Edge> pickPath(Locomotive loc)
     {
         if (loc.isAutonomyPaused()) return null;
-        
         List<Point> ends = new LinkedList<>(this.points.values());
         Collections.shuffle(ends);
 
@@ -4126,7 +4125,6 @@ public class Layout
             )
             {
                 Point start = setsOffFrom(standing, loc);
-
                 // The best route so far within one band of station priority: priority still wins between bands.
                 List<Edge> best = null;
                 OnePass pass = new OnePass(loc);
@@ -4924,9 +4922,7 @@ public class Layout
     private List<List<Edge>> getPossiblePaths(Locomotive loc, boolean uniqueDest, boolean goingHome)
     {
         List<List<Edge>> output = new LinkedList<>();
-
         if (loc == null) return output;
-
         // If the locomotive is currently running, it has no possible paths
         if (!this.activeLocomotives.containsKey(loc))
         {
@@ -4935,7 +4931,6 @@ public class Layout
                 if (loc.equals(start.getCurrentLocomotive()))
                 {
                     final Point from = setsOffFrom(start, loc);
-
                     // The same block rule as above - a copy of an occupied square is occupied.
                     routesFrom(from, goingHome, end -> end.getBlockLocomotive() == null,
                         path -> this.isPathClear(path, loc, false, false, goingHome, new OnePass(loc)), path ->
@@ -4988,10 +4983,8 @@ public class Layout
                     path = this.bfs(start, end, seenPaths, false, goingHome);
 
                     if (path != null && clear.test(path) && take.test(path)) return true;
-
                     // Get another path other than the one we just saw
                     if (path != null) seenPaths.add(path);
-
                 } while (path != null);
             }
             catch (Exception e)
@@ -5968,14 +5961,11 @@ public class Layout
     }
 
     /**
-     * Where a train standing on this copy sets off from: here, or, where the copy's through cell bars it and it may turn
-     * on its square's turning copy for the same side, that copy (FR-260, D222: "May reverse should always reverse if
-     * there's otherwise no way out for the train").
+     * Where a train here sets off: its side's turning copy if this copy's through cell bars it and it may turn (D222).
      */
     Point setsOffFrom(Point standing, Locomotive loc)
     {
         Point turning = turningCopyBarring(standing, loc);
-
         return turning != null && (loc.isReversible() || !turning.isTerminus()) ? turning : standing;
     }
 
@@ -5983,7 +5973,6 @@ public class Layout
     Point turningCopyBarring(Point standing, Locomotive loc)
     {
         if (standing == null || loc == null || !standing.barsPassingBySide(loc)) return null;
-
         for (Point copy : this.points.values())
         {
             if (copy != standing && copy.isSamePlaceAs(standing) && (copy.isTerminus() || copy.isReversing())
@@ -5992,7 +5981,6 @@ public class Layout
                 return copy;
             }
         }
-
         return null;
     }
 
@@ -6000,16 +5988,12 @@ public class Layout
     private boolean turnToSetOff(Point start, Locomotive loc)
     {
         Point standing = this.getLocomotiveLocation(loc);
-
         if (standing == null || standing == start || setsOffFrom(standing, loc) != start) return false;
-
         loc.switchDirection();
-
         start.reserve(loc);
         start.setArrivedFrom(standing.getArrivedFrom());
         start.setArrivedAlong(standing.getArrivedAlong());
         clearLocomotiveExcept(loc, start);
-
         return true;
     }
 

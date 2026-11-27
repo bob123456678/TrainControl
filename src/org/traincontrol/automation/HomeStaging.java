@@ -949,7 +949,6 @@ public final class HomeStaging
         //
         // From the copy it turns on where it may not carry on and may turn there (FR-260), as getPossiblePaths sets off
         final Point setOff = this.layout.setsOffFrom(from, loc);
-
         queue.add(new Candidate(setOff, new LinkedList<Edge>(),
             new HashMap<String, Accessory.accessorySetting>(), setOff.isReversing(), 0));
 

@@ -5888,10 +5888,7 @@ public class AutonomySession
         return found;
     }
 
-    /**
-     * Stations' trains a side lets stop, not run through, that cannot turn there (FR-260), by square: at a may-turn
-     * square those that cannot reverse, at one that never turns every one.
-     */
+    /** Stations' trains a side lets stop, not run through, that cannot turn there (FR-260). */
     private Map<TileKey, String> trainsThatCannotTurn()
     {
         Map<TileKey, String> out = new LinkedHashMap<>();
