@@ -245,6 +245,7 @@ public class testAllowedTrainsPerSide
 
         on(() -> assertEquals(new java.util.HashSet<>(session.getTrainList(approach, Side.E, true)),
             new java.util.HashSet<>(java.util.Arrays.asList(Q, MX)), "the pencil did not set the cell's list"));
+        on(() -> assertEquals(session.getWhichTrains(approach, Side.W, true), WhichTrains.ALL, "the pencil set another cell"));
     }
 
     /** Whether this train, standing at `from`, has a trip to `to` over Approach. */
