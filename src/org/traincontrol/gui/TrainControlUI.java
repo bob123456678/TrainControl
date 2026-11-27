@@ -14044,11 +14044,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         this.locMappingPages.clearCurrentPage(this);
     }
 
-    private void doClearCurrentPage()
-    {
-        this.locMappingPages.doClearCurrentPage();
-    }
-
     public void changeRouteId(String routeName)
     {
         this.routeListPanel.changeRouteId(routeName);
