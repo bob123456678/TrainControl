@@ -2584,7 +2584,10 @@ public class testStationSettingsWindow
     /**
      * The Importance row's (i) says which way the number counts, in both states: at the default 0 and with a number typed.
      *
-     * MUTATION: drop "A higher importance is preferred" from `flyPriorityNow` or `flyPriorityNoneNow`, and this fails.
+     * It also says a negative number makes a last choice, not "ranks after 0" (MT-1102).
+     *
+     * MUTATION: drop "A higher importance is preferred" or the negative sentence from `flyPriorityNow` or
+     * `flyPriorityNoneNow`, and this fails.
      */
     @Test(timeOut = 120000)
     public void testThePriorityMarkSaysAHigherImportanceIsPreferred() throws Exception
@@ -2594,14 +2597,23 @@ public class testStationSettingsWindow
         StationDoors.current(window);
 
         String said = "A higher importance is preferred";
+        String negative = "no station at 0 or above is free";
 
         assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("priority")).contains(said),
             "the Importance (i) at the default does not say which way the number counts");
+
+        assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("priority")).contains(negative),
+            "the Importance (i) at the default does not say what a negative number does");
 
         StationDoors.typeAndEnter(window, "station.priority", "4");
 
         assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("priority")).contains(said),
             "the Importance (i) with a number typed does not say which way the number counts");
+
+        String typed = Components.onTheEventThread(() -> window.flyoverForTest("priority"));
+
+        assertTrue(typed.contains(negative) && !typed.contains("ranks after"),
+            "the Importance (i) with a number typed does not say what a negative number does");
 
         StationDoors.close(window);
     }
