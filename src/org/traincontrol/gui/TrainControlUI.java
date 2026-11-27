@@ -844,7 +844,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         installShowPageNumbersMenuItem();
 
         installImportLocsFromCSVMenuItem();
-
         installExportLogMenuItem();
 
         returnHomeController.installMenu(returnHomeButton);
@@ -852,6 +851,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         // The windows it opens follow its always-on-top (MT-703).
         this.addPropertyChangeListener("alwaysOnTop", change ->
             childWindowsFollowAlwaysOnTop(Boolean.TRUE.equals(change.getNewValue())));
+        // A dialog or chooser whose parent is in no window hangs off this one, so it is never hidden under it (OB-522)
+        JOptionPane.setRootFrame(this);
 
         // Sorted when opened (FR-126): active first, then inactive, then those on inactive stations; coming to the Auto
         // tab is `KeyboardTabStateChanged`.  A card's pause button sorts nothing, so the card stays under the pointer.
@@ -16667,6 +16668,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             && (!(asked instanceof java.awt.Frame) || (((java.awt.Frame) asked).getExtendedState() & java.awt.Frame.ICONIFIED) == 0);
 
         return showing ? asked : this;
+    }
+
+    /** Gives the windowless dialogs' owner back to Swing, so a closed window is neither kept nor reopened by one. */
+    @Override
+    public void dispose()
+    {
+        if (JOptionPane.getRootFrame() == this) JOptionPane.setRootFrame(null);
+        super.dispose();
     }
 
     private void duplicateLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_duplicateLayoutMenuItemActionPerformed
