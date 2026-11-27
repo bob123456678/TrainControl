@@ -948,7 +948,7 @@ public final class HomeStaging
         // `executePath`'s flip turns a backed-in train to face out, so seeding true would count it twice.
         //
         // From the copy it turns on where it may not carry on and may turn there (FR-260), as getPossiblePaths sets off
-        final Point setOff = this.layout.setsOffFrom(from, loc);
+        final Point setOff = this.layout == null ? from : this.layout.setsOffFrom(from, loc);
         queue.add(new Candidate(setOff, new LinkedList<Edge>(),
             new HashMap<String, Accessory.accessorySetting>(), setOff.isReversing(), 0));
 

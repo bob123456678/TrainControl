@@ -158,7 +158,8 @@ public class testTrainsBySide
      *
      * MUTATION: put back `e.getStart().excludes(loc) && !isAStationSquare(e.getStart())` in `Layout.isPathClear` and Q
      * runs east to west; drop the through cell from `Point.excludes` and Q is offered the plain copy; have
-     * `Layout.setsOffFrom` answer `standing` and Q standing on the plain copy has no route.
+     * `Layout.setsOffFrom` answer `standing` and Q standing on the plain copy has no route; drop the through cell's test
+     * from `Layout.turningCopyBarring` and MX 26 standing there is turned rather than let carry on west.
      */
     @Test
     public void testTheSt31RuleRunsEndToEnd() throws Exception
@@ -201,7 +202,8 @@ public class testTrainsBySide
 
         assertEquals(pathsFrom(railway, plain, copy(railway, "W", false)), Collections.emptyList(),
             "a train that cannot reverse, standing on the plain copy, may carry on west or turn");
-        assertFalse(pathsFrom(railway, mx, copy(railway, "W", false)).isEmpty(),
+        assertTrue(pathsFrom(railway, mx, copy(railway, "W", false)).stream()
+            .anyMatch(path -> path.get(path.size() - 1).getEnd() == railway.getPoint("WestEnd")),
             "MX 26 standing there may not carry on west, which it may run through");
         assertFalse(pathsFrom(railway, q, copy(railway, "E", true)).isEmpty(), "Q, turned there, may not leave east");
 
