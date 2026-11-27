@@ -2582,9 +2582,10 @@ public class testStationSettingsWindow
     }
 
     /**
-     * The Importance row's (i) says which way the number counts, in both states: at the default 0 and with a number typed.
+     * The Importance row's (i) says which way the number counts, in both states: at the default (a station whose importance
+     * is unset, so the text read is `flyPriorityNoneNow`) and with a number typed (`flyPriorityNow`).
      *
-     * It also says a negative number makes a last choice, not "ranks after 0" (MT-1102).
+     * Each also says a negative number makes a last choice, not "ranks after 0" (MT-1102).
      *
      * MUTATION: drop "A higher importance is preferred" or the negative sentence from `flyPriorityNow` or
      * `flyPriorityNoneNow`, and this fails.
@@ -2592,28 +2593,26 @@ public class testStationSettingsWindow
     @Test(timeOut = 120000)
     public void testThePriorityMarkSaysAHigherImportanceIsPreferred() throws Exception
     {
-        StationSettingsWindow window = StationDoors.open(panel, aStation());
+        TileKey unset = stationsOn(PAGE).stream().filter(each -> Components.onTheEventThread(() ->
+            session.getPointProperty(each, "priority") == null)).findFirst()
+            .orElseThrow(() -> new AssertionError("precondition: every station has an importance set"));
+        StationSettingsWindow window = StationDoors.open(panel, unset);
 
         StationDoors.current(window);
 
         String said = "A higher importance is preferred";
         String negative = "a negative one makes this a last choice";
+        String atDefault = Components.onTheEventThread(() -> window.flyoverForTest("priority"));
 
-        assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("priority")).contains(said),
-            "the Importance (i) at the default does not say which way the number counts");
-
-        assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("priority")).contains(negative),
-            "the Importance (i) at the default does not say what a negative number does");
+        assertTrue(atDefault.contains("the default") && atDefault.contains(said) && atDefault.contains(negative),
+            "the Importance (i) at the default does not say which way the number counts and what a negative one does");
 
         StationDoors.typeAndEnter(window, "station.priority", "4");
 
-        assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("priority")).contains(said),
-            "the Importance (i) with a number typed does not say which way the number counts");
-
         String typed = Components.onTheEventThread(() -> window.flyoverForTest("priority"));
 
-        assertTrue(typed.contains(negative) && !typed.contains("ranks after"),
-            "the Importance (i) with a number typed does not say what a negative number does");
+        assertTrue(typed.contains("4.  ") && !typed.contains("the default") && typed.contains(said) && typed.contains(negative),
+            "the Importance (i) with a number typed does not say which way the number counts and what a negative one does");
 
         StationDoors.close(window);
     }
