@@ -141,7 +141,7 @@ public class testASyncOwedWaitsForTheEditor
 
         made.clear();
 
-        Components.onTheEventThread(() -> { ui.refreshRouteList(); return null; });
+        Components.onTheEventThread(() -> { ui.routeListPanel().refreshRouteList(); return null; });
     }
 
     /** An armed route the station carried (locked), so disarming it syncs; listed in the window. */
@@ -167,7 +167,7 @@ public class testASyncOwedWaitsForTheEditor
 
         ((MarklinRoute) model.getRoute(name)).setLocked(true);
 
-        Components.onTheEventThread(() -> { ui.refreshRouteList(); return null; });
+        Components.onTheEventThread(() -> { ui.routeListPanel().refreshRouteList(); return null; });
 
         Components.settle();
 
@@ -308,8 +308,8 @@ public class testASyncOwedWaitsForTheEditor
      * Two disarms with the editor open owe one sync: one runs after Cancel, not two, and the next editor closing runs
      * none.
      *
-     * MUTATION: in `TrainControlUI.syncNow`, leave out `syncOwed.set(false)`, so the debt is never cleared, and the next
-     * Cancel syncs again.
+     * MUTATION: in `TrainControlUI.syncHolding`, leave out `syncOwed.set(false)`, so the debt is never cleared, and the
+     * next Cancel syncs again.
      */
     @Test(timeOut = 120000)
     public void testTwoEditsOweOneSync() throws Exception
@@ -376,8 +376,8 @@ public class testASyncOwedWaitsForTheEditor
      * An edit's sync asked for while another sync is running, which may have read the station before the edit, is kept
      * and runs once that sync ends, quietly: a sync that started after the edit is what pays for it.
      *
-     * MUTATION: in `TrainControlUI.syncNow`'s `finally`, leave out `if (syncOwed.get()) editorGone();`, and no second
-     * sync runs.
+     * MUTATION: in `TrainControlUI.holdingTheSync`'s `finally`, leave out `if (syncOwed.get()) editorGone();`, and no
+     * second sync runs.
      */
     @Test(timeOut = 120000)
     public void testAnEditsSyncIsKeptPastASyncAlreadyRunning() throws Exception
@@ -429,7 +429,7 @@ public class testASyncOwedWaitsForTheEditor
      * A layout-switch door's gate, asked in the same event as Edit, while the editor is on its way and not yet built,
      * refuses.
      *
-     * MUTATION: in `RunGates.refuseWhileEditorOpen`, ask `ui.isLayoutEditorOpen()` again, and this fails.
+     * MUTATION: in `RunGates.refuseWhileEditorOpen`, ask `ui.editorWindows().isLayoutEditorOpen()` again, and this fails.
      */
     @Test(timeOut = 120000)
     public void testASwitchDoorIsRefusedWhileAnEditorIsOnItsWay() throws Exception
@@ -446,7 +446,7 @@ public class testASyncOwedWaitsForTheEditor
                     ui.openLayoutEditor(PAGE, Boolean.TRUE, null);
 
                     out[0] = (Boolean) Reflect.method(TrainControlUI.class, "anEditorIsOpenOrOnItsWay").invoke(ui);
-                    out[1] = ui.isLayoutEditorOpen();
+                    out[1] = ui.editorWindows().isLayoutEditorOpen();
                     out[2] = (Boolean) Reflect.method(TrainControlUI.class, "refuseWhileEditorOpen").invoke(ui);
                 }
                 catch (Exception e)
@@ -561,7 +561,7 @@ public class testASyncOwedWaitsForTheEditor
     /** The main window's log as it shows. */
     private static String logText()
     {
-        return Components.onTheEventThread(() -> (String) Reflect.method(TrainControlUI.class, "logText").invoke(ui));
+        return Components.onTheEventThread(() -> ((org.traincontrol.gui.app.LogPanel) Reflect.get(TrainControlUI.class, ui, "logView")).text());
     }
 
     /**
@@ -675,7 +675,7 @@ public class testASyncOwedWaitsForTheEditor
      * The locomotive CSV import that would change an address is refused with an editor open, with the editor's message,
      * and nothing is written.
      *
-     * MUTATION: leave the two `refuseALinkOrSyncWhileEditorOpen` asks out of `LocomotiveCsvDoor`, and the address changes.
+     * MUTATION: leave the two `refuseALinkOrSyncWhileEditorOpen` asks out of `LocomotiveCsvImport`, and the address changes.
      */
     @Test(timeOut = 180000)
     public void testTheCsvImportDoesNotReaddressUnderAnEditor() throws Exception

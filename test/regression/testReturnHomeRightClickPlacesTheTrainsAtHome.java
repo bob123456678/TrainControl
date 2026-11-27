@@ -114,7 +114,8 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
      * The menu offers the item with the number of homes, on a button that is enabled and on one that is grayed - Swing
      * delivers the mouse to a disabled button, and a right-click that did nothing would not say why.
      *
-     * MUTATION: open the menu only when the button is enabled, or leave the count out of the label, and this fails.
+     * MUTATION: open the menu only when the button is enabled, leave the count out of the label, or drop the
+     * `isShowing()` check in `installMenu`, and this fails.
      */
     @Test
     public void testARightClickOffersToPlaceTheTrainsAtTheirHomes() throws Exception
@@ -166,6 +167,17 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
                         "the greyed Run Trains to Their Homes does not say what the button says");
                 }
             }
+
+            // A BUTTON NOT ON SCREEN has nowhere to open the menu, and a right-click on it must not throw
+            final javax.swing.JButton hidden = returnHomeButton(ui);
+            final JPopupMenu before = ui.returnHomePopupForTest();
+
+            SwingUtilities.invokeAndWait(() -> hidden.setVisible(false));
+
+            rightClick(ui);
+
+            assertNotSame(ui.returnHomePopupForTest(), before, "a right-click on a hidden Return Home built no menu");
+            assertFalse(ui.returnHomePopupForTest().isShowing(), "the menu opened over a button that is not on screen");
         }
         finally
         {
@@ -287,13 +299,28 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
 
             try
             {
-                assertTrue(ui.isLayoutEditorOpen(), "precondition: the editor did not open");
+                assertTrue(ui.editorWindows().isLayoutEditorOpen(), "precondition: the editor did not open");
 
                 greyedWith(ui, I18n.t("autosetup.ui.menuEditorOpen"), "an editor open");
             }
             finally
             {
                 closeTheEditor(ui);
+            }
+
+            // A DIAGRAM RELOAD UNDER WAY
+            java.util.concurrent.atomic.AtomicInteger reloads
+                = (java.util.concurrent.atomic.AtomicInteger) Reflect.get(TrainControlUI.class, ui, "refreshesUnderWay");
+
+            reloads.incrementAndGet();
+
+            try
+            {
+                greyedWith(ui, I18n.t("autosetup.ui.errorDiagramRefreshing"), "a diagram reload");
+            }
+            finally
+            {
+                reloads.decrementAndGet();
             }
         }
         finally
@@ -333,7 +360,7 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
 
             try
             {
-                assertTrue(ui.isLayoutEditorOpen(), "precondition: the editor did not open");
+                assertTrue(ui.editorWindows().isLayoutEditorOpen(), "precondition: the editor did not open");
 
                 final JMenuItem run = theRunItem(ui);
 

@@ -1634,7 +1634,7 @@ public class Layout
         this.takingPath.remove(loc);
 
         // A hand send answers a false with "check log".
-        this.control.logf(why, loc.getName());
+        this.control.logf(java.util.logging.Level.WARNING, why, loc.getName());
     }
 
     /**
@@ -2234,14 +2234,90 @@ public class Layout
      */
     public boolean isPathClear(List<Edge> path, Locomotive loc, boolean logFailures)
     {
-        return isPathClear(path, loc, logFailures, false, false);
+        return isPathClear(path, loc, logFailures, false, false, new OnePass(loc));
+    }
+
+    /** The tails, own body and reversed rails isPathClear reads, taken at first use; one per pickPath pass (FR-203). */
+    private final class OnePass
+    {
+        private final Locomotive loc;
+        private Map<Edge, Locomotive> coveredTrack;
+        private final Map<String, Locomotive> coveredPlaces = new LinkedHashMap<>();
+        private final Map<Edge, List<Edge>> railsBack = new java.util.IdentityHashMap<>();
+        private final Map<Point, Map<String, Integer>> bodies = new java.util.IdentityHashMap<>();
+
+        OnePass(Locomotive loc)
+        {
+            this.loc = loc;
+        }
+
+        /** The track behind every standing train but this one; coveredPlaces is filled by the same walk. */
+        Map<Edge, Locomotive> coveredTrack()
+        {
+            if (coveredTrack == null)
+            {
+                coveredTrack = new LinkedHashMap<>();
+
+                // Every train but this one: the maps keep one train per place, and this train's own claim could hide
+                // another's.
+                walkStandingTrains(coveredTrack, coveredPlaces, other -> !other.equals(loc));
+            }
+
+            return coveredTrack;
+        }
+
+        /** The same rail the other way (OB-269): every other edge between the same two squares reversed, in map order. */
+        List<Edge> railsBack(Edge e)
+        {
+            return railsBack.computeIfAbsent(e, key ->
+            {
+                List<Edge> back = new ArrayList<>();
+
+                for (Edge other : edges.values())
+                {
+                    if (other != e && other.getStart() != null && other.getEnd() != null
+                        && other.getStart().isSamePlaceAs(e.getEnd()) && other.getEnd().isSamePlaceAs(e.getStart()))
+                    {
+                        back.add(other);
+                    }
+                }
+
+                return back;
+            });
+        }
+
+        /** See Layout.whyItWouldMeetItsOwnTail(List, Locomotive); the body is walked once per start. */
+        String whyItWouldMeetItsOwnTail(List<Edge> path)
+        {
+            if (path == null || path.isEmpty() || loc == null || loc.getTrainLength() == null
+                || loc.getTrainLength() <= 0)
+            {
+                return null;
+            }
+
+            return Layout.whyItWouldMeetItsOwnTail(path, loc, bodies.computeIfAbsent(path.get(0).getStart(), start ->
+            {
+                // Where it stands: the route's first square, on whichever copy of it holds the train.
+                for (Point standing : points.values())
+                {
+                    if (start == null || !loc.equals(standing.getCurrentLocomotive())) continue;
+
+                    if (standing != start && !standing.isSamePlaceAs(start)) continue;
+
+                    return bodyOfATrainAt(standing, loc, null);
+                }
+
+                return new LinkedHashMap<>();
+            }));
+        }
     }
 
     /**
      * The same, saying whether a person would send it by hand, which the cap on trains out does not refuse, and whether
      * it is asked as a leg of Return Home, which a stop-only station lets through (FR-111).
      */
-    private boolean isPathClear(List<Edge> path, Locomotive loc, boolean logFailures, boolean byHand, boolean goingHome)
+    private boolean isPathClear(List<Edge> path, Locomotive loc, boolean logFailures, boolean byHand, boolean goingHome,
+        OnePass pass)
     {
         if (!byHand && !this.sentByHand.contains(loc)
             && this.maxActiveTrains > 0 && this.isAutoRunning() && trainsUnderway() >= this.maxActiveTrains)
@@ -2345,16 +2421,8 @@ public class Layout
 
             // And the same rail the other way (OB-269): its two directions are two Edges deriveLocks does not lock
             // against each other.
-            for (Edge sameRailBack : this.edges.values())
+            for (Edge sameRailBack : pass.railsBack(e))
             {
-                if (sameRailBack == e) continue;
-
-                if (sameRailBack.getStart() == null || sameRailBack.getEnd() == null) continue;
-
-                if (!sameRailBack.getStart().isSamePlaceAs(e.getEnd())) continue;
-
-                if (!sameRailBack.getEnd().isSamePlaceAs(e.getStart())) continue;
-
                 if (!sameRailBack.isRunOver(loc)) continue;
 
                 // A train never blocks itself (behaviour/tail.md 5c): Return Home holds the rail its earlier legs took.
@@ -2397,12 +2465,9 @@ public class Layout
         // the room counted is the stretch after the last switch (roomAtTheEnd).
         //
         // And nothing runs over track a standing train lies across, which point occupancy cannot see.
-        Map<Edge, Locomotive> coveredTrack = new LinkedHashMap<>();
+        Map<Edge, Locomotive> coveredTrack = pass.coveredTrack();
 
-        Map<String, Locomotive> coveredPlaces = new LinkedHashMap<>();
-
-        // Every train but this one: the maps keep one train per place, and this train's own claim could hide another's.
-        walkStandingTrains(coveredTrack, coveredPlaces, other -> !other.equals(loc));
+        Map<String, Locomotive> coveredPlaces = pass.coveredPlaces;
 
         for (Edge e : path)
         {
@@ -2473,7 +2538,7 @@ public class Layout
         }
 
         // And not round a loop into its own tail (OB-294): the checks above pass a train's own tail.
-        String ownTail = whyItWouldMeetItsOwnTail(path, loc);
+        String ownTail = pass.whyItWouldMeetItsOwnTail(path);
 
         if (ownTail != null)
         {
@@ -3329,15 +3394,11 @@ public class Layout
             return false;
         }
 
-        // In pure simulation mode the accessories are not really actuated, so there is nothing to
-        // validate - skip the guard entirely (see setSimulate: sim requires debug + no connection).
-        // Also skip when the user has disabled path integrity validation.
+        // Pure simulation actuates nothing (see setSimulate), so there is nothing to validate.
         if (this.simulate || !PATH_INTEGRITY_VALIDATION) return true;
 
-        // Verify the accessories actually reached their commanded state (this wait does not hold the
-        // Layout monitor).  If not, stop the locomotive and release its locks (returning false so
-        // executePath does not run it); power is left on and autonomy re-attempts the path organically on
-        // its next cycle, so no explicit retry is needed here.
+        // The wait does not hold the Layout monitor.  On failure the locomotive stops and its locks go; power stays on
+        // and autonomy retries on its next cycle.
         if (!this.validatePathActuation(path, stops, power, replacements))
         {
             // A Stop, power change or replaced connection ended the wait: the train goes back unrun, nothing counted.
@@ -3483,11 +3544,9 @@ public class Layout
             this.control.log(e);
         }
 
-        // Stop this locomotive so it cannot move onto the unset path.
         loc.setSpeed(0);
 
-        // Release only the locks configureAndLockPath just took: mark the edges unoccupied and clear the
-        // per-edge end-point assignments, but leave the loco at its start point (it never departed).
+        // Release only the locks configureAndLockPath just took; the loco stays at its start (it never departed).
         synchronized (this)
         {
             for (Edge e : path)
@@ -3507,12 +3566,9 @@ public class Layout
 
         String accList = String.join(", ", misconfigured);
 
-        // Always log every failure to the console.
         control.logf("autolayout.errorPathMisconfigured", loc.getName(), accList);
 
-        // Only raise a UI popup once failures cross the threshold, and at most once per Layout instance -
-        // after that, the console log above is considered sufficient, so we do not keep interrupting the
-        // user with popups for the rest of this session.
+        // A popup only once failures cross the threshold, and at most once per Layout; the log suffices after.
         boolean alert;
 
         synchronized (this)
@@ -4071,6 +4127,7 @@ public class Layout
             {
                 // The best route so far within one band of station priority: priority still wins between bands.
                 List<Edge> best = null;
+                OnePass pass = new OnePass(loc);
                 int bestCost = Integer.MAX_VALUE;
                 Integer band = null;
 
@@ -4105,7 +4162,7 @@ public class Layout
                                 path = this.bfs(start, end, seenPaths);
 
                                 if (path != null && !this.reversesAlongTheWay(path)
-                                        && this.isPathClear(path, loc, false))
+                                        && this.isPathClear(path, loc, false, false, false, pass))
                                 {
                                     // Random rules take whatever works, at once; ranked rules enumerate alternatives.
                                     if (this.pathPreference == PathPreference.RANDOM
@@ -4575,9 +4632,7 @@ public class Layout
             }
             else if (reason == null)
             {
-                // Past the filter, so the question becomes whether any route is clear.  Every
-                // alternative is tried, exactly as pickPath does, because the first one being blocked
-                // says nothing about the second.
+                // Every alternative is tried, as pickPath does: the first being blocked says nothing about the second.
                 List<List<Edge>> accepted = routes == null ? null : new LinkedList<>();
 
                 reason = firstClearOrWhyNot(loc, start, end, byHand, accepted);
@@ -4698,7 +4753,7 @@ public class Layout
                 }
 
                 // lastError is static, written by every train's pickPath, so the decision comes from the return value.
-                if (this.isPathClear(path, loc, false, byHand, false))
+                if (this.isPathClear(path, loc, false, byHand, false, new OnePass(loc)))
                 {
                     if (accepted != null) accepted.add(byHand ? path : rankedFrom(path, loc, start, end, seenPaths));
 
@@ -4879,7 +4934,7 @@ public class Layout
                 {
                     // The same block rule as above - a copy of an occupied square is occupied.
                     routesFrom(start, goingHome, end -> end.getBlockLocomotive() == null,
-                        path -> this.isPathClear(path, loc, false, false, goingHome), path ->
+                        path -> this.isPathClear(path, loc, false, false, goingHome, new OnePass(loc)), path ->
                         {
                             // Only return unique starts and ends
                             if (uniqueDest)
@@ -6149,7 +6204,7 @@ public class Layout
         // A stop ordered already sends nothing, and says so.
         if (this.stopsOrdered.get() != stopsAtDispatch)
         {
-            this.control.logf("autolayout.log.notSentAfterTheStop", loc.getName());
+            this.control.logf(java.util.logging.Level.WARNING, "autolayout.log.notSentAfterTheStop", loc.getName());
 
             return false;
         }
@@ -6214,7 +6269,7 @@ public class Layout
         // No new route while the connection to the station is replaced; trains on their way carry on (FR-186).
         if (this.control.isReplacingConnection())
         {
-            this.control.logf("autolayout.log.notSentReconnecting", loc.getName());
+            this.control.logf(java.util.logging.Level.WARNING, "autolayout.log.notSentReconnecting", loc.getName());
             return false;
         }
 
@@ -7472,28 +7527,7 @@ public class Layout
      */
     public String whyItWouldMeetItsOwnTail(List<Edge> path, Locomotive loc)
     {
-        if (path == null || path.isEmpty() || loc == null || loc.getTrainLength() == null || loc.getTrainLength() <= 0)
-        {
-            return null;
-        }
-
-        Point start = path.get(0).getStart();
-
-        Map<String, Integer> reach = new LinkedHashMap<>();
-
-        // Where it stands: the route's first square, on whichever copy of it holds the train.
-        for (Point standing : this.points.values())
-        {
-            if (start == null || !loc.equals(standing.getCurrentLocomotive())) continue;
-
-            if (standing != start && !standing.isSamePlaceAs(start)) continue;
-
-            reach = bodyOfATrainAt(standing, loc, null);
-
-            break;
-        }
-
-        return whyItWouldMeetItsOwnTail(path, loc, reach);
+        return new OnePass(loc).whyItWouldMeetItsOwnTail(path);
     }
 
     /**
@@ -7843,8 +7877,7 @@ public class Layout
         this.timetable.clear();
         this.timetable.addAll(lst);
 
-        // Overlapping execution is the normal behavior; only a staging plan opts out, and it does so
-        // after calling this
+        // Overlapping is the norm; only a staging plan opts out, after calling this
         this.timetableSequential = false;
 
         // And nothing is on loan: this is the timetable, or the one a plan hands back.
@@ -7986,8 +8019,7 @@ public class Layout
         {
             TimetablePath entry = new TimetablePath(move.getLocomotive(), move.getPath(), 0);
 
-            // No delay: every entry should start as soon as the one before it has, and be held back
-            // only by the path actually being occupied
+            // No delay: held back only by the path being occupied
             entry.setSecondsToNext(0);
 
             entry.setReturnHome(true);
@@ -8004,7 +8036,6 @@ public class Layout
         // overlapping, two could contend for an edge the planner never considered.
         this.timetableSequential = true;
 
-        // And so is this
         this.timetableOnLoan = owners;
 
         this.control.logf("autolayout.infoReturnToHomeLoaded", staged.size());
@@ -8317,36 +8348,16 @@ public class Layout
         return values;
     }
 
-    /** One of a point's setters, which may refuse its value by throwing. */
-    private interface Setter<E extends Exception>
+    /** A setter, which may refuse its value by throwing. */
+    private interface Setter<T, E extends Exception>
     {
-        void set(Point at) throws E;
+        void set(T value) throws E;
     }
 
-    /**
-     * One optional, typed setting of a point read from its JSON: absent is left alone, the wrong type invalidates the
-     * layout with `invalidKey`, and a setter that throws invalidates it with the failure.
-     */
-    private static void readSetting(Layout layout, JSONObject point, String key, Class<?> type, String invalidKey,
-        Setter<?> set)
+    /** A point's setter, likewise. */
+    private interface PointSetter<T, E extends Exception>
     {
-        if (!point.has(key)) return;
-
-        if (!type.isInstance(point.get(key)))
-        {
-            layout.invalidate(I18n.f(invalidKey, point.toString()));
-
-            return;
-        }
-
-        try
-        {
-            set.set(layout.getPoint(point.getString("name")));
-        }
-        catch (Exception e)
-        {
-            layout.invalidate(I18n.f("autolayout.errorSettingValueFailed", point.toString(), e.getMessage()));
-        }
+        void set(Point at, T value) throws E;
     }
 
     /**
@@ -8369,250 +8380,269 @@ public class Layout
             return layout;
         }
                
-        List<String> locomotives = new LinkedList<>();
-
-        JSONArray points;
-        JSONArray edges;
-        Integer minDelay;
-        Integer maxDelay;
-        Integer defaultLocSpeed;
-        
-        // What each point is held back by, by NAME, until every point exists: a restriction may name a point further
-        // down the file.
-        java.util.Map<String, List<String>> blockersByPoint = new java.util.LinkedHashMap<>();
-
-        // And the arrival sides, applied after the locomotives are placed: setLocomotive drops the side on every
-        // change.
-        java.util.Map<String, String> arrivalSideByPoint = new java.util.LinkedHashMap<>();
-
-        // And the roads, held back likewise.
-        java.util.Map<String, Object> arrivalRoadByPoint = new java.util.LinkedHashMap<>();
-
-        // Validate basic required data
-        try
+        ConfigurationFile file = new ConfigurationFile(layout, control, o);
+        if (file.readSettings())
         {
-            points = o.getJSONArray("points");
-            edges = o.getJSONArray("edges");
-            minDelay  = o.getInt("minDelay");
-            maxDelay  = o.getInt("maxDelay");
-            defaultLocSpeed  = o.getInt("defaultLocSpeed");
-        }
-        catch (JSONException e)
-        {
-            layout.invalidate(
-                I18n.f("autolayout.errorMissingOrInvalidKeys")
-            );
-            return layout;
+            file.readPoints();
+            file.readEdges();
+            file.readTimetable();
+            file.resolve();
         }
 
-        if (points == null || edges == null)
-        {
-            layout.invalidate(
-                I18n.f("autolayout.errorMissingKeysPointsEdges")
-            );
-            return layout;
-        }
-                
-        // Save values in layout class
-        try
-        {
-            layout.setDefaultLocSpeed(defaultLocSpeed);
-            layout.setMaxDelay(maxDelay);
-            layout.setMinDelay(minDelay);
-            layout.setTurnOffFunctionsOnArrival(o.has("turnOffFunctionsOnArrival") && o.getBoolean("turnOffFunctionsOnArrival"));
+        return layout;
+    }
 
-            // The routing logic, if this configuration carries one; a file without it keeps the model's default.
-            if (o.has("pathPreference"))
-            {
-                try
-                {
-                    layout.setPathPreference(PathPreference.valueOf(o.getString("pathPreference")));
-                }
-                catch (IllegalArgumentException | JSONException e)
-                {
-                    // Written by a version with a choice this one lacks: the default is a working setting, so neither
-                    // refuse the railway nor add a message to eight bundles.
-                }
-            }
-            
-            if (!o.has("turnOnFunctionsOnDeparture"))
-            {
-                layout.setTurnOnFunctionsOnDeparture(true);
-            }
-            else
-            {
-                layout.setTurnOnFunctionsOnDeparture(o.getBoolean("turnOnFunctionsOnDeparture"));
-            }            
-        }
-        catch (Exception e)
+    /** The readers fromJSON runs in turn, and what they defer until every point exists. */
+    private static final class ConfigurationFile
+    {
+        private final Layout layout;
+        private final ViewListener control;
+        private final JSONObject o;
+        private final List<String> locomotives = new LinkedList<>();
+        private JSONArray points;
+        private JSONArray edges;
+        private Integer defaultLocSpeed;
+
+        // Each point's restrictions by name, until every point exists.
+        private final java.util.Map<String, List<String>> blockersByPoint = new java.util.LinkedHashMap<>();
+
+        // Arrival sides, applied after the trains are placed: setLocomotive drops the side.
+        private final java.util.Map<String, String> arrivalSideByPoint = new java.util.LinkedHashMap<>();
+
+        // The roads, likewise.
+        private final java.util.Map<String, Object> arrivalRoadByPoint = new java.util.LinkedHashMap<>();
+
+        // Trains placed off a station, warned about once every copy is read.
+        private final List<String[]> placedOffAStation = new ArrayList<>();
+
+        // One log line per station and maximum (OB-362).
+        private final Set<String> maximumsSaid = new HashSet<>();
+
+        ConfigurationFile(Layout layout, ViewListener control, JSONObject o)
         {
-            layout.invalidate(
-                I18n.f("autolayout.errorGenericWithMessage", e.getMessage())
-            );
-            return layout;   
+            this.layout = layout;
+            this.control = control;
+            this.o = o;
+            this.points = null;
+            this.edges = null;
+            this.defaultLocSpeed = null;
         }
-                
-        // Optional values
-        if (o.has("preArrivalSpeedReduction"))
+
+        /** An optional value; where `get` cannot read it or `set` refuses it, invalidates the layout: false. */
+        private <T> boolean read(JSONObject json, String key, java.util.function.BiFunction<JSONObject, String, T> get,
+            Setter<T, ?> set, String invalid)
         {
+            if (!json.has(key)) return true;
+
             try
             {
-                layout.setPreArrivalSpeedReduction(o.getDouble("preArrivalSpeedReduction"));
+                set.set(get.apply(json, key));
+                return true;
             }
             catch (Exception e)
             {
-                layout.invalidate(
-                    I18n.f("autolayout.errorPreArrivalSpeedReductionInvalid")
-                );
-                return layout;
-            }    
+                layout.invalidate(invalid);
+                return false;
+            }
         }
-        
-        if (o.has("maxLatency"))
+
+        /** An optional value of this type, or null; another type invalidates the layout. */
+        private <T> T typed(JSONObject json, String key, Class<T> type, String invalidKey, Object... args)
         {
+            if (!json.has(key)) return null;
+            if (type.isInstance(json.get(key))) return type.cast(json.get(key));
+
+            layout.invalidate(I18n.f(invalidKey, args));
+            return null;
+        }
+
+        /** A whole number of at least 0, `absent` without the key, or null where refused. */
+        private Integer count(JSONObject json, String key, Integer absent, String invalidKey, String whose)
+        {
+            if (!json.has(key)) return absent;
+            Integer n = typed(json, key, Integer.class, invalidKey, whose);
+            if (n == null || n >= 0) return n;
+
+            layout.invalidate(I18n.f(invalidKey, whose));
+            return null;
+        }
+
+        /** One optional setting of a point, `typed`; a setter that throws invalidates the layout with the failure. */
+        private <T> void readSetting(JSONObject point, String key, Class<T> type, String invalidKey,
+            PointSetter<T, ?> set)
+        {
+            T value = typed(point, key, type, invalidKey, point.toString());
+            if (value == null) return;
+
             try
             {
-                layout.setMaxLatency(o.getInt("maxLatency"));
+                set.set(layout.getPoint(point.getString("name")), value);
             }
             catch (Exception e)
             {
-                layout.invalidate(
-                    I18n.f("autolayout.errorMaxLatencyInvalid")
-                );
-                return layout;
-            }    
-        }
-              
-        if (o.has("maxActiveTrains"))
-        {
-            try
-            {
-                layout.setMaxActiveTrains(o.getInt("maxActiveTrains"));
-                
-                if (o.getInt("maxActiveTrains") > 0)
-                {
-                    control.logf(
-                        "autolayout.infoSetMaxActiveTrains",
-                        o.getInt("maxActiveTrains")
-                    );
-                }
-            }
-            catch (Exception e)
-            {
-                layout.invalidate(
-                    I18n.f("autolayout.errorMaxActiveTrainsInvalid")
-                );
-                return layout;
-            }    
-        }
-        
-        if (o.has("maxLocInactiveSeconds"))
-        {
-            try
-            {
-                layout.setMaxLocInactiveSeconds(o.getInt("maxLocInactiveSeconds"));
-
-                if (o.getInt("maxLocInactiveSeconds") > 0)
-                {
-                    control.logf(
-                        "autolayout.infoYieldToInactiveTrains",
-                        o.getInt("maxLocInactiveSeconds")
-                    );
-                }
-            }
-            catch (Exception e)
-            {
-                layout.invalidate(
-                    I18n.f("autolayout.errorMaxLocInactiveSecondsInvalid")
-                );
-                return layout;
-            } 
-        }
-        
-        // Debug/dev only setting
-        try
-        {
-            layout.setSimulate(false);
-            
-            if (o.has("simulate"))
-            {
-                layout.setSimulate(o.getBoolean("simulate"));
+                layout.invalidate(I18n.f("autolayout.errorSettingValueFailed", point.toString(), e.getMessage()));
             }
         }
-        catch (Exception e)
+
+        /** False where a setting refused the file. */
+        boolean readSettings()
         {
-            control.logf(
-                "autolayout.warnSimulation",
-                e.getMessage()
-            );
-        }
-
-        // Which trains are paused (FR-117), every train told yes or no: the pause lives on the locomotive, which
-        // outlives this railway.
-        java.util.Set<String> pausedNames = new java.util.HashSet<>();
-
-        JSONArray pausedList = o.optJSONArray(PAUSED_LOCOMOTIVES);
-
-        for (int i = 0; pausedList != null && i < pausedList.length(); i++)
-        {
-            Object name = pausedList.opt(i);
-
-            if (name instanceof String) pausedNames.add((String) name);
-        }
-
-        List<String> nowPaused = new ArrayList<>();
-
-        for (Locomotive l : control.getLocomotives())
-        {
-            if (l == null || l.getName() == null) continue;
-
-            boolean paused = pausedNames.contains(l.getName());
-
-            l.setAutonomyPaused(paused);
-
-            if (paused) nowPaused.add(l.getName());
-        }
-
-        if (!nowPaused.isEmpty())
-        {
-            Collections.sort(nowPaused);
-
-            control.logf("autolayout.infoPausedLocomotives", String.join(", ", nowPaused));
-        }
-        
-        if (o.has("atomicRoutes"))
-        {
+            Integer minDelay;
+            Integer maxDelay;
             try
             {
-                layout.setAtomicRoutes(o.getBoolean("atomicRoutes"));
-
-                if (!o.getBoolean("atomicRoutes"))
-                {
-                    control.logf(
-                        "autolayout.infoAtomicRoutesDisabled"
-                    );
-                }
+                points = o.getJSONArray("points");
+                edges = o.getJSONArray("edges");
+                minDelay  = o.getInt("minDelay");
+                maxDelay  = o.getInt("maxDelay");
+                defaultLocSpeed  = o.getInt("defaultLocSpeed");
             }
             catch (JSONException e)
             {
                 layout.invalidate(
-                    I18n.f("autolayout.errorAtomicRoutesInvalid")
+                    I18n.f("autolayout.errorMissingOrInvalidKeys")
                 );
-                return layout;
-            }    
+                return false;
+            }
+
+            if (points == null || edges == null)
+            {
+                layout.invalidate(
+                    I18n.f("autolayout.errorMissingKeysPointsEdges")
+                );
+                return false;
+            }
+                
+            try
+            {
+                layout.setDefaultLocSpeed(defaultLocSpeed);
+                layout.setMaxDelay(maxDelay);
+                layout.setMinDelay(minDelay);
+                layout.setTurnOffFunctionsOnArrival(o.has("turnOffFunctionsOnArrival") && o.getBoolean("turnOffFunctionsOnArrival"));
+
+                // Absent, the model's default routing stays.
+                if (o.has("pathPreference"))
+                {
+                    try
+                    {
+                        layout.setPathPreference(PathPreference.valueOf(o.getString("pathPreference")));
+                    }
+                    catch (IllegalArgumentException | JSONException e)
+                    {
+                        // A newer version's choice keeps the default, rather than refusing the railway.
+                    }
+                }
+            
+                if (!o.has("turnOnFunctionsOnDeparture"))
+                {
+                    layout.setTurnOnFunctionsOnDeparture(true);
+                }
+                else
+                {
+                    layout.setTurnOnFunctionsOnDeparture(o.getBoolean("turnOnFunctionsOnDeparture"));
+                }            
+            }
+            catch (Exception e)
+            {
+                layout.invalidate(
+                    I18n.f("autolayout.errorGenericWithMessage", e.getMessage())
+                );
+                return false;   
+            }
+                
+            if (!read(o, "preArrivalSpeedReduction", JSONObject::getDouble, layout::setPreArrivalSpeedReduction,
+                    I18n.f("autolayout.errorPreArrivalSpeedReductionInvalid"))
+                || !read(o, "maxLatency", JSONObject::getInt, layout::setMaxLatency,
+                    I18n.f("autolayout.errorMaxLatencyInvalid"))
+                || !read(o, "maxActiveTrains", JSONObject::getInt, most ->
+                {
+                    if (most < 0) control.logf("autolayout.warnMaxActiveTrainsNegative", most);
+                    layout.setMaxActiveTrains(Math.max(most, 0));
+                    if (most > 0) control.logf("autolayout.infoSetMaxActiveTrains", most);
+                }, I18n.f("autolayout.errorMaxActiveTrainsNotANumber"))
+                || !read(o, "maxLocInactiveSeconds", JSONObject::getInt, seconds ->
+                {
+                    layout.setMaxLocInactiveSeconds(seconds);
+                    if (seconds > 0) control.logf("autolayout.infoYieldToInactiveTrains", seconds);
+                }, I18n.f("autolayout.errorMaxLocInactiveSecondsInvalid")))
+            {
+                return false;
+            }
+        
+            // Debug/dev only setting
+            try
+            {
+                layout.setSimulate(false);
+            
+                if (o.has("simulate"))
+                {
+                    layout.setSimulate(o.getBoolean("simulate"));
+                }
+            }
+            catch (Exception e)
+            {
+                control.logf(
+                    "autolayout.warnSimulation",
+                    e.getMessage()
+                );
+            }
+
+            // Every train told whether it is paused (FR-117): the pause lives on the locomotive.
+            java.util.Set<String> pausedNames = new java.util.HashSet<>();
+
+            JSONArray pausedList = o.optJSONArray(PAUSED_LOCOMOTIVES);
+
+            for (int i = 0; pausedList != null && i < pausedList.length(); i++)
+            {
+                Object name = pausedList.opt(i);
+
+                if (name instanceof String) pausedNames.add((String) name);
+            }
+
+            List<String> nowPaused = new ArrayList<>();
+
+            for (Locomotive l : control.getLocomotives())
+            {
+                if (l == null || l.getName() == null) continue;
+
+                boolean paused = pausedNames.contains(l.getName());
+
+                l.setAutonomyPaused(paused);
+
+                if (paused) nowPaused.add(l.getName());
+            }
+
+            if (!nowPaused.isEmpty())
+            {
+                Collections.sort(nowPaused);
+
+                control.logf("autolayout.infoPausedLocomotives", String.join(", ", nowPaused));
+            }
+        
+            return read(o, "atomicRoutes", JSONObject::getBoolean, atomic ->
+            {
+                layout.setAtomicRoutes(atomic);
+                if (!atomic) control.logf("autolayout.infoAtomicRoutesDisabled");
+            }, I18n.f("autolayout.errorAtomicRoutesInvalid"));
         }
-           
-        // Trains placed on a copy that is no station, warned about once every copy is read.
-        List<String[]> placedOffAStation = new ArrayList<>();
 
-        // ONE LINE PER STATION (OB-362): the copies of a square all carry its maximum; say it once, by the place.
-        final Set<String> maximumsSaid = new HashSet<>();
+        /** Every point, then the warnings that need all of a square's copies. */
+        void readPoints()
+        {
+            points.forEach(pnt -> readPoint((JSONObject) pnt));
+            // Not for a barred copy of a station, where a turned train can stand.
+            for (String[] placed : placedOffAStation)
+            {
+                Point on = layout.getPoint(placed[1]);
 
-        // Add points
-        points.forEach(pnt ->
-        { 
-            JSONObject point = (JSONObject) pnt; 
+                if (on != null && (layout.isABarredCopyOfAStation(on) || layout.startableTwinOf(on) != null)) continue;
 
+                control.logf("autolayout.warnLocomotivePlacedOnNonStation", placed[0]);
+            }
+        }
+
+        private void readPoint(JSONObject point)
+        {
             String s88 = null;
             if (point.has("s88"))
             {
@@ -8637,54 +8667,27 @@ public class Layout
                 }
             }
             
-            // Read optional coordinates
-            Integer x = null, y = null;
-            if (point.has("x"))
-            {
-                if (point.get("x") instanceof Integer)
-                {
-                    x = point.getInt("x");
-                }
-                else
-                {
-                    layout.invalidate(
-                        I18n.f("autolayout.errorNotValidInteger", "x", point.toString())
-                    );
-                }
-            }
-
-            if (point.has("y"))
-            {
-                if (point.get("y") instanceof Integer)
-                {
-                    y = point.getInt("y");
-                }
-                else
-                {
-                    layout.invalidate(
-                        I18n.f("autolayout.errorNotValidInteger", "y", point.toString())
-                    );
-                }
-            }
+            Integer x = typed(point, "x", Integer.class, "autolayout.errorNotValidInteger", "x", point.toString());
+            Integer y = typed(point, "y", Integer.class, "autolayout.errorNotValidInteger", "y", point.toString());
             
             try 
             {
-                // optBoolean, not getBoolean: a missing "station" must default like every other optional field.
+                // A missing "station" defaults like every other optional field.
                 layout.createPoint(point.getString("name"), point.optBoolean("station", false), s88);
 
-                // Which piece of track this Point is part of, when the generator said so; absent, the Point stands alone.
+                // The piece of track this Point is part of; absent, it stands alone.
                 if (point.has("block"))
                 {
                     layout.getPoint(point.getString("name")).setBlock(point.optString("block", null));
                 }
 
-                // And which square of the diagram it is a copy of: what a rebuild carries a train by.
+                // The square it is a copy of, which a rebuild carries a train by.
                 if (point.has("square"))
                 {
                     layout.getPoint(point.getString("name")).setSquare(point.optString("square", null));
                 }
 
-                // The signals thrown to red while this platform is claimed: a bare string or an array, both read.
+                // Signals thrown to red while this platform is claimed.
                 if (point.has("protectingSignal"))
                 {
                     layout.getPoint(point.getString("name")).setProtectingSignals(oneOrMany(point, "protectingSignal"));
@@ -8696,8 +8699,7 @@ public class Layout
                     layout.getPoint(point.getString("name")).setEntrySignals(oneOrMany(point, "entrySignal"));
                 }
 
-                // Where the tail is, which facing cannot answer once a train has turned; applied after the trains are
-                // placed.
+                // Where the tail is, applied after the trains are placed.
                 if (point.has("arrivedFrom"))
                 {
                     arrivalSideByPoint.put(point.getString("name"),
@@ -8711,14 +8713,13 @@ public class Layout
 
                 if (point.has("blockedBy"))
                 {
-                    // Points whose occupancy makes this station unavailable to autonomy (FR-001), resolved after the
-                    // loop; an unknown name is logged and dropped.
+                    // Points whose occupancy blocks this station (FR-001), resolved after the loop.
                     blockersByPoint.put(point.getString("name"), oneOrMany(point, "blockedBy"));
                 }
 
                 if (point.has("home"))
                 {
-                    // The only place a home can dangle, since a file holds a name: reported and dropped, not refused.
+                    // An unknown home is reported and dropped, not refused.
                     String named = point.optString("home", null);
 
                     if (named != null && !named.trim().isEmpty())
@@ -8768,8 +8769,7 @@ public class Layout
                         {
                             String locName = (String) loc;
 
-                            // Named in the log when dropped, or the operator believes the exclusion is in force
-                            // (OB-349).
+                            // Named in the log when dropped (OB-349).
                             Locomotive excluded = control.getLocByName(locName);
 
                             if (excluded != null) excludedLocs.add(excluded);
@@ -8793,73 +8793,38 @@ public class Layout
                         Point.ALLOW_ONLY_LISTED.equals(point.optString(Point.EXCLUDED_LOCS_MODE, null)));
                 }
                 
-                if (point.has("maxTrainLength"))
+                Integer longest = count(point, "maxTrainLength", 0, "autolayout.errorMaxTrainLengthInvalid",
+                    point.getString("name"));
+
+                if (longest != null)
                 {
-                    if (point.get("maxTrainLength") instanceof Integer && point.getInt("maxTrainLength") >= 0)
-                    { 
-                        layout.getPoint(point.getString("name")).setMaxTrainLength(point.getInt("maxTrainLength"));
+                    layout.getPoint(point.getString("name")).setMaxTrainLength(longest);
 
-                        String place = placeNameOf(layout.getPoint(point.getString("name")));
+                    String place = placeNameOf(layout.getPoint(point.getString("name")));
 
-                        if (point.getInt("maxTrainLength") > 0
-                            && maximumsSaid.add(place + "\u0000" + point.getInt("maxTrainLength")))
-                        {
-                            control.logf(
-                                "autolayout.infoSetMaxTrainLength",
-                                point.getInt("maxTrainLength"),
-                                place
-                            );
-                        }
-                    }
-                    else
+                    if (longest > 0 && maximumsSaid.add(place + "\u0000" + longest))
                     {
-                        layout.invalidate(
-                            I18n.f("autolayout.errorMaxTrainLengthInvalid", point.getString("name"))
-                        );
+                        control.logf("autolayout.infoSetMaxTrainLength", longest, place);
                     }
                 }
-                else
-                {
-                    layout.getPoint(point.getString("name")).setMaxTrainLength(0);
-                }   
      
-                // Set optional coordinates
                 if (x != null && y != null)
                 {
                     layout.getPoint(point.getString("name")).setX(x);
                     layout.getPoint(point.getString("name")).setY(y);
                 }
                 
-                readSetting(layout, point, "terminus", Boolean.class, "autolayout.errorTerminusInvalidValue",
-                    at -> at.setTerminus(point.getBoolean("terminus")));
-                
-                readSetting(layout, point, "active", Boolean.class, "autolayout.errorActiveInvalidValue",
-                    at -> at.setActive(point.getBoolean("active")));
-
-                if (point.has("autoDestination"))
-                {
-                    if (point.get("autoDestination") instanceof Boolean)
-                    {
-                        layout.getPoint(point.getString("name"))
-                            .setAutoDestination(point.getBoolean("autoDestination"));
-                    }
-                    else
-                    {
-                        layout.invalidate(
-                            I18n.f("autolayout.errorAutoDestinationInvalidValue", point.toString())
-                        );
-                    }
-                }
-
-                readSetting(layout, point, "reversing", Boolean.class, "autolayout.errorReversingInvalidValue",
-                    at -> at.setReversing(point.getBoolean("reversing")));
-
-                readSetting(layout, point, "speedMultiplier", Number.class,
-                    "autolayout.errorSpeedMultiplierInvalidValue",
-                    at -> at.setSpeedMultiplier(point.getDouble("speedMultiplier")));
-                
-                readSetting(layout, point, "priority", Integer.class, "autolayout.errorPriorityInvalidValue",
-                    at -> at.setPriority(point.getInt("priority")));
+                readSetting(point, "terminus", Boolean.class, "autolayout.errorTerminusInvalidValue",
+                    Point::setTerminus);
+                readSetting(point, "active", Boolean.class, "autolayout.errorActiveInvalidValue", Point::setActive);
+                readSetting(point, "autoDestination", Boolean.class, "autolayout.errorAutoDestinationInvalidValue",
+                    Point::setAutoDestination);
+                readSetting(point, "reversing", Boolean.class, "autolayout.errorReversingInvalidValue",
+                    Point::setReversing);
+                readSetting(point, "speedMultiplier", Number.class, "autolayout.errorSpeedMultiplierInvalidValue",
+                    (at, n) -> at.setSpeedMultiplier(n.doubleValue()));
+                readSetting(point, "priority", Integer.class, "autolayout.errorPriorityInvalidValue",
+                    Point::setPriority);
             } 
             catch (Exception ex)
             {
@@ -8870,8 +8835,11 @@ public class Layout
                 );
                 return;
             }
+            placeLocomotive(point);
+        }
 
-            // Set the locomotive
+        private void placeLocomotive(JSONObject point)
+        {
             if (point.has("loc") && !point.isNull("loc"))
             {
                 if (point.get("loc") instanceof JSONObject)
@@ -8886,54 +8854,27 @@ public class Layout
                         {
                             Locomotive l = control.getLocByName(loc);
 
-                            if (locInfo.has("trainLength"))
+                            Integer length = count(locInfo, "trainLength", null, "autolayout.errorTrainLengthInvalid",
+                                loc);
+
+                            if (length != null)
                             {
-                                if (locInfo.get("trainLength") instanceof Integer && locInfo.getInt("trainLength") >= 0)
-                                {
-                                    l.setTrainLength(locInfo.getInt("trainLength"));   
-
-                                    control.logf(
-                                        "autolayout.infoSetTrainLength",
-                                        locInfo.getInt("trainLength"),
-                                        loc
-                                    );
-                                }
-                                else
-                                {
-                                    layout.invalidate(
-                                        I18n.f("autolayout.errorTrainLengthInvalid", loc.toString())
-                                    );
-                                }
+                                l.setTrainLength(length);
+                                control.logf("autolayout.infoSetTrainLength", length, loc);
                             }
-                            // Absent means not stated: an absent trainLength keeps the live length (MT-233); write 0 to
-                            // clear it.
+                            // Absent keeps the live length (MT-233); 0 clears it.
 
-                            if (locInfo.has("reversible"))
+                            Boolean reversible = typed(locInfo, "reversible", Boolean.class,
+                                "autolayout.errorLocomotiveReversibleInvalid", loc);
+
+                            if (reversible != null) l.setReversible(reversible);
+                            if (Boolean.TRUE.equals(reversible))
                             {
-                                if (locInfo.get("reversible") instanceof Boolean)
-                                {
-                                    l.setReversible(locInfo.getBoolean("reversible"));   
-
-                                    if (locInfo.getBoolean("reversible"))
-                                    {
-                                        control.logf(
-                                            "autolayout.infoLocomotiveFlaggedReversible",
-                                            loc
-                                        );
-                                    }
-                                }
-                                else
-                                {
-                                    layout.invalidate(
-                                        I18n.f("autolayout.errorLocomotiveReversibleInvalid", loc)
-                                    );
-                                }
+                                control.logf("autolayout.infoLocomotiveFlaggedReversible", loc);
                             }
-                            // Absent means not stated, as above; read as false, a reversible EMU would be refused a
-                            // terminus.
+                            // Absent keeps the live flag: read as false, a reversible EMU would be refused a terminus.
 
-                            // Only warn if this is not a station, after the loop, once the square's other copies are
-                            // read.
+                            // Warned after the loop, once the square's other copies are read.
                             if (!point.optBoolean("station", false))
                             {
                                 placedOffAStation.add(new String[] {loc, point.getString("name")});
@@ -8944,70 +8885,28 @@ public class Layout
 
                             Point placeOn = layout.getPoint(point.getString("name"));
 
-                            // And with anything already on the same square, or a file would reinstate two trains on one
-                            // track on every load.
+                            // And with anything on the same square, or every load reinstates two trains on one track.
                             layout.clearBlockExcept(placeOn);
 
-                            // Place the locomotive
                             placeOn.setLocomotive(l);
                             
-                            // Not reset: a placement carries only a name, so a departure function set in the locomotive
-                            // window survives.
+                            // Not reset: a function set in the locomotive window survives.
 
-                            // Set start and end callbacks
-                            if (locInfo.has("speed") && locInfo.get("speed") != null)
+                            read(locInfo, "speed", JSONObject::getInt, speed ->
                             {
-                                try
-                                {
-                                    if (locInfo.getInt("speed") > 0 && locInfo.getInt("speed") <= 100)
-                                    {
-                                        l.setPreferredSpeed(locInfo.getInt("speed"));
-                                    }
-                                }
-                                catch (JSONException ex)
-                                {
-                                    layout.invalidate(
-                                        I18n.f("autolayout.errorSpeedInvalidValue", locInfo.getString("name"))
-                                    );
-                                }
-                            }
+                                if (speed > 0 && speed <= 100) l.setPreferredSpeed(speed);
+                            }, I18n.f("autolayout.errorSpeedInvalidValue", loc));
 
-                            // Set departure callback
-                            if (locInfo.has("departureFunc") && locInfo.get("departureFunc") != null)
-                            {
-                                try
-                                {
-                                    l.setDepartureFunc(locInfo.getInt("departureFunc"));
-                                }
-                                catch (JSONException ex)
-                                {
-                                    layout.invalidate(
-                                        I18n.f("autolayout.errorDepartureFuncInvalidValue", locInfo.getString("name"))
-                                    );
-                                }
-                            }
+                            read(locInfo, "departureFunc", JSONObject::getInt, l::setDepartureFunc,
+                                I18n.f("autolayout.errorDepartureFuncInvalidValue", loc));
 
-                            // Fires functions on departure and arrival
                             layout.applyDefaultLocCallbacks(l);
 
                             // Not reset, as for departureFunc above.
 
-                            // Set arrival callback
-                            if (locInfo.has("arrivalFunc") && locInfo.get("arrivalFunc") != null)
-                            {
-                                try
-                                {
-                                    l.setArrivalFunc(locInfo.getInt("arrivalFunc"));
-                                }
-                                catch (JSONException ex)
-                                {
-                                    layout.invalidate(
-                                        I18n.f("autolayout.errorArrivalFuncInvalidValue", locInfo.getString("name"))
-                                    );
-                                }
-                            }
+                            read(locInfo, "arrivalFunc", JSONObject::getInt, l::setArrivalFunc,
+                                I18n.f("autolayout.errorArrivalFuncInvalidValue", loc));
 
-                            // Handle default speed
                             if (l.getPreferredSpeed() == 0)
                             {
                                 l.setPreferredSpeed(defaultLocSpeed);
@@ -9018,7 +8917,6 @@ public class Layout
                                 );
                             }
 
-                            // Duplicate locomotive check
                             if (locomotives.contains(loc))
                             {
                                 layout.invalidate(
@@ -9052,22 +8950,17 @@ public class Layout
                     );
                 }
             }
-        });
-
-        // Not for a barred copy of a station, where a turned train can stand; warned here, once every copy is read.
-        for (String[] placed : placedOffAStation)
-        {
-            Point on = layout.getPoint(placed[1]);
-
-            if (on != null && (layout.isABarredCopyOfAStation(on) || layout.startableTwinOf(on) != null)) continue;
-
-            control.logf("autolayout.warnLocomotivePlacedOnNonStation", placed[0]);
         }
 
-        // Add edges
-        edges.forEach(edg -> 
-        { 
-            JSONObject edge = (JSONObject) edg; 
+        /** The lock edges once every edge exists. */
+        void readEdges()
+        {
+            edges.forEach(edg -> readEdge((JSONObject) edg));
+            edges.forEach(edg -> readLockEdges((JSONObject) edg));
+        }
+
+        private void readEdge(JSONObject edge)
+        {
             try 
             {
                 String start = edge.getString("start");
@@ -9077,27 +8970,23 @@ public class Layout
                 {
                     JSONArray commands = edge.getJSONArray("commands");
 
-                    // Validate commands
                     commands.forEach((cmd) ->
                     {
                         JSONObject command = (JSONObject) cmd;
                         
-                        // Validate accessory
                         if (command.has("acc") && !command.isNull("acc"))
                         {
                             String accessory = command.getString("acc");
                             if (null == control.getAccessoryByName(accessory))
                             {
-                                // This call ADDS the accessory, not merely checks it: failing, the edge can never be
-                                // actuated, so it is fatal.
+                                // This ADDS the accessory: failing, the edge can never be actuated, so it is fatal.
                                 try
                                 {
                                     Edge.validateConfigCommand(accessory, Accessory.accessorySetting.GREEN.toString(), control);
                                 }
                                 catch (Exception e)
                                 {
-                                    // Unchecked because this runs inside a forEach consumer.  The outer
-                                    // catch turns it back into a readable invalidation message.
+                                    // Unchecked inside forEach; the outer catch makes it the message.
                                     throw new RuntimeException(
                                         I18n.f("autolayout.errorEdgeAccessoryCouldNotBeAdded", accessory, e.getMessage())
                                     );
@@ -9111,7 +9000,6 @@ public class Layout
                             );
                         }
 
-                        // Validate state
                         if (command.has("state") && !command.isNull("state"))
                         {            
                             String action = command.getString("state");
@@ -9134,29 +9022,27 @@ public class Layout
                 
                 Edge e = layout.createEdge(start, end); 
                 
-                // Store the raw config commands so that we can reference them later
                 if (edge.has("commands") && !edge.isNull("commands"))
                 {
                     JSONArray commands = edge.getJSONArray("commands");
                     commands.forEach((cmd) -> 
                     {
                         JSONObject command = (JSONObject) cmd;
-                        String action = command.getString("state");
+                        accessorySetting setting = Accessory.stringToAccessorySetting(command.getString("state"));
                         String acc = command.getString("acc");
 
-                        e.addConfigCommand(acc, Accessory.stringToAccessorySetting(action));
+                        // A state that did not parse was refused above; storing it would leave a null setting.
+                        if (setting != null) e.addConfigCommand(acc, setting);
                     });                    
                 }            
                 
-                // The room after the last switch, where the builder recorded one; read on its own, as an older file may
-                // lack it.
+                // The room after the last switch; an older file may lack it.
                 if (edge.has("roomAtTheEnd") && edge.get("roomAtTheEnd") instanceof Integer)
                 {
                     e.setRoomAtTheEnd(edge.getInt("roomAtTheEnd"));
                 }
 
-                // The side the track comes in by, as the builder split the square (OB-182); missing, readers use the
-                // geometry.
+                // The side the track comes in by (OB-182); missing, readers use the geometry.
                 if (edge.has("entrySide") && edge.get("entrySide") instanceof String)
                 {
                     e.setEntrySide(edge.getString("entrySide"));
@@ -9176,8 +9062,7 @@ public class Layout
 
                     JSONArray places = edge.getJSONArray("places");
 
-                    // All of them or none: read positionally, so a skipped entry would shift every position; a bad one
-                    // falls back to the whole edge.
+                    // All or none, as they are read by position: a bad one falls back to the whole edge.
                     boolean whole = true;
 
                     for (int at = 0; at < places.length(); at++)
@@ -9214,34 +9099,12 @@ public class Layout
                     }
                 }
 
-                if (edge.has("length"))
-                {
-                    if (edge.get("length") instanceof Integer && edge.getInt("length") >= 0)
-                    {
-                        e.setLength(edge.getInt("length"));   
+                Integer length = count(edge, "length", 0, "autolayout.errorEdgeLengthInvalid", e.getName());
 
-                        if (edge.getInt("length") > 0)
-                        {
-                            if (control.isDebug())
-                            {
-                                control.logf(
-                                    "autolayout.infoSetEdgeLength",
-                                    edge.getInt("length"),
-                                    e.getName()
-                                );
-                            }
-                        }
-                    }
-                    else
-                    {
-                        layout.invalidate(
-                            I18n.f("autolayout.errorEdgeLengthInvalid", e.getName())
-                        );
-                    }
-                }
-                else
+                if (length != null) e.setLength(length);
+                if (length != null && length > 0 && control.isDebug())
                 {
-                    e.setLength(0);
+                    control.logf("autolayout.infoSetEdgeLength", length, e.getName());
                 }
             } 
             catch (Exception ex)
@@ -9250,12 +9113,10 @@ public class Layout
                     I18n.f("autolayout.errorInvalidEdgeWithMessage", edge.toString(), ex.getMessage())
                 );
             }
-        });
+        }
 
-        // Add lock edges
-        edges.forEach(edg -> 
-        { 
-            JSONObject edge = (JSONObject) edg; 
+        private void readLockEdges(JSONObject edge)
+        {
             try 
             { 
                 String start = edge.getString("start");
@@ -9282,157 +9143,158 @@ public class Layout
                     });
                 }
             } 
-            catch (JSONException ex)
+            catch (JSONException | ClassCastException ex)
             {
                 layout.invalidate(
                     I18n.f("autolayout.errorLockEdgeGeneric", edge.toString())
                 );
             }
-        });
-        
-        // Load the timetable
-        try
-        {
-            JSONArray timetable = o.getJSONArray("timetable");
-            List<TimetablePath> timetableList = new LinkedList<>();
-            
-            for (Object tt : timetable)
-            {
-                // Each entry on its own: a stale one (renamed or deleted locomotive or station) must not discard the
-                // whole timetable.
-                try
-                {
-                    timetableList.add(TimetablePath.fromJSON(tt.toString(), control, layout));
-                }
-                catch (Exception entry)
-                {
-                    control.logf("autolayout.warnTimetableEntry", entry.getMessage());
-                }
-            }
-            
-            layout.setTimetable(timetableList);
+        }
 
-            // After setTimetable, which clears it.
-            layout.timetableSequential = o.optBoolean("timetableSequential", false);
-        }
-        catch (Exception e)
+        /** And the routes to activate. */
+        void readTimetable()
         {
-            control.logf(
-                "autolayout.warnTimetable",
-                e.getMessage()
-            );
-        }
-        
-        // Read boolean safely
-        if (o.has("activateRoutes"))
-        {
-            layout.setActivateRoutes(o.optBoolean("activateRoutes", false));
-        }
-        
-        if (o.has("activateRouteIDs"))
-        {
-            JSONArray arr = o.optJSONArray("activateRouteIDs");
-            List<Integer> ids = new ArrayList<>();
-
             try
             {
-                if (arr != null)
+                JSONArray timetable = o.getJSONArray("timetable");
+                List<TimetablePath> timetableList = new LinkedList<>();
+            
+                for (Object tt : timetable)
                 {
-                    for (int i = 0; i < arr.length(); i++)
+                    // Each entry on its own: a stale one must not discard the whole timetable.
+                    try
                     {
-                        ids.add(arr.getInt(i));
-                    }   
+                        timetableList.add(TimetablePath.fromJSON(tt.toString(), control, layout));
+                    }
+                    catch (Exception entry)
+                    {
+                        control.logf("autolayout.warnTimetableEntry", entry.getMessage());
+                    }
                 }
+            
+                layout.setTimetable(timetableList);
+
+                // After setTimetable, which clears it.
+                layout.timetableSequential = o.optBoolean("timetableSequential", false);
             }
             catch (Exception e)
             {
                 control.logf(
-                    "autolayout.warnRouteConfig",
-                    "activateRouteIDs",
+                    "autolayout.warnTimetable",
                     e.getMessage()
                 );
             }
-            
-            layout.setActivateRouteIDs(ids);
-        }
-  
-        /*if (locomotives.isEmpty())
-        {
-            control.log("Auto layout error: No locomotives placed.");
-            layout.invalidate();
-        }*/
         
-        List<Locomotive> locsToRun = new LinkedList<>();
-
-        for (String s : locomotives)
-        {
-            // Skip names that no longer resolve (deleted or renamed): a null would NPE in checkForSlowerLoc.
-            Locomotive loc = control.getLocByName(s);
-
-            if (loc != null)
+            if (o.has("activateRoutes"))
             {
-                locsToRun.add(loc);
+                layout.setActivateRoutes(o.optBoolean("activateRoutes", false));
             }
-            else
+        
+            if (o.has("activateRouteIDs"))
             {
-                // Said out loud: dropped in silence, the train would simply never move.
-                control.logf("autolayout.warnRunLocomotiveNotInDatabase", s);
+                JSONArray arr = o.optJSONArray("activateRouteIDs");
+                List<Integer> ids = new ArrayList<>();
+
+                try
+                {
+                    if (arr != null)
+                    {
+                        for (int i = 0; i < arr.length(); i++)
+                        {
+                            ids.add(arr.getInt(i));
+                        }   
+                    }
+                }
+                catch (Exception e)
+                {
+                    control.logf(
+                        "autolayout.warnRouteConfig",
+                        "activateRouteIDs",
+                        e.getMessage()
+                    );
+                }
+            
+                layout.setActivateRouteIDs(ids);
             }
         }
 
-        layout.setLocomotivesToRun(locsToRun);
-
-        // The FR-001 restrictions, now that every point exists.  A name matching no point is dropped and logged, not
-        // refused.
-        for (java.util.Map.Entry<String, List<String>> entry : blockersByPoint.entrySet())
+        /** What waits for every point: trains to run, restrictions, arrival sides and roads, homes. */
+        void resolve()
         {
-            Point held = layout.getPoint(entry.getKey());
-
-            if (held == null) continue;
-
-            List<Point> watching = new ArrayList<>();
-
-            for (String name : entry.getValue())
+            /*if (locomotives.isEmpty())
             {
-                Point watched = layout.getPoint(name);
+                control.log("Auto layout error: No locomotives placed.");
+                layout.invalidate();
+            }*/
+        
+            List<Locomotive> locsToRun = new LinkedList<>();
 
-                if (watched == null)
+            for (String s : locomotives)
+            {
+                // A name that no longer resolves is skipped: a null would NPE in checkForSlowerLoc.
+                Locomotive loc = control.getLocByName(s);
+
+                if (loc != null)
                 {
-                    control.logf("autolayout.warnBlockingPointNotFound", name, entry.getKey());
-                    continue;
+                    locsToRun.add(loc);
+                }
+                else
+                {
+                    // Said out loud: dropped in silence, the train would simply never move.
+                    control.logf("autolayout.warnRunLocomotiveNotInDatabase", s);
+                }
+            }
+
+            layout.setLocomotivesToRun(locsToRun);
+
+            // The FR-001 restrictions; a name matching no point is logged and dropped, not refused.
+            for (java.util.Map.Entry<String, List<String>> entry : blockersByPoint.entrySet())
+            {
+                Point held = layout.getPoint(entry.getKey());
+
+                if (held == null) continue;
+
+                List<Point> watching = new ArrayList<>();
+
+                for (String name : entry.getValue())
+                {
+                    Point watched = layout.getPoint(name);
+
+                    if (watched == null)
+                    {
+                        control.logf("autolayout.warnBlockingPointNotFound", name, entry.getKey());
+                        continue;
+                    }
+
+                    watching.add(watched);
                 }
 
-                watching.add(watched);
+                held.setBlockedBy(watching);
             }
 
-            held.setBlockedBy(watching);
-        }
-
-        // The arrival sides, now that every train stands where the file says: the file has the last word.  A name
-        // matching no point is dropped silently; its tail went with it.
-        for (java.util.Map.Entry<String, String> entry : arrivalSideByPoint.entrySet())
-        {
-            Point landed = layout.getPoint(entry.getKey());
-
-            // Only onto a square whose placement was honored, or the next train to reserve it inherits the tail.
-            if (landed != null && landed.getCurrentLocomotive() != null) landed.setArrivedFrom(entry.getValue());
-        }
-
-        // And the roads, likewise; a road naming a missing edge is dropped whole (see roadNamed).
-        for (java.util.Map.Entry<String, Object> entry : arrivalRoadByPoint.entrySet())
-        {
-            Point landed = layout.getPoint(entry.getKey());
-
-            if (landed != null && landed.getCurrentLocomotive() != null)
+            // The arrival sides, now every train stands where the file says; an unknown name is dropped silently.
+            for (java.util.Map.Entry<String, String> entry : arrivalSideByPoint.entrySet())
             {
-                landed.setArrivedAlong(layout.roadNamed(entry.getValue()));
+                Point landed = layout.getPoint(entry.getKey());
+
+                // Only onto a square whose placement was honored, or the next train to reserve it inherits the tail.
+                if (landed != null && landed.getCurrentLocomotive() != null) landed.setArrivedFrom(entry.getValue());
             }
+
+            // And the roads, likewise; a road naming a missing edge is dropped whole (see roadNamed).
+            for (java.util.Map.Entry<String, Object> entry : arrivalRoadByPoint.entrySet())
+            {
+                Point landed = layout.getPoint(entry.getKey());
+
+                if (landed != null && landed.getCurrentLocomotive() != null)
+                {
+                    landed.setArrivedAlong(layout.roadNamed(entry.getValue()));
+                }
+            }
+
+            // Only now can an honored home be told from one whose locomotive is unread.
+            layout.rebuildHomeStations();
         }
-
-        // Only now: until every point exists an honored assignment cannot be told from one whose locomotive is unread.
-        layout.rebuildHomeStations();
-
-        return layout;
     }
 
     public int getMaxActiveTrains()

@@ -188,13 +188,14 @@ public class testDiagramDrawingSettings
             + "whole purpose is showing every side of every station has lost its answer");
 
         // The editor's code is not one file, so the claim asks the whole program: the accessor is named by its
-        // declaration, the drawing's own read in TrainControlUI and the session's static annotation, and nothing else.
-        // A fourth place is either legitimate (count it here) or the editor reading the viewer's setting.  Counted
-        // place by place (FR-136), so a read that goes and one the editor gains in the same change do not cancel.
+        // declaration, the drawing's own read in TrainControlUI and the session's static annotation, and nothing else:
+        // Station Settings' picture draws every arrow whatever it says (MT-1106).  A fourth place is either legitimate
+        // (count it here) or the editor reading the viewer's setting.  Counted place by place (FR-136), so a read that goes and one
+        // the editor gains in the same change do not cancel.
         String readers = "something else now reads the ordinary diagram's preference besides its accessor, the"
-            + " window's drawing and the session's static annotation - if it is the autonomy editor, that is exactly"
-            + " what Adam asked not to happen: the editor is where these are being decided, and it has its own control"
-            + " for them";
+            + " window's drawing and the session's static annotation -"
+            + " if it is the autonomy editor, that is exactly what Adam asked not to happen: the editor is where these are"
+            + " being decided, and it has its own control for them";
 
         assertEquals(SourceOf.occurrences("diagramShowsRestrictionArrows"), 3, readers);
 

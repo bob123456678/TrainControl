@@ -17,9 +17,10 @@ import org.traincontrol.util.I18n;
 
 /**
  * Return Home: the button's state, worked out off the event thread by the triage's ask, settle and await machine; its
- * right-click menu; the press, which plans and runs the trains home; and the sentence for each outcome.
+ * right-click menu; the press, which plans and runs the trains home; the sentence for each outcome; and the turning
+ * mark on a button.
  *
- * Every field, `stagingFlowActive` and the triage's among them, stays on `TrainControlUI`.
+ * The widgets, `stagingFlowActive` and the triage's fields stay on `TrainControlUI`.
  */
 final class ReturnHomeController extends SettledQuestion
 {
@@ -140,7 +141,7 @@ final class ReturnHomeController extends SettledQuestion
 
                 // So the operator sees what is about to run; from this thread, as repaintTimetable waits on the Layout
                 // monitor
-                this.ui.repaintTimetable();
+                this.ui.timetableTab().repaintTimetable();
 
                 // Blocks until every train has arrived, not merely until the last one set off
                 final boolean completed = layout.executeTimetable(stopsAtPress);
@@ -196,7 +197,7 @@ final class ReturnHomeController extends SettledQuestion
                 });
 
                 // Off the EDT as the pre-run repaint; a path still unwinding may hold the monitor
-                this.ui.repaintTimetable();
+                this.ui.timetableTab().repaintTimetable();
 
                 // Repainted here, not by the end-of-path callback, which runs before stopLocomotives(); full, to
                 // rebuild panels
@@ -227,14 +228,14 @@ final class ReturnHomeController extends SettledQuestion
 
         if (layout == null)
         {
-            this.ui.disableReturnHome(I18n.t("autosetup.ui.whyNoLayout"));
+            disable(I18n.t("autosetup.ui.whyNoLayout"));
             return;
         }
 
         if (this.ui.isAutonomyBusy())
         {
             // Said outright, not left to the previous reason
-            this.ui.disableReturnHome(describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null));
+            disable(describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null));
             return;
         }
 
@@ -242,14 +243,14 @@ final class ReturnHomeController extends SettledQuestion
         askForReturnHomeTriage(layout);
     }
 
-    /** Puts one worker on "is there anything to send home" unless one is on it, coalesced (`CoalescedAsk`). */
+    /** Puts one worker on "is there anything to send home" unless one is on it, coalesced (`CoalescedWorker`). */
     private void askForReturnHomeTriage(final Layout railway)
     {
         this.ui.returnHomeTriageSubject = railway;
 
         this.ui.returnHomeTriageDirty.set(true);
 
-        CoalescedAsk.ask(this.ui.returnHomeTriageInFlight, this.ui.returnHomeTriageDirty, this.ui.ReturnHomeTriageRenderer,
+        CoalescedWorker.ask(this.ui.returnHomeTriageInFlight, this.ui.returnHomeTriageDirty, this.ui.ReturnHomeTriageRenderer,
             this::workOutReturnHomeTriage, this::settle, () ->
             {
                 if (this.ui.returnHomeTriageSubject != null) askForReturnHomeTriage(this.ui.returnHomeTriageSubject);
@@ -295,7 +296,7 @@ final class ReturnHomeController extends SettledQuestion
 
         if (this.ui.isAutonomyBusy())
         {
-            this.ui.disableReturnHome(describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null));
+            disable(describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null));
             return;
         }
 
@@ -304,7 +305,7 @@ final class ReturnHomeController extends SettledQuestion
         this.ui.returnHomeButton().setEnabled(nothingToDo == null);
 
         // Says why it is unavailable; wrapped (MT-756), as a reason can name many trains
-        this.ui.tipReturnHome(nothingToDo == null ? null
+        tip(nothingToDo == null ? null
             : describeStagingOutcome(nothingToDo, this.ui.returnHomeTriagePausedAway));
     }
 
@@ -343,7 +344,7 @@ final class ReturnHomeController extends SettledQuestion
 
         menu.add(run);
 
-        String why = this.ui.whyTheTrainsCannotBePlacedAtTheirHomes();
+        String why = whyTheTrainsCannotBePlacedAtTheirHomes();
 
         AutonomySession session = this.ui.canUseAutonomy() ? this.ui.getAutonomySession() : null;
 
@@ -354,11 +355,149 @@ final class ReturnHomeController extends SettledQuestion
         place.setEnabled(why == null);
         place.setToolTipText(AutonomyEditorPanel.wrapped(why == null
             ? I18n.f("autosetup.ui.tipPlaceEveryTrainAtHome", homes) : why));
-        place.addActionListener(e -> this.ui.placeEveryTrainAtItsHome());
+        place.addActionListener(e -> placeEveryTrainAtItsHome());
 
         menu.add(place);
 
         return menu;
+    }
+
+    /** Why the trains cannot be put on their homes now, or null (FR-129): the one question behind the menu item. */
+    String whyTheTrainsCannotBePlacedAtTheirHomes()
+    {
+        String unavailable = this.ui.whyAutonomyIsUnavailable();
+
+        if (unavailable != null) return unavailable;
+
+        if (this.ui.anEditorIsOpenOrOnItsWay()) return I18n.t("autosetup.ui.menuEditorOpen");
+
+        if (this.ui.refreshesUnderWay.get() > 0) return I18n.t("autosetup.ui.errorDiagramRefreshing");
+
+        if (this.ui.aRunHoldsTheSetup()) return I18n.t("ui.main.tooltip.placeAtHomesWhileRunning");
+
+        if (!this.ui.isLocalLayout()) return I18n.t("layout.ui.errorEditingOnlySupportedForLocalFiles");
+
+        AutonomySession session = this.ui.getAutonomySession();
+
+        if (session == null)
+        {
+            return this.ui.editorWindows.sayWhyAutonomyEditorCannotOpen(this.ui.whyTheSetupCannotBeRead() != null
+                ? "autosetup.ui.errorSetupUnreadable" : "autosetup.ui.errorNoSetupToEdit");
+        }
+
+        return session.homesToPlace().isEmpty() ? I18n.t("autosetup.ui.infoNoHomesToPlace") : null;
+    }
+
+    private JPopupMenu popup;
+
+    JPopupMenu popup()
+    {
+        return this.popup;
+    }
+
+    void installMenu(javax.swing.JButton button)
+    {
+        button.addMouseListener(OnMouse.pressed(e ->
+        {
+            if (!SwingUtilities.isRightMouseButton(e)) return;
+
+            this.popup = buildReturnHomeMenu();
+
+            // A button that is not on screen has nowhere to open it
+            if (button.isShowing()) this.popup.show(button, e.getX(), e.getY());
+        }));
+    }
+
+    /** Puts every train on its home after the user confirms moving the real ones by hand; the guard is asked again (FR-129). */
+    private void placeEveryTrainAtItsHome()
+    {
+        String why = whyTheTrainsCannotBePlacedAtTheirHomes();
+
+        if (why != null)
+        {
+            JOptionPane.showMessageDialog(this.ui, why);
+
+            return;
+        }
+
+        AutonomyEditorPanel panel = this.ui.autonomyLifecycle.liveSetupPanel();
+
+        if (panel == null)
+        {
+            JOptionPane.showMessageDialog(this.ui, I18n.t("autosetup.ui.menuEditorOpen"));
+
+            return;
+        }
+
+        panel.placeEveryTrainAtHome("autolayout.ui.confirmPlaceEveryTrainAtHomeByHand",
+            this::whyTheTrainsCannotBePlacedAtTheirHomes, said -> this.ui.getModel().log(said));
+    }
+
+    /** Puts a turning mark on a button or takes it off; returns the timer turning it, or null.  One turning is kept. */
+    javax.swing.Timer turningMark(javax.swing.JButton button, javax.swing.Timer timer, boolean on, Runnable alsoRepaint)
+    {
+        if (!on)
+        {
+            if (timer != null) timer.stop();
+
+            // Only when shown: setting no icon over none still tells the strip's listener, which lays the strip out
+            // again on every sensor event.
+            if (button.getIcon() != null) button.setIcon(null);
+            if (button.getDisabledIcon() != null) button.setDisabledIcon(null);
+
+            return null;
+        }
+
+        if (timer != null) return timer;
+
+        final TrainControlUI.TurningArc arc
+            = new TrainControlUI.TurningArc(Math.max(10, button.getFontMetrics(button.getFont()).getAscent()));
+
+        button.setIcon(arc);
+        button.setDisabledIcon(arc);
+
+        timer = new javax.swing.Timer(60, e ->
+        {
+            if (!this.ui.isDisplayable())
+            {
+                ((javax.swing.Timer) e.getSource()).stop();
+
+                return;
+            }
+
+            arc.advance();
+
+            button.repaint();
+
+            if (alsoRepaint != null) alsoRepaint.run();
+        });
+
+        timer.start();
+
+        return timer;
+    }
+
+    /** Grays the Return Home button and says why (a stale reason is worse than none). */
+    void disable(String reason)
+    {
+        this.ui.returnHomeButton().setEnabled(false);
+        tip(reason);
+    }
+
+    /** The plain sentence behind Return Home's tooltip, for Control+H's log line; null while it is offered. */
+    private String reason;
+
+    String reason()
+    {
+        return this.reason;
+    }
+
+    /** Return Home's tooltip: why it is not offered, or with `why` null what it does. */
+    private void tip(String why)
+    {
+        this.reason = why;
+        this.ui.returnHomeButton().setToolTipText(AutonomyEditorPanel.wrapped(why != null ? why
+            : I18n.t("ui.main.tooltip.returnHome")));
     }
 
     /**

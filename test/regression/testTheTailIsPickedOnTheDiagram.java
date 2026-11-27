@@ -438,7 +438,7 @@ public class testTheTailIsPickedOnTheDiagram
 
             open.set(ui, editor[0]);
 
-            assertTrue(ui.isLayoutEditorOpen(), "precondition: the window does not know the editor is open");
+            assertTrue(ui.editorWindows().isLayoutEditorOpen(), "precondition: the window does not know the editor is open");
 
             asker.submit(() -> TailCrossedPrompt.askAfterPlacement(q.layout, q.tunnel, "N", 5, "FR-100 train", ui, null));
 
@@ -509,7 +509,7 @@ public class testTheTailIsPickedOnTheDiagram
 
             Reflect.set(TrainControlUI.class, ui, "tailAtTheLanding", "N");
 
-            // The paste door is DiagramLocGestures', which the window holds
+            // The paste door is DiagramTrainKeys', which the window holds
             final Object gestures = Reflect.get(TrainControlUI.class, ui, "diagramLocGestures");
 
             final java.lang.reflect.Method remember =
@@ -774,7 +774,7 @@ public class testTheTailIsPickedOnTheDiagram
 
         Reflect.set(TrainControlUI.class, ui, "tailAtTheLanding", "N");
 
-        // The paste door is DiagramLocGestures', which the window holds
+        // The paste door is DiagramTrainKeys', which the window holds
         final Object gestures = Reflect.get(TrainControlUI.class, ui, "diagramLocGestures");
 
         final java.lang.reflect.Method remember =
@@ -933,7 +933,7 @@ public class testTheTailIsPickedOnTheDiagram
             {
                 javax.swing.SwingUtilities.invokeAndWait(() ->
                 {
-                    ui.resetAutonomySession();
+                    ui.autonomyLifecycle().resetAutonomySession();
                     ui.getAutonomyViewerPanel().load(active, false);
                 });
 
@@ -1442,7 +1442,7 @@ public class testTheTailIsPickedOnTheDiagram
             String roadBefore = ui.getAutonomySession().getArrivedAlong(tunnel);
 
             // THE EDITOR, OPENED WHILE THE QUESTION WAITS.
-            javax.swing.SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(tunnel.getPage()));
+            javax.swing.SwingUtilities.invokeLater(() -> ui.editorWindows().openAutonomyEditorOnPage(tunnel.getPage()));
 
             for (long end = System.currentTimeMillis() + 60000; editor == null && System.currentTimeMillis() < end; )
             {
@@ -1587,7 +1587,7 @@ public class testTheTailIsPickedOnTheDiagram
         {
             try
             {
-                ui.setHoveredDiagramTile(from.getPage(), from.getX(), from.getY());
+                ui.diagramLocGestures().setHoveredDiagramTile(from.getPage(), from.getX(), from.getY());
 
                 cut[0] = door.invoke(ui, java.awt.event.KeyEvent.VK_X, true);
             }
@@ -1613,7 +1613,7 @@ public class testTheTailIsPickedOnTheDiagram
         {
             try
             {
-                ui.setHoveredDiagramTile(tunnel.getPage(), tunnel.getX(), tunnel.getY());
+                ui.diagramLocGestures().setHoveredDiagramTile(tunnel.getPage(), tunnel.getX(), tunnel.getY());
 
                 door.invoke(ui, java.awt.event.KeyEvent.VK_V, true);
             }
@@ -1641,19 +1641,19 @@ public class testTheTailIsPickedOnTheDiagram
     /** The diagram's right-click on this square, as a right-click builds it. */
     private static javax.swing.JPopupMenu rightClickMenu(TileKey square) throws Exception
     {
-        final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
+        final Class<?> menuClass = Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu");
 
         final java.lang.reflect.Method gather =
             Reflect.method(menuClass, "gatherPathOptions", TrainControlUI.class, Point.class);
 
         final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
-            TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
+            TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu$PathOptions"));
 
         make.setAccessible(true);
 
         final Point[] standing = new Point[1];
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> standing[0] = ui.getAutonomyPointForTile(square));
+        javax.swing.SwingUtilities.invokeAndWait(() -> standing[0] = ui.stationCaptions().getAutonomyPointForTile(square));
 
         final Object options = gather.invoke(null, ui, standing[0]);
 

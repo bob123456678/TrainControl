@@ -11,6 +11,7 @@ import org.traincontrol.automationui.AutonomyBuilder;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.DiagramMonitor;
 import org.traincontrol.automationui.GraphReducer;
+import org.traincontrol.automationui.StationIndex;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TileOverlay;
 import org.traincontrol.automationui.TilePorts;
@@ -96,7 +97,7 @@ public class DiagramMonitorDriver
             monitor.setEdges(builder.edgesByName(), names);
         }
 
-        built = facingsOf(builder, names);
+        built = facingsOf(builder, session.getStationIndex(), names);
 
         // THE SQUARES WHOSE FACING IS THE SETUP'S, or a guess along their track (OB-348): asked again whenever the captions
         // are, so the icon follows a facing a door writes (`recordedFacingsChanged`)
@@ -144,10 +145,10 @@ public class DiagramMonitorDriver
 
     /**
      * Which way a train standing on each Point faces, from the builder that named them: a split copy's own facing, and
-     * a single copy's only way out where it has one (the icon of a parked train turns to it).  Answers Point name to
-     * the side a train's front faces there.
+     * a single copy's only way out where it has one, as the caption reads it (`StationIndex.onlyWayOutAt`).  Answers
+     * Point name to the side a train's front faces there.
      */
-    private static Map<String, TilePorts.Side> facingsOf(AutonomyBuilder builder,
+    private static Map<String, TilePorts.Side> facingsOf(AutonomyBuilder builder, StationIndex index,
         Map<String, TileKey> names)
     {
         Map<String, TilePorts.Side> out = new LinkedHashMap<>(builder.facingByName());
@@ -156,7 +157,7 @@ public class DiagramMonitorDriver
         {
             if (out.containsKey(entry.getKey())) continue;
 
-            TilePorts.Side only = builder.onlyWayOutFacing(entry.getValue());
+            TilePorts.Side only = index.onlyWayOutAt(entry.getValue());
 
             if (only != null) out.put(entry.getKey(), only);
         }
@@ -209,11 +210,22 @@ public class DiagramMonitorDriver
     }
 
     /**
-     * Starts looking.  Idempotent.
+     * Starts looking, or looks at once where it already does; a timer an Error has ended (it refuses tasks) is replaced.
      */
     public void start()
     {
-        if (timer != null) return;
+        try
+        {
+            if (timer != null)
+            {
+                timer.schedule(aTick(), 0);
+                return;
+            }
+        }
+        catch (IllegalStateException dead)
+        {
+            // replaced below
+        }
 
         // daemon, so a window closed with monitoring on does not keep the process alive
         timer = new Timer("DiagramMonitor", true);
@@ -265,11 +277,7 @@ public class DiagramMonitorDriver
             // was published is forgotten first: the wipe that turned this off may still be queued behind the click.
             DiagramMonitor current = monitor;
             Timer running = timer;
-            if (current != null)
-            {
-                current.invalidate();
-                current.markDirty();
-            }
+            if (current != null) current.invalidate();
             try
             {
                 if (running != null) running.schedule(aTick(), 0);

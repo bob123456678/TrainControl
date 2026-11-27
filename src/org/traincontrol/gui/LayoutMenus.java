@@ -78,7 +78,7 @@ final class LayoutMenus
 
             // The picture export needs loaded pages, not a local folder (a Central Station diagram works), and would be
             // handed the null page that activeLayoutPage returns when the selector is empty.
-            if (ui.exportDiagramItem != null) ui.exportDiagramItem.setEnabled(ui.isLayoutLoaded());
+            if (ui.exportDiagramItem != null) ui.exportDiagramItem.setEnabled(ui.editorWindows().isLayoutLoaded());
 
             // Its own question: excluded from the loop above, and its only other writer never re-enables it.
             if (ui.openCS3AppMenuItem() != null)
@@ -269,7 +269,7 @@ final class LayoutMenus
         ui.interfaceMenu().add(debug);
     }
 
-    /** A disabled bold item as a label (as LayoutRightclickAutonomyMenu): a plain grayed item looks unavailable. */
+    /** A disabled bold item as a label (as DiagramAutonomyContextMenu): a plain grayed item looks unavailable. */
     JMenuItem menuHeading(String text)
     {
         JMenuItem heading = new JMenuItem(text);
@@ -419,7 +419,7 @@ final class LayoutMenus
     {
         if (localHeading == null) return;
 
-        boolean loaded = ui.getModel() != null && ui.isLayoutLoaded();
+        boolean loaded = ui.getModel() != null && ui.editorWindows().isLayoutLoaded();
 
         localHeading.setText(heading("ui.main.toolbar.headingLocalLayout", loaded && ui.isLocalLayout()));
         centralStationHeading.setText(heading("ui.main.toolbar.headingCentralStationLayout",
@@ -523,18 +523,18 @@ final class LayoutMenus
     /** Preferences > Hide Hover Tooltips (FR-168); read when a menu opens, so it needs no refresh. */
     void mountRightClickTipsMenu()
     {
-        RightClickTips.install();
+        HoverTooltips.install();
 
         if (ui.interfaceMenu() == null) return;
 
         final JCheckBoxMenuItem hide = new JCheckBoxMenuItem(
             I18n.t("ui.main.toolbar.hideRightClickTips"),
-            RightClickTips.hidden());
+            HoverTooltips.hidden());
 
         hide.setToolTipText(AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.hideRightClickTips")));
 
         hide.addActionListener(event ->
-            TrainControlUI.getPrefs().putBoolean(RightClickTips.PREF, hide.isSelected()));
+            TrainControlUI.getPrefs().putBoolean(HoverTooltips.PREF, hide.isSelected()));
 
         // Under Remember Window Locations, above the divider (MT-910).
         int under = ui.interfaceMenu().getPopupMenu().getComponentIndex(ui.rememberLocationMenuItem());
@@ -766,7 +766,7 @@ final class LayoutMenus
 
         JMenuItem folder = ui.showCurrentLayoutFolderMenuItem();
 
-        if (folder != null && ui.isLocalLayout() && ui.isLayoutLoaded())
+        if (folder != null && ui.isLocalLayout() && ui.editorWindows().isLayoutLoaded())
         {
             recentLayoutsMenu.addSeparator();
 

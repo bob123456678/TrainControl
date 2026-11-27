@@ -98,7 +98,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
             + " while it is");
 
         // What the window has seen, as a refresh at idle leaves it - otherwise the reversal below is a first sighting.
-        SwingUtilities.invokeAndWait(() -> ui.reconcileFacingWhenIdle());
+        SwingUtilities.invokeAndWait(() -> ui.diagramLocGestures().reconcileFacingWhenIdle());
     }
 
     @AfterClass(alwaysRun = true)
@@ -510,7 +510,7 @@ public class testAThrottleReversalIsFollowedFromItsEcho
 
         Components.drain(4);
 
-        SwingUtilities.invokeAndWait(() -> ui.reconcileFacingWhenIdle());
+        SwingUtilities.invokeAndWait(() -> ui.diagramLocGestures().reconcileFacingWhenIdle());
 
         // DRAWN FROM THE RAILWAY JUST BUILT, and nothing left for the diagram to look at: a look still owed would redraw the
         // icon after the turn whether or not the turn asked for it

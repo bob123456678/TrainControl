@@ -985,7 +985,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
             // RESTART: every entry run, so the reset has something to do and asks
             for (org.traincontrol.automation.TimetablePath entry : before) entry.setExecutionTime(1000);
 
-            assertEquals(yesOnceARunBegins(() -> ui.restartTimetable()), refusal, "Restart Timetable did not refuse a"
+            assertEquals(yesOnceARunBegins(() -> ui.timetableTab().restartTimetable()), refusal, "Restart Timetable did not refuse a"
                 + " Yes given after a run began behind its question (RSA48-C1)");
 
             for (org.traincontrol.automation.TimetablePath entry : before)
@@ -995,7 +995,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
             }
 
             // CLEAR
-            assertEquals(yesOnceARunBegins(() -> ui.clearTimetable()), refusal, "Clear Timetable did not refuse a Yes"
+            assertEquals(yesOnceARunBegins(() -> ui.timetableTab().clearTimetable()), refusal, "Clear Timetable did not refuse a Yes"
                 + " given after a run began behind its question (RSA48-C1)");
 
             assertTheSame(railway.getTimetable(), before, "Clear Timetable emptied the timetable under a run begun behind"
@@ -1019,7 +1019,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 java.awt.event.MouseEvent.MOUSE_CLICKED, System.currentTimeMillis(), 0, 2, table.getRowHeight() / 2, 1,
                 false);
 
-            assertEquals(yesOnceARunBegins(() -> ui.deleteTimetableEntry(onTheFirstRow)), refusal, "Delete Entry did not"
+            assertEquals(yesOnceARunBegins(() -> ui.timetableTab().deleteTimetableEntry(onTheFirstRow)), refusal, "Delete Entry did not"
                 + " refuse a Yes given after a run began behind its question (OB-260, RSA48-C2)");
 
             // ITS REMOVE RUNS ON A WORKER: given the time to, had it been sent
@@ -1031,7 +1031,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
             // CHANGE DELAY, at the first row: a delay typed once a run has begun behind its question is not written
             final long delayWas = before.get(0).getSecondsToNext();
 
-            assertEquals(yesOnceARunBegins(() -> ui.updateTimetableDelay(onTheFirstRow), "7"), refusal, "Change Delay did"
+            assertEquals(yesOnceARunBegins(() -> ui.timetableTab().updateTimetableDelay(onTheFirstRow), "7"), refusal, "Change Delay did"
                 + " not refuse a delay typed after a run began behind its question (RSA49-C2)");
 
             assertEquals(before.get(0).getSecondsToNext(), delayWas, "Change Delay wrote a delay into an entry under a run"
@@ -1182,7 +1182,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     {
         try
         {
-            Reflect.method(TrainControlUI.class, "repaintTimetable").invoke(ui);
+            Reflect.method(org.traincontrol.gui.TimetableTab.class, "repaintTimetable").invoke(ui.timetableTab());
         }
         catch (ReflectiveOperationException e)
         {
@@ -1330,7 +1330,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         final String body = SourceOf.declaration("    boolean writeNameAndAddress(Component source, Locomotive l,")
             .replaceAll("//[^\n]*", "");
 
-        final String after = body.substring(body.indexOf("refreshLocSelectorList()")).replaceAll("\\s+", "");
+        final String after = body.substring(body.indexOf("refreshAfterEdit(")).replaceAll("\\s+", "");
 
         assertTrue(after.contains("showMessageDialog(source,"), "precondition: no message after the database's refresh is"
             + " said over the window that asked");

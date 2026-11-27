@@ -2,6 +2,7 @@ package regression;
 
 import java.awt.Component;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import javax.swing.SwingUtilities;
@@ -166,7 +167,7 @@ public class testNoSetupEditDuringARun
 
             openTheEditorFor(ui, square, Collections.<TileKey>emptyList());
 
-            assertTrue(ui.isLayoutEditorOpen(), "precondition: the editor did not open");
+            assertTrue(ui.editorWindows().isLayoutEditorOpen(), "precondition: the editor did not open");
 
             // THE AUTO TAB'S LIST OF PATHS for a standing train, as the window built it
             final Object[] offered = anAutoTabListOfPaths(ui);
@@ -227,7 +228,7 @@ public class testNoSetupEditDuringARun
      * whose Autonomy tab writes into the setup: it opens locked and says so, and a Save leaves the setup's copy of the
      * train as it was.  No factory builds the item, so the factories' refusal does not cover it.
      *
-     * MUTATION: have `LocomotiveSettings.why` ignore a run, and this fails.
+     * MUTATION: have `LocomotiveEditRule.why` ignore a run, and this fails.
      */
     @Test
     public void testTheDiagramsEditLocomotiveRefusesOnceTrainsRun() throws Exception
@@ -287,7 +288,7 @@ public class testNoSetupEditDuringARun
 
             assertNotNull(support.SettingsWindow.awaited(), "the diagram's Edit Locomotive, clicked during a run, opened"
                 + " no Locomotive Settings");
-            assertEquals(support.SettingsWindow.tabShowing(), org.traincontrol.gui.LocomotiveSettingsFrame.Tab.AUTONOMY.ordinal(),
+            assertEquals(support.SettingsWindow.tabShowing(), org.traincontrol.gui.LocomotiveSettingsWindow.Tab.AUTONOMY.ordinal(),
                 "the diagram's Edit Locomotive did not open the Autonomy tab");
 
             support.Components.onTheEventThread(() ->
@@ -926,7 +927,7 @@ public class testNoSetupEditDuringARun
 
             // A STANDING TRAIN WITH SOMEWHERE TO GO, and the diagram's menu for it - gathered and built at rest, as showFor
             // gathers and builds it
-            Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
+            Class<?> menuClass = Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu");
 
             java.lang.reflect.Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class,
                 org.traincontrol.automation.Point.class);
@@ -982,7 +983,7 @@ public class testNoSetupEditDuringARun
             // THEN THE EDITOR OPENS
             openTheEditorFor(ui, square, Collections.<TileKey>emptyList());
 
-            assertTrue(ui.isLayoutEditorOpen(), "precondition: the editor did not open");
+            assertTrue(ui.editorWindows().isLayoutEditorOpen(), "precondition: the editor did not open");
 
             startAnsweringYes(asked, going);
 
@@ -1088,20 +1089,20 @@ public class testNoSetupEditDuringARun
             final TrainControlUI window = ui;
             final TileKey at = square;
 
-            SwingUtilities.invokeLater(() -> window.openAutonomyEditor(at, Collections.<TileKey>emptyList()));
+            SwingUtilities.invokeLater(() -> window.editorWindows().openAutonomyEditor(at, Collections.<TileKey>emptyList()));
 
             final org.traincontrol.automation.Layout railway = ui.getModel().getAutoLayout();
 
             long until = System.currentTimeMillis() + 10000;
 
-            while (!(ui.isLayoutEditorOpen() && railway.isAlreadyUnderway(sent)) && System.currentTimeMillis() < until)
+            while (!(ui.editorWindows().isLayoutEditorOpen() && railway.isAlreadyUnderway(sent)) && System.currentTimeMillis() < until)
             {
                 Thread.sleep(200);
             }
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 
-            assertFalse(ui.isLayoutEditorOpen() && railway.isAlreadyUnderway(sent), "a send queued ahead of the"
+            assertFalse(ui.editorWindows().isLayoutEditorOpen() && railway.isAlreadyUnderway(sent), "a send queued ahead of the"
                 + " editor's build sent " + sent.getName() + ", and the editor then opened over the run - a square"
                 + " clicked in it edits the setup under the trains (RLV13-C2): asked " + asked);
         }, ui ->
@@ -1226,13 +1227,13 @@ public class testNoSetupEditDuringARun
             final TrainControlUI window = ui[0];
             final TileKey at = square;
 
-            SwingUtilities.invokeLater(() -> window.openAutonomyEditor(at, Collections.<TileKey>emptyList()));
+            SwingUtilities.invokeLater(() -> window.editorWindows().openAutonomyEditor(at, Collections.<TileKey>emptyList()));
 
             final String refused = I18n.t("autosetup.ui.menuEditorOpen");
 
             long until = System.currentTimeMillis() + 15000;
 
-            while (!asked.contains(refused) && !(ui[0].isLayoutEditorOpen() && ui[0].getModel().isAutonomyRunning())
+            while (!asked.contains(refused) && !(ui[0].editorWindows().isLayoutEditorOpen() && ui[0].getModel().isAutonomyRunning())
                 && System.currentTimeMillis() < until)
             {
                 Thread.sleep(200);
@@ -1244,7 +1245,7 @@ public class testNoSetupEditDuringARun
                 + " worker did not ask about the armed route, so nothing held it while the editor was built: asked "
                 + asked);
 
-            assertTrue(ui[0].isLayoutEditorOpen(), "precondition: the editor was not built while Start's worker waited,"
+            assertTrue(ui[0].editorWindows().isLayoutEditorOpen(), "precondition: the editor was not built while Start's worker waited,"
                 + " so this claim did not reach the worker's own look: asked " + asked);
 
             assertFalse(ui[0].getModel().isAutonomyRunning(), "Start's worker came back to the event thread with the"
@@ -1311,7 +1312,7 @@ public class testNoSetupEditDuringARun
             final TrainControlUI window = ui;
             final TileKey at = square;
 
-            SwingUtilities.invokeLater(() -> window.openAutonomyEditor(at, Collections.<TileKey>emptyList()));
+            SwingUtilities.invokeLater(() -> window.editorWindows().openAutonomyEditor(at, Collections.<TileKey>emptyList()));
 
             // Start has decided once the trains run or the editor's refusal has been said; a hang ends at the bound
             final String editorsWords = I18n.t("autosetup.ui.menuEditorOpen");
@@ -1321,7 +1322,7 @@ public class testNoSetupEditDuringARun
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 
-            assertFalse(ui.isLayoutEditorOpen() && ui.getModel().isAutonomyRunning(), "Start, pressed ahead of an"
+            assertFalse(ui.editorWindows().isLayoutEditorOpen() && ui.getModel().isAutonomyRunning(), "Start, pressed ahead of an"
                 + " editor asked for in the same busy moment, started the trains under the editor (RLV13-C2): asked "
                 + asked);
         }, ui ->
@@ -1369,7 +1370,7 @@ public class testNoSetupEditDuringARun
             // THE REQUEST, and then - before its posted build runs - a run begins
             SwingUtilities.invokeAndWait(() ->
             {
-                window.openAutonomyEditor(at, Collections.<TileKey>emptyList());
+                window.editorWindows().openAutonomyEditor(at, Collections.<TileKey>emptyList());
 
                 try
                 {
@@ -1387,7 +1388,7 @@ public class testNoSetupEditDuringARun
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 
-            assertFalse(ui.isLayoutEditorOpen(), "an editor asked for at rest was built over a run that began before"
+            assertFalse(ui.editorWindows().isLayoutEditorOpen(), "an editor asked for at rest was built over a run that began before"
                 + " its build ran (RLV13-C2)");
 
             assertTrue(asked.contains(I18n.t("ui.main.errorNoEditsWhileRunning")), "the editor's build, refused"
@@ -1450,7 +1451,7 @@ public class testNoSetupEditDuringARun
     private static javax.swing.JMenuItem theEditLocomotiveItem(final TrainControlUI ui, final TileKey square,
         org.traincontrol.automation.Point at) throws Exception
     {
-        java.lang.reflect.Constructor<?> make = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu")
+        java.lang.reflect.Constructor<?> make = Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu")
             .getDeclaredConstructors()[0];
 
         make.setAccessible(true);
@@ -1493,9 +1494,9 @@ public class testNoSetupEditDuringARun
     private static Object[] anAutoTabListOfPaths(TrainControlUI ui) throws Exception
     {
         java.lang.reflect.Field panelField = TrainControlUI.class.getDeclaredField("autoLocPanel");
-        java.lang.reflect.Field pathsField = org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredField("paths");
-        java.lang.reflect.Field listField = org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredField("locAvailPaths");
-        java.lang.reflect.Field locField = org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredField("locomotive");
+        java.lang.reflect.Field pathsField = org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus.class.getDeclaredField("paths");
+        java.lang.reflect.Field listField = org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus.class.getDeclaredField("locAvailPaths");
+        java.lang.reflect.Field locField = org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus.class.getDeclaredField("locomotive");
 
         panelField.setAccessible(true);
         pathsField.setAccessible(true);
@@ -1510,7 +1511,7 @@ public class testNoSetupEditDuringARun
 
             for (Component c : ((javax.swing.JPanel) panelField.get(ui)).getComponents())
             {
-                if (!(c instanceof org.traincontrol.gui.autonomy.AutoLocomotiveStatus)) continue;
+                if (!(c instanceof org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus)) continue;
 
                 List<?> paths = (List<?>) pathsField.get(c);
                 javax.swing.JList<?> list = (javax.swing.JList<?>) listField.get(c);
@@ -1805,7 +1806,7 @@ public class testNoSetupEditDuringARun
     private static boolean anAutoTabListIsShowing(final TrainControlUI ui) throws Exception
     {
         final java.lang.reflect.Field panelField = TrainControlUI.class.getDeclaredField("autoLocPanel");
-        final java.lang.reflect.Field listField = org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class
+        final java.lang.reflect.Field listField = org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus.class
             .getDeclaredField("locAvailPaths");
 
         panelField.setAccessible(true);
@@ -1820,7 +1821,7 @@ public class testNoSetupEditDuringARun
             {
                 for (Component c : ((javax.swing.JPanel) panelField.get(ui)).getComponents())
                 {
-                    if (c instanceof org.traincontrol.gui.autonomy.AutoLocomotiveStatus
+                    if (c instanceof org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus
                         && ((Component) listField.get(c)).isVisible()) showing[0] = true;
                 }
             }
@@ -3183,11 +3184,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * New Configuration answered No copies the configuration without its trains or its timetable, and everything else
-     * as it is - each station's rules, the settings - and the one copied keeps its trains (Adam: "One door: do it").
-     * Through the real question.
+     * New Configuration copies the configuration without its trains or its timetable, and everything else as it is -
+     * each station's rules, the settings - and the one copied keeps its trains.  It asks only for the name.  Save As
+     * keeps the trains' places and the timetable.
      *
-     * MUTATION: copy the trains whatever the answer, and this fails.
+     * MUTATION: copy the trains in New Configuration, or drop them in Save As, and this fails.
      */
     @Test
     public void testANewConfigurationCanStartWithoutItsTrains() throws Exception
@@ -3210,28 +3211,47 @@ public class testNoSetupEditDuringARun
 
             assertFalse(placedIn(original).isEmpty(), "precondition: no train is placed in " + running);
 
-            // NEW CONFIGURATION, its question answered No
+            // NEW CONFIGURATION: the name, and nothing else asked
             final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
 
-            answeringWith(asked, going, "R34 no trains");
+            final java.util.concurrent.atomic.AtomicReference<String> typed = new java.util.concurrent.atomic.AtomicReference<>(
+                "R34 no trains");
 
-            SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().duplicate());
+            answeringWith(asked, going, typed);
+
+            SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().newConfiguration());
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 
-            assertTrue(asked.contains(I18n.f("autosetup.ui.promptCopyTrainsAndTimetable", running)), "New Configuration"
-                + " did not ask whether the trains and the timetable come too: " + asked);
+            assertEquals(asked, Arrays.asList(I18n.t("autosetup.ui.promptConfigurationName")), "New Configuration asked"
+                + " more than the name: " + asked);
 
             assertTrue(session.getStore().getConfigurationNames().contains("R34 no trains"), "precondition: no copy was"
                 + " made: " + asked);
 
             org.json.JSONObject copy = session.getStore().getConfiguration("R34 no trains");
 
-            assertTrue(placedIn(copy).isEmpty(), "the copy answered No still has trains placed: " + placedIn(copy));
+            assertTrue(placedIn(copy).isEmpty(), "New Configuration still has trains placed: " + placedIn(copy));
 
             org.json.JSONObject globals = copy.optJSONObject("globals");
 
-            assertTrue(globals == null || !globals.has("timetable"), "the copy answered No still has the timetable");
+            assertTrue(globals == null || !globals.has("timetable"), "New Configuration still has the timetable");
+
+            // A PAUSED LOCOMOTIVE names a locomotive, so the blank copy must not carry it either
+            org.json.JSONObject live = session.getStore().getConfiguration(running);
+
+            if (live.optJSONObject("globals") == null) live.put("globals", new org.json.JSONObject());
+
+            live.getJSONObject("globals").put(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES,
+                new org.json.JSONArray(Arrays.asList("R34 paused")));
+
+            session.getStore().createConfiguration("R34 blank", running, false);
+
+            assertFalse(session.getStore().getConfiguration("R34 blank").getJSONObject("globals")
+                .has(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES), "New Configuration still names paused"
+                + " locomotives");
+
+            live.getJSONObject("globals").remove(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
 
             // EVERYTHING ELSE AS IT WAS
             org.json.JSONObject points = original.optJSONObject("points");
@@ -3254,6 +3274,24 @@ public class testNoSetupEditDuringARun
 
             assertEquals(placedIn(session.getStore().getConfiguration(running)), placedIn(original), "copying "
                 + running + " without its trains took them off " + running);
+
+            // SAVE AS: the same trains and timetable, and again only the name asked
+            asked.clear();
+
+            typed.set("R34 as");
+
+            saveAsAndSettle(ui);
+
+            assertEquals(asked, Arrays.asList(I18n.t("autosetup.ui.promptConfigurationName")), "Save As asked more than"
+                + " the name: " + asked);
+
+            org.json.JSONObject saved = session.getStore().getConfiguration("R34 as");
+
+            assertEquals(placedIn(saved), placedIn(original), "Save As did not keep the trains' places");
+
+            assertEquals(String.valueOf(saved.optJSONObject("globals") == null ? null
+                : saved.optJSONObject("globals").opt("timetable")), String.valueOf(original.optJSONObject("globals") == null
+                ? null : original.optJSONObject("globals").opt("timetable")), "Save As did not keep the timetable");
         }, ui ->
         {
             going.set(false);
@@ -3339,12 +3377,8 @@ public class testNoSetupEditDuringARun
 
             answeringWith(asked, going, "RSA10 copy");
 
-            // WITH THE TRAINS: this claim is about where they are copied from, not about the question
-            org.traincontrol.gui.AutonomyViewerPanel.answerCopyTrainsForTests(javax.swing.JOptionPane.YES_OPTION);
-
-            SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().duplicate());
-
-            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+            // WITH THE TRAINS: this claim is about where they are copied from
+            saveAsAndSettle(ui);
 
             assertTrue(session.getStore().getConfigurationNames().contains("RSA10 copy"), "precondition: no copy was"
                 + " made: " + asked);
@@ -3363,8 +3397,6 @@ public class testNoSetupEditDuringARun
         }, ui ->
         {
             going.set(false);
-
-            org.traincontrol.gui.AutonomyViewerPanel.answerCopyTrainsForTests(null);
         });
     }
 
@@ -3372,8 +3404,26 @@ public class testNoSetupEditDuringARun
      * Answers every question until `going` is lowered: an input with this value, anything else with No - and the words
      * of each into `asked`.
      */
+    private static void saveAsAndSettle(TrainControlUI ui) throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().saveAs());
+
+        for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /** The button a two-button question gets (0 Yes, 1 No), and what happens right after it is answered. */
+    private static volatile int confirmIndex = 1;
+
+    private static volatile Runnable afterConfirm;
+
     private static void answeringWith(final List<String> asked, final java.util.concurrent.atomic.AtomicBoolean going,
         final String input)
+    {
+        answeringWith(asked, going, new java.util.concurrent.atomic.AtomicReference<>(input));
+    }
+
+    private static void answeringWith(final List<String> asked, final java.util.concurrent.atomic.AtomicBoolean going,
+        final java.util.concurrent.atomic.AtomicReference<String> input)
     {
         Thread answering = new Thread(() ->
         {
@@ -3393,23 +3443,114 @@ public class testNoSetupEditDuringARun
                     {
                         if (pane.getWantsInput())
                         {
-                            pane.setInputValue(input);
+                            pane.setInputValue(input.get());
                             pane.setValue(Integer.valueOf(javax.swing.JOptionPane.OK_OPTION));
                         }
                         else
                         {
                             Object[] options = pane.getOptions();
 
-                            pane.setValue(options != null && options.length > 1 ? options[1]
+                            pane.setValue(options != null && options.length > 1 ? options[confirmIndex]
                                 : Integer.valueOf(javax.swing.JOptionPane.NO_OPTION));
+
+                            if (afterConfirm != null) afterConfirm.run();
                         }
                     });
                 }
             });
-        }, "answering with " + input);
+        }, "answering with " + input.get());
 
         answering.setDaemon(true);
         answering.start();
+    }
+
+    /**
+     * Save As onto another configuration's name warns, naming it; No leaves it as it was and asks for a name again, Yes
+     * replaces it with a copy of the current one and changes nothing else, and the current name is not offered as an
+     * overwrite.
+     *
+     * MUTATION: replace without asking, or offer the current name for overwrite, and this fails.
+     */
+    @Test
+    public void testSaveAsReplacesAnotherConfigurationOnlyWhenConfirmed() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        onItsOwnWindow("live-snapshot", ui ->
+        {
+            final AutonomySession session = ui.getAutonomySession();
+
+            final String running = ui.getActiveDiagramConfiguration();
+
+            org.json.JSONObject original = new org.json.JSONObject(session.getStore().getConfiguration(running).toString());
+
+            // A SPARE WITHOUT TRAINS
+            session.getStore().createConfiguration("R34 old", running, false);
+
+            org.json.JSONObject spare = new org.json.JSONObject(session.getStore().getConfiguration("R34 old").toString());
+
+            assertTrue(placedIn(spare).isEmpty(), "precondition: the spare has trains");
+
+            final String prompt = I18n.t("autosetup.ui.promptConfigurationName");
+            final String warning = I18n.f("autosetup.ui.confirmReplaceConfiguration", "R34 old");
+
+            final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
+
+            final java.util.concurrent.atomic.AtomicReference<String> typed = new java.util.concurrent.atomic.AtomicReference<>(
+                "R34 old");
+
+            answeringWith(asked, going, typed);
+
+            // NO: the warning, then the name asked again; the spare is as it was
+            confirmIndex = 1;
+            afterConfirm = () -> typed.set("R34 elsewhere");
+
+            saveAsAndSettle(ui);
+
+            assertEquals(asked, Arrays.asList(prompt, warning, prompt), "Save As onto a saved name did not warn and ask"
+                + " again: " + asked);
+
+            assertTrue(new org.json.JSONObject(session.getStore().getConfiguration("R34 old").toString()).similar(spare),
+                "No changed the configuration it was asked about");
+
+            assertTrue(session.getStore().getConfigurationNames().contains("R34 elsewhere"), "the new name was not saved");
+
+            // YES: replaced by a copy of the current one, the current one unchanged
+            asked.clear();
+            typed.set("R34 old");
+            confirmIndex = 0;
+            afterConfirm = null;
+
+            saveAsAndSettle(ui);
+
+            assertEquals(asked, Arrays.asList(prompt, warning), "Save As onto a saved name did not warn: " + asked);
+
+            assertEquals(placedIn(session.getStore().getConfiguration("R34 old")), placedIn(original), "Yes did not"
+                + " replace the configuration with a copy of the current one");
+
+            assertEquals(placedIn(session.getStore().getConfiguration(running)), placedIn(original),
+                "replacing changed the current configuration");
+
+            // THE CURRENT NAME is refused, not offered as an overwrite
+            asked.clear();
+            typed.set(running);
+
+            saveAsAndSettle(ui);
+
+            assertFalse(asked.contains(I18n.f("autosetup.ui.confirmReplaceConfiguration", running)), "the current name"
+                + " was offered as an overwrite: " + asked);
+
+            assertEquals(placedIn(session.getStore().getConfiguration(running)), placedIn(original),
+                "Save As onto its own name changed the configuration");
+        }, ui ->
+        {
+            going.set(false);
+
+            confirmIndex = 1;
+            afterConfirm = null;
+        });
     }
 
     /**
@@ -3505,8 +3646,9 @@ public class testNoSetupEditDuringARun
                 + " rest");
 
             // DUPLICATE CURRENT PAGE: the gate asked straight after the door's own work, before its reset
-            final java.lang.reflect.Method duplicate = Reflect.method(TrainControlUI.class,
-                "duplicateOrRenameCurrentLayout", String.class, boolean.class, boolean.class, boolean.class);
+            final java.lang.reflect.Method duplicate = Reflect.method(ui[0].layoutFileActions().getClass(),
+                "duplicateOrRenameCurrentLayout", String.class, boolean.class, boolean.class, boolean.class,
+                org.traincontrol.gui.layouteditor.LayoutEditor.class);
 
             answers = answeringNamesAndYes(asked, answering, "RSA23 combined");
 
@@ -3520,7 +3662,7 @@ public class testNoSetupEditDuringARun
             {
                 try
                 {
-                    duplicate.invoke(ui[0], "RSA23 copy", false, true, false);
+                    duplicate.invoke(ui[0].layoutFileActions(), "RSA23 copy", false, true, false, null);
                 }
                 catch (ReflectiveOperationException e)
                 {
@@ -3574,13 +3716,14 @@ public class testNoSetupEditDuringARun
 
             SwingUtilities.invokeAndWait(() -> pages.setSelectedItem("1 - Main"));
 
-            final java.lang.reflect.Method combine = Reflect.method(TrainControlUI.class, "combineLinkedPages");
+            final java.lang.reflect.Method combine = Reflect.method(ui[0].layoutFileActions().getClass(), "combineLinkedPages",
+                org.traincontrol.gui.layouteditor.LayoutEditor.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
                 try
                 {
-                    combine.invoke(ui[0]);
+                    combine.invoke(ui[0].layoutFileActions(), (Object) null);
 
                     said[0] = gate.invoke(ui[0], true);
                 }
@@ -3895,13 +4038,14 @@ public class testNoSetupEditDuringARun
                 + " (OB-309)");
 
             // THE ROUTING RULE'S TOOLTIP, set again while grayed, as a load sets it: still says why
-            final java.lang.reflect.Method rule = Reflect.method(TrainControlUI.class, "refreshRoutingLogicTooltip");
+            final Object tab = Reflect.get(TrainControlUI.class, ui, "autonomySettingsTab");
+            final java.lang.reflect.Method rule = Reflect.method(tab.getClass(), "refreshRoutingLogicTooltip");
 
             SwingUtilities.invokeAndWait(() ->
             {
                 try
                 {
-                    rule.invoke(ui);
+                    rule.invoke(tab);
                 }
                 catch (ReflectiveOperationException e)
                 {

@@ -166,7 +166,7 @@ public class testTheEditorsDoorsAskOverThem
      * Open in Route Editor, refused while the track editor holds the diagram, says so over the track editor, with the
      * main window minimized too, and opens no route editor.
      *
-     * MUTATION: `ui.editRoute(...)` alone in `LayoutEditorRightclickMenu`, and it hangs off the main window.
+     * MUTATION: `ui.routeListPanel().editRoute(...)` alone in `LayoutEditorContextMenu`, and it hangs off the main window.
      */
     @Test
     public void testOpenInRouteEditorIsRefusedOverTheEditor() throws Exception
@@ -333,7 +333,8 @@ public class testTheEditorsDoorsAskOverThem
     /**
      * Delete Current Page from the track editor, with the index unreadable, says so over the editor.
      *
-     * MUTATION: `this` for `over` at `settleAbsentPages` in `deleteConfirmedPage`, and it hangs off the main window.
+     * MUTATION: `this` for `over` at `settleTheAbsentPages` in `LayoutFileActions.deleteConfirmedPage`, and it hangs off
+     * the main window.
      */
     @Test
     public void testAnUnreadableIndexIsSaidOverTheEditor() throws Exception

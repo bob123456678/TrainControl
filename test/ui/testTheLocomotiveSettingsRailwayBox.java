@@ -10,7 +10,7 @@ import static org.testng.Assert.assertTrue;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.LocomotiveSettingsWindow;
 import support.Components;
 import support.SettingsWindow;
 
@@ -45,12 +45,12 @@ public class testTheLocomotiveSettingsRailwayBox extends support.SettingsClass
             fixture.model.newMFXLocomotive(MADE[i + 1], 3900 + i).setStructuredNotes(0, 0, others[i], "");
         }
 
-        Locomotive loc = fixture.layDcc(NAME, 3899, LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
+        Locomotive loc = fixture.layDcc(NAME, 3899, LocomotiveSettingsWindow.Tab.LOCOMOTIVE);
 
         loc.setStructuredNotes(0, 0, railway, "");
 
         SettingsWindow.closeIfOpen();
-        fixture.show(loc, LocomotiveSettingsFrame.Tab.NOTES);
+        fixture.show(loc, LocomotiveSettingsWindow.Tab.NOTES);
 
         return loc;
     }
@@ -186,7 +186,7 @@ public class testTheLocomotiveSettingsRailwayBox extends support.SettingsClass
     /**
      * Locked while the train moves, the box keeps what is picked and Save stays gray, as for the other Notes fields.
      *
-     * MUTATION: drop `!blocked` from `LocomotiveSettingsFrame.changed`, and this fails.
+     * MUTATION: drop `!blocked` from `LocomotiveSettingsWindow.changed`, and this fails.
      */
     @Test
     public void testLockedLikeTheOtherFields() throws Exception

@@ -35,7 +35,7 @@ TrainControl connects to a Central Station 2, 3, or 3 Plus over your network.  I
 
 *Autonomy on your track diagram.*  Since 3.0.0 you set up automation right on the track diagram, with no files to write: name your stations, click the track to show which way trains may run, and drag each train to the station where it stands.  See [Full Autonomy](#full-autonomy) and [the autonomy guide](Automation.md) to get started, and the [Changelog](#changelog) for everything else in 3.1.0.
 
-*3.1.1* is the first version to support Java 21: on a Windows display set above 100%, the whole window is drawn at the size Windows asks for, with sharp text, pictures and track diagram ([Requirements](#requirements)).  It also brings autonomy improvements and fixes: Ctrl+G, Ctrl+Q and Ctrl+H start, stop and send trains home; `Test a path` and `Why not Moving?` give one answer for automatic and by-hand sends; a white dot marks stations trains must stop at; and a train whose journey fails partway is now recorded where it stopped.  See the [Changelog](#changelog) for everything else.
+*3.1.2* makes syncing with your Central Station clearer: `Sync Database w/ Central Station` shows in one table every locomotive the station has renamed or given another address and changes only what you choose, and `Import from CSV...` asks the same way.  Windows reopen where you left them, a small mark in the corner shows how quickly the Central Station answers, and `Station Settings` can open a new way for trains all the way to the next station.  See the [Changelog](#changelog) for everything else.
 
 **Why TrainControl?**
 
@@ -87,7 +87,7 @@ Multi-units can be configured in TrainControl, which can be simpler than using t
 
 **Layout View & Layout Editing**
 
-Track diagrams for your layout are downloaded automatically from the CS2 / CS3 (Track Boards only), or you can customize them in layout files kept on your computer.  All components (switches, signals, S88, routes) are clickable and reflect the layout state.  Multiple pages can be opened across unlimited popup windows.
+Track diagrams for your layout are downloaded automatically from the CS2 / CS3 (Track Boards only), or you can customize them in layout files kept on your computer.  All components (switches, signals, S88, routes) are clickable and reflect the layout state.  Multiple pages can be opened across unlimited popup windows, which reopen where you left them the next time you start TrainControl.
 
 ![Interactive track diagram in TrainControl, with clickable switches, signals, and S88 feedback indicators](assets/layout23.png?raw=true)
 
@@ -178,12 +178,13 @@ Monitor the usage of different locomotives.
 
 **Log**
 
-The Log tab shows what TrainControl is doing.  To scroll it sideways, click in the log text first, then hold Shift and turn the mouse wheel; until the log has the keyboard, Shift is the slow stop for the current locomotive.  A trackpad's sideways swipe only works on Java 9 or later.
+The Log tab shows what TrainControl is doing.  To scroll it sideways, click in the log text first, then hold Shift and turn the mouse wheel; until the log has the keyboard, Shift is the slow stop for the current locomotive.  A trackpad's sideways swipe only works on Java 9 or later.  A yellow triangle marks each warning and a red one each error.
 
 ## Features
 
 * Easily control locomotives (MM2, MFX, DCC), multi-units, signals/switches (MM2, DCC), and routes
 * Download locomotive, layout, and route information from the CS2/CS3
+* See in one table what the Central Station changed, such as a renamed locomotive or a new address, and choose what to take
 * Customize locomotive icons and function icons without needing to set them in the CS2/CS3
 * Edit a locomotive's name, address, picture, functions, notes, multi-unit and autonomy settings in one window, and add locomotives there
 * Export locomotives to a CSV file and import them into another TrainControl
@@ -209,7 +210,7 @@ The Log tab shows what TrainControl is doing.  To scroll it sideways, click in t
     * Send a train to a station by right-clicking it on the track diagram
     * Find a point by name, filter the list of things to look at, and drag a train from one station to another in the autonomy editor
     * The setup is checked before it runs, and each problem opens the editor on the square it is about
-    * Customize autonomous operation by setting station priority, maximum train lengths, track lengths, speed multipliers, and maximum train idle time
+    * Customize autonomous operation by setting station importance, maximum train lengths, track lengths, speed multipliers, and maximum train idle time
     * Choose how trains pick their route, such as over the shortest track or past the fewest stations
     * Pair a station with signals that turn red while a train is standing there, and back to green when it leaves
     * Restrict which directions a station will accept trains from, or make a station that trains must stop at and can't run through
@@ -462,6 +463,42 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
+* v3.1.2 [11/27/2026]
+    - New Features
+        - Autonomy
+            - In the `Station Settings` picture, clicking the station changes `May depart`, and clicking an arrow beside it changes that track; when the line further on still points the other way, it offers `Up to Next Station` or `Only Clicked Track`.
+            - A station's `Priority` is now `Importance`, also in the route choices: a higher number is preferred, and a negative one makes the station a last choice.
+            - `Manage Configurations` has a new `Save As...` that copies the current configuration with its trains and timetable, and `New Configuration...` now starts blank.
+        - Locomotive Control
+            - `Sync Database w/ Central Station` shows in one table every locomotive the Central Station has renamed or given another address, and changes only the rows you answer.  Automatic syncs no longer change addresses.
+            - The `Locomotives` menu shows `*` while such a difference is unanswered.
+            - `Import from CSV...` asks what to do with locomotives that may already be here under another name: `Merge`, `Replace`, `Keep Both` or `Ignore`.
+        - Interface
+            - The lower right of the main window shows how quickly the Central Station answers, in green, yellow or red, and the line beside `Primary Keyboard Controls` names the station and its firmware.
+            - Windows reopen where you left them, page windows included; untick `Remember Window Locations` under `Preferences` to turn this off.
+            - Long messages wrap and long help scrolls instead of growing wider than the screen, and many messages are shorter and clearer.
+            - The `Log` tab marks warnings with a yellow triangle and errors with a red one.
+            - The pointer is a hand over the X that removes a guard signal and over the accessory keyboard's red and green halves.
+    - Bug Fixes
+        - Autonomy
+            - Page windows keep showing routes and trains after `Stop Using Autonomy` or a configuration switch.
+            - The `Station Settings` picture shows all of the station's arrows, green too, whatever the track diagram's display settings.
+            - A train on track with only one way out shows that direction on its caption, and `Change Direction` offers only that way.
+            - An autonomy file with a negative maximum number of active trains loads with no limit, and a damaged file gets a clear message.
+        - Locomotive Control
+            - A locomotive already in a multi-unit can no longer head another one.
+            - Renaming a locomotive that heads a multi-unit no longer adds a second copy at the next sync.
+            - When a rename cannot update the autonomy files, a message says so and offers `Retry`.
+        - Interface
+            - Train icons no longer vanish from the track diagram and page windows when an editor closes soon after the page windows open.
+            - With `Window Always on Top` ticked, file windows such as `Export to CSV...` no longer open hidden behind TrainControl and lock every window.
+            - Canceling the Save window of `Export to CSV...` or `Export Routes...` now ends the export instead of opening a second window.
+            - When a layout cannot be read, whether opened, created, downloaded or synced, the current layout stays and a message says so.
+            - When the layout folder cannot be read at start-up, TrainControl says so and keeps the folder, showing the Central Station's layout meanwhile.
+            - A sync that read only part of the Central Station's data ends with a warning.
+            - With `Show Addresses` ticked, a square that links to another page no longer shows that page's name as an address.
+            - On Java 21 with Windows display scaling above 100%, pictures are no longer blurry and every (i) mark is the same size.
+            - On the same setup, four-digit addresses and tight station names are no longer cut short, and a parked train no longer hides a small curved sensor's arrows.
 * v3.1.1 [11/21/2026]
     - New Features
         - Java 21

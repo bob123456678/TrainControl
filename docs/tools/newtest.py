@@ -6,7 +6,8 @@
 
 Run it from the project root once the class file exists under test/.  Three things, each skipped when already done:
 
-  1. build.xml: a <test-one-class class="..."/> line after the last one (regression.testEveryTestIsInTheBattery).
+  1. build.xml: a <test-one-class class="..."/> line after the last one (regression.testEveryTestIsInTheBattery);
+     none for a unit.* class or a class in a package folder of test/unit, which `ant test-unit` runs with its folder.
   2. The window census in regression.testSwitchingToACentralStationLayout: the number of test classes that build a
      TrainControlUI is recounted the way that test counts it; when it differs, the pin and its message are set to the
      recount (no comment line: a dated one is history, which regression.testCommentsStayLean refuses).
@@ -23,11 +24,22 @@ import re
 import sys
 
 CENSUS_TEST = "testSwitchingToACentralStationLayout.java"
-WINDOW_BUILT = re.compile(r"new\s+(?:org\.traincontrol\.gui\.)?TrainControlUI\s*\(")
-# The support helpers that build a window behind their own sandbox: the census counts their callers too.
-WINDOW_HELPER_CALLED = re.compile(r"FrozenEditor\s*\.\s*(?:window|open)\s*\(|SandboxedWindow\s*\.\s*build\s*\(|"
-                                  r"AskingWindows\s*\.\s*openRailway\s*\(")
 SANDBOX_OPENED = re.compile(r"LayoutSandbox\.open\s*\(")
+
+
+JAVA_STRING = r'"((?:[^"\\]|\\.)*)"'
+
+
+def census_patterns(test_source):
+    """WINDOW_BUILT and WINDOW_HELPER_CALLED read out of the census test itself, so the two cannot drift."""
+    found = []
+    for name in ("WINDOW_BUILT", "WINDOW_HELPER_CALLED"):
+        m = re.search(name + r"\s*=\s*(?:java\.util\.regex\.)?Pattern\s*\.\s*compile\(((?:\s*%s\s*\+?)+)\)" % JAVA_STRING,
+                      test_source)
+        if m is None:
+            raise SystemExit("%s: no %s pattern found; the tool and the test would disagree" % (CENSUS_TEST, name))
+        found.append(re.compile("".join(re.findall(JAVA_STRING, m.group(1))).replace("\\\\", "\\")))
+    return found
 
 
 def read(path):
@@ -91,11 +103,6 @@ def plan_build_xml(root, simple):
     return (path, new), "build.xml: add %s after the last one" % line
 
 
-def builds_a_window(code):
-    """Whether a class counts in the census: it builds a window itself or through one of the helpers."""
-    return bool(WINDOW_BUILT.search(code) or WINDOW_HELPER_CALLED.search(code))
-
-
 def plan_census(root, qualified, source):
     path = None
     for p in java_files(root):
@@ -103,6 +110,11 @@ def plan_census(root, qualified, source):
             path = p
     if path is None:
         return None, "census: %s not found, nothing to check" % CENSUS_TEST
+    patterns = census_patterns(read(path))
+
+    def builds_a_window(code):
+        return any(pat.search(code) for pat in patterns)
+
     count = 0
     for p in java_files(root):
         if os.path.basename(p) == "LayoutSandbox.java":
@@ -172,12 +184,16 @@ def main(argv):
     qualified = names[0]
     folder, simple = qualified.rsplit(".", 1)
     file = os.path.join(root, "test", folder, simple + ".java")
+    if "." in folder:  # a class of another package lives in its package folder of test/unit
+        file = os.path.join(root, "test", "unit", *folder.split("."), simple + ".java")
     if not os.path.isfile(file):
         print("no such test class: %s" % file)
         return 2
     source = read(file)
     steps = []
-    if "@Test" in source:
+    if folder == "unit" or "." in folder:
+        print("%s is a unit test: `ant test-unit` runs test/unit, so build.xml is not touched" % qualified)
+    elif "@Test" in source:
         steps.append(plan_build_xml(root, simple))
     else:
         print("%s has no @Test, so it is a fixture: build.xml and the census are not touched" % qualified)

@@ -1889,4 +1889,34 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
             }
         }
     }
+
+    /**
+     * With both arrow options on, a station open every way draws its green arrows on the diagram like any other square:
+     * the user's options alone decide what is drawn (MT-1106).
+     *
+     * MUTATION: have `SessionRuns.staticAnnotations` leave out an open station's greens, and this fails.
+     */
+    @Test
+    public void testAnOpenStationDrawsItsGreenOnTheDiagram() throws Exception
+    {
+        session.open(Arrays.asList(pageWithATwoEndedStation()));
+        session.initialize("Default");
+
+        TileKey station = onMain(3, 1);
+
+        session.setStation(station, true);
+
+        TileAnnotation drawn = session.staticAnnotations(java.util.Collections.singleton(station), true, true).get(station);
+
+        assertNotNull(drawn, "precondition: the station's square draws nothing with both options on");
+
+        BufferedImage image = new BufferedImage(60, 60, BufferedImage.TYPE_INT_RGB);
+
+        drawn.paint(image.createGraphics(), 60, 60);
+
+        // The green arrows' fill, which nothing else on the square uses
+        assertTrue(java.util.stream.IntStream.range(0, 3600).anyMatch(at -> image.getRGB(at % 60, at / 60)
+            == new Color(70, 205, 90).getRGB()), "a station open every way draws no green arrows on the diagram with"
+            + " Display Allowed Directions on");
+    }
 }

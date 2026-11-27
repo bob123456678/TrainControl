@@ -13,7 +13,7 @@ import java.awt.Frame;
 import java.util.List;
 
 /** The window's editors: opening and closing the layout and autonomy editors, and whether the diagram may be edited. */
-final class EditorWindows
+public final class EditorWindows
 {
     private final TrainControlUI ui;
 
@@ -26,7 +26,7 @@ final class EditorWindows
      * Whether every window holding unsaved work is willing to be closed: the exit's first question; layout editor first
      * (OB-070).
      */
-    boolean everyOpenWindowMaySettle()
+    public boolean everyOpenWindowMaySettle()
     {
         if (ui.openEditor != null && ui.openEditor.isDisplayable() && !ui.openEditor.maySettleBeforeExit()) return false;
 
@@ -38,32 +38,32 @@ final class EditorWindows
     }
 
     /** Whether the route editor holds work the exit would throw away: `maySettleBeforeExit` without the dialog. */
-    boolean routeEditorHasUnsavedWork()
+    public boolean routeEditorHasUnsavedWork()
     {
         return ui.routeEditor != null && ui.routeEditor.isDisplayable() && ui.routeEditor.hasUnsavedWork();
     }
 
     /** Opens the diagram editor in autonomy mode on a tile's page and reveals it; null opens the current page. */
-    void openAutonomyEditor(final TileGraph.TileKey tile)
+    public void openAutonomyEditor(final TileGraph.TileKey tile)
     {
         openAutonomyEditor(tile, null);
     }
 
     /** As above, also outlining {@code related}, the squares a finding names beside its own (MT-505); may be null. */
-    void openAutonomyEditor(final TileGraph.TileKey tile,
+    public void openAutonomyEditor(final TileGraph.TileKey tile,
         final List<TileGraph.TileKey> related)
     {
         openLayoutEditor(tile == null ? null : tile.getPage(), Boolean.TRUE, tile, false, related);
     }
 
     /** Selects the page being edited before a window is built, since the editor edits one page. */
-    void selectLayoutPage(String page)
+    public void selectLayoutPage(String page)
     {
         if (page != null) ui.layoutList().setSelectedItem(page);
     }
 
     /** Whether the Edit button may be pressed; an editor switching page or mode does not close, so it restores it. */
-    void setEditLayoutEnabled(boolean enabled)
+    public void setEditLayoutEnabled(boolean enabled)
     {
         // Remembered, not applied: "an editor is open" and "a layout to edit" (OB-126) are re-asked separately
         ui.noEditorOpen = enabled;
@@ -107,7 +107,7 @@ final class EditorWindows
     private volatile boolean layoutLoaded = false;
 
     /** Whether a track diagram is loaded; the stored answer. */
-    boolean isLayoutLoaded()
+    public boolean isLayoutLoaded()
     {
         return this.layoutLoaded;
     }
@@ -128,7 +128,7 @@ final class EditorWindows
         return why != null ? why : "autosetup.ui.errorEditorAlreadyOpen";
     }
 
-    String whyLayoutCannotBeEdited()
+    public String whyLayoutCannotBeEdited()
     {
         if (!isLayoutLoaded()) return "layout.ui.errorNoLayoutLoaded";
 
@@ -141,7 +141,7 @@ final class EditorWindows
     }
 
     /** Remembers the editor the user last chose in the sidebar; not called for a mode forced back to the track. */
-    void rememberEditorChoice(boolean autonomy)
+    public void rememberEditorChoice(boolean autonomy)
     {
         TrainControlUI.getPrefs().putBoolean(LAST_EDITOR_AUTONOMY_PREF, autonomy);
     }
@@ -150,7 +150,7 @@ final class EditorWindows
      * Why the autonomy editor would refuse to open, as a message key, or null (FR-026): openLayoutEditor's refusals in
      * its order.
      */
-    String whyAutonomyEditorCannotOpen()
+    public String whyAutonomyEditorCannotOpen()
     {
         if (!ui.isLocalLayout()) return "layout.ui.errorEditingOnlySupportedForLocalFiles";
 
@@ -349,14 +349,14 @@ final class EditorWindows
      * The setup, if there is any point opening: a CHOSEN configuration even if it did not load; null if nothing to set
      * up.
      */
-    AutonomySession editableAutonomySession()
+    public AutonomySession editableAutonomySession()
     {
         AutonomySession session = ui.getAutonomySession();
 
         return session != null && session.getStore().getActiveConfiguration() != null ? session : null;
     }
 
-    boolean isLayoutEditorOpen()
+    public boolean isLayoutEditorOpen()
     {
         // The editor, not the button that opens it (OB-126): the button is also grayed for a Central Station layout.
         return anEditorWindow() != null;
@@ -385,7 +385,7 @@ final class EditorWindows
      * An editor window has gone: Edit and the doors beside it ask again, and a sync owed meanwhile runs.  From
      * `LayoutEditor.dispose`.
      */
-    void editorWindowClosed()
+    public void editorWindowClosed()
     {
         ui.editorGone();
 
@@ -443,16 +443,10 @@ final class EditorWindows
     private String filterCarried = null;
 
     /**
-     * Opens an editor in place of one that closed itself to change page, carrying a square-clicked flag; cleared
-     * whatever happens.
+     * Opens an editor in place of one that closed itself to change page, carrying a square-clicked flag and the
+     * findings filter's text (FR-073; null carries none); cleared whatever happens.
      */
-    void openCarryingTheClick(boolean clicked, Runnable open)
-    {
-        openCarryingTheClick(clicked, null, open);
-    }
-
-    /** As above, also carrying the findings filter's text to the editor that opens (FR-073); null carries none. */
-    void openCarryingTheClick(boolean clicked, String findingFilter, Runnable open)
+    public void openCarryingTheClick(boolean clicked, String findingFilter, Runnable open)
     {
         clickCarried = clicked;
         filterCarried = findingFilter;
@@ -472,7 +466,7 @@ final class EditorWindows
      * An autonomy editor closing: the refresh is counted before its window goes and taken over by the posted
      * `autonomyEditorClosed`.  @param then runs after it on the event thread, or null.
      */
-    void autonomyEditorClosedFromTheEditor(final Runnable then)
+    public void autonomyEditorClosedFromTheEditor(final Runnable then)
     {
         ui.refreshesUnderWay.incrementAndGet();
 
@@ -491,7 +485,7 @@ final class EditorWindows
         });
     }
 
-    void autonomyEditorClosed()
+    public void autonomyEditorClosed()
     {
         // reapplies the stored preference, which is what the diagram path does here too
         ui.windowAlwaysOnTopAsChosen();
@@ -502,7 +496,7 @@ final class EditorWindows
 
         ui.refreshPopupsWhoseCaptionsChanged();
 
-        ui.refreshAutonomyPrompt();
+        ui.autonomyLifecycle().refreshAutonomyPrompt();
 
         // The running graph is rebuilt from the setup, as an edit can change how a square SPLITS; not while trains move
         ui.rebuildRunningLayoutFromSetup();
@@ -512,7 +506,7 @@ final class EditorWindows
     }
 
     /** Opens the setup editor on a named page, switching the diagram to it first (a menu names no page). */
-    void openAutonomyEditorOnPage(String page)
+    public void openAutonomyEditorOnPage(String page)
     {
         // A menu item that names the setup editor is somebody saying which editor they want
         openLayoutEditor(page, Boolean.TRUE, null, true);

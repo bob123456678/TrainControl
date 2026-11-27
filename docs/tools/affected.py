@@ -18,6 +18,7 @@ root.  A test class is listed when it
 --guards prints only the bookkeeping and pairing classes, plus the classes that read the source of a method a changed
 file declares, and testEveryTestIsInTheBattery when serial-lane.txt or a test using its words changed: the guard set,
 which runs at every merge, small fix or not; docs/tools/gates.sh runs it with the other merge gates.
+The slow SOAK classes come last, after a "soak" heading on stderr (stdout stays one class per line).
 -v says on stderr why each class is there.  It over-includes for a change to a class most tests name (Layout, Util): the
 list is then long, and that is the honest answer.  The full battery stays the orchestrator's.
 """
@@ -27,6 +28,11 @@ import subprocess
 import sys
 
 KNOWN_OUT = {"core.testAutoDetect"}
+
+# Slow whole-railway runs (FR-212, a release-only tier): listed last, under a "soak" heading, so fast classes run first.
+SOAK = ["core.testSetupDumpComparesBuilds", "core.testAutonomySimulationSanity", "core.testReturnHomeOnRealLayout",
+        "core.testTimetableOnDerivedGraph", "core.testTrainsComeHomeFromAPinnedArrangement",
+        "core.testTrainsComeHomeToTheirPlatforms"]
 
 # CLAUDE.md: a changed file or folder (a path ending, matched whole) calls for these classes (by simple name) whether or
 # not they name it.
@@ -74,6 +80,12 @@ def without_comments(src):
     return "".join(out)
 
 
+def qualified(path):
+    """test/core/testX.java is core.testX; test/unit/org/x/testY.java, in a package folder of test/unit, is org.x.testY."""
+    parts = path[:-5].split("/")[1:]
+    return ".".join(parts[1:] if parts[0] == "unit" and len(parts) > 2 else parts)
+
+
 def main(argv):
     sys.stdout.reconfigure(newline="\n")  # a list file with CR line ends names classes that do not exist
     verbose = "-v" in argv
@@ -108,11 +120,14 @@ def main(argv):
         d = os.path.join("test", folder)
         if not os.path.isdir(d):
             continue
-        for name in sorted(os.listdir(d)):
-            if name.endswith(".java"):
-                text = read(os.path.join(d, name))
-                (tests if "@Test" in text else support)["%s.%s" % (folder, name[:-5])] = text
-    by_simple = {q.split(".")[1]: q for q in tests}
+        # test/unit's package folders hold classes of those packages
+        for base, _dirs, names in os.walk(d) if folder == "unit" else [(d, [], os.listdir(d))]:
+            for name in sorted(names):
+                if name.endswith(".java"):
+                    path = os.path.join(base, name).replace(os.sep, "/")
+                    text = read(path)
+                    (tests if "@Test" in text else support)[qualified(path)] = text
+    by_simple = {q.rsplit(".", 1)[1]: q for q in tests}
 
     why = {}
     guarded = set()
@@ -153,7 +168,7 @@ def main(argv):
                 if m:
                     keys.append(m.group(1))
         elif path.startswith("test/") and path.endswith(".java"):
-            q = path.split("/")[1] + "." + base_name[:-5]
+            q = qualified(path)
             if status == "D":
                 continue
             if q in tests:
@@ -227,7 +242,11 @@ def main(argv):
                 if n in by_simple:
                     add(by_simple[n], "CLAUDE.md pairs it with %s" % file, True)
 
-    for q in sorted(guarded if guards else why):
+    chosen = sorted(guarded if guards else why)
+    soak = [c for c in chosen if c in SOAK]
+    for q in [c for c in chosen if c not in SOAK] + soak:
+        if soak and q == soak[0]:
+            print("soak", file=sys.stderr)  # stderr, so stdout stays one class per line for TC_CLASSES
         print(q)
         if verbose:
             print("%s: %s" % (q, "; ".join(why[q][:3])), file=sys.stderr)

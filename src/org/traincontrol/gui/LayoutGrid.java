@@ -228,7 +228,7 @@ public class LayoutGrid
         handle.addMouseMotionListener(gesture);
     }
 
-    /** Photographs the caption cropped to its pill and hands it to the window to carry, held where grabbed (FR-035). */
+    /** The caption, cropped to its pill, given to the window to carry where grabbed (FR-035). */
     private static void pickUp(StationCaption caption, javax.swing.JLabel handle,
         java.awt.Point at, LayoutEditor editor)
     {
@@ -236,24 +236,12 @@ public class LayoutGrid
 
         if (pill == null || pill.width <= 0 || pill.height <= 0) return;
 
-        java.awt.image.BufferedImage shot = new java.awt.image.BufferedImage(
-            pill.width, pill.height, java.awt.image.BufferedImage.TYPE_INT_ARGB);
-
-        java.awt.Graphics2D g = shot.createGraphics();
-
-        try
+        javax.swing.Icon shot = org.traincontrol.util.SharpIcon.painted(editor, pill.width, pill.height, g ->
         {
-            g.setComposite(java.awt.AlphaComposite.getInstance(
-                java.awt.AlphaComposite.SRC_OVER, 0.8f));
-
+            g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.8f));
             g.translate(-pill.x, -pill.y);
-
             caption.paint(g);
-        }
-        finally
-        {
-            g.dispose();
-        }
+        });
 
         java.awt.Point grab = handle == caption
             ? new java.awt.Point(at.x - pill.x, at.y - pill.y)
@@ -301,13 +289,13 @@ public class LayoutGrid
         return null;
     }
 
-    /** The square under a mouse event, or null off the diagram, for a train dragged over the diagram (FR-160). */
+    /** The square under a mouse event, or null off the diagram (FR-160). */
     public static LayoutLabel squareUnder(Container container, java.awt.Component from, MouseEvent e)
     {
         return tileUnder(container, from, e);
     }
 
-    /** How far the mouse moves before a press on a caption counts as a drag rather than a click. */
+    /** How far a press on a caption moves before it is a drag, not a click. */
     public static final int DRAG_SLOP = 4;
 
     /**
@@ -862,13 +850,13 @@ public class LayoutGrid
                             @Override
                             public void mouseEntered(MouseEvent e)
                             {
-                                ui.setHoveredDiagramTile(station.getPage(), station.getX(), station.getY());
+                                ui.diagramLocGestures.setHoveredDiagramTile(station.getPage(), station.getX(), station.getY());
                             }
 
                             @Override
                             public void mouseExited(MouseEvent e)
                             {
-                                ui.setHoveredDiagramTile(null, -1, -1);
+                                ui.diagramLocGestures.setHoveredDiagramTile(null, -1, -1);
                             }
 
                             @Override
@@ -879,7 +867,7 @@ public class LayoutGrid
 
                                 if (e.getButton() == MouseEvent.BUTTON3)
                                 {
-                                    LayoutRightclickAutonomyMenu.showFor(ui, station, station,
+                                    DiagramAutonomyContextMenu.showFor(ui, station, station,
                                         e.getComponent(), e.getX(), e.getY());
                                 }
                                 // Left-clicking a station will activate its locomotive
@@ -1120,10 +1108,10 @@ public class LayoutGrid
                     gbc.gridy = y;
                 }
                 
-                // Show address labels
+                // Show address labels: a link has no accessory address
                 if (c != null &&
                         layout.getShowAddress() &&
-                        !c.isText() && c.isClickable())
+                        !c.isText() && !c.isLink() && c.isClickable())
                 {
                     AddressLabel text = new AddressLabel();
                     
@@ -1207,11 +1195,9 @@ public class LayoutGrid
                         protocol = c.getProtocol().toString().toLowerCase();
                     }
                     
-                    text.setLines(c.isLink() && c.getLinkPageName() != null ? c.getLinkPageName()
-                        : c.getLogicalAddress() + redOrGreen, protocol);
+                    text.setLines(c.getLogicalAddress() + redOrGreen, protocol);
 
-                    // To the row's end, as text labels are: an arrow's page name is wider than a square and would
-                    // widen its column, leaving a blank gap in the diagram.
+                    // To the row's end, as text labels are, so a wide address never widens its column.
                     gbc.gridwidth = GridBagConstraints.REMAINDER;
 
                     // The squares its text runs on over keep their clicks

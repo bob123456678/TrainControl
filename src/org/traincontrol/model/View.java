@@ -65,6 +65,12 @@ public interface View
      * Logs a message
      */
     public void log(String message);
+
+    /** Logs a message at a level: SEVERE an error, WARNING a warning, anything less a notice (FR-190). */
+    default void log(String message, java.util.logging.Level level)
+    {
+        log(message);
+    }
     
     /**
      * Callback with latency info
@@ -127,6 +133,8 @@ public interface View
      * was (FR-169).  Must not block the calling thread.
      */
     public void showSyncPartial();
+    /** Tells the user the layout folder would not read at the start, so the station's layout stands in (FR-245). */
+    public void showLayoutFolderHeld(String folder);
 
     /**
      * Warns that the Central Station cut the track power by itself after a short circuit (OB-426).  Must not block the

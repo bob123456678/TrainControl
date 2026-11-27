@@ -15,7 +15,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.gui.LayoutLabel;
-import org.traincontrol.gui.LayoutPopupUI;
+import org.traincontrol.gui.LayoutPopupWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.widgets.AddressLabel;
@@ -91,7 +91,7 @@ public class testShowAddressesWithAnEditorOpen
         Components.waitFor(() -> editButton().isEnabled(), 30000);
         Components.onTheEventThread(() ->
         {
-            for (Frame frame : Frame.getFrames()) if (frame instanceof LayoutPopupUI) frame.dispose();
+            for (Frame frame : Frame.getFrames()) if (frame instanceof LayoutPopupWindow) frame.dispose();
 
             return null;
         });
@@ -156,7 +156,7 @@ public class testShowAddressesWithAnEditorOpen
     @Test(timeOut = 200000)
     public void testTheMenuReachesTheWindowOfThePageBeingEdited() throws Exception
     {
-        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+        final LayoutPopupWindow window = AskingWindows.openThePage(ui);
 
         Components.settle();
         assertEquals(addresses(window), 0, "precondition: the page window shows addresses with the menu off");
@@ -189,7 +189,7 @@ public class testShowAddressesWithAnEditorOpen
         Settle.theDiagram(ui);
         Components.settle();
 
-        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+        final LayoutPopupWindow window = AskingWindows.openThePage(ui);
 
         Components.settle();
 
@@ -229,7 +229,7 @@ public class testShowAddressesWithAnEditorOpen
         Components.select(pages(), PAGE);
         Settle.theDiagram(ui);
 
-        final LayoutPopupUI fresh = AskingWindows.openThePage(ui);
+        final LayoutPopupWindow fresh = AskingWindows.openThePage(ui);
 
         Components.settle();
         assertEquals(addresses(fresh), shown, "a page window opened after the autonomy editor closed shows no"
@@ -253,6 +253,34 @@ public class testShowAddressesWithAnEditorOpen
         assertEquals(editor.isAutonomyMode(), autonomy, "the Edit button opened the other editor");
 
         return editor;
+    }
+
+    /**
+     * A link has no accessory address: with Show Addresses on, a page window draws an address on every clickable
+     * square but its links, which showed their target page's name.
+     *
+     * MUTATION: in `LayoutGrid`, drop `!c.isLink()` from the address labels' condition, and the links get one.
+     */
+    @Test(timeOut = 200000)
+    public void testALinkShowsNoAddress() throws Exception
+    {
+        final LayoutPopupWindow window = AskingWindows.openThePage(ui);
+
+        Components.settle();
+        Components.press(menu());
+        Settle.theDiagram(ui);
+        Components.settle();
+        Components.drain(10);
+
+        final int links = Components.onTheEventThread(() -> Components.all(window, LayoutLabel.class, each ->
+            each.getComponent() != null && each.getComponent().isLink() && each.getComponent().isClickable()).size());
+        final int others = Components.onTheEventThread(() -> Components.all(window, LayoutLabel.class, each ->
+            each.getComponent() != null && !each.getComponent().isLink() && !each.getComponent().isText()
+            && each.getComponent().isClickable()).size());
+
+        assertTrue(links > 0 && others > 0, "precondition: the page has " + links + " links and " + others
+            + " other squares to address");
+        assertEquals(addresses(window), others, "the page window's addresses are not one for each square but a link");
     }
 
     private static void pickTheOtherPage() throws Exception

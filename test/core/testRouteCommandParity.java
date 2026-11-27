@@ -70,7 +70,7 @@ public class testRouteCommandParity
     @Test
     public void testRubbishIsRefused() throws Exception
     {
-        // Refused by throwing, which RouteEditorFrame's parse expects; what matters is that it does not come back as a
+        // Refused by throwing, which RouteEditorWindow's parse expects; what matters is that it does not come back as a
         // command.
         try
         {

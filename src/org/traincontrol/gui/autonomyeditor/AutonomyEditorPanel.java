@@ -75,8 +75,8 @@ import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.gui.AutonomyViewerPanel;
-import org.traincontrol.gui.Listen;
+import org.traincontrol.gui.AutonomyConfigurationsPanel;
+import org.traincontrol.gui.OnMouse;
 import org.traincontrol.gui.RunGates;
 import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
@@ -567,7 +567,7 @@ public class AutonomyEditorPanel extends JPanel
         findingsPanel = buildFindings();
 
         // Nothing here is worked by keyboard, and a focusable control swallows the window's keys.
-        AutonomyViewerPanel.unfocusable(this);
+        AutonomyConfigurationsPanel.unfocusable(this);
 
         // After the sweep: the filter box is the one exception, and the window mounts it, not this panel.
         findingsBox = buildFindingsBox(findingsPanel);
@@ -1095,11 +1095,11 @@ public class AutonomyEditorPanel extends JPanel
         findings.setFont(FONT_CONTROL);
 
         // The Auto tab's colors: red must be fixed, amber worth checking, gray headings.
-        findings.setCellRenderer(new AutonomyViewerPanel.FindingRenderer(findingSeverity, findingTiles, FONT_CONTROL,
-            AutonomyViewerPanel.FONT_GROUP));
+        findings.setCellRenderer(new AutonomyConfigurationsPanel.FindingRenderer(findingSeverity, findingTiles, FONT_CONTROL,
+            AutonomyConfigurationsPanel.FONT_GROUP));
 
         // A double-click, or Control+O, opens the station's settings; one click stays as it is (FR-072).
-        findings.addMouseListener(Listen.clicked(e ->
+        findings.addMouseListener(OnMouse.clicked(e ->
         {
             if (e.getClickCount() == 2) openStationSettingsForTheFinding();
         }));
@@ -1197,7 +1197,7 @@ public class AutonomyEditorPanel extends JPanel
         javax.swing.border.TitledBorder titled =
             BorderFactory.createTitledBorder(I18n.t("autosetup.ui.colWarnings"));
 
-        titled.setTitleFont(AutonomyViewerPanel.FONT_GROUP);
+        titled.setTitleFont(AutonomyConfigurationsPanel.FONT_GROUP);
         titled.setTitleColor(new Color(0, 0, 155));
         whole.setBorder(titled);
         whole.add(list, BorderLayout.CENTER);
@@ -1254,7 +1254,7 @@ public class AutonomyEditorPanel extends JPanel
         {
             setFocusable(false);
 
-            addMouseListener(Listen.pressed(e ->
+            addMouseListener(OnMouse.pressed(e ->
             {
                 setFocusable(true);
                 requestFocusInWindow();
@@ -1311,7 +1311,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Everything that can be set on a tile, on one menu built like LayoutEditorRightclickMenu's, items in the graph
+     * Everything that can be set on a tile, on one menu built like LayoutEditorContextMenu's, items in the graph
      * window's order and wording.
      */
     public void tileRightClicked(TileKey tile, LayoutDiagramComponent component,
@@ -2681,7 +2681,7 @@ public class AutonomyEditorPanel extends JPanel
 
         List<String> said = new ArrayList<>();
 
-        for (List<Object[]> rows : AutonomyViewerPanel.findingRows(about, this::describeTile).values())
+        for (List<Object[]> rows : AutonomyConfigurationsPanel.findingRows(about, this::describeTile).values())
         {
             for (Object[] row : rows) said.add((String) row[1]);
         }
@@ -3023,7 +3023,7 @@ public class AutonomyEditorPanel extends JPanel
 
     /** Asks for a new station's name (FR-120): message and text so far to the answer, null for Cancel. */
     private java.util.function.BiFunction<String, String, String> askForAName =
-        (message, typed) -> JOptionPane.showInputDialog(owner(), wrapped(message), typed);
+        (message, typed) -> JOptionPane.showInputDialog(owner(), message, typed);
 
     private boolean hasAName(TileKey tile)
     {
@@ -3287,7 +3287,7 @@ public class AutonomyEditorPanel extends JPanel
         if (row.getComponentCount() > 0) panel.add(row, BorderLayout.SOUTH);
 
         // Double-click chooses, as OK does.
-        list.addMouseListener(Listen.clicked(e ->
+        list.addMouseListener(OnMouse.clicked(e ->
         {
             if (e.getClickCount() == 2 && list.getSelectedValue() != null)
             {
@@ -4229,7 +4229,7 @@ public class AutonomyEditorPanel extends JPanel
         // A name ending like a builder copy's, or another square's, is refused, and said.
         String refused = applyName(tile, name);
 
-        if (refused != null) JOptionPane.showMessageDialog(owner(), wrapped(refused));
+        if (refused != null) JOptionPane.showMessageDialog(owner(), refused);
     }
 
     /**
@@ -4472,7 +4472,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         say(hint, why);
 
-        JOptionPane.showMessageDialog(owner(), wrapped(why));
+        JOptionPane.showMessageDialog(owner(), why);
     }
 
     private String addGuardSignal(Guard guard, TileKey station, TileKey signal, boolean redraw)
@@ -6101,24 +6101,64 @@ public class AutonomyEditorPanel extends JPanel
         {
             if (refusedWhileRunning()) return;
 
-            setRunDirection(tile, routeId, direction);
+            setRunDirection(tile, routeId, direction, false);
         });
 
         return item;
     }
 
-    /** Sets which way trains may run over a square, on the run it belongs to. */
-    void setRunDirection(TileKey tile, RouteId routeId, Direction direction)
+    /**
+     * Sets which way trains may run over a square's run; `offer` first asks whether to carry it on down the line (D194).
+     */
+    void setRunDirection(TileKey tile, RouteId routeId, Direction direction, boolean offer)
     {
+        Boolean along = offer ? alongTheLine(tile, routeId, direction) : Boolean.FALSE;
+        if (along == null) return;
         // Set on the run, not the tile: a run has one direction.
-        int set = session.setRunDirection(tile, routeId, direction);
-
+        int set = session.setRunDirection(tile, routeId, direction, along);
         if (set == 0) say(hint, I18n.t("autosetup.ui.oneWayNoPath"));
-
         refresh();
 
         // Here, beside the write, through the light door (MT-334).
         annotationsChanged();
+    }
+
+    /**
+     * Whether to carry a run's direction on along the line: false when nothing past it changes, else asked; null Cancel.
+     */
+    private Boolean alongTheLine(TileKey tile, RouteId routeId, Direction direction)
+    {
+        Set<TileKey> further = session.alongTheLine(tile, routeId, direction).keySet();
+        if (further.isEmpty()) return false;
+        Set<TileKey> lit = new LinkedHashSet<>(session.getGraph().runOf(tile).getTiles());
+        lit.addAll(further);
+        light(lit, true);
+        try
+        {
+            Object[] answers = {I18n.t("autosetup.ui.buttonCarryOn"), I18n.t("autosetup.ui.buttonThisRunAlone"),
+                I18n.t("ui.cancel")};
+            int answer = JOptionPane.showOptionDialog(owner(), I18n.t("autosetup.ui.alongTheLine"),
+                I18n.t("autosetup.ui.titleAlongTheLine"), JOptionPane.YES_NO_CANCEL_OPTION,
+                JOptionPane.QUESTION_MESSAGE, null, answers, answers[0]);
+            return answer == 0 ? Boolean.TRUE : answer == 1 ? Boolean.FALSE : null;
+        }
+        finally
+        {
+            light(lit, false);
+        }
+    }
+
+    /** Lights squares where this surface draws, or puts them out: outlined in the editor, yellow on the track diagram. */
+    private void light(Set<TileKey> squares, boolean on)
+    {
+        if (menuOnly && parentWindow() != null)
+        {
+            org.traincontrol.gui.DiagramHighlights.hold(parentWindow(), squares, on);
+            return;
+        }
+        noticeOutline.clear();
+        if (on) noticeOutline.addAll(squares);
+        redrawTheMarks();
     }
 
     /** What this sensor has been designated as, or null when it is not a station. */
@@ -6389,7 +6429,7 @@ public class AutonomyEditorPanel extends JPanel
         // graph's own problems are among the findings.  Warnings and notices apart: the diagram's count adds errors and
         // warnings only.
         Map<AutonomyChecks.Severity, List<Object[]>> sorted =
-            AutonomyViewerPanel.findingRows(session.check(), this::describeTile);
+            AutonomyConfigurationsPanel.findingRows(session.check(), this::describeTile);
 
         // Severity first everywhere, this page first within each, to agree with the count; rows elsewhere say where.
         for (List<Object[]> rows : sorted.values())
@@ -6666,7 +6706,7 @@ public class AutonomyEditorPanel extends JPanel
             // Asked again on a refusal; a name given earlier in this walk is already stored, so it counts as taken.
             while (name != null && !name.trim().isEmpty() && (refused = whyNotNamed(tile, name)) != null)
             {
-                JOptionPane.showMessageDialog(owner(), wrapped(refused));
+                JOptionPane.showMessageDialog(owner(), refused);
 
                 name = askForName(question);
             }
@@ -7232,7 +7272,7 @@ public class AutonomyEditorPanel extends JPanel
 
         int notice = probe.getPreferredSize().height;
 
-        probe.setFont(AutonomyViewerPanel.FONT_GROUP);
+        probe.setFont(AutonomyConfigurationsPanel.FONT_GROUP);
 
         return Math.max(notice, probe.getPreferredSize().height);
     }

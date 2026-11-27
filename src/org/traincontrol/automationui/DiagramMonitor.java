@@ -128,16 +128,14 @@ public class DiagramMonitor
     private volatile Set<TileKey> pausedOnNoPoint = Collections.emptySet();
 
     /**
-     * Forgets what was last published, so the next refresh publishes even an identical picture: for after the screen
-     * was cleared behind this class's back.
-     *
-     * **SYNCHRONIZED, on the same monitor as `refresh()`**, whose compare-against-published is a check then a set: the
-     * timer thread's tick between `compute()` and `published = overlays` would overwrite this, and the wiped tiles
-     * would stay blank until something moves.
+     * Forgets what was last published and marks it dirty, so the next tick publishes even an identical picture (OB-498):
+     * for after the screen was cleared behind this class's back.  Synchronized with `refresh()`, whose compare and set
+     * would otherwise overwrite this.
      */
     public synchronized void invalidate()
     {
         published = Collections.emptyMap();
+        markDirty();
     }
 
     /** Registers with a layout, additively: other callbacks on the same layout are untouched. */
@@ -172,8 +170,16 @@ public class DiagramMonitor
     {
         if (!dirty.getAndSet(false)) return false;
 
-        refresh();
-
+        // Owed again on a throw: an idle railway fires no more.
+        try
+        {
+            refresh();
+        }
+        catch (RuntimeException | Error e)
+        {
+            markDirty();
+            throw e;
+        }
         return true;
     }
 

@@ -1,6 +1,7 @@
 package core;
 
 import org.json.JSONObject;
+import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.base.Locomotive;
@@ -307,6 +308,86 @@ public class testInvalidInput
         assertRejected("maxLocInactiveSeconds", config(POINT_A, "", ", 'maxLocInactiveSeconds': 'a while'"));
         assertRejected("preArrivalSpeedReduction", config(POINT_A, "", ", 'preArrivalSpeedReduction': 'half'"));
         assertRejected("atomicRoutes not a boolean", config(POINT_A, "", ", 'atomicRoutes': 'sometimes'"));
+    }
+
+    /**
+     * OB-505: a lock edge that is not an object refuses the file with the lock-edge message, as other bad lock edges
+     * do, rather than throwing out of fromJSON.
+     *
+     * MUTATION: catch only JSONException in readLockEdges, and fromJSON throws a ClassCastException.
+     */
+    @Test
+    public void testANonObjectLockEdgeRefusesTheFile()
+    {
+        Layout layout = Layout.fromJSON(config(POINT_A + ", " + POINT_B,
+            "{'start': 'IN A', 'end': 'IN B', 'lockedges': [5]}", ""), model);
+
+        assertFalse(layout.isValid(), "the file was accepted with a lock edge that is a number");
+        assertTrue(layout.getInvalidReason().contains(I18n.f("autolayout.errorLockEdgeGeneric", "").trim()),
+            "the lock-edge message was expected: " + layout.getInvalidReason());
+    }
+
+    /**
+     * OB-505: an edge command with an unknown state is refused and not kept, so the refused layout can still be written.
+     *
+     * MUTATION: store the command whatever its state read as, and toJSON throws a NullPointerException.
+     */
+    @Test
+    public void testACommandWithAnUnknownStateIsNotKept() throws Exception
+    {
+        clearAccessoryAddress(ACC_IN_CONFIG_ADDRESS);
+
+        Layout layout = Layout.fromJSON(config(POINT_A + ", " + POINT_B, "{'start': 'IN A', 'end': 'IN B', 'commands':"
+            + " [{'acc': '" + ACC_IN_CONFIG + "', 'state': 'sideways'}]}", ""), model);
+
+        assertFalse(layout.isValid(), "the unknown state was accepted");
+        assertNotNull(layout.toJSON(), "the refused layout could not be written");
+    }
+
+    /**
+     * OB-505, D214: a maxActiveTrains that is not a number is refused as not a number; a negative one loads as 0 (no
+     * limit) and the log says so once.
+     *
+     * MUTATION: skip a negative value again, and the value stays at its old one and nothing is logged; or warn on 0.
+     */
+    @Test
+    public void testAMaxActiveTrainsThatIsNotANumberSaysSo()
+    {
+        Layout layout = Layout.fromJSON(config(POINT_A, "", ", 'maxActiveTrains': 'many'"), model);
+
+        assertFalse(layout.isValid(), "'many' was accepted");
+        assertEquals(layout.getInvalidReason(), I18n.f("autolayout.errorMaxActiveTrainsNotANumber"));
+
+        List<String> said = java.util.Collections.synchronizedList(new ArrayList<>());
+        java.util.logging.Handler tap = support.LogTap.messagesInto(said);
+        java.util.logging.Logger log = java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
+        log.addHandler(tap);
+
+        try
+        {
+            layout = Layout.fromJSON(config(POINT_A, "", ", 'maxActiveTrains': 4"), model);
+            assertEquals(layout.getMaxActiveTrains(), 4);
+            assertEquals(java.util.Collections.frequency(said, I18n.f("autolayout.infoSetMaxActiveTrains", 4)), 1);
+            assertFalse(said.contains(I18n.f("autolayout.warnMaxActiveTrainsNegative", 4)), "4 was warned about");
+            said.clear();
+            layout = Layout.fromJSON(config(POINT_A, "", ", 'maxActiveTrains': 0"), model);
+            assertFalse(said.contains(I18n.f("autolayout.warnMaxActiveTrainsNegative", 0)), "0 was warned about");
+            layout.setMaxActiveTrains(3);
+            assertEquals(layout.getMaxActiveTrains(), 3, "the setter must still take a value");
+            layout.setMaxActiveTrains(-1);
+            assertEquals(layout.getMaxActiveTrains(), 3, "the setter must still refuse a negative value");
+
+            said.clear();
+            layout = Layout.fromJSON(config(POINT_A, "", ", 'maxActiveTrains': -2"), model);
+            assertTrue(layout.isValid(), "a negative maxActiveTrains is read as 0, not refused");
+            assertEquals(layout.getMaxActiveTrains(), 0, "a negative maxActiveTrains is read as 0");
+            assertEquals(java.util.Collections.frequency(said, I18n.f("autolayout.warnMaxActiveTrainsNegative", -2)), 1,
+                "the negative value was not logged once: " + said);
+        }
+        finally
+        {
+            log.removeHandler(tap);
+        }
     }
 
     /**

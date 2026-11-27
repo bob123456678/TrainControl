@@ -19,7 +19,7 @@ import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.DocumentEvent;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.gui.Listen;
+import org.traincontrol.gui.OnMouse;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.util.I18n;
@@ -145,7 +145,7 @@ final class FindAPointPrompt extends JDialog
             }
         });
 
-        list.addMouseListener(Listen.clicked(e ->
+        list.addMouseListener(OnMouse.clicked(e ->
         {
             if (e.getClickCount() < 2) return;
 

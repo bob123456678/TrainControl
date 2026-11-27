@@ -39,7 +39,7 @@ import org.traincontrol.util.Util;
  *
  * Not the locomotive mapping pages (copy, paste and clear), which stay on the window.
  */
-final class LayoutFileActions
+public final class LayoutFileActions
 {
     private final TrainControlUI ui;
 
@@ -75,6 +75,82 @@ final class LayoutFileActions
                 // written; refusing here would leave the index and the pages disagreeing.
                 this.ui.getModel().log(cannotSave);
             }
+        }
+    }
+
+    /** Delete Current Page once confirmed; `from` (the editor that asked, or null) is told which page to show. */
+    void deleteConfirmedPage(String going, LayoutEditor from)
+    {
+        final Component over = from == null ? this.ui : from;
+
+        boolean arriving = false;
+
+        try
+        {
+            List<String> layoutList = this.ui.getModel().getLayoutList();
+
+            // Other missing pages are asked about BEFORE the file goes (FR-018); the deleted page is not.
+            java.util.Collection<String> keepAbsent = this.ui.settleTheAbsentPages(layoutList, null,
+                java.util.Arrays.asList(going), over);
+
+            if (keepAbsent == null) return;
+
+            // The page FIRST: deleteLayoutFile can fail, and then the setup must not be forgotten.
+            this.ui.getModel().getLayout(going).deleteLayoutFile();
+
+            // Only a session already built and a setup already there: a save would create the folder and file.
+            org.traincontrol.automationui.AutonomySession session = this.ui.autonomySession();
+
+            try
+            {
+                if (session == null)
+                {
+                    org.traincontrol.automationui.AutonomyCompanionStore.deletePageOnDisk(
+                        new java.io.File(this.ui.localLayoutPath()), going);
+                }
+                else
+                {
+                    // Before forgetting the page, or the capture would write its settings back.
+                    this.ui.captureRunningLayout();
+
+                    // The session's page list loses it too, or the reset below would write it back.
+                    int forgotten = session.deletePage(going);
+
+                    if (forgotten > 0)
+                    {
+                        this.ui.getModel().logf("layout.infoPageSetupForgotten", forgotten, going);
+                    }
+
+                    if (session.exists()) session.saveWithoutReconciling();
+                }
+            }
+            catch (java.io.IOException e)
+            {
+                // The page is going either way; only the record of it is at risk
+                this.ui.getModel().log(e);
+            }
+
+            layoutList.remove(going);
+
+            // No rename map: the deleted page's id is retired.
+            this.writeIndexAndKeepLinksAimed(layoutList, null, keepAbsent);
+
+            this.ui.layoutEditingComplete(from == null ? null
+                : () -> from.arriveOn(String.valueOf(this.ui.layoutList().getSelectedItem())));
+
+            arriving = true;
+        }
+        catch (IOException | java.net.URISyntaxException | RuntimeException ex)
+        {
+            JOptionPane.showMessageDialog(
+                over,
+                I18n.f("layout.ui.errorSavingLayoutWithMessage", ex.getMessage())
+            );
+            this.ui.getModel().log(ex);
+        }
+        finally
+        {
+            if (from != null && !arriving) from.arriveOn(null);
         }
     }
 
@@ -117,6 +193,47 @@ final class LayoutFileActions
         }
         
         return null;
+    }
+
+    /** The preferences a switch of the layout in use writes (`TrainControlUI.layoutFolderIs`). */
+    private static final String[] SWITCH_PREFS = {TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF,
+        TrainControlUI.LAST_LOCAL_LAYOUT_PREF, TrainControlUI.RECENT_LAYOUTS_PREF};
+
+    /**
+     * Makes `folder` the layout in use; asked after its sync, the answer is whether it read, and if not puts all back.
+     */
+    java.util.function.BooleanSupplier switchTo(String folder)
+    {
+        final String[] was = new String[SWITCH_PREFS.length];
+
+        for (int i = 0; i < was.length; i++) was[i] = TrainControlUI.getPrefs().get(SWITCH_PREFS[i], null);
+
+        final List<LayoutDiagram> pages = everyLoadedPage();
+
+        TrainControlUI.layoutFolderIs(folder);
+
+        return () ->
+        {
+            // A read puts new page objects in; a failed one (the folder changed after its check) keeps the old, or falls
+            // back to the station's, and the layout in use and its own pages go back as they were (FR-245)
+            List<LayoutDiagram> now = everyLoadedPage();
+            boolean same = now.size() == pages.size();
+
+            for (int i = 0; same && i < now.size(); i++) same = now.get(i) == pages.get(i);
+
+            if (!same && folder.equals(this.ui.localLayoutPath())) return true;
+
+            for (int i = 0; i < was.length; i++)
+            {
+                if (was[i] == null) TrainControlUI.getPrefs().remove(SWITCH_PREFS[i]);
+                else TrainControlUI.getPrefs().put(SWITCH_PREFS[i], was[i]);
+            }
+
+            // Read again, as after a page edit: the session and the page list follow the new objects
+            if (!same) this.ui.layoutEditingComplete(null);
+
+            return false;
+        };
     }
 
     /** Copies a JAR resource file to the specified path. */
@@ -371,7 +488,7 @@ final class LayoutFileActions
                     // memory and not on disk, so the next load offers it to autonomy.
                     if (session.exists() && !session.saveQuietly() && this.ui.getModel() != null)
                     {
-                        this.ui.getModel().logf("autosetup.log.saveFailedAfterCombine");
+                        this.ui.getModel().logf(java.util.logging.Level.SEVERE, "autosetup.log.saveFailedAfterCombine");
                     }
                 }
 
@@ -412,7 +529,7 @@ final class LayoutFileActions
      * Moves the selected page one place up or down the page list and saves at once (FR-175).  Silent at either end,
      * where the editor grays the arrow.  `by` is -1 for up, 1 for down.
      */
-    void movePage(final int by, final LayoutEditor from)
+    public void movePage(final int by, final LayoutEditor from)
     {
         final String page = String.valueOf(this.ui.layoutList().getSelectedItem());
 
@@ -448,7 +565,7 @@ final class LayoutFileActions
     }
 
     /** Writes the pages in name order once (FR-175); nothing is written when they already are. */
-    void sortPagesByName(final LayoutEditor from)
+    public void sortPagesByName(final LayoutEditor from)
     {
         if (sorted(this.ui.getModel().getLayoutList()) == null) return;
 

@@ -97,7 +97,7 @@ public class testTheOldAutonomyTabIsGone
                 }
 
                 // What the switch does to the autonomy controls, and what the end of start-up asks of the slot.
-                ui.resetAutonomySession();
+                ui.autonomyLifecycle().resetAutonomySession();
                 ui.refreshAutonomyAnchor();
             }
             catch (ReflectiveOperationException e)

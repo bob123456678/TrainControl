@@ -13,13 +13,17 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import org.traincontrol.automationui.TileOverlay;
+import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.locomotive.LocomotivePlaceholder;
+import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.ImageUtil;
 import support.Display;
@@ -148,6 +152,59 @@ public class testPicturesAreSharpOnAScaledScreen
                 }
             }
         }
+    }
+
+    /**
+     * A diagram caption (text with a halo) is as wide as its text lays out at any common scale and text smoothing, so
+     * Swing, which measures in the scaled Graphics' metrics, never shortens it to "Yard 1..." (OB-504).
+     *
+     * MUTATION: in `StationCaption.getPreferredSize`, drop the `was.width +=` line for a caption that is not a pill.
+     */
+    @Test
+    public void testACaptionIsNeverShortenedOnAScaledScreen()
+    {
+        String[][] fonts = {{"Segoe UI Symbol", "10"}, {"Dialog", "11"}, {"Segoe UI", "10"}, {"Dialog", "12"}};
+        Object[] smoothing = {java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON,
+            java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_OFF, java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB};
+        StringBuilder shortened = new StringBuilder();
+
+        for (String[] font : fonts)
+        {
+            for (String text : new String[] {"Yard 1030", "West Yard", "Yard 1", "Station 12", "Platform 4B", "Hbf"})
+            {
+                org.traincontrol.gui.widgets.StationCaption caption = new org.traincontrol.gui.widgets.StationCaption();
+
+                caption.setHalo(true);
+                caption.setFont(new java.awt.Font(font[0], java.awt.Font.PLAIN, Integer.parseInt(font[1])));
+                caption.setText(text);
+                caption.setSize(caption.getPreferredSize());
+
+                for (double scale : new double[] {1, 1.25, 1.5, 1.75, 2, 2.25})
+                {
+                    for (Object how : smoothing)
+                    {
+                        Graphics2D g = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB).createGraphics();
+
+                        g.scale(scale, scale);
+                        g.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING, how);
+
+                        java.awt.Insets in = caption.getInsets();
+                        String shown = javax.swing.SwingUtilities.layoutCompoundLabel(caption,
+                            g.getFontMetrics(caption.getFont()), text, null, 0, 0, 0, 11,
+                            new java.awt.Rectangle(in.left, in.top, caption.getWidth() - in.left - in.right,
+                                caption.getHeight() - in.top - in.bottom),
+                            new java.awt.Rectangle(), new java.awt.Rectangle(), 0);
+
+                        if (!text.equals(shown)) shortened.append(' ').append(font[0]).append(font[1]).append(" '")
+                            .append(text).append("' at ").append(scale).append(" as '").append(shown).append("'");
+
+                        g.dispose();
+                    }
+                }
+            }
+        }
+
+        assertEquals(shortened.toString(), "", "captions shortened by Swing:");
     }
 
     /** Four of `square` in a row, or a column if `down`, on white at `scale`, each clipped as Swing paints a square. */
@@ -467,7 +524,7 @@ public class testPicturesAreSharpOnAScaledScreen
 
         for (double scale : new double[] {1.25, 2})
         {
-            int size = (int) Math.ceil(14 * scale - 0.5);
+            int size = (int) (14 * scale);
             BufferedImage drawn = painted(org.traincontrol.gui.InfoMark.icon(), scale).getSubimage(0, 0, size, size);
 
             assertEquals(differing(drawn, onClear((Image) art.invoke(null, size, size))), 0,
@@ -533,7 +590,7 @@ public class testPicturesAreSharpOnAScaledScreen
         java.util.List<Image> icons = iconsOf(ui);
 
         // Every window that sets the picture in designer code asks for the list in its own
-        for (String file : new String[] {"gui/TrainControlUI", "gui/LayoutPopupUI", "gui/layouteditor/LayoutEditor",
+        for (String file : new String[] {"gui/TrainControlUI", "gui/LayoutPopupWindow", "gui/layouteditor/LayoutEditor",
             "gui/locomotive/LocomotiveSelector"})
         {
             String body = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/org/traincontrol/"
@@ -605,6 +662,327 @@ public class testPicturesAreSharpOnAScaledScreen
 
         assertEquals(differing(painted(disabled, 1.25).getSubimage(0, 0, size, size), expected), 0,
             "at 1.25 it is not the gray of the art made " + size + " pixels across");
+    }
+
+    /**
+     * What the layout editor carries at 200% is drawn at the screen's pixels, not its 1x picture stretched (FR-243): a
+     * group of squares is the squares as the diagram draws them, pixel for pixel; a station's caption and a train's
+     * name have detail finer than their 1x pixels.
+     *
+     * MUTATION: in `SharpIcon.painted`, return `new SharpIcon(painting(width, height, 1, paint), (w, h) -> null)`.
+     */
+    @Test
+    public void testWhatTheEditorCarriesIsDrawnAtTheScreensPixels() throws Exception
+    {
+        org.traincontrol.base.LayoutDiagram page = model.getLayout(model.getLayoutList().get(0));
+        AtomicReference<LayoutEditor> editor = new AtomicReference<>();
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                editor.set(new LayoutEditor(page, 30, ui, 0));
+                editor.get().render();
+            });
+
+            // `render` builds the grid in an invokeLater
+            support.Components.drain(5);
+
+            org.traincontrol.gui.LayoutGrid grid = (org.traincontrol.gui.LayoutGrid) support.Reflect.get(
+                LayoutEditor.class, editor.get(), "grid");
+            int[] first = null;
+
+            for (int x = 0; first == null && x < 200; x++)
+            {
+                for (int y = 0; first == null && y < 200; y++)
+                {
+                    LayoutLabel square = grid.getValueAt(x, y);
+
+                    if (square != null && square.getComponent() != null && !square.getComponent().isText())
+                    {
+                        first = new int[] {x, y};
+                    }
+                }
+            }
+
+            int[] at = first;
+
+            assertNotNull(at, "precondition: the first page has no squares");
+            SwingUtilities.invokeAndWait(() ->
+                editor.get().getSelection().addRectangle(at[0], at[1], at[0] + 2, at[1] + 1));
+            assertTrue(support.Components.waitFor(() -> grid.getValueAt(at[0], at[1]).getIcon() instanceof ImageIcon,
+                10000), "precondition: the first square never got its picture");
+
+            Icon group = (Icon) support.Reflect.method(LayoutEditor.class, "selectionPreview").invoke(editor.get());
+            BufferedImage expected = new BufferedImage(180, 120, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = expected.createGraphics();
+
+            g.scale(2, 2);
+
+            for (int x = 0; x < 3; x++)
+            {
+                for (int y = 0; y < 2; y++)
+                {
+                    LayoutLabel square = grid.getValueAt(at[0] + x, at[1] + y);
+
+                    if (square != null && square.getIcon() != null)
+                    {
+                        square.getIcon().paintIcon(square, g, 30 * x, 30 * y);
+                    }
+                }
+            }
+
+            g.dispose();
+
+            assertEquals(differing(painted(group, 2), expected), 0, "the group carried at 200% is not its squares");
+
+            StationCaption caption = new StationCaption();
+
+            caption.setPill(true);
+            caption.setFont(new java.awt.Font(StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 13));
+            caption.setForeground(java.awt.Color.WHITE);
+            caption.setText("Ostbahnhof");
+            caption.setTileGeometry(60, 0, 0, StationCaption.captionOffset(60, caption.lineHeight()));
+            caption.setSize(caption.getPreferredSize());
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    support.Reflect.method(org.traincontrol.gui.LayoutGrid.class, "pickUp", StationCaption.class,
+                        javax.swing.JLabel.class, java.awt.Point.class, LayoutEditor.class)
+                        .invoke(null, caption, caption, new java.awt.Point(5, 5), editor.get());
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new AssertionError(e);
+                }
+            });
+
+            Object drag = support.Reflect.get(LayoutEditor.class, editor.get(), "trainDrag");
+            Object name = support.Reflect.method(drag.getClass(), "picture", String.class).invoke(drag, "Re 460");
+
+            assertTrue(finer(((javax.swing.JLabel) support.Reflect.get(LayoutEditor.class, editor.get(),
+                "captionGhost")).getIcon()) > 0, "the caption carried at 200% is its 1x picture stretched");
+            assertTrue(finer(name instanceof Icon ? (Icon) name : new ImageIcon((Image) name)) > 0,
+                "the train's name carried at 200% is its 1x picture stretched");
+        }
+        finally
+        {
+            if (editor.get() != null) SwingUtilities.invokeAndWait(() -> editor.get().dispose());
+        }
+    }
+
+    /**
+     * A running train's locomotive at 200% is its 64-pixel art shrunk smoothly: no pixel more than 64 levels from the
+     * same drawing made 8 times finer and averaged, where nearest-neighbor shrinking is 96 and more off (FR-243).
+     *
+     * MUTATION: in `TileOverlay.paintTrain`, drop the bilinear hint for a scaled screen.
+     */
+    @Test
+    public void testTheRunningTrainIsSmoothOnAScaledScreen()
+    {
+        TileOverlay train = new TileOverlay(TileOverlay.State.ACTIVE, true, true, java.util.Collections.singletonList(
+            new TileOverlay.Segment(TilePorts.Side.W, TilePorts.Side.E, TileOverlay.State.ACTIVE)));
+        BufferedImage drawn = trainAt(train, 2), fine = trainAt(train, 16);
+        int worst = 0;
+
+        for (int y = 0; y < drawn.getHeight(); y++)
+        {
+            for (int x = 0; x < drawn.getWidth(); x++)
+            {
+                for (int shift = 0; shift <= 16; shift += 8)
+                {
+                    int sum = 0;
+
+                    for (int i = 0; i < 64; i++) sum += (fine.getRGB(8 * x + i % 8, 8 * y + i / 8) >> shift) & 0xff;
+                    worst = Math.max(worst, Math.abs(((drawn.getRGB(x, y) >> shift) & 0xff) - sum / 64));
+                }
+            }
+        }
+
+        assertTrue(worst <= 64, "the locomotive at 200% is " + worst + " levels off its smooth drawing");
+    }
+
+    /**
+     * At 125% a drawn picture whose right and bottom edges are clear (a tab icon, a function icon, the placeholder
+     * locomotive) is one picture wherever it lies, as the (i) mark is (OB-501): not 37 pixels here and 38 there, which
+     * changes its lines (FR-243).
+     *
+     * MUTATION: in `SharpIcon(Image, Art)`, set `fit` to COVER again.
+     */
+    @Test
+    public void testADrawnPictureIsOnePictureAnywhere() throws Exception
+    {
+        java.net.URL function = TrainControlUI.class.getResource("resources/functions/FktIcon_a_ge_01.png");
+        Icon[] icons = {TrainControlUI.TAB_ICON_CONTROL, LocomotivePlaceholder.icon(142), new org.traincontrol.util
+            .SharpIcon(ui.getLocImage(function.toString(), TrainControlUI.BUTTON_ICON_WIDTH),
+                javax.imageio.ImageIO.read(function))};
+
+        for (Icon icon : icons)
+        {
+            int w = (int) (icon.getIconWidth() * 1.25), h = (int) (icon.getIconHeight() * 1.25);
+            BufferedImage at0 = paintedAt(icon, 1.25, 0).getSubimage(0, 0, w, h);
+
+            for (int x = 1; x < 4; x++)
+            {
+                assertEquals(differing(paintedAt(icon, 1.25, x).getSubimage((int) Math.ceil(1.25 * x - 0.5), 0, w, h),
+                    at0), 0, icon.getIconWidth() + "-pixel " + icon + " at 125% differs at x " + x);
+            }
+        }
+    }
+
+    /**
+     * A picture that reaches its right and bottom edges, as a photograph does, still fills every pixel it covers at
+     * 125%: drawn one size anywhere it would leave a pale line there.
+     *
+     * MUTATION: in `SharpIcon(Image, Art)`, set `fit` to WHOLE always.
+     */
+    @Test
+    public void testAPhotographStillFillsItsPixels()
+    {
+        BufferedImage photo = new BufferedImage(198, 75, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = photo.createGraphics();
+
+        g.setPaint(new java.awt.GradientPaint(0, 0, java.awt.Color.DARK_GRAY, 198, 75, java.awt.Color.BLUE));
+        g.fillRect(0, 0, 198, 75);
+        g.dispose();
+
+        Icon icon = new org.traincontrol.util.SharpIcon(photo.getScaledInstance(66, 25, Image.SCALE_SMOOTH), photo);
+
+        for (int x = 0; x < 4; x++)
+        {
+            BufferedImage drawn = paintedAt(icon, 1.25, x);
+            int right = (int) Math.ceil(1.25 * (x + 66) - 0.5) - 1, bottom = (int) Math.ceil(1.25 * 25 - 0.5) - 1;
+
+            assertTrue(drawn.getRGB(right, bottom / 2) >>> 24 == 255 && drawn.getRGB(right - 5, bottom) >>> 24 == 255,
+                "at x " + x + " the photograph at 125% leaves its last column or row bare");
+        }
+    }
+
+    /**
+     * An address at 125% to 200% is painted inside its label, last digit and halo too: set out in the metrics its size
+     * was measured in, not the scaled screen's wider ones, which Swing's clip cut off (OB-503).
+     *
+     * MUTATION: in `AddressLabel.paintComponent`, build the `TextLayout` with `g2.getFontRenderContext()` again.
+     */
+    @Test
+    public void testAnAddressIsPaintedInsideItsLabel() throws Exception
+    {
+        for (int size : new int[] {10, 13})
+        {
+            for (String[] lines : new String[][] {{"1030"}, {"1008"}, {"2013"}, {"203"}, {"1030", "dcc"}})
+            {
+                for (double scale : new double[] {1.25, 1.5, 1.75, 2})
+                {
+                    AtomicReference<String> outside = new AtomicReference<>();
+
+                    SwingUtilities.invokeAndWait(() ->
+                    {
+                        org.traincontrol.gui.widgets.AddressLabel address =
+                            new org.traincontrol.gui.widgets.AddressLabel();
+
+                        // As LayoutGrid makes one, in a third of a 30 or 40 pixel square
+                        address.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, size));
+                        address.setForeground(java.awt.Color.RED);
+                        address.setLines(lines);
+                        address.setSize(address.getPreferredSize());
+                        outside.set(paintedOutside(address, scale));
+                    });
+
+                    assertNull(outside.get(), String.join("/", lines) + " in size " + size + " at " + scale
+                        + " is painted outside its label, where Swing cuts it off");
+                }
+            }
+        }
+    }
+
+    /** The icon painted at `scale` at `x` onto a clear picture reaching past it. */
+    private static BufferedImage paintedAt(Icon icon, double scale, int x)
+    {
+        BufferedImage out = new BufferedImage((int) Math.ceil((icon.getIconWidth() + x) * scale) + 1,
+            (int) Math.ceil(icon.getIconHeight() * scale) + 1, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = out.createGraphics();
+
+        g.scale(scale, scale);
+        icon.paintIcon(null, g, x, 0);
+        g.dispose();
+
+        return out;
+    }
+
+    /** How many 2 x 2 blocks of the icon painted at 200% are not one color: none where its 1x picture is stretched. */
+    private static int finer(Icon icon)
+    {
+        BufferedImage at2 = painted(icon, 2);
+        int finer = 0;
+
+        for (int y = 0; y + 1 < at2.getHeight(); y += 2)
+        {
+            for (int x = 0; x + 1 < at2.getWidth(); x += 2)
+            {
+                int p = at2.getRGB(x, y);
+
+                if (p != at2.getRGB(x + 1, y) || p != at2.getRGB(x, y + 1) || p != at2.getRGB(x + 1, y + 1)) finer++;
+            }
+        }
+
+        return finer;
+    }
+
+    /** A train running east on a 30-pixel square, painted at `scale` over light gray. */
+    private static BufferedImage trainAt(TileOverlay train, double scale)
+    {
+        int side = (int) (60 * scale);
+        BufferedImage out = new BufferedImage(side, side, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = out.createGraphics();
+
+        g.setColor(new java.awt.Color(235, 235, 235));
+        g.fillRect(0, 0, side, side);
+        g.scale(scale, scale);
+        g.translate(15, 15);
+        train.paintTrain(g, 30, 30, null);
+        g.dispose();
+
+        return out;
+    }
+
+    /** Where `c`, painted unclipped at `scale`, reaches past its bounds' pixels, or null where it does not. */
+    private static String paintedOutside(javax.swing.JComponent c, double scale)
+    {
+        int margin = 20;
+        BufferedImage out = new BufferedImage((int) Math.ceil(c.getWidth() * scale) + 2 * margin,
+            (int) Math.ceil(c.getHeight() * scale) + 2 * margin, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = out.createGraphics();
+
+        g.translate(margin, margin);
+        g.scale(scale, scale);
+
+        try
+        {
+            support.Reflect.method(javax.swing.JComponent.class, "paintComponent", java.awt.Graphics.class).invoke(c, g);
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new AssertionError(e);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        for (int y = 0; y < out.getHeight(); y++)
+        {
+            for (int x = 0; x < out.getWidth(); x++)
+            {
+                boolean inside = x >= margin && y >= margin && x < out.getWidth() - margin
+                    && y < out.getHeight() - margin;
+
+                if (!inside && out.getRGB(x, y) >>> 24 != 0) return "a pixel at " + (x - margin) + "," + (y - margin);
+            }
+        }
+
+        return null;
     }
 
     private static boolean isWhite(BufferedImage image, int x, int y)

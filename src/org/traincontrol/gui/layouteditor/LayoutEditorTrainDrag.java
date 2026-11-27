@@ -9,6 +9,7 @@ import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import javax.swing.Icon;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.LayoutGrid;
 import org.traincontrol.gui.LayoutLabel;
@@ -93,9 +94,9 @@ final class LayoutEditorTrainDrag
 
             carrying = true;
 
-            BufferedImage shot = picture(train);
+            Icon shot = picture(train);
 
-            editor.showCaptionGhost(shot, shot.getWidth() / 2, shot.getHeight() / 2);
+            editor.showCaptionGhost(shot, shot.getIconWidth() / 2, shot.getIconHeight() / 2);
         }
 
         editor.moveCaptionGhost(SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), editor.getLayeredPane()));
@@ -192,7 +193,7 @@ final class LayoutEditorTrainDrag
     }
 
     /** The name on a small pill, the picture that follows the pointer. */
-    private static BufferedImage picture(String name)
+    private Icon picture(String name)
     {
         Font font = new Font(Font.SANS_SERIF, Font.BOLD, 13);
 
@@ -207,11 +208,7 @@ final class LayoutEditorTrainDrag
         int width = metrics.stringWidth(name) + 16;
         int height = metrics.getHeight() + 8;
 
-        BufferedImage shot = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-
-        Graphics2D g = shot.createGraphics();
-
-        try
+        return org.traincontrol.util.SharpIcon.painted(editor, width, height, g ->
         {
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g.setColor(new Color(40, 40, 40, 210));
@@ -219,12 +216,6 @@ final class LayoutEditorTrainDrag
             g.setColor(Color.WHITE);
             g.setFont(font);
             g.drawString(name, 8, 4 + metrics.getAscent());
-        }
-        finally
-        {
-            g.dispose();
-        }
-
-        return shot;
+        });
     }
 }

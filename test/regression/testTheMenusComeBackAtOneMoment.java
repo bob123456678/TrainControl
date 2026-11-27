@@ -91,7 +91,7 @@ public class testTheMenusComeBackAtOneMoment
                 + " greyed, and OB-202 turned that arrival from an append into a replacement");
 
             // THE CONTROL: a menu that ought to be off anyway would be gray for a reason unrelated to the notice.
-            assertTrue(ui.isLayoutLoaded() && ui.canUseAutonomy(),
+            assertTrue(ui.editorWindows().isLayoutLoaded() && ui.canUseAutonomy(),
                 "the sandbox layout is not one autonomy can be set up for, so the autonomy menu is "
                 + "switched off by its own rule and this test cannot see the notice's hold at all");
 

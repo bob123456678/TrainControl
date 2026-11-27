@@ -41,6 +41,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
+import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -58,8 +59,9 @@ import org.traincontrol.base.RemoteDeviceCollection;
 import org.traincontrol.base.RenameProposals;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.RouteCommand;
-import org.traincontrol.gui.LocomotiveSettings;
+import org.traincontrol.gui.LocomotiveEditRule;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.app.LogPanel;
 import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.marklin.file.UnreadableAnswerException;
 import org.traincontrol.base.udp.CANMessage;
@@ -86,7 +88,7 @@ import static org.traincontrol.util.Util.escapeCsv;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Version number
-    public static final String RAW_VERSION = "3.1.1";
+    public static final String RAW_VERSION = "3.1.2";
 
     /**
      * Whether this is a build on the way to a release; true puts the build ID in the log and the window title.
@@ -171,6 +173,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * succeeded: a local layout folder syncs happily, so a simulation would report itself connected (OB-098).
      */
     private boolean simulation = false;
+    /** The constructor's simulate, known before `simulation` is set: a simulation's first sync is expected to fail. */
+    private boolean simulatedStart = false;
     
     // Do we print out packets in debug mode?
     public static boolean DEBUG_LOG_NETWORK = true;
@@ -264,7 +268,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
     // Unique ID of the central station (0 for all stations)
     private int UID = 0;
-    private int serialNumber;
+    private volatile int serialNumber;
     
     // Last message output
     private String lastMessage;
@@ -332,18 +336,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
         System.err.print("Exception in thread \"" + thread.getName() + "\" ");
         error.printStackTrace();
 
-        logThroughLatest(I18n.f("error.uncaughtInThread", thread.getName(), error));
+        logThroughLatest(I18n.f("error.uncaughtInThread", thread.getName(), error), Level.SEVERE);
     };
 
     /** The station started last, which `THREAD_ERRORS` and `logThroughLatest` report through. */
     private static volatile MarklinControlStation reporter;
 
     /** Writes a line to the log of the station started last, or to the Logger alone when none has started. */
-    public static void logThroughLatest(String message)
+    public static void logThroughLatest(String message, Level level)
     {
         MarklinControlStation station = reporter;
 
-        if (station != null) station.log(message);
+        if (station != null) station.log(message, level);
         else log.warning(message);
     }
 
@@ -426,6 +430,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Set references
         this.on = false;
         this.NetworkInterface = network;
+        this.simulatedStart = simulate;
         this.view = view;
         
         // Set debug mode
@@ -487,6 +492,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
             // Connected, so a second try would meet the same answer: the operator is told instead, and can sync again
             if (this.lastSyncPartial && view != null && !GraphicsEnvironment.isHeadless()) view.showSyncPartial();
+            if (this.layoutFolderHeld != null && view != null && !GraphicsEnvironment.isHeadless())
+                view.showLayoutFolderHeld(this.layoutFolderHeld);
 
             // Turn on network communication and turn on the power
             this.on = true;
@@ -497,11 +504,31 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         else
         {
-            this.logf("log.csNotConnected");
+            // A simulation never connects: a notice there, a warning with a real station
+            this.logf(unlessSimulating(Level.WARNING), "log.csNotConnected");
         } 
         
-        // Resolve linked locomotives now that we have loaded everything
+        this.linkSavedConsists();
+    }
+
+    /**
+     * Applies every saved multi-unit list.  A locomotive another list names is a member and is applied last, so its own
+     * list is the one refused when both exist, whatever the names' order.
+     */
+    public final void linkSavedConsists()
+    {
+        Set<String> named = new HashSet<>();
+
         for (Locomotive l : this.getLocomotives())
+        {
+            if (l instanceof MarklinLocomotive) named.addAll(((MarklinLocomotive) l).savedMemberNames());
+        }
+
+        List<Locomotive> order = new ArrayList<>(this.getLocomotives());
+
+        order.sort(Comparator.comparing((Locomotive l) -> named.contains(l.getName())).thenComparing(Locomotive::getName));
+
+        for (Locomotive l : order)
         {
             l.setLinkedLocomotives();
         }
@@ -528,9 +555,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
        
     /**
      * Re-reads the track diagrams from wherever they are configured to come from - a local folder when
-     * one is set, the Central Station otherwise - reverting to the Central Station if the local folder
-     * cannot be read.  The station's diagram is not read while the station's type is unknown, as the type decides which
-     * protocol a CS3 tile at an address with two takes; a local folder is read either way.
+     * one is set, the Central Station otherwise - keeping the layout in use if the local folder cannot be read, or
+     * reverting to the Central Station when there is none.  The station's diagram is not read while the station's
+     * type is unknown, as the type decides which protocol a CS3 tile at an address with two takes; a local folder is
+     * read either way.
      *
      * Not a full sync, which also re-imports every route and locomotive: slow and side-effecting (routes are deleted
      * and re-added, addresses and function types adopted), none of it wanted after renaming a page.
@@ -566,22 +594,40 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     // syncLayouts clears for itself, once it has something to put back
                     syncLayouts();
+                    this.layoutFolderRead = overrideLayoutPath;
+                    this.layoutFolderHeld = null;
                 }
                 catch (Exception e)
                 {
                     this.log(e);
+                    // A layout in use is kept, and the parser goes back to its pages, which a download copies.  Its own
+                    // folder is read again at the next sync, which is said; another folder is a switch, which switchTo
+                    // puts back and its door reports.  With none yet, at a start, the station's layout stands in while
+                    // the preference keeps the folder (FR-245)
+                    if (!this.layoutDB.getItemNames().isEmpty())
+                    {
+                        if (overrideLayoutPath.equals(this.layoutFolderRead))
+                        {
+                            this.layoutFolderUnread = overrideLayoutPath;
+                            this.logf(Level.SEVERE, "layout.ui.errorFolderUnreadLayoutKept", overrideLayoutPath);
+                        }
+                        if (this.layoutFolderRead != null) fileParser.setLayoutDataLoc("file:///" + this.layoutFolderRead + "/");
+                        else fileParser.setDefaultLayoutDataLoc();
+                        return;
+                    }
 
                     // The folder is tried again at the next sync, by when the type may be known
                     requireTheTypeKnown();
-                   
-                    this.logf("layout.revertToDefaultSource", !debug ? " Enable debug mode for details." : "");
-                    TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+                    this.logf(java.util.logging.Level.SEVERE, "layout.revertToDefaultSource", !debug ? " Enable debug mode for details." : "");
+                    this.layoutFolderHeld = overrideLayoutPath;
                     fileParser.setDefaultLayoutDataLoc();
                     syncLayouts();
                 }
             }
             else
-            {      
+            {
+                // No folder set, none held: Switch to CS Layout lets a held one go
+                this.layoutFolderHeld = null;
                 if (this.layoutDB.getItemNames().isEmpty())
                 {
                     requireTheTypeKnown();
@@ -757,7 +803,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         final int couldNotBeRead = parser.getPagesThatCouldNotBeRead();
 
         // Nothing read is still a failure, thrown BEFORE clearLayouts so the diagram on screen survives:
-        // syncLayoutsFromConfiguredSource reverts to the Central Station in a catch.
+        // syncLayoutsFromConfiguredSource keeps the layout in use, or with none reads the Central Station's.
         if (parser.readNoPage(parsed))
         {
             throw new PlainFailure(I18n.f("layout.errorNoPageCouldBeRead",
@@ -808,16 +854,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // sensors seen only on it, and the autonomy points watching them, out of LocDB.data for good.
         if (couldNotBeRead > 0)
         {
-            this.logf("layout.pruningSkippedPageUnreadable", couldNotBeRead);
+            this.logf(java.util.logging.Level.WARNING, "layout.pruningSkippedPageUnreadable", couldNotBeRead);
         }
         else if (!feedbackAddresses.isEmpty())
         {
-            // A sensor a route waits on or asks about is kept, drawn or not: a route's monitor waits on the record
-            Set<Integer> routesUse = sensorsTheRoutesUse();
+            // A sensor a route or an autonomy point watches is kept, drawn or not: their waits read the record
+            Set<Integer> inUse = sensorsInUse();
 
             for (Integer feedbackId : this.feedbackDB.getItemIds())
             {
-                if (!feedbackAddresses.contains(feedbackId) && !routesUse.contains(feedbackId))
+                if (!feedbackAddresses.contains(feedbackId) && !inUse.contains(feedbackId))
                 {
                     MarklinFeedback fb = this.feedbackDB.getById(feedbackId);
                     this.logf("layout.pruningFeedbackMissingLayout", fb.getName());
@@ -827,8 +873,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
     }
     
-    /** The sensors the routes trigger on or name in a condition. */
-    private Set<Integer> sensorsTheRoutesUse()
+    /** The sensors the routes trigger on or name in a condition, and the loaded autonomy's points watch. */
+    private Set<Integer> sensorsInUse()
     {
         Set<Integer> used = new HashSet<>();
 
@@ -844,6 +890,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
         }
 
+        // Never getAutoLayout(), which creates one.  An API edit racing the copy keeps nothing extra, as before.
+        Layout auto = this.getAutoLayoutIfLoaded();
+        try
+        {
+            if (auto != null) for (org.traincontrol.automation.Point p : new ArrayList<>(auto.getPoints()))
+            {
+                if (p.hasS88()) used.add(Integer.valueOf(p.getS88()));
+            }
+        }
+        catch (java.util.ConcurrentModificationException raced) { }
         return used;
     }
 
@@ -1056,7 +1112,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         }
                         else
                         {
-                            this.logf("route.ui.autolayoutErrorS88RequiredForAutoFire", r.getId());
+                            this.logf(Level.SEVERE, "route.ui.autolayoutErrorS88RequiredForAutoFire", r.getId());
                         }
                     }
                 }
@@ -1274,71 +1330,67 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public List<String[]> getLocomotivesToRenameFromImport() throws Exception
     {
-        return getRenameProposals().getProposals();
+        return getRenameProposals(true).getProposals();
     }
 
     /**
-     * The rename check proper: the applicable proposals, and how much was declined.
+     * The rename check proper: the station's locomotives read now, and what they differ on here (FR-249).
      *
-     * The count matters to the caller because an empty proposal list is ambiguous - either nothing
-     * needs renaming, or everything that did was refused - and those want different messages.
-     *
+     * @param log whether to log; without, a second look within one Sync, a failed read is logged and gives null
      * @throws java.lang.Exception
      */
     @Override
-    public RenameProposals getRenameProposals() throws Exception
+    public RenameProposals getRenameProposals(boolean log) throws Exception
     {
-        List<String[]> renameCandidates = new ArrayList<>();
+        int unreadable = this.fileParser.getUnreadableRecords();
+        try
+        {
+            // The parse runs before the second count is taken
+            return differences(this.isCS3 ? fileParser.parseLocomotivesCS3() : fileParser.parseLocomotives(),
+                this.fileParser.getUnreadableRecords() > unreadable, log);
+        }
+        catch (Exception e)
+        {
+            if (log) throw e;
+            this.log(e);
+            return null;
+        }
+    }
+
+    /** What the station's locomotives as read differ on here: the one rule every sync door asks (FR-249). */
+    private RenameProposals differences(List<MarklinLocomotive> parsedLocs, boolean partial, boolean log)
+    {
+        Map<MarklinLocomotive, String[]> renameCandidates = new java.util.LinkedHashMap<>();
+        Map<MarklinLocomotive, MarklinLocomotive> stationOf = new HashMap<>();
+        Map<MarklinLocomotive, MarklinLocomotive> addressedAt = new HashMap<>();
         int refused = 0;
-        List<MarklinLocomotive> parsedLocs;
-
-        // Parse locomotives based on CS version
-        if (this.isCS3)
-        {
-            parsedLocs = fileParser.parseLocomotivesCS3();
-        }
-        else
-        {
-            parsedLocs = fileParser.parseLocomotives();
-        }
-
         // Indexed once, not rebuilt for every parsed locomotive.
         Map<Integer, List<MarklinLocomotive>> byAddress = new HashMap<>();
-
         for (MarklinLocomotive existingLoc : this.locDB.getItems())
-        {
-            // Consist heads are never proposed for renaming
-            if (existingLoc.hasLinkedLocomotives()) continue;
-
-            if (!byAddress.containsKey(existingLoc.getIntUID()))
-            {
-                byAddress.put(existingLoc.getIntUID(), new ArrayList<>());
-            }
-
-            byAddress.get(existingLoc.getIntUID()).add(existingLoc);
-        }
+            byAddress.computeIfAbsent(existingLoc.getIntUID(), k -> new ArrayList<>()).add(existingLoc);
 
         // The same ambiguity exists on the Central Station side: two parsed locomotives at one address both match the
         // single local locomotive, so the list would get two proposals with one source.
         Map<Integer, Integer> parsedCountByAddress = new HashMap<>();
-
-        for (MarklinLocomotive l : parsedLocs) parsedCountByAddress.merge(l.getIntUID(), 1, Integer::sum);
-
-        Set<String> stationNames = new HashSet<>();
-
-        for (MarklinLocomotive l : parsedLocs) stationNames.add(l.getName());
+        Map<String, Integer> stationNames = new HashMap<>();
+        for (MarklinLocomotive l : parsedLocs)
+        {
+            parsedCountByAddress.merge(l.getIntUID(), 1, Integer::sum);
+            stationNames.merge(l.getName(), 1, Integer::sum);
+        }
 
         for (MarklinLocomotive l : parsedLocs)
         {
+            // A name the station lists twice is offered no address: either may be this one
+            MarklinLocomotive elsewhere = addressedElsewhere(l);
+            if (elsewhere != null && stationNames.get(l.getName()) == 1) addressedAt.put(elsewhere, l);
             List<MarklinLocomotive> matches = byAddress.get(l.getIntUID());
-
             if (matches == null) continue;
-
             // Checked after the match lookup so a Central Station duplicate with no local counterpart
             // stays silent - there is nothing to propose for it either way
             if (parsedCountByAddress.get(l.getIntUID()) > 1)
             {
-                this.logf("loc.renameAmbiguousCentralStationDuplicate", l.getName(), parsedCountByAddress.get(l.getIntUID()));
+                if (log) this.logf("loc.renameAmbiguousCentralStationDuplicate", l.getName(), parsedCountByAddress.get(l.getIntUID()));
                 refused++;
                 continue;
             }
@@ -1350,34 +1402,62 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 // Except a pair whose other name the station no longer has: renamed at the station, or renamed here
                 // and given back its station name by the sync.  The station's name wins; the other is renamed onto it.
-                MarklinLocomotive dropped = renamedAwayFrom(l.getName(), matches, stationNames);
-
+                MarklinLocomotive dropped = renamedAwayFrom(l.getName(), matches, stationNames.keySet());
                 if (dropped != null)
                 {
-                    renameCandidates.add(new String[] {dropped.getName(), l.getName()});
+                    renameCandidates.put(dropped, new String[] {dropped.getName(), l.getName()});
+                    stationOf.put(dropped, l);
                     continue;
                 }
-
-                this.logf("loc.renameAmbiguousDuplicateAddress", l.getName(), matches.size());
+                if (log) this.logf("loc.renameAmbiguousDuplicateAddress", l.getName(), matches.size());
                 refused++;
                 continue;
             }
 
-            MarklinLocomotive existingLoc = matches.get(0);
-
             // If the name has changed, add to rename list
-            if (!existingLoc.getName().equals(l.getName()))
+            if (!matches.get(0).getName().equals(l.getName()))
             {
-                renameCandidates.add(new String[] {existingLoc.getName(), l.getName()});
+                renameCandidates.put(matches.get(0), new String[] {matches.get(0).getName(), l.getName()});
+                stationOf.put(matches.get(0), l);
             }
         }
 
-        List<String[]> ordered = orderRenameProposals(renameCandidates);
-
+        // Not offered: a name the station lists twice, which a second rename would delete the first onto, and after a
+        // partial read one that deletes, as the name held may be the station's in a record that would not read; each
+        // with its log line's key and the table's shorter reason's
+        Map<String[], String[]> whyNot = new java.util.LinkedHashMap<>();
+        List<String[]> offered = new ArrayList<>();
+        for (String[] p : renameCandidates.values())
+        {
+            String[] keys = stationNames.get(p[1]) > 1 ? new String[] {"loc.renameNameListedTwice",
+                "sync.ui.whyListedTwice"} : partial && this.locDB.hasName(p[1]) ? new String[] {
+                "loc.renameAfterPartialRead", "sync.ui.whyPartialRead"} : null;
+            if (keys == null) offered.add(p);
+            else whyNot.put(p, keys);
+        }
+        List<String[]> ordered = orderRenameProposals(offered);
         // Whatever ordering dropped was a cycle
-        refused += renameCandidates.size() - ordered.size();
-
-        return new RenameProposals(ordered, refused);
+        for (String[] p : offered)
+            if (!ordered.contains(p)) whyNot.put(p, new String[] {"loc.renameCycleRefused", "sync.ui.whyCycle"});
+        refused += whyNot.size();
+        if (log) whyNot.forEach((p, keys) -> this.logf(keys[0], p[0], p[1]));
+        Set<MarklinLocomotive> differing = new HashSet<>(renameCandidates.keySet());
+        differing.addAll(addressedAt.keySet());
+        List<RenameProposals.Row> rows = new ArrayList<>();
+        for (MarklinLocomotive here : differing)
+        {
+            String[] p = renameCandidates.get(here);
+            MarklinLocomotive at = addressedAt.get(here);
+            String to = p == null ? null : p[1], now = whyLeftAsItIs(here);
+            MarklinRoute driving = to == null ? null : this.runningRouteDriving(to);
+            String whyNoRename = to == null ? null : whyNot.containsKey(p) ? I18n.f(whyNot.get(p)[1], p[0], p[1])
+                : now != null ? now : driving != null ? I18n.f("sync.ui.whyRouteDriving", to, driving.getName())
+                : !RouteCommand.isNameUsable(to) ? I18n.t("sync.ui.whyNameUnusable") : null;
+            rows.add(new RenameProposals.Row(here, to, at == null ? null : at.getAddress(), whyNoRename,
+                at == null ? null : now, to == null ? null : this.locDB.getByName(to), stationOf.get(here), here.getIntUID(),
+                at == null ? here.getIntUID() : at.getIntUID()));
+        }
+        return new RenameProposals(ordered, refused, rows, byAddress, partial);
     }
 
     /** Of two locomotives at one address, one named `stationName`: the other, when the station has no such name. */
@@ -1398,7 +1478,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     /**
-     * Orders rename proposals so each one is applied only once its target name is free, and drops any that form a
+     * Orders rename proposals so each one is applied only once its target name is free, and leaves out any that form a
      * cycle.
      *
      * The consumer applies entries one at a time, deleting whatever already holds a target name, so order matters:
@@ -1433,9 +1513,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
             }
         }
-
-        // Nothing could be emitted, so every target left is still some other entry's source: a cycle
-        for (String[] proposal : remaining) this.logf("loc.renameCycleRefused", proposal[0], proposal[1]);
 
         return ordered;
     }
@@ -1499,12 +1576,49 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /** Whether the last sync left part of the Central Station's data as it was because it could not be read (FR-169). */
     private volatile boolean lastSyncPartial = false;
+    private volatile String layoutFolderUnread;
+    /** The layout folder whose pages are in use, cleared with them; under `layoutRefreshLock`. */
+    private String layoutFolderRead;
+    private volatile String layoutFolderHeld;
+    /** The routes the last sync added or replaced, which its count includes. */
+    private volatile int lastSyncRoutes;
+
+    @Override
+    public int getLastSyncRoutes()
+    {
+        return this.lastSyncRoutes;
+    }
+
+    private volatile int unsettled;
+
+    @Override
+    public int getUnsettledCount()
+    {
+        return this.unsettled;
+    }
+
+    @Override
+    public void setUnsettledCount(int count)
+    {
+        this.unsettled = count;
+    }
 
     /** Whether the last sync could not read part of what the Central Station sent, and left that part as it was. */
     @Override
     public boolean wasLastSyncPartial()
     {
         return this.lastSyncPartial;
+    }
+
+    @Override
+    public String getLayoutFolderUnread()
+    {
+        return this.layoutFolderUnread;
+    }
+    @Override
+    public String getLayoutFolderHeld()
+    {
+        return this.layoutFolderHeld;
     }
 
     /**
@@ -1656,6 +1770,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {        
         this.lastSyncError = null;
         this.lastSyncPartial = false;
+        this.layoutFolderUnread = null;
+        this.lastSyncRoutes = 0;
 
         // Read remote config files, each one once for the whole sync (FR-207)
         final CS2File parser = new CS2File(cs2Address(), this);
@@ -1702,13 +1818,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
             try
             {
-                this.isCS3 = CS2File.isCS3(CS2File.getDeviceInfoURL(cs2Address()));
+                String device = CS2File.fetchText(CS2File.getDeviceInfoURL(cs2Address()));
+                this.isCS3 = device.contains(CS2File.CS3_PRODUCT);
+                this.stationFirmware = null;
+                this.stationSerial = CS2File.deviceSerial(device);
                 this.typeLearned = true;
                 this.logf("log.csTypeDetectionResult", (this.isCS3 ? "CS3" : "CS2"));
             }
             catch (Exception e)
             {
-                this.logf("log.csTypeDetectionError", e.toString());
+                // No device file is ordinary for a local layout folder, so only another failure is an error
+                this.logf(e instanceof java.io.FileNotFoundException ? Level.INFO : unlessSimulating(Level.SEVERE), "log.csTypeDetectionError", e.toString());
 
                 if (!(e instanceof java.io.FileNotFoundException)) this.stationTypeUnknown = e;
             }
@@ -1734,7 +1854,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
                 catch (UnreadableAnswerException e)
                 {
-                    this.logf("route.importSkippedUnreadable");
+                    this.logf(java.util.logging.Level.WARNING, "route.importSkippedUnreadable");
                     this.lastSyncPartial = true;
                     parsedRoutes = null;
                 }
@@ -1761,6 +1881,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 if (this.adoptCentralStationRoute(r)) num++;
             }
+            this.lastSyncRoutes = num;
             
             // Import locomotives
             List<MarklinLocomotive> parsedLocs;
@@ -1773,7 +1894,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
                 catch (UnreadableAnswerException e)
                 {
-                    this.logf("loc.importSkippedUnreadable");
+                    this.logf(java.util.logging.Level.WARNING, "loc.importSkippedUnreadable");
                     this.lastSyncPartial = true;
                     parsedLocs = new ArrayList<>();
                 }
@@ -1785,7 +1906,38 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 parsedLocs = fileParser.parseLocomotives();
             }
-                         
+            // A locomotive left to fix by hand says so in one line of its own, below, and nothing more
+            Set<Locomotive> byHand = new HashSet<>();
+            for (RenameProposals.Row row : differences(parsedLocs, this.lastSyncPartial, false).getRows())
+                if (row.byHand) byHand.add(row.loco);
+            // Addresses first, so a locomotive moved off an address frees it for the station's locomotive there
+            for (MarklinLocomotive l : parsedLocs)
+                if (!byHand.contains(this.locDB.getByName(l.getName()))) this.adoptCentralStationAddress(l,
+                    sweptAfterTheSync);
+
+            // A station locomotive at the address of one here under another name is not added beside it, and the one
+            // here stands for it as a multi-unit member, until a pressed Sync answers; a partial read can set the mark
+            // but never clear it, as the station's name may be in what did not read (FR-249).  Each mark goes straight to
+            // its new value, so no reader, and no throw, finds every mark cleared.
+            RenameProposals left = differences(parsedLocs, this.lastSyncPartial, false);
+            Map<Locomotive, String> marks = new HashMap<>();
+            for (RenameProposals.Row row : left.getRows()) if (row.stationName != null) marks.put(row.loco, row.stationName);
+            for (MarklinLocomotive here : this.locDB.getItems())
+                if (!this.lastSyncPartial || marks.containsKey(here)) here.setHeldBackStationName(marks.get(here));
+            // The menu's count likewise: a partial read can raise it, never lower it
+            this.unsettled = this.lastSyncPartial ? Math.max(this.unsettled, left.getUnsettledCount())
+                : left.getUnsettledCount();
+            for (RenameProposals.Row row : left.getRows())
+            {
+                if (row.stationName == null) continue;
+                if (row.byHand) this.logf("loc.syncByHand", row.loco.getName(), row.stationName,
+                    row.loco.getAddress(), row.stationAddress);
+                else if (!this.locDB.hasName(row.stationName) && !row.isNameKept() && !row.loco.isSyncIgnored())
+                {
+                    this.logf("loc.renamePendingNotAdded", row.stationName, row.loco.getName(),
+                        row.loco.getDecoderTypeLabel(), row.loco.getAddress());
+                }
+            }
             for (MarklinLocomotive l : parsedLocs)
             {
                 // Add new locomotives
@@ -1793,24 +1945,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     if (this.locDB.hasName(l.getName()))
                     {
-                        // Show message that we did not sync a loc with a duplicate name
-                        this.logf("loc.importSkippedDuplicateName", l.getName());
+                        // A duplicate name is skipped; the same locomotive at another address was logged above
+                        if (addressedElsewhere(l) == null) this.logf("loc.importSkippedDuplicateName", l.getName());
                     }
                     else if (!nameTurnedDown(l))
                     {
-                        this.logf("loc.addedFromCentralStation",
-                            l.getDecoderTypeLabel(),
-                            l.getName(),
-                            l.getAddress(),
-                            Conversion.intToHex(l.getIntUID()));
-
-                        newLocomotive(l.getName(), l.getAddress(), l.getDecoderType(), l.getFunctionTypes(), l.getFunctionTriggerTypes());
+                        addStationLocomotive(l);
                         num++;
                     }
                 }
-                
-                // We already have this locomotive, with the same decoder type, but different address.  Update the address and UID in database
-                this.adoptCentralStationAddress(l, sweptAfterTheSync);
                 
                 // Update function types if they have changed
                 if (this.locDB.hasId(l.getUID()) &&
@@ -1857,8 +2000,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             this.lastSyncError = describe(e);
 
-            this.logf("loc.dbSyncFailed");
-            this.log(e);
+            this.logf(unlessSimulating(Level.SEVERE), "loc.dbSyncFailed");
+            this.log(e, unlessSimulating(Level.SEVERE));
              
             return -1;
         }
@@ -1943,6 +2086,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return num;
     }
     
+    /** Adds the station's locomotive here, with its function types, unless its name is taken; the one added, or null. */
+    @Override
+    public Locomotive addStationLocomotive(Locomotive station)
+    {
+        MarklinLocomotive l = (MarklinLocomotive) station;
+        if (this.locDB.hasName(l.getName())) return null;
+        this.logf("loc.addedFromCentralStation", l.getDecoderTypeLabel(), l.getName(), l.getAddress(),
+            Conversion.intToHex(l.getIntUID()));
+        return newLocomotive(l.getName(), l.getAddress(), l.getDecoderType(), l.getFunctionTypes(),
+            l.getFunctionTriggerTypes());
+    }
+
     /**
      * Whether a locomotive here at l's address turned down l's name, or was offered it by the Sync running now and kept
      * its own, so the sync adds no copy under it (FR-220).
@@ -2058,7 +2213,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Gives a locomotive this database already has the address the Central Station reports for it: nothing happens
-     * unless a locomotive of that name, with the same decoder type, is at a different address.  One step of
+     * unless a locomotive of that name, with the same decoder type, is at a different address, and the pressed Sync was
+     * told to use the station's (else that is logged).  One step of
      * `syncWithCS2`'s locomotive pass, a method of its own so the decision can be asked without a station.
      *
      * @param l the locomotive as the Central Station describes it
@@ -2066,41 +2222,33 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     public void adoptCentralStationAddress(MarklinLocomotive l, List<MarklinLocomotive> sweptAfterTheSync)
     {
-        if (this.locDB.getByName(l.getName()) != null
-            && this.locDB.getByName(l.getName()).getAddress() != l.getAddress()
-            && this.locDB.getByName(l.getName()).getDecoderType() == l.getDecoderType()
-        )
+        MarklinLocomotive here = addressedElsewhere(l);
+        if (here != null)
         {
-            // Deferred while anything is running (OB-287): setAddress changes which decoder this locomotive commands,
-            // so applying it mid-run sends every later command to a different engine while the graph tracks this one;
-            // a sync is triggered from a dozen places, so the check belongs here.  AND WHILE A ROUTE DRIVES IT: a route
-            // sends commands by name with delays between, so an adopted address would send the rest elsewhere.  And
-            // while it has a speed, as at Locomotive Settings: Stop would command the new address, the train the old.
-            if (this.isAutonomyRunning() || this.runningRouteDriving(l.getName()) != null
-                || LocomotiveSettings.hasSpeed(this, this.locDB.getByName(l.getName())))
+            // Only a pressed Sync's answer takes it, so an address set here is not put back unasked (FR-246)
+            if (!here.takesStationAddress(l.getAddress()))
+            {
+                this.logf(Integer.valueOf(l.getAddress()).equals(here.getDeclinedStationAddress()) ? "loc.addressKept"
+                    : "loc.addressDiffersAtStation", l.getName(), l.getAddress(), here.getAddress());
+            }
+            // Deferred while anything runs; a sync is triggered from a dozen places, so the check belongs here
+            else if (whyLeftAsItIs(here) != null)
             {
                 this.logf("loc.addressUpdateDeferredWhileRunning", l.getName());
             }
             else
             {
                 String oldAddr = this.getLocAddress(l.getName());
-                this.locDB.getByName(l.getName()).setAddress(l.getAddress(), l.getDecoderType());
-
-                // Update DB entry
-                MarklinLocomotive existingLoc = this.locDB.getByName(l.getName());
+                here.setAddress(l.getAddress(), l.getDecoderType());
                 this.locDB.delete(l.getName());
-                this.locDB.add(existingLoc, existingLoc.getName(), existingLoc.getUID());
+                this.locDB.add(here, here.getName(), here.getUID());
 
                 // AND THE CACHE FOLLOWS THE NEW UID AT ONCE.  The rebuild at the end of the sync is on
                 // the success path only, and until it runs every echo for this locomotive resolves to nothing.
                 this.rebuildLocIdCache();
 
-                this.logf("loc.addressUpdated",
-                    existingLoc.getName(),
-                    oldAddr,
-                    this.getLocAddress(existingLoc.getName()));
-
-                sweptAfterTheSync.add(existingLoc);
+                this.logf("loc.addressUpdated", here.getName(), oldAddr, this.getLocAddress(here.getName()));
+                sweptAfterTheSync.add(here);
 
                 // The same repair changeLocAddress performs, for the same reason
                 for (Locomotive other : getLocomotives())
@@ -2114,6 +2262,23 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
             }
         }
+    }
+
+    /** Why a sync may not rename or re-address it now, or null: running, route-driven or moving (OB-287). */
+    private String whyLeftAsItIs(MarklinLocomotive here)
+    {
+        MarklinRoute driving = this.runningRouteDriving(here.getName());
+        return this.isAutonomyRunning() ? I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning")
+            : driving != null ? I18n.f("sync.ui.whyRouteDriving", here.getName(), driving.getName())
+            : LocomotiveEditRule.hasSpeed(this, here) ? I18n.f("loc.syncLeftMoving", here.getName()) : null;
+    }
+
+    /** The locomotive here by l's name, when it has l's decoder type at another address; else null. */
+    private MarklinLocomotive addressedElsewhere(MarklinLocomotive l)
+    {
+        MarklinLocomotive here = this.locDB.getByName(l.getName());
+        return here != null && here.getAddress() != l.getAddress() && here.getDecoderType() == l.getDecoderType()
+            ? here : null;
     }
 
     /**
@@ -2135,6 +2300,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 this.layoutDB.delete(name);
             }
+            this.layoutFolderRead = null;
         }
     }
     
@@ -2191,11 +2357,40 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return this.isCS3;
     }
 
+    @Override
+    public String getStationFirmware()
+    {
+        return this.stationFirmware;
+    }
+
+    @Override
+    public String getStationSerial()
+    {
+        // Else the ping reply's, if its UID is a Central Station's ("CS"): a booster answers as device type 0 too
+        String stated = this.stationSerial;
+        int serial = this.serialNumber;
+        return stated == null && serial > 0 && (this.UID >>> 16) == 0x4353 ? String.valueOf(serial) : stated;
+    }
+
+    // For the window's station line: a CS3's firmware from its info, the serial number from the device file, else a
+    // CS3's info; null where unknown (FR-242)
+    private volatile String stationFirmware, stationSerial;
     private volatile String firmwareLogged;
 
-    /** Logs the CS3's firmware as it reports it, once a session, and again only if it changes (MT-895). */
+    /**
+     * Keeps the CS3's firmware as its info states it, and logs it, once a session, and again only if it changes
+     * (MT-895).
+     */
     public void logTheFirmware(String said)
     {
+        logTheFirmware(said, null);
+    }
+
+    /** The same, with the serial number the CS3's info gives (null for none) for a device file that gave none. */
+    public void logTheFirmware(String said, String serial)
+    {
+        this.stationFirmware = said;
+        if (this.stationSerial == null) this.stationSerial = serial;
         if (said.equals(this.firmwareLogged)) return;
 
         this.firmwareLogged = said;
@@ -2255,7 +2450,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 File kept = Util.keepUnreadableCopy(MarklinControlStation.DATA_FILE_NAME);
 
-                if (kept != null) this.logf("log.databaseUnreadableKept", kept.getAbsolutePath());
+                if (kept != null) this.logf(java.util.logging.Level.WARNING, "log.databaseUnreadableKept", kept.getAbsolutePath());
 
                 // Kept - or nothing is left to keep
                 this.databaseLoadFailed = false;
@@ -2264,7 +2459,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 this.log(keepFailed);
 
-                this.logf("log.databaseSaveFailed", keepFailed.toString());
+                this.logf(Level.SEVERE, "log.databaseSaveFailed", keepFailed.toString());
 
                 return keepFailed.toString();
             }
@@ -2296,7 +2491,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         catch (IOException iOException)
         {
-            this.logf("log.databaseSaveFailed", iOException.getMessage());
+            this.logf(Level.SEVERE, "log.databaseSaveFailed", iOException.getMessage());
 
             return String.valueOf(iOException.getMessage());
         }
@@ -2422,7 +2617,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 // a copy.
                 this.databaseLoadFailed = true;
 
-                this.logf("log.databaseBadDataFile");
+                this.logf(Level.SEVERE, "log.databaseBadDataFile");
             }
         }
         catch (IOException iex)
@@ -2444,7 +2639,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // Present but unreadable, exactly as above
             this.databaseLoadFailed = true;
 
-            this.logf("log.databaseBadDataFile");   
+            this.logf(Level.SEVERE, "log.databaseBadDataFile");
             
             if (debug)
             {
@@ -2490,7 +2685,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         // Checked before anything is deleted: this method edits by delete-then-re-add, and newRoute refuses a name that
         // already belongs to another route, so a rename onto an existing name would delete the original and not add it
-        // back.  RouteEditorFrame checks too; the model should not depend on one dialog to protect its data.
+        // back.  RouteEditorWindow checks too; the model should not depend on one dialog to protect its data.
         if (!name.equals(trimmedNewName) && this.routeDB.hasName(trimmedNewName))
         {
             this.logf("route.notAdded", trimmedNewName);
@@ -2504,7 +2699,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         final boolean wasActivated = this.isRouteActivatedByAutonomy(id);
 
         // AND THE LOCK, FOR THE SAME REASON: `newRoute` builds a fresh MarklinRoute whose `locked` defaults to false
-        // (only the sync's import loop writes true), and the lock is what RightClickRouteMenu puts Change Route ID and
+        // (only the sync's import loop writes true), and the lock is what RouteContextMenu puts Change Route ID and
         // Delete behind.  Enable/Disable (via `writeRouteEnabledState`, also BulkEnableOrDisable) is deliberately not
         // gated on the lock, so without this an edit would unlock a Central Station route.
         final boolean wasLocked = existing.isLocked();
@@ -3106,7 +3301,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     int channel = message.getLength() >= 6 ? message.getData()[5] & 0xFF : 0;
 
-                    this.logf("log.powerOffOverload", channel);
+                    this.logf(Level.WARNING, "log.powerOffOverload", channel);
 
                     // Once per cut, whether or not a Stop came first: a short repeats the message while it lasts
                     if (!this.powerCutWarned && this.view != null) this.view.showPowerCut(channel);
@@ -3143,13 +3338,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         new byte[]{message.getData()[6], message.getData()[7]}
                     );
 
-                    // 0x0000 means this is the central station
+                    // 0x0000 means this is the central station; the first such reply's UID gates getStationSerial, and the
+                    // window logs that serial once
                     if (payload == 0)
                     {
                         this.UID = message.extractUID();
                         this.serialNumber = (message.extractUID() - 0x43533200) / 2;
-
-                        this.logf("network.connectedCentralStation", this.serialNumber);
                     }
                 }
             });
@@ -3271,21 +3465,34 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public final void logf(String key, Object... args)
     {
-        log(I18n.f(key, args));
+        log(I18n.f(key, args), LogPanel.levelOf(key));
     }
     
+    /** Formatted log message at a level the log window marks (FR-190). */
+    @Override
+    public final void logf(Level level, String key, Object... args)
+    {
+        log(I18n.f(key, args), level);
+    }
+
     /**
      * Logs a message
      */
     @Override
     public final void log(String message)
     {
+        log(message, Level.INFO);
+    }
+
+    /** Logs a message at a level the log window marks; the developer's log takes every level as info. */
+    public final void log(String message, Level level)
+    {
         if (message != null && !message.equals(this.lastMessage))
         {
             // TODO - write to file, suppress, etc.
             if (this.view != null)
             {
-                this.view.log(message);    
+                this.view.log(message, level);
             }
             
             log.info(message);
@@ -3300,13 +3507,22 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public final void log(Exception e)
     {
+        log(e, Level.SEVERE);
+    }
+
+    /** A level for a failure a simulation expects: a notice there, the given level with a real station. */
+    private Level unlessSimulating(Level level)
+    {
+        return this.simulatedStart || this.simulation ? Level.INFO : level;
+    }
+
+    private void log(Exception e, Level level)
+    {
         if (this.view != null)
         {
-            this.view.log(e.getMessage());    
+            this.view.log(e.getMessage(), level);
         }
-
         log.warning(e.getClass().getName() + " " + e.getMessage());
-        
         if (debug)
         {
             log.warning(String.join("\n", Arrays.stream(e.getStackTrace())
@@ -3511,6 +3727,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
             newLoc.setLocalFunctionImageURLs(c.getLocalFunctionImageURLs());
             newLoc.setNotes(c.getLocNotes());
             newLoc.setDeclinedStationName(c.getDeclinedStationName());
+            newLoc.setDeclinedStationAddress(c.getDeclinedStationAddress());
+            newLoc.setSyncIgnored(c.isSyncIgnored());
             newLoc.preSetLinkedLocomotives(c.getLinkedLocomotives()); // we need to call setLinkedLocomotives() once all locs are loaded
             newLoc.setModelMultiUnitLocomotives(c.getCentralStationLinkedLocomotives());
             

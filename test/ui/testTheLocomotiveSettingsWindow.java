@@ -27,10 +27,10 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.locomotive.CurrentKeyRow;
-import org.traincontrol.gui.locomotive.RightClickSelectorMenu;
+import org.traincontrol.gui.locomotive.LocomotiveSelectorContextMenu;
 import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -92,7 +92,7 @@ public class testTheLocomotiveSettingsWindow
     {
         fixture.quiet();
 
-        LocomotiveSettingsFrame.unsavedAnswerForTest = null;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = null;
 
         fixture.forget(NAME, OTHER, THIRD, "LS renamed", "LS elsewhere");
 
@@ -111,7 +111,7 @@ public class testTheLocomotiveSettingsWindow
     @AfterMethod(alwaysRun = true)
     public void tidy() throws Exception
     {
-        LocomotiveSettingsFrame.unsavedAnswerForTest = null;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = null;
 
         fixture.quiet();
     }
@@ -122,7 +122,7 @@ public class testTheLocomotiveSettingsWindow
      * The key's menu opens the window on its first tab with the locomotive's name, decoder, address and preset speed,
      * and has neither the Manage Locomotive submenu nor any of the entries that moved into the window.
      *
-     * MUTATION: put the Manage Locomotive submenu back in `RightClickMenuListener`, or drop `settings(...)` from it,
+     * MUTATION: put the Manage Locomotive submenu back in `LocomotiveButtonContextMenu`, or drop `settings(...)` from it,
      * or add the Sync w/ Central Station item back to it, and this fails.
      */
     @Test
@@ -156,7 +156,7 @@ public class testTheLocomotiveSettingsWindow
 
         Mouse.choose((JMenuItem) settings);
 
-        LocomotiveSettingsFrame window = SettingsWindow.awaited();
+        LocomotiveSettingsWindow window = SettingsWindow.awaited();
 
         assertNotNull(window, "Locomotive Settings... opened no window");
         assertEquals(Components.onTheEventThread(window::getTitle), SettingsWindow.titleFor(NAME));
@@ -194,7 +194,7 @@ public class testTheLocomotiveSettingsWindow
      * The database tile's menu is its header, Assign, Locomotive Settings... and Delete, and the settings entry opens
      * the window for that tile's locomotive.
      *
-     * MUTATION: keep Edit Notes in `RightClickSelectorMenu`, or aim Locomotive Settings... at the active locomotive,
+     * MUTATION: keep Edit Notes in `LocomotiveSelectorContextMenu`, or aim Locomotive Settings... at the active locomotive,
      * and this fails.
      */
     @Test
@@ -202,7 +202,7 @@ public class testTheLocomotiveSettingsWindow
     {
         final JPopupMenu[] menu = new JPopupMenu[1];
 
-        SwingUtilities.invokeAndWait(() -> menu[0] = new RightClickSelectorMenu(ui, null, other));
+        SwingUtilities.invokeAndWait(() -> menu[0] = new LocomotiveSelectorContextMenu(ui, null, other));
 
         for (String gone : new String[] { "loc.ui.menuFindSimilarLocomotives", "loc.ui.menuSetAsMultiUnit" })
         {
@@ -222,7 +222,7 @@ public class testTheLocomotiveSettingsWindow
             return null;
         });
 
-        LocomotiveSettingsFrame window = SettingsWindow.awaited();
+        LocomotiveSettingsWindow window = SettingsWindow.awaited();
 
         assertNotNull(window, "the tile's Locomotive Settings... opened no window");
         assertEquals(Components.onTheEventThread(window::getLocomotive), other, "the window is for another locomotive");
@@ -261,7 +261,7 @@ public class testTheLocomotiveSettingsWindow
 
         assertNull(Mouse.rightClick(f3, 1500), "a right click on a function button opened a menu");
 
-        LocomotiveSettingsFrame first = SettingsWindow.awaited();
+        LocomotiveSettingsWindow first = SettingsWindow.awaited();
 
         assertNotNull(first, "a right click on F3 opened no window");
         assertEquals(SettingsWindow.tabShowing(), 1, "a right click on a function button did not open the Functions tab");
@@ -716,7 +716,7 @@ public class testTheLocomotiveSettingsWindow
         assertTrue(Components.waitFor(() -> loc.getLinkedLocomotiveNames().containsKey(OTHER), WAIT),
             "Save did not make " + OTHER + " a member");
 
-        SettingsWindow.open(ui, other, LocomotiveSettingsFrame.Tab.MULTI_UNIT, null);
+        SettingsWindow.open(ui, other, LocomotiveSettingsWindow.Tab.MULTI_UNIT, null);
 
         assertEquals(noteText(), I18n.f("loc.ui.settingsPartOfMultiUnit", OTHER, NAME, NAME),
             "a member's Multi-Unit tab does not say it is part of " + NAME);
@@ -798,7 +798,7 @@ public class testTheLocomotiveSettingsWindow
      * The mirror: a member given its head's address in its own window is refused the same way, before anything is
      * written, where the Save would drop it from the consist with only a line in the log.
      *
-     * MUTATION: drop the head's check after the members' in `LocomotiveSettingsFrame.write`, and this fails.
+     * MUTATION: drop the head's check after the members' in `LocomotiveSettingsWindow.write`, and this fails.
      */
     @Test(timeOut = 120000)
     public void testAMembersNewAddressEqualToItsHeadsIsRefused() throws Exception
@@ -824,7 +824,7 @@ public class testTheLocomotiveSettingsWindow
     /** Makes OTHER a member of NAME and opens OTHER's Multi-Unit tab, which carries the note. */
     private static void openTheMembersNote() throws Exception
     {
-        SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.MULTI_UNIT, null);
+        SettingsWindow.open(ui, loc, LocomotiveSettingsWindow.Tab.MULTI_UNIT, null);
         assertNotNull(SettingsWindow.awaited(), "the window is not on screen");
         SettingsWindow.tickMember(OTHER);
         SettingsWindow.press(SettingsWindow.save());
@@ -832,7 +832,7 @@ public class testTheLocomotiveSettingsWindow
         assertTrue(Components.waitFor(() -> loc.getLinkedLocomotiveNames().containsKey(OTHER), WAIT),
             "precondition: Save did not make " + OTHER + " a member");
 
-        assertTrue(SettingsWindow.open(ui, other, LocomotiveSettingsFrame.Tab.MULTI_UNIT, null), "the window did not open");
+        assertTrue(SettingsWindow.open(ui, other, LocomotiveSettingsWindow.Tab.MULTI_UNIT, null), "the window did not open");
         assertNotNull(SettingsWindow.awaited(), "the window is not on screen");
     }
 
@@ -928,7 +928,7 @@ public class testTheLocomotiveSettingsWindow
     {
         openTheMembersNote();
 
-        LocomotiveSettingsFrame member = SettingsWindow.showing();
+        LocomotiveSettingsWindow member = SettingsWindow.showing();
 
         assertEquals(SettingsWindow.text("settings.name"), OTHER);
 
@@ -940,7 +940,7 @@ public class testTheLocomotiveSettingsWindow
         assertEquals(SettingsWindow.tabShowing(), 3, "the multi-unit's settings did not open on the Multi-Unit tab");
 
         // The keyboard
-        SettingsWindow.open(ui, other, LocomotiveSettingsFrame.Tab.MULTI_UNIT, null);
+        SettingsWindow.open(ui, other, LocomotiveSettingsWindow.Tab.MULTI_UNIT, null);
         assertNotNull(SettingsWindow.awaited());
         assertEquals(SettingsWindow.text("settings.name"), OTHER);
 
@@ -1035,7 +1035,7 @@ public class testTheLocomotiveSettingsWindow
     {
         openTheMembersNote();
 
-        LocomotiveSettingsFrame member = SettingsWindow.showing();
+        LocomotiveSettingsWindow member = SettingsWindow.showing();
 
         loc.setLinkedLocomotives(new java.util.HashMap<String, Double>());
 
@@ -1059,13 +1059,13 @@ public class testTheLocomotiveSettingsWindow
         openTheMembersNote();
         SettingsWindow.type("settings.name", "LS renamed");
 
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = 2;
         mouseOnTheNote(java.awt.event.MouseEvent.MOUSE_RELEASED, true);
 
         assertTrue(SettingsWindow.showing() != null, "Cancel closed the window");
         assertEquals(SettingsWindow.text("settings.name"), "LS renamed", "Cancel did not leave the window as it was");
 
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 1;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = 1;
         mouseOnTheNote(java.awt.event.MouseEvent.MOUSE_RELEASED, true);
 
         assertTrue(Components.waitFor(() -> NAME.equals(SettingsWindow.text("settings.name")), WAIT),
@@ -1088,22 +1088,22 @@ public class testTheLocomotiveSettingsWindow
 
         SettingsWindow.type("settings.name", "LS renamed");
 
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = 2;
 
-        assertFalse(SettingsWindow.open(ui, other, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "Cancel went on to open it");
+        assertFalse(SettingsWindow.open(ui, other, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null), "Cancel went on to open it");
         assertEquals(SettingsWindow.text("settings.name"), "LS renamed", "Cancel lost the typing");
 
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 1;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = 1;
 
-        assertTrue(SettingsWindow.open(ui, other, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null));
+        assertTrue(SettingsWindow.open(ui, other, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null));
         assertEquals(SettingsWindow.text("settings.name"), OTHER, "Discard did not go on to the other locomotive");
         assertEquals(loc.getName(), NAME, "Discard wrote the typing");
 
         SettingsWindow.type("settings.name", "LS renamed");
 
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 0;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = 0;
 
-        assertTrue(SettingsWindow.open(ui, third, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null));
+        assertTrue(SettingsWindow.open(ui, third, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null));
         assertNotNull(model.getLocByName("LS renamed"), "Save did not write the typing before moving on");
         assertEquals(SettingsWindow.text("settings.name"), THIRD);
     }
@@ -1112,7 +1112,7 @@ public class testTheLocomotiveSettingsWindow
      * A minimized window opened by another door comes back out of the taskbar.  With typing not saved, its question
      * asks over the window brought back, and blocks that window alone, so the main window's Stop stays live.
      *
-     * MUTATION: drop `bringBack` from `LocomotiveSettingsFrame.settleUnsaved`, or ask with an application-modal
+     * MUTATION: drop `bringBack` from `LocomotiveSettingsWindow.settleUnsaved`, or ask with an application-modal
      * `showOptionDialog`, and this fails.
      */
     @Test
@@ -1120,11 +1120,11 @@ public class testTheLocomotiveSettingsWindow
     {
         open(0);
 
-        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        LocomotiveSettingsWindow window = SettingsWindow.showing();
 
         support.AskingWindows.minimize(window, true);
 
-        assertTrue(SettingsWindow.open(ui, other, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "precondition: it did not open");
+        assertTrue(SettingsWindow.open(ui, other, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null), "precondition: it did not open");
         assertTrue(Components.waitFor(() -> (Components.onTheEventThread(window::getExtendedState) & java.awt.Frame.ICONIFIED) == 0,
             5000), "opened from another door, the window stayed in the taskbar");
 
@@ -1134,7 +1134,7 @@ public class testTheLocomotiveSettingsWindow
 
         try (support.Answering answering = support.Answering.start(message -> support.Answering.press(I18n.t("ui.cancel"))))
         {
-            assertFalse(SettingsWindow.open(ui, third, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "Cancel went on to open it");
+            assertFalse(SettingsWindow.open(ui, third, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null), "Cancel went on to open it");
 
             assertEquals(answering.questions().size(), 1, "the typing was not asked about");
 
@@ -1162,7 +1162,7 @@ public class testTheLocomotiveSettingsWindow
     {
         open(0);
 
-        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        LocomotiveSettingsWindow window = SettingsWindow.showing();
 
         SettingsWindow.type("settings.name", "LS renamed");
 
@@ -1189,7 +1189,7 @@ public class testTheLocomotiveSettingsWindow
 
                 support.AskingWindows.minimize(window, true);
 
-                Components.onTheEventThread(() -> ui.openLocomotiveSettings(third, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null));
+                Components.onTheEventThread(() -> ui.openLocomotiveSettings(third, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null));
 
                 back[0] = Components.waitFor(() -> (Components.onTheEventThread(window::getExtendedState)
                     & java.awt.Frame.ICONIFIED) == 0, 5000);
@@ -1203,7 +1203,7 @@ public class testTheLocomotiveSettingsWindow
         }))
         {
             SwingUtilities.invokeLater(() -> ui.pressFromWindow(elsewhere,
-                () -> ui.openLocomotiveSettings(other, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null)));
+                () -> ui.openLocomotiveSettings(other, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null)));
 
             assertTrue(answering.awaitAsked(1, 20000), "the typing was not asked about");
         }
@@ -1222,7 +1222,7 @@ public class testTheLocomotiveSettingsWindow
     private static long windowsOpen()
     {
         return Components.onTheEventThread(() -> java.util.Arrays.stream(java.awt.Window.getWindows())
-            .filter(w -> w instanceof LocomotiveSettingsFrame && w.isDisplayable()).count());
+            .filter(w -> w instanceof LocomotiveSettingsWindow && w.isDisplayable()).count());
     }
 
     /**
@@ -1238,9 +1238,9 @@ public class testTheLocomotiveSettingsWindow
 
         assertEquals(windowsOpen(), 1L, "the first door made " + windowsOpen() + " windows");
 
-        LocomotiveSettingsFrame first = SettingsWindow.showing();
+        LocomotiveSettingsWindow first = SettingsWindow.showing();
 
-        assertTrue(SettingsWindow.open(ui, other, LocomotiveSettingsFrame.Tab.NOTES, null), "the second door did not open");
+        assertTrue(SettingsWindow.open(ui, other, LocomotiveSettingsWindow.Tab.NOTES, null), "the second door did not open");
         assertEquals(windowsOpen(), 1L, "a second locomotive made another window");
         assertSame(SettingsWindow.showing(), first, "a second locomotive opened a different window");
         assertSame(Components.onTheEventThread(first::getLocomotive), other, "the window does not show the second locomotive");
@@ -1281,7 +1281,7 @@ public class testTheLocomotiveSettingsWindow
 
         SettingsWindow.type("settings.name", "LS renamed");
 
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = 2;
 
         assertFalse((Boolean) Components.onTheEventThread(() -> invoke(asks, windows)),
             "the exit went on though the window holds unsaved typing and the operator canceled");
@@ -1323,7 +1323,7 @@ public class testTheLocomotiveSettingsWindow
      * A name-only Save does not put back the address it was opened with, and an address-only Save does not put back
      * the name, when another door changed them while the window was open.
      *
-     * MUTATION: pass the typed name and address whenever either changed, in `LocomotiveSettingsFrame.write`, and this
+     * MUTATION: pass the typed name and address whenever either changed, in `LocomotiveSettingsWindow.write`, and this
      * fails.
      */
     @Test
@@ -1494,7 +1494,7 @@ public class testTheLocomotiveSettingsWindow
 
         model.getLocByName("LS renamed").setSpeed(0);
 
-        SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
+        SettingsWindow.open(ui, loc, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null);
         SettingsWindow.awaited();
         SettingsWindow.type("settings.address", "3411");
         SettingsWindow.press(SettingsWindow.save());
@@ -1553,7 +1553,7 @@ public class testTheLocomotiveSettingsWindow
     {
         open(0);
 
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = 2;
 
         assertTrue(closeBy(true), "a window with nothing typed did not just close");
 
@@ -1563,13 +1563,13 @@ public class testTheLocomotiveSettingsWindow
 
         for (boolean byEscape : new boolean[] { true, false })
         {
-            LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+            LocomotiveSettingsWindow.unsavedAnswerForTest = 2;
 
             assertFalse(closeBy(byEscape), "Cancel on the question closed the window");
             assertEquals(SettingsWindow.text("settings.name"), "LS renamed", "Cancel lost the typing");
         }
 
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 1;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = 1;
 
         assertTrue(closeBy(false), "Discard did not close the window");
         assertEquals(loc.getName(), NAME, "Discard wrote the typing");
@@ -1578,7 +1578,7 @@ public class testTheLocomotiveSettingsWindow
 
         SettingsWindow.type("settings.name", "LS renamed");
 
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 0;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = 0;
 
         assertTrue(closeBy(true), "Save on the question did not close the window");
         assertNotNull(model.getLocByName("LS renamed"), "Save on the question did not write the typing");
@@ -1629,7 +1629,7 @@ public class testTheLocomotiveSettingsWindow
     @Test
     public void testALockedWindowWithNothingTypedClosesWithoutAsking() throws Exception
     {
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = 2;
 
         try
         {
@@ -1721,12 +1721,12 @@ public class testTheLocomotiveSettingsWindow
         open(0);
         SettingsWindow.type("settings.name", "LS renamed");
 
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = 2;
 
         assertFalse(Components.onTheEventThread(ui::openAddLocomotive), "Cancel went on to Add Locomotive");
         assertEquals(SettingsWindow.text("settings.name"), "LS renamed", "Cancel lost the typing");
 
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 1;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = 1;
 
         assertTrue(Components.onTheEventThread(ui::openAddLocomotive), "Discard did not go on to Add Locomotive");
         assertEquals(SettingsWindow.text("settings.name"), "", "Add Locomotive did not open blank");
@@ -1734,14 +1734,14 @@ public class testTheLocomotiveSettingsWindow
 
         SettingsWindow.type("settings.name", "LS elsewhere");
 
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = 2;
 
-        assertFalse(SettingsWindow.open(ui, other, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "Cancel went on to the other locomotive");
+        assertFalse(SettingsWindow.open(ui, other, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null), "Cancel went on to the other locomotive");
         assertEquals(SettingsWindow.text("settings.name"), "LS elsewhere", "Cancel lost Add's typing");
 
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 1;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = 1;
 
-        assertTrue(SettingsWindow.open(ui, other, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "Discard did not go on");
+        assertTrue(SettingsWindow.open(ui, other, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null), "Discard did not go on");
         assertEquals(SettingsWindow.text("settings.name"), OTHER);
         assertNull(model.getLocByName("LS elsewhere"), "Discard made the locomotive typed in Add");
     }
@@ -1766,13 +1766,13 @@ public class testTheLocomotiveSettingsWindow
 
         for (boolean byEscape : new boolean[] { true, false })
         {
-            LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+            LocomotiveSettingsWindow.unsavedAnswerForTest = 2;
 
             assertFalse(closeBy(byEscape), "the window closed over a blank address without asking");
         }
 
         // Save on the question is the same refusal, and the window stays
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 0;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = 0;
 
         try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
         {
@@ -1780,7 +1780,7 @@ public class testTheLocomotiveSettingsWindow
             assertEquals(answering.asked(), Arrays.asList(I18n.t("loc.errorAddressNotNumeric")));
         }
 
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 1;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = 1;
 
         assertTrue(closeBy(true), "Discard did not close the window");
         assertEquals(loc.getAddress(), 3401, "Discard wrote the blank address");
@@ -2018,7 +2018,7 @@ public class testTheLocomotiveSettingsWindow
     /** Closes by Escape or by the X, and says whether the window went. */
     private static boolean closeBy(boolean escape) throws Exception
     {
-        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        LocomotiveSettingsWindow window = SettingsWindow.showing();
 
         Components.onTheEventThread(() ->
         {
@@ -2077,7 +2077,7 @@ public class testTheLocomotiveSettingsWindow
     {
         open(0);
 
-        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        LocomotiveSettingsWindow window = SettingsWindow.showing();
 
         Mouse.click(SettingsWindow.part("settings.wrench", Component.class));
 
@@ -2186,7 +2186,7 @@ public class testTheLocomotiveSettingsWindow
             assertTrue(Components.waitFor(() -> loc.getLocalImageURL() == null, WAIT), "the revert did not clear the icon");
 
             // The window's own look at the locomotive, and what is on screen straight after it
-            LocomotiveSettingsFrame window = SettingsWindow.showing();
+            LocomotiveSettingsWindow window = SettingsWindow.showing();
             Object[] shown = Components.onTheEventThread(() ->
             {
                 watch(window).getActionListeners()[0].actionPerformed(null);
@@ -2227,7 +2227,7 @@ public class testTheLocomotiveSettingsWindow
         assertEquals(pillShows(station), station, "precondition: the picture is not named");
 
         JLabel picture = SettingsWindow.part("settings.picture", JLabel.class);
-        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        LocomotiveSettingsWindow window = SettingsWindow.showing();
 
         loc.setImageURL(broken.toURI().toString());
         Components.onTheEventThread(() -> { watch(window).getActionListeners()[0].actionPerformed(null); return null; });
@@ -2263,7 +2263,7 @@ public class testTheLocomotiveSettingsWindow
             JLabel picture = SettingsWindow.part("settings.picture", JLabel.class);
             Component crop = SettingsWindow.part("settings.crop", Component.class);
             Component revert = SettingsWindow.part("settings.revert", Component.class);
-            LocomotiveSettingsFrame window = SettingsWindow.showing();
+            LocomotiveSettingsWindow window = SettingsWindow.showing();
 
             Components.settle();
             assertEquals(marks(crop, revert), "", "marks showed over a picture still on its way");
@@ -2395,7 +2395,7 @@ public class testTheLocomotiveSettingsWindow
     }
 
     /** The window's own look at the locomotive, as its once-a-second watch takes it. */
-    private static void look(LocomotiveSettingsFrame window) throws Exception
+    private static void look(LocomotiveSettingsWindow window) throws Exception
     {
         javax.swing.Timer watch = watch(window);
 
@@ -2427,7 +2427,7 @@ public class testTheLocomotiveSettingsWindow
     /** Presses Cancel with this answer ready for the question, if it asks; true when the window closed. */
     private static boolean cancelAnswering(int answer)
     {
-        LocomotiveSettingsFrame.unsavedAnswerForTest = answer;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = answer;
         SettingsWindow.press(SettingsWindow.cancel());
 
         return SettingsWindow.showing() == null;
@@ -2467,9 +2467,9 @@ public class testTheLocomotiveSettingsWindow
     }
 
     /** The window's once-a-second look at the locomotive. */
-    private static javax.swing.Timer watch(LocomotiveSettingsFrame window) throws Exception
+    private static javax.swing.Timer watch(LocomotiveSettingsWindow window) throws Exception
     {
-        return (javax.swing.Timer) Reflect.get(LocomotiveSettingsFrame.class, window, "watch");
+        return (javax.swing.Timer) Reflect.get(LocomotiveSettingsWindow.class, window, "watch");
     }
 
     /** The pill's words once they are these (null: once it is hidden), or what it shows when they never come. */
@@ -2533,7 +2533,7 @@ public class testTheLocomotiveSettingsWindow
      */
     private static String pictureLayout(String lang) throws Exception
     {
-        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        LocomotiveSettingsWindow window = SettingsWindow.showing();
         java.awt.Rectangle[] at = Components.onTheEventThread(() ->
         {
             java.awt.Container pane = window.getContentPane();
@@ -2601,7 +2601,7 @@ public class testTheLocomotiveSettingsWindow
         open(0);
         assertEquals(pillShows(station), station, "the station's picture is not named");
 
-        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        LocomotiveSettingsWindow window = SettingsWindow.showing();
         CurrentKeyRow.Pill pill = SettingsWindow.part("settings.pictureSource", CurrentKeyRow.Pill.class);
 
         assertTrue(Components.onTheEventThread(() ->
@@ -2680,7 +2680,7 @@ public class testTheLocomotiveSettingsWindow
     /** Opens the window on a tab of this train. */
     private static void open(Locomotive which, int tab) throws Exception
     {
-        assertTrue(SettingsWindow.open(ui, which, LocomotiveSettingsFrame.Tab.values()[tab], null), "the window did not open");
+        assertTrue(SettingsWindow.open(ui, which, LocomotiveSettingsWindow.Tab.values()[tab], null), "the window did not open");
         assertNotNull(SettingsWindow.awaited(), "the window is not on screen");
     }
 
@@ -2750,7 +2750,7 @@ public class testTheLocomotiveSettingsWindow
             assertEquals(loc.setLinkedLocomotives(java.util.Collections.singletonMap(OTHER, set)), 1,
                 "precondition: the consist was not made");
 
-            assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.MULTI_UNIT, null), "the window did not open");
+            assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsWindow.Tab.MULTI_UNIT, null), "the window did not open");
             assertNotNull(SettingsWindow.awaited(), "the window is not on screen");
 
             int shown = Components.onTheEventThread(() ->
@@ -2794,7 +2794,7 @@ public class testTheLocomotiveSettingsWindow
                 java.util.Collections.singletonMap(station, -0.5));
             other.setDeclinedStationName(station);
 
-            assertTrue(SettingsWindow.open(ui, model.getLocByName(head), LocomotiveSettingsFrame.Tab.MULTI_UNIT, null),
+            assertTrue(SettingsWindow.open(ui, model.getLocByName(head), LocomotiveSettingsWindow.Tab.MULTI_UNIT, null),
                 "the window did not open");
 
             List<Boolean> shown = Components.onTheEventThread(() ->
@@ -2880,7 +2880,7 @@ public class testTheLocomotiveSettingsWindow
                     java.util.Collections.singletonMap(roles[0].getName(), 0.5));
                 roles[1].setDeclinedStationName(roles[0].getName());
 
-                assertTrue(SettingsWindow.open(ui, model.getLocByName(head), LocomotiveSettingsFrame.Tab.MULTI_UNIT, null),
+                assertTrue(SettingsWindow.open(ui, model.getLocByName(head), LocomotiveSettingsWindow.Tab.MULTI_UNIT, null),
                     "the window did not open");
 
                 List<String> rows = Components.onTheEventThread(() -> Components.all(

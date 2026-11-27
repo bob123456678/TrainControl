@@ -37,7 +37,8 @@ public class testRoutingRuleTooltips
         assertEquals(dropdown.getItemCount(), rules.length,
             "the dropdown does not offer one item per rule, so the indexes below name the wrong ones");
 
-        java.lang.reflect.Method refresh = Reflect.method(TrainControlUI.class, "refreshRoutingLogicTooltip");
+        Object tab = Reflect.get(TrainControlUI.class, ui, "autonomySettingsTab");
+        java.lang.reflect.Method refresh = Reflect.method(tab.getClass(), "refreshRoutingLogicTooltip");
 
         String general = I18n.t("ui.main.tooltip.routingLogic");
 
@@ -65,7 +66,7 @@ public class testRoutingRuleTooltips
 
             dropdown.setSelectedIndex(at);
 
-            refresh.invoke(ui);
+            refresh.invoke(tab);
 
             String tip = dropdown.getToolTipText();
 
@@ -77,6 +78,33 @@ public class testRoutingRuleTooltips
             assertTrue(tip.contains(general),
                 rules[at] + " lost the general explanation of what the control is for");
         }
+    }
+
+    /** With no rule chosen the control says only what it is for, and every rule the layout can hold is offered. */
+    @Test
+    public void testNoRuleChosenSaysOnlyWhatTheControlIsFor() throws Exception
+    {
+        Display.needed("the dropdown is a control in a window");
+
+        TrainControlUI ui = build();
+
+        PathPreference[] rules = (PathPreference[]) Reflect.get(TrainControlUI.class, null, "ROUTING_ORDER");
+
+        assertEquals(java.util.EnumSet.copyOf(java.util.Arrays.asList(rules)),
+            java.util.EnumSet.allOf(PathPreference.class), "a rule of the layout is not offered, or one is offered twice");
+
+        assertEquals(new java.util.HashSet<>(java.util.Arrays.asList(rules)).size(), rules.length, "a rule is offered twice");
+
+        javax.swing.JComboBox<?> dropdown = dropdownOf(ui);
+
+        dropdown.setSelectedIndex(-1);
+
+        Object tab = Reflect.get(TrainControlUI.class, ui, "autonomySettingsTab");
+
+        Reflect.method(tab.getClass(), "refreshRoutingLogicTooltip").invoke(tab);
+
+        assertEquals(dropdown.getToolTipText(), I18n.t("ui.main.tooltip.routingLogic"),
+            "with no rule chosen the control said more than what it is for");
     }
 
     /**

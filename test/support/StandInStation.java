@@ -24,9 +24,10 @@ import org.traincontrol.marklin.MarklinControlStation;
  */
 public final class StandInStation implements AutoCloseable
 {
-    /** The device file of a CS3 plus, as `isCS3` reads it. */
-    public static final byte[] CS3_DEVICE = "[geraet]\ngeraet\n .produkt=Central Station 3 plus\n"
-        .getBytes(StandardCharsets.UTF_8);
+    /** A real CS3 plus's device file, its serial number and UIDs changed: a serial number, no firmware (FR-242). */
+    public static final byte[] CS3_DEVICE = ("[geraet]\nversion\n .major=0\n .minor=1\ngeraet\n .sernum=1234\n"
+        + " .gfpuid=637304d2\n .guiuid=637304d3\n .hardvers=HW:03.04\n .articleno=60216\n"
+        + " .producer=Sontheim Industrie Elek.\n .produkt=Central Station 3 plus\n").getBytes(StandardCharsets.UTF_8);
 
     private final HttpServer server;
 

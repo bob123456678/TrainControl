@@ -58,7 +58,7 @@ public class AccessoryKeyboard extends JPanel
     private static final Color KEY_BACKGROUND = new Color(0xFAFAFA);
     private static final Color DIVIDER = new Color(0xDDDDDD);
 
-    /** Over a usable key's number, which a click throws the other way (MT-1009). */
+    /** Over a usable key's number and both halves, where a click acts (MT-1009). */
     private static final Cursor HAND = HandPointer.cursor();
 
     /** What the window does with the keyboard's clicks. */
@@ -255,6 +255,8 @@ public class AccessoryKeyboard extends JPanel
         g.setEnabled(usable);
         this.numbers[index - 1].setForeground(usable ? Color.BLACK : Color.GRAY);
         this.numbers[index - 1].setCursor(usable ? HAND : null);
+        r.setCursor(usable ? HAND : null);
+        g.setCursor(usable ? HAND : null);
         r.repaint();
         g.repaint();
     }
@@ -383,6 +385,7 @@ public class AccessoryKeyboard extends JPanel
             this.setRolloverEnabled(true);
             this.setOpaque(false);
             this.setToolTipText(" ");
+            this.setCursor(HAND);
             this.addActionListener(e -> AccessoryKeyboard.this.listener.clicked(AccessoryKeyboard.this.addressOf(this.index), this.red));
         }
 

@@ -423,7 +423,7 @@ public class testNoSetupEditWhileARouteRuns
 
             assertNotNull(page, "precondition: no page 1 - Main");
 
-            assertNull(ui.whyAutonomyEditorCannotOpen(), "precondition: the autonomy editor may not open at rest");
+            assertNull(ui.editorWindows().whyAutonomyEditorCannotOpen(), "precondition: the autonomy editor may not open at rest");
 
             assertTrue(modeTab(ui, page, editor).isEnabled(), "precondition: the track editor's Autonomy tab is greyed"
                 + " at rest");
@@ -436,7 +436,7 @@ public class testNoSetupEditWhileARouteRuns
 
             try
             {
-                assertEquals(ui.whyAutonomyEditorCannotOpen(), NO_EDITS, "the autonomy"
+                assertEquals(ui.editorWindows().whyAutonomyEditorCannotOpen(), NO_EDITS, "the autonomy"
                     + " editor may open while a route runs, and Open Full Editor is live");
 
                 for (final Boolean autonomy : new Boolean[] {Boolean.TRUE, Boolean.FALSE})
@@ -447,7 +447,7 @@ public class testNoSetupEditWhileARouteRuns
 
                     Components.drain(6);
 
-                    assertFalse(ui.isLayoutEditorOpen(), "the " + (autonomy ? "autonomy" : "track") + " editor opened"
+                    assertFalse(ui.editorWindows().isLayoutEditorOpen(), "the " + (autonomy ? "autonomy" : "track") + " editor opened"
                         + " while a route runs");
 
                     assertTrue(answering.since(from).contains(refusal), "the Edit door for the "
@@ -697,10 +697,10 @@ public class testNoSetupEditWhileARouteRuns
 
                     List<Runnable> timetableDoors = new ArrayList<>();
 
-                    timetableDoors.add(() -> window.updateTimetableDelay(null));
-                    timetableDoors.add(() -> window.deleteTimetableEntry(null));
-                    timetableDoors.add(window::restartTimetable);
-                    timetableDoors.add(window::clearTimetable);
+                    timetableDoors.add(() -> window.timetableTab().updateTimetableDelay(null));
+                    timetableDoors.add(() -> window.timetableTab().deleteTimetableEntry(null));
+                    timetableDoors.add(window.timetableTab()::restartTimetable);
+                    timetableDoors.add(window.timetableTab()::clearTimetable);
 
                     assertEquals(timetable.size(), timetableDoors.size(), "the timetable's menu changed its items");
 
@@ -716,8 +716,7 @@ public class testNoSetupEditWhileARouteRuns
 
                     layoutDoors.put("chooseLocalDataFolderMenuItem", () -> callUi(window,
                         "chooseLocalDataFolderMenuItemActionPerformed", anEvent, (Object) null));
-                    layoutDoors.put("modifyLocalLayoutMenu", () -> callUi(window, "duplicateOrRenameCurrentLayout",
-                        new Class<?>[] {String.class, boolean.class, boolean.class, boolean.class}, "renamed", true, false,
+                    layoutDoors.put("modifyLocalLayoutMenu", () -> renameThroughTheFile(window, "renamed", true, false,
                         false));
                     layoutDoors.put("initializeLocalLayoutMenuItem", () -> callUi(window,
                         "initializeLocalLayoutMenuItemActionPerformed", anEvent, (Object) null));
@@ -906,7 +905,7 @@ public class testNoSetupEditWhileARouteRuns
 
             Map<String, Object[]> doors = new java.util.LinkedHashMap<>();
 
-            for (String door : new String[] {"duplicate", "rename", "initialize", "delete"})
+            for (String door : new String[] {"newConfiguration", "saveAs", "rename", "initialize", "delete"})
             {
                 doors.put("Autonomy: " + door, new Object[] {refusal, (Runnable) () -> call(panel, door)});
             }
@@ -935,8 +934,7 @@ public class testNoSetupEditWhileARouteRuns
             }
 
             // Rename by its door: its item, like Add Blank Page's, asks the new name before it refuses.
-            doors.put("Layout: Rename Page", new Object[] {noEdits, (Runnable) () -> callUi(window,
-                "duplicateOrRenameCurrentLayout", new Class<?>[] {String.class, boolean.class, boolean.class, boolean.class},
+            doors.put("Layout: Rename Page", new Object[] {noEdits, (Runnable) () -> renameThroughTheFile(window,
                 "renamed while a route runs", true, false, false)});
 
             // By its door: the item is live only while a Central Station is connected, and no test connects one.
@@ -986,7 +984,7 @@ public class testNoSetupEditWhileARouteRuns
             }
 
             // AT REST, the doors that only ask first ask - answered No or Cancel by the answering thread
-            for (String name : new String[] {"Autonomy: duplicate", "Autonomy: rename", "Layout: "
+            for (String name : new String[] {"Autonomy: saveAs", "Autonomy: rename", "Layout: "
                 + I18n.t("ui.main.toolbar.deleteCurrentPage")})
             {
                 int from = answering.count();
@@ -1374,10 +1372,10 @@ public class testNoSetupEditWhileARouteRuns
 
             Map<String, Runnable> edits = new java.util.LinkedHashMap<>();
 
-            edits.put("AutonomyViewerPanel: Rename", () -> call(panel, "rename"));
-            edits.put("AutonomyViewerPanel: Import", () -> call(panel, "importConfiguration"));
+            edits.put("AutonomyConfigurationsPanel: Rename", () -> call(panel, "rename"));
+            edits.put("AutonomyConfigurationsPanel: Import", () -> call(panel, "importConfiguration"));
             edits.put("AutonomyMenu: Delete Everything", () -> invoke(deleteEverything, autonomyMenu, window, session));
-            edits.put("TimetableTab: Clear Timetable", window::clearTimetable);
+            edits.put("TimetableTab: Clear Timetable", window.timetableTab()::clearTimetable);
             edits.put("AutonomySettingsTab: Activate Routes", () -> callUi(window, "toggleSpecifiedRoutesMouseReleased",
                 new Class<?>[] {java.awt.event.MouseEvent.class}, (Object) null));
             edits.put("TrainControlUI: Timetable Capture", () -> callUi(window, "timetableCaptureActionPerformed",
@@ -1523,10 +1521,10 @@ public class testNoSetupEditWhileARouteRuns
             doors.put("the timetable capture box", () -> callUi(window, "timetableCaptureActionPerformed",
                 new Class<?>[] {java.awt.event.ActionEvent.class}, (Object) null));
 
-            doors.put("Clear Timetable", window::clearTimetable);
-            doors.put("Restart Timetable", window::restartTimetable);
-            doors.put("Delete Entry", () -> window.deleteTimetableEntry(null));
-            doors.put("Change Delay", () -> window.updateTimetableDelay(null));
+            doors.put("Clear Timetable", window.timetableTab()::clearTimetable);
+            doors.put("Restart Timetable", window.timetableTab()::restartTimetable);
+            doors.put("Delete Entry", () -> window.timetableTab().deleteTimetableEntry(null));
+            doors.put("Change Delay", () -> window.timetableTab().updateTimetableDelay(null));
 
             answering.start();
 
@@ -1669,7 +1667,7 @@ public class testNoSetupEditWhileARouteRuns
 
             final TrainControlUI window = ui;
             final MarklinControlStation model = (MarklinControlStation) ui.getModel();
-            final org.traincontrol.gui.AutonomyViewerPanel panel = ui.getAutonomyViewerPanel();
+            final org.traincontrol.gui.AutonomyConfigurationsPanel panel = ui.getAutonomyViewerPanel();
             final String anyRun = I18n.t(WAIT);
             final String active = ui.getAutonomySession().getStore().getActiveConfiguration();
 
@@ -1755,7 +1753,7 @@ public class testNoSetupEditWhileARouteRuns
                     {
                         int asked = answering.count();
 
-                        SwingUtilities.invokeAndWait(door.equals("Unload") ? (Runnable) () -> window.unloadAutonomy()
+                        SwingUtilities.invokeAndWait(door.equals("Unload") ? (Runnable) () -> window.autonomyLifecycle().unloadAutonomy()
                             : doors.get(door));
 
                         Components.drain(6);
@@ -1796,7 +1794,7 @@ public class testNoSetupEditWhileARouteRuns
 
             // UNLOAD, the Autonomy menu's other way of replacing the railway: refused while a route runs, offered the same
             // stop while autonomy is busy, and the railway stays either way (done at rest below, before the banner's)
-            final Runnable unload = () -> window.unloadAutonomy();
+            final Runnable unload = () -> window.autonomyLifecycle().unloadAutonomy();
 
             aRouteRuns(ui, true);
 
@@ -1863,9 +1861,9 @@ public class testNoSetupEditWhileARouteRuns
 
             SwingUtilities.invokeAndWait(() ->
             {
-                assertTrue(window.unloadAutonomy(), "precondition: autonomy would not unload at rest");
+                assertTrue(window.autonomyLifecycle().unloadAutonomy(), "precondition: autonomy would not unload at rest");
 
-                window.refreshAutonomyPrompt();
+                window.autonomyLifecycle().refreshAutonomyPrompt();
             });
 
             Components.drain(6);
@@ -2207,10 +2205,10 @@ public class testNoSetupEditWhileARouteRuns
     {
         final List<javax.swing.JMenuItem> out = new ArrayList<>();
 
-        final Class<?> menuClass = Class.forName("org.traincontrol.gui.autonomy.RightClickTimetableMenu$RightClickMenu");
+        final Class<?> menuClass = Class.forName("org.traincontrol.gui.autonomy.TimetableContextMenu$RightClickMenu");
 
         final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(
-            org.traincontrol.gui.autonomy.RightClickTimetableMenu.class, TrainControlUI.class, java.awt.event.MouseEvent.class);
+            org.traincontrol.gui.autonomy.TimetableContextMenu.class, TrainControlUI.class, java.awt.event.MouseEvent.class);
 
         make.setAccessible(true);
 
@@ -2219,7 +2217,7 @@ public class testNoSetupEditWhileARouteRuns
             try
             {
                 javax.swing.JPopupMenu menu = (javax.swing.JPopupMenu) make.newInstance(
-                    new org.traincontrol.gui.autonomy.RightClickTimetableMenu(ui), ui, null);
+                    new org.traincontrol.gui.autonomy.TimetableContextMenu(ui), ui, null);
 
                 for (Component child : menu.getComponents())
                 {
@@ -2378,7 +2376,7 @@ public class testNoSetupEditWhileARouteRuns
         {
             try
             {
-                ui.setHoveredDiagramTile(over.getPage(), over.getX(), over.getY());
+                ui.diagramLocGestures().setHoveredDiagramTile(over.getPage(), over.getX(), over.getY());
 
                 handled[0] = door.invoke(ui, key, false);
             }
@@ -2521,6 +2519,23 @@ public class testNoSetupEditWhileARouteRuns
         try
         {
             method.invoke(on, args);
+        }
+        catch (ReflectiveOperationException failed)
+        {
+            throw new IllegalStateException(failed);
+        }
+    }
+
+    /** The Layout file actions' rename or duplicate, as the window's page menu calls it outside any editor. */
+    private static void renameThroughTheFile(TrainControlUI ui, String name, boolean rename, boolean duplicate,
+        boolean blank)
+    {
+        try
+        {
+            Object actions = ui.layoutFileActions();
+            Reflect.method(actions.getClass(), "duplicateOrRenameCurrentLayout", String.class, boolean.class,
+                boolean.class, boolean.class, org.traincontrol.gui.layouteditor.LayoutEditor.class)
+                .invoke(actions, name, rename, duplicate, blank, null);
         }
         catch (ReflectiveOperationException failed)
         {

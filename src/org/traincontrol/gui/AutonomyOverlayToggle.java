@@ -102,7 +102,7 @@ public class AutonomyOverlayToggle extends JPanel
         left_out.setCursor(HandPointer.cursor());
         left_out.setToolTipText(I18n.t("autosetup.ui.tooltipPageLeftOut"));
 
-        left_out.addMouseListener(Listen.clicked(e ->
+        left_out.addMouseListener(OnMouse.clicked(e ->
         {
             // Straight to the editor, not the Pages menu: there is no entry for disabled pages.
             ui.openAutonomyEditorIfItCan();
@@ -116,7 +116,7 @@ public class AutonomyOverlayToggle extends JPanel
         findings.setVisible(false);
         findings.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 0));
 
-        findings.addMouseListener(Listen.clicked(e -> ui.openAutonomyEditor(firstFinding)));
+        findings.addMouseListener(OnMouse.clicked(e -> ui.editorWindows().openAutonomyEditor(firstFinding)));
 
         left.add(findings);
 
@@ -141,7 +141,7 @@ public class AutonomyOverlayToggle extends JPanel
             // as the count beside it does.
             if (fixing)
             {
-                ui.openAutonomyEditor(firstFinding);
+                ui.editorWindows().openAutonomyEditor(firstFinding);
                 return;
             }
 
@@ -160,7 +160,7 @@ public class AutonomyOverlayToggle extends JPanel
 
         // Belt and braces over show.setFocusable(false) above: this strip sits inside the main window,
         // where bare key presses drive locomotives, so nothing in it may hold the keyboard.
-        AutonomyViewerPanel.unfocusable(this);
+        AutonomyConfigurationsPanel.unfocusable(this);
     }
 
     /** Sets the checkbox, which also applies it; used when a configuration loads successfully. */
@@ -323,7 +323,7 @@ public class AutonomyOverlayToggle extends JPanel
     {
         if (button == null) return;
 
-        button.setFont(start != null ? start.getFont() : AutonomyViewerPanel.FONT_BOLD);
+        button.setFont(start != null ? start.getFont() : AutonomyConfigurationsPanel.FONT_BOLD);
         button.setMargin(BUTTON_MARGIN);
 
         // Cleared first: asking a component its preferred size after setting one reads back what was set

@@ -7,7 +7,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import org.traincontrol.gui.locomotive.RightClickPageMenu;
+import org.traincontrol.gui.locomotive.KeyboardPageContextMenu;
 import org.traincontrol.gui.TrainControlUI;
 import support.Display;
 import support.Reflect;
@@ -16,8 +16,8 @@ import static support.SandboxedWindow.build;
 
 /**
  * A ceiling of fifty locomotive mapping pages, with an error message if exceeded.  The predicate is tested, and so is
- * the menu that offers the action, which must actually gray.  The refusal inside `addLocMappingPage` is a modal
- * dialog (a hang in a test), so that one is read rather than run.
+ * the menu that offers the action, which must actually gray.  The refusal inside `LocomotiveKeyboardPages.addLocMappingPage`
+ * is a modal dialog (a hang in a test), so that one is read rather than run.
  *
  * @author Adam
  */
@@ -107,7 +107,7 @@ public class testLocMappingPages
     @Test
     public void testAddingRefusesWithoutBeingAsked() throws Exception
     {
-        String add = SourceOf.withoutComments(SourceOf.declaration("public void addLocMappingPage()"));
+        String add = SourceOf.withoutComments(SourceOf.declaration("public void addLocMappingPage(Component over)"));
 
         assertTrue(add.contains("canAddLocMappingPage()"),
             "addLocMappingPage no longer asks whether it may, so anything that calls it other than "
@@ -117,7 +117,7 @@ public class testLocMappingPages
             "adding is refused at the ceiling without saying why, which is a menu item that does "
             + "nothing when clicked");
 
-        assertTrue(add.indexOf("canAddLocMappingPage()") < add.indexOf("numLocMappings++"),
+        assertTrue(add.indexOf("canAddLocMappingPage()") < add.indexOf("ui.appendPage()"),
             "the guard sits after the increment, so the page is added and then complained about");
     }
 
@@ -169,10 +169,11 @@ public class testLocMappingPages
         pageNames.put(-1, "3");
         pageNames.put(-2, "81");
 
-        java.lang.reflect.Method ofPages = Reflect.method(TrainControlUI.class, "namesOfPages");
+        Object pages = Reflect.get(TrainControlUI.class, ui, "locMappingPages");
 
         @SuppressWarnings("unchecked")
-        java.util.Set<String> asked = (java.util.Set<String>) ofPages.invoke(ui);
+        java.util.Set<String> asked = (java.util.Set<String>) Reflect.method(pages.getClass(), "namesOfPages")
+            .invoke(pages);
 
         assertTrue(asked.contains("Yard"), "a real page name was not offered as one: " + asked);
 
@@ -554,17 +555,18 @@ public class testLocMappingPages
 
         /**
          * Names the page the window is showing the way the operator's Rename does once its dialog is answered - the
-         * window's own `setPageName`, which words the label and asks for a render - on the event thread; null for none.
+         * mapping pages' `setPageName`, which words the label and asks for a render - on the event thread; null for none.
          */
         void renameTheShownPage(String name) throws Exception
         {
-            java.lang.reflect.Method rename = Reflect.method(TrainControlUI.class, "setPageName", String.class);
+            java.lang.reflect.Method rename = Reflect.method(org.traincontrol.gui.LocomotiveKeyboardPages.class, "setPageName",
+                String.class);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
                 try
                 {
-                    rename.invoke(ui, name);
+                    rename.invoke(ui.locMappingPages(), name);
                 }
                 catch (ReflectiveOperationException e)
                 {
@@ -1658,6 +1660,19 @@ public class testLocMappingPages
         }
     }
 
+    /**
+     * The page count is saved under the key it always had, whatever the class that reads it is called: another key
+     * finds nothing, and every user's pages go back to the default.
+     *
+     * MUTATION: build `TrainControlUI.LOC_MAPPING_PAGES_PREF` from "LocomotiveKeyboardPages", and this fails.
+     */
+    @Test
+    public void testThePageCountKeepsItsSavedKey()
+    {
+        assertEquals(TrainControlUI.LOC_MAPPING_PAGES_PREF, "LocMappingPages" + org.traincontrol.util.Conversion
+            .getFolderHash(10), "the page count is saved under a new key, so a user's saved pages are not found");
+    }
+
     // FR-128: the page tabs and the page label follow the one rule the line over the name does
 
     /** Forty-four Ms: wider than the page label's forty-letter cut, which the 22-M page is not. */
@@ -2147,9 +2162,9 @@ public class testLocMappingPages
      */
     private JMenuItem addItemOf(TrainControlUI ui) throws Exception
     {
-        RightClickPageMenu outer = new RightClickPageMenu(ui);
+        KeyboardPageContextMenu outer = new KeyboardPageContextMenu(ui);
 
-        Class<?> menuClass = Class.forName("org.traincontrol.gui.locomotive.RightClickPageMenu$RightClickMenu");
+        Class<?> menuClass = Class.forName("org.traincontrol.gui.locomotive.KeyboardPageContextMenu$RightClickMenu");
 
         Constructor<?> make = menuClass.getDeclaredConstructors()[0];
 

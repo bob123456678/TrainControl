@@ -101,6 +101,18 @@ public class testMockCentralStation
 
         model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
         model.stop();
+
+        // This database is the user's: one of its locomotives at a served decoder address under another name holds the
+        // served one back as a pending rename (FR-249), so those are taken out for the claims about the station's file
+        for (MarklinLocomotive served : mockStation().parseLocomotives())
+        {
+            for (String name : model.getLocList())
+            {
+                MarklinLocomotive here = model.getLocByName(name);
+
+                if (here != null && here.getIntUID() == served.getIntUID() && !name.equals(served.getName())) model.deleteLoc(name);
+            }
+        }
     }
 
     @AfterClass(alwaysRun = true)
@@ -512,7 +524,7 @@ public class testMockCentralStation
      * at the old address while Stop here commands the new one.  Once it stands, the next sync takes the address.
      * Served BR 85 006 Gl. is at address 5; the database has it at 70.
      *
-     * MUTATION: drop the `LocomotiveSettings.hasSpeed` clause from `adoptCentralStationAddress`'s deferral.
+     * MUTATION: drop the `LocomotiveEditRule.hasSpeed` clause from `MarklinControlStation.whyLeftAsItIs`.
      */
     @Test
     public void testASyncDoesNotReAddressALocomotiveWithASpeed() throws Exception
@@ -554,7 +566,10 @@ public class testMockCentralStation
     /** A locomotive `test/lokomotive.cs2` serves at address 5. */
     private static final String SERVED = "BR 85 006 Gl.";
 
-    /** Puts {@link #SERVED} at address 70, made if missing, and gives back what puts it as it was. */
+    /**
+     * Puts {@link #SERVED} at address 70, made if missing, told to take the station's address as a pressed Sync's answer
+     * does (FR-246), and gives back what puts it as it was.
+     */
     private static Runnable theServedLocomotiveAt70() throws Exception
     {
         MarklinLocomotive loc = model.getLocByName(SERVED);
@@ -566,10 +581,13 @@ public class testMockCentralStation
         if (made) model.newMM2Locomotive(SERVED, 70);
         else model.changeLocAddress(SERVED, 70, MarklinLocomotive.decoderType.MM2);
 
+        model.getLocByName(SERVED).setTakenStationAddress(5);
+
         return () ->
         {
             try
             {
+                model.getLocByName(SERVED).setTakenStationAddress(null);
                 if (made) model.deleteLoc(SERVED);
                 else model.changeLocAddress(SERVED, addressWas, typeWas);
             }

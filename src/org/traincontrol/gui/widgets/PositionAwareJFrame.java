@@ -31,15 +31,14 @@ public class PositionAwareJFrame extends JFrame
 
     // The preference key
     public static final String REMEMBER_WINDOW_LOCATION = "WindowLocation" + Conversion.getFolderHash(10);
+    public static boolean remembersWindowLocations() { return TrainControlUI.getPrefs().getBoolean(REMEMBER_WINDOW_LOCATION, true); }
 
     // Preferences store - can be changed
     // TODO - could be replaced and de-coupled by an abstract method call
     private final Preferences prefs = TrainControlUI.getPrefs();
     
-    // By default, this is our class name
+    // The key saved positions are kept under, and the index that tells windows of one class apart
     private final String thisWindowName;
-    
-    // Custom index for the window if there are multiple windows with the same class name
     private String thisWindowIndex = "";
         
     // Have we loaded the window?
@@ -50,8 +49,13 @@ public class PositionAwareJFrame extends JFrame
     
     public PositionAwareJFrame()
     {
-        // Use the class name as the window identifier
-        this.thisWindowName = getClass().getSimpleName();
+        this(null);
+    }
+
+    /** Positions are saved under windowName, or the simple class name when null: a renamed window passes its old one. */
+    protected PositionAwareJFrame(String windowName)
+    {
+        this.thisWindowName = windowName != null ? windowName : getClass().getSimpleName();
 
         // Load the saved position, size, and state
         // Call this manually because we don't know when the window is ready
@@ -95,7 +99,7 @@ public class PositionAwareJFrame extends JFrame
         try
         {
             String windowName = this.getWindowName();
-            if (prefs.getBoolean(REMEMBER_WINDOW_LOCATION, false))
+            if (remembersWindowLocations())
             {
                 if (isVisible())
                 {
@@ -103,7 +107,7 @@ public class PositionAwareJFrame extends JFrame
                     prefs.putInt(windowName + "_y", this.getY());
                     prefs.putInt(windowName + "_width", this.getWidth());
                     prefs.putInt(windowName + "_height", this.getHeight());
-                    prefs.putInt(windowName + "_state", this.getExtendedState());
+                    prefs.putInt(windowName + "_state", this.getExtendedState() & ~java.awt.Frame.ICONIFIED);
                 }
             }
         }
@@ -125,7 +129,7 @@ public class PositionAwareJFrame extends JFrame
         {
             this.loaded = true;
             
-            if (!prefs.getBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, false)) return;
+            if (!remembersWindowLocations()) return;
 
             String windowName = this.getWindowName();
             if (prefs.get(windowName + "_x", null) != null && prefs.get(windowName + "_y", null) != null)
@@ -163,7 +167,7 @@ public class PositionAwareJFrame extends JFrame
                     {
                         int width = prefs.getInt(windowName + "_width", this.getWidth());
                         int height = prefs.getInt(windowName + "_height", this.getHeight());
-                        int state = prefs.getInt(windowName + "_state", this.getExtendedState());
+                        int state = prefs.getInt(windowName + "_state", this.getExtendedState()) & ~java.awt.Frame.ICONIFIED;
                         this.setSize(width, height);
 
                         // Maximized once it is on screen, not before (OB-328): the diagram's windows and the editor are

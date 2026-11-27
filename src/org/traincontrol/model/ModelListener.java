@@ -22,6 +22,10 @@ public interface ModelListener
 
     // Logging methods
     public void logf(String key, Object... args);
+    public default void logf(java.util.logging.Level level, String key, Object... args)
+    {
+        logf(key, args);
+    }
     public void log(String message);
     public void log(Exception e);
 }

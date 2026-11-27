@@ -1,11 +1,16 @@
 package org.traincontrol.gui;
 
+import java.awt.Dimension;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
+import javax.swing.JComboBox;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+import org.traincontrol.automation.Layout;
+import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.Route;
+import org.traincontrol.util.I18n;
 
 /**
  * The Auto tab's settings: loading every control from the railway, and the handler each control calls when it is let
@@ -42,7 +47,7 @@ final class AutonomySettingsTab
                         // Push back into the model
                         this.ui.getModel().getAutoLayout().setActivateRouteIDs(activateRouteIDs);
                         this.ui.getModel().applyAutonomyRouteActivations();
-                        this.ui.refreshRouteList();
+                        this.ui.routeListPanel.refreshRouteList();
                     }
                 }
             });
@@ -219,10 +224,204 @@ final class AutonomySettingsTab
         // rule of the configuration that runs.
         if (this.ui.algorithmType() != null)
         {
-            this.ui.migrateStoredPathPreference(this.ui.getModel().getAutoLayout());
+            migrateStoredPathPreference(this.ui.getModel().getAutoLayout());
 
             // The same restore the refusal uses: the helper holds the flag, so the listener does not run here at all.
-            this.ui.restoreRoutingLogicSelection();
+            restoreRoutingLogicSelection();
         }        
+    }
+
+    /** Puts what the chosen routing rule does onto its control, so ten similar options can be told apart (OB-163). */
+    void refreshRoutingLogicTooltip()
+    {
+        if (this.ui.algorithmType() == null) return;
+
+        String general = I18n.t("ui.main.tooltip.routingLogic");
+
+        int at = this.ui.algorithmType().getSelectedIndex();
+
+        if (at < 0 || at >= TrainControlUI.ROUTING_ORDER.length)
+        {
+            TrainControlUI.setToolTipAtRest(this.ui.algorithmType(), general);
+
+            return;
+        }
+
+        // HTML so the two paragraphs wrap.
+        TrainControlUI.setToolTipAtRest(this.ui.algorithmType(), "<html><p width=\"420\">" + general + "<br><br>"
+            + I18n.t("autolayout.ui.tooltip.pathPreference" + TrainControlUI.ROUTING_ORDER[at].name())
+            + "</p></html>");
+    }
+
+    /** Puts the dropdown back to the rule in force with the flag held, so the listener stays quiet. */
+    void restoreRoutingLogicSelection()
+    {
+        if (this.ui.algorithmType() == null || this.ui.getModel() == null || !this.ui.getModel().hasAutoLayout()) return;
+
+        Layout.PathPreference now = this.ui.getModel().getAutoLayout().getPathPreference();
+
+        this.ui.restoringRoutingLogic = true;
+
+        try
+        {
+            for (int at = 0; at < TrainControlUI.ROUTING_ORDER.length; at++)
+            {
+                if (TrainControlUI.ROUTING_ORDER[at] == now)
+                {
+                    this.ui.algorithmType().setSelectedIndex(at);
+
+                    // Inside the flag the listener is suppressed, so ask for the tooltip here too.
+                    refreshRoutingLogicTooltip();
+
+                    return;
+                }
+            }
+        }
+        finally
+        {
+            this.ui.restoringRoutingLogic = false;
+        }
+    }
+
+    /** Fills in the routing dropdown (MT-226) without touching its layout: a GroupLayout.replace can stop the start. */
+    void mountRoutingLogic()
+    {
+        final JComboBox<String> algorithmType = this.ui.algorithmType();
+
+        if (algorithmType == null) return;
+
+        // Translated at runtime: the form's English label is not ours to edit.
+        if (this.ui.jLabel2() != null)
+        {
+            this.ui.jLabel2().setText(I18n.t("ui.main.routingLogic"));
+            this.ui.jLabel2().setToolTipText(I18n.t("ui.main.tooltip.routingLogic"));
+        }
+
+        algorithmType.removeAllItems();
+
+        for (Layout.PathPreference option : TrainControlUI.ROUTING_ORDER)
+        {
+            algorithmType.addItem(I18n.t("autolayout.ui.pathPreference" + option.name()));
+        }
+
+        // Capped at 230 px, the editor's alignment width.
+        Dimension capped = new Dimension(230, algorithmType.getPreferredSize().height);
+
+        algorithmType.setPreferredSize(capped);
+        algorithmType.setMaximumSize(capped);
+
+        refreshRoutingLogicTooltip();
+
+        algorithmType.addActionListener(event ->
+        {
+            // Our own restore, not a person; checked here because setSelectedIndex delivers this synchronously.
+            if (this.ui.restoringRoutingLogic) return;
+
+            if (this.ui.getModel() == null || !this.ui.getModel().hasAutoLayout()
+                || this.ui.getModel().getAutoLayout() == null) return;
+
+            SwingUtilities.invokeLater(() ->
+            {
+                if (this.ui.getModel().hasAutoLayout())
+                {
+                    // Back before the modal message: a rule changed mid-run would leave two in force.
+                    if (!this.ui.refuseWhileARunHoldsTheSetup(this.ui, () ->
+                        {
+                            this.ui.applyAutoRouteListSelections();
+                            restoreRoutingLogicSelection();
+                        }))
+                    {
+                        int at = algorithmType.getSelectedIndex();
+
+                        if (at < 0 || at >= TrainControlUI.ROUTING_ORDER.length) return;
+
+                        Layout.PathPreference option = TrainControlUI.ROUTING_ORDER[at];
+
+                        // Nothing to do, and saying so would write the setup on every refresh.
+                        if (this.ui.getModel().getAutoLayout().getPathPreference() == option) return;
+
+                        this.ui.getModel().getAutoLayout().setPathPreference(option);
+
+                        refreshRoutingLogicTooltip();
+
+                        // Said aloud when it cannot be kept; true: a person just chose this.
+                        if (!persistPathPreference(option, true))
+                        {
+                            this.ui.getModel().logf(java.util.logging.Level.WARNING, "autolayout.warnRoutingRuleNotStored",
+                                I18n.t("autolayout.ui.pathPreference" + option.name()));
+                        }
+                    }
+                }
+            });
+        });
+    }
+
+    /** Writes the routing rule into the configuration; true when stored.  `mayBuildSession` only after a click. */
+    private boolean persistPathPreference(Layout.PathPreference option, boolean mayBuildSession)
+    {
+        try
+        {
+            // A refresh must not run the lazy session builder.
+            AutonomySession session = mayBuildSession ? this.ui.getAutonomySession() : this.ui.autonomySession();
+
+            return session != null && session.setGlobal("pathPreference", option.name());
+        }
+        catch (Exception e)
+        {
+            if (this.ui.getModel() != null) this.ui.getModel().log(e);
+
+            return false;
+        }
+    }
+
+    /** Carries the pre-configuration routing choice across once, if the configuration has none; `live` may be null. */
+    void migrateStoredPathPreference(Layout live)
+    {
+        if (live == null) return;
+
+        final String legacy = "AutonomyPathPreference";
+
+        String was = TrainControlUI.getPrefs().get(legacy, null);
+
+        if (was == null) return;
+
+        // A second call cannot tell the user's own rule from the one just written.
+        if (this.ui.pathPreferenceCarried) return;
+
+        // The field, not getAutonomySession(): this runs from a refresh.
+        AutonomySession stored = this.ui.autonomySession();
+
+        // A legacy autonomy.json can carry a rule getGlobal cannot see.
+        if (live.getPathPreference() != Layout.PathPreference.RANDOM)
+        {
+            TrainControlUI.getPrefs().remove(legacy);
+
+            return;
+        }
+
+        if (stored != null && stored.getGlobal("pathPreference") != null)
+        {
+            // The configuration has its own answer: the old one is stale.
+            TrainControlUI.getPrefs().remove(legacy);
+
+            return;
+        }
+
+        try
+        {
+            Layout.PathPreference option = Layout.PathPreference.valueOf(was);
+
+            live.setPathPreference(option);
+
+            this.ui.pathPreferenceCarried = true;
+
+            // The old key goes only once the new home has it.
+            if (persistPathPreference(option, false)) TrainControlUI.getPrefs().remove(legacy);
+        }
+        catch (Exception e)
+        {
+            // The key stays so it can be retried.
+            if (this.ui.getModel() != null) this.ui.getModel().log(e);
+        }
     }
 }

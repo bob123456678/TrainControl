@@ -337,18 +337,18 @@ public class testTheActiveTickPausesATrain
     /** The track diagram's right-click menu on a square, built as a right-click builds it. */
     private static javax.swing.JPopupMenu diagramMenu(TileKey square) throws Exception
     {
-        final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
+        final Class<?> menuClass = Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu");
 
         final Method gather = Reflect.method(menuClass, "gatherPathOptions", TrainControlUI.class, Point.class);
 
         final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
-            TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
+            TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu$PathOptions"));
 
         make.setAccessible(true);
 
         final Point[] standing = new Point[1];
 
-        SwingUtilities.invokeAndWait(() -> standing[0] = ui.getAutonomyPointForTile(square));
+        SwingUtilities.invokeAndWait(() -> standing[0] = ui.stationCaptions().getAutonomyPointForTile(square));
 
         final Object options = gather.invoke(null, ui, standing[0]);
 
@@ -409,7 +409,7 @@ public class testTheActiveTickPausesATrain
 
         String leaving = I18n.t("layout.ui.dialogExitConfirmation");
 
-        for (long end = System.currentTimeMillis() + 15000; (editor.isDisplayable() || ui.whyLayoutCannotBeEdited() != null)
+        for (long end = System.currentTimeMillis() + 15000; (editor.isDisplayable() || ui.editorWindows().whyLayoutCannotBeEdited() != null)
             && System.currentTimeMillis() < end; )
         {
             Thread.sleep(100);
@@ -779,7 +779,7 @@ public class testTheActiveTickPausesATrain
     {
         java.awt.Window editor = null;
 
-        SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(mainB.getPage()));
+        SwingUtilities.invokeLater(() -> ui.editorWindows().openAutonomyEditorOnPage(mainB.getPage()));
 
         for (long end = System.currentTimeMillis() + 60000; editor == null && System.currentTimeMillis() < end; )
         {
@@ -975,9 +975,9 @@ public class testTheActiveTickPausesATrain
             });
 
             // THE IMPORT, which folds the railway into the setup first and fails after it
-            final org.traincontrol.gui.AutonomyViewerPanel viewer = ui.getAutonomyViewerPanel();
+            final org.traincontrol.gui.AutonomyConfigurationsPanel viewer = ui.getAutonomyViewerPanel();
 
-            final Method importIt = Reflect.method(org.traincontrol.gui.AutonomyViewerPanel.class,
+            final Method importIt = Reflect.method(org.traincontrol.gui.AutonomyConfigurationsPanel.class,
                 "importLegacyGraph", org.json.JSONObject.class, String.class);
 
             final org.json.JSONObject file = new org.json.JSONObject("{\"points\": [], \"edges\": {}}");
@@ -1647,7 +1647,7 @@ public class testTheActiveTickPausesATrain
 
             SwingUtilities.invokeLater(save::doClick);
 
-            support.Components.waitFor(() -> !editor.isDisplayable() && ui.whyLayoutCannotBeEdited() == null, 30000);
+            support.Components.waitFor(() -> !editor.isDisplayable() && ui.editorWindows().whyLayoutCannotBeEdited() == null, 30000);
 
             assertFalse(editor.isDisplayable(), "the editor's Save did not close it");
         }, card ->
@@ -2287,8 +2287,8 @@ public class testTheActiveTickPausesATrain
     {
         final javax.swing.AbstractButton[] found = new javax.swing.AbstractButton[1];
 
-        final java.lang.reflect.Field loco = Class.forName("org.traincontrol.gui.autonomy.AutoLocomotiveStatus").getDeclaredField("locomotive");
-        final java.lang.reflect.Field pause = Class.forName("org.traincontrol.gui.autonomy.AutoLocomotiveStatus").getDeclaredField("pauseButton");
+        final java.lang.reflect.Field loco = Class.forName("org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus").getDeclaredField("locomotive");
+        final java.lang.reflect.Field pause = Class.forName("org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus").getDeclaredField("pauseButton");
 
         loco.setAccessible(true);
         pause.setAccessible(true);
@@ -2301,7 +2301,7 @@ public class testTheActiveTickPausesATrain
 
             for (java.awt.Component c : all)
             {
-                if (!c.getClass().getSimpleName().equals("AutoLocomotiveStatus")) continue;
+                if (!c.getClass().getSimpleName().equals("AutonomyLocomotiveStatus")) continue;
 
                 try
                 {
@@ -2512,9 +2512,9 @@ public class testTheActiveTickPausesATrain
 
             for (java.awt.Component c : all)
             {
-                if (!(c instanceof org.traincontrol.gui.autonomy.AutoLocomotiveStatus)) continue;
+                if (!(c instanceof org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus)) continue;
 
-                String name = ((org.traincontrol.gui.autonomy.AutoLocomotiveStatus) c).getLocomotive().getName();
+                String name = ((org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus) c).getLocomotive().getName();
 
                 if (ours.contains(name)) names.add(name);
             }

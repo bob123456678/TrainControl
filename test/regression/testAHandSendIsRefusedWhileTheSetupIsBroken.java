@@ -206,7 +206,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
                         javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
                         // Handed the sentence, as the menu hands it where Start is grayed.
-                        Method add = Class.forName("org.traincontrol.gui.HomeLocomotiveMenu").getDeclaredMethod(
+                        Method add = Class.forName("org.traincontrol.gui.ReturnHomeMenuItem").getDeclaredMethod(
                             "addReturnHomeItem", javax.swing.JComponent.class, TrainControlUI.class, String.class);
 
                         add.setAccessible(true);
@@ -289,7 +289,8 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
      * folder".  A real window and its Autonomy menu, on a sandboxed copy whose setup.json is not JSON; nothing is
      * pressed, and the file is as it was (an unreadable setup may not be written over).
      *
-     * MUTATION: forget the reason in `getAutonomySession`'s catch.
+     * MUTATION: forget the reason in `getAutonomySession`'s catch, or take either session-null reason out of
+     * `whyTheTrainsCannotBePlacedAtTheirHomes`.
      */
     @Test
     public void testASetupThatWillNotReadIsNotCalledMissing() throws Exception
@@ -327,15 +328,16 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
             settled.await(30, java.util.concurrent.TimeUnit.SECONDS);
 
-            final String[] said = new String[4];
+            final String[] said = new String[5];
 
             final java.util.List<String> items = new java.util.ArrayList<>();
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
                 said[0] = String.valueOf(ui[0].getAutonomySession());
-                said[1] = String.valueOf(ui[0].whyAutonomyEditorCannotOpen());
+                said[1] = String.valueOf(ui[0].editorWindows().whyAutonomyEditorCannotOpen());
                 said[2] = String.valueOf(ui[0].whyTheSetupCannotBeRead());
+                said[4] = ui[0].whyTheTrainsCannotBePlacedAtTheirHomes();
 
                 // THE AUTONOMY MENU, built as it is when it is opened
                 org.traincontrol.gui.AutonomyMenu menu = new org.traincontrol.gui.AutonomyMenu(ui[0]);
@@ -365,6 +367,29 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
             assertNotEquals(said[2], "null", "the reason the setup would not read was not kept, so no door can say it"
                 + " (GSP-B2)");
+
+            assertEquals(said[4], I18n.f("autosetup.ui.errorSetupUnreadable", said[2]), "Place All Trains at Their Homes"
+                + " does not say why the setup would not read");
+
+            // A layout folder that is gone has no setup to edit, and is not an unreadable one
+            File folder = sandbox.getFolder();
+            File away = new File(folder.getParentFile(), folder.getName() + "-away");
+
+            assertTrue(folder.renameTo(away), "precondition: the sandbox folder would not move");
+
+            try
+            {
+                final String[] gone = new String[1];
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> gone[0] = ui[0].whyTheTrainsCannotBePlacedAtTheirHomes());
+
+                assertEquals(gone[0], I18n.t("autosetup.ui.errorNoSetupToEdit"), "with no folder to keep a setup in,"
+                    + " Place All Trains at Their Homes does not say there is no setup to edit");
+            }
+            finally
+            {
+                assertTrue(away.renameTo(folder), "the sandbox folder would not move back");
+            }
 
             assertFalse(items.contains(I18n.t("autosetup.ui.menuNoSetupPossible")), "the Autonomy menu says autonomy"
                 + " needs a layout stored on this computer, on one that is (GSP-B2): " + items);
@@ -400,9 +425,9 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
     @Test
     public void testTheMenuAsksTheSetupOnceWhereStartIsOffered() throws Exception
     {
-        // The menu is built by its constructor; the Return Home item is the whole of HomeLocomotiveMenu's file.
-        String menu = code("private LayoutRightclickAutonomyMenu(");
-        String item = SourceOf.withoutComments(SourceOf.fileDeclaring("final class HomeLocomotiveMenu"));
+        // The menu is built by its constructor; the Return Home item is the whole of ReturnHomeMenuItem's file.
+        String menu = code("private DiagramAutonomyContextMenu(");
+        String item = SourceOf.withoutComments(SourceOf.fileDeclaring("final class ReturnHomeMenuItem"));
 
         assertTrue(menu.contains("canStart ? null : ui.whyStartAndAHandSendAreRefused()"), "the right-click menu does"
             + " not work Start's and the hand doors' sentences out together from Start's answer (ADU-C3, ADU2-C5)");
@@ -410,7 +435,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
         // Over the block that builds Start's item and Return Home's.  A destination item asks again when it is CLICKED,
         // which is its guard (MT-263) and stays.
         int from = menu.indexOf("boolean canStart = ui.canStartAutonomy();");
-        int to = menu.indexOf("HomeLocomotiveMenu.addReturnHomeItem(this, ui, broken)");
+        int to = menu.indexOf("ReturnHomeMenuItem.addReturnHomeItem(this, ui, broken)");
 
         assertTrue(from >= 0 && to > from, "precondition: the block that builds Start's item and Return Home's is not"
             + " where it was");
@@ -420,7 +445,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
         assertFalse(building.contains("ui.whyAutonomyWillNotStart()") || building.contains("ui.whyAHandSendIsRefused()"),
             "the right-click menu asks the setup again for one of the two sentences, over a broken setup (ADU2-C5)");
 
-        assertTrue(menu.contains("HomeLocomotiveMenu.addReturnHomeItem(this, ui, broken)"), "the right-click menu does not"
+        assertTrue(menu.contains("ReturnHomeMenuItem.addReturnHomeItem(this, ui, broken)"), "the right-click menu does not"
             + " hand the Return Home item the sentence it worked out (ADU-C3)");
 
         // AND EACH SENTENCE GOES WHERE IT BELONGS: Start's to Start's tooltip, the hand doors' to Return Home.
@@ -570,20 +595,20 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
             // THE RIGHT-CLICK MENU, built as `showFor` - the diagram's own door - builds it: the Point on the square
             // resolved on the event thread, the paths gathered off it, the menu made on it.  Not shown: the test's window
             // is not on screen, and `showFor` shows only over a showing window.
-            final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
+            final Class<?> menuClass = Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu");
 
             final Method gather = Reflect.method(menuClass,
                 "gatherPathOptions", TrainControlUI.class, org.traincontrol.automation.Point.class);
 
             final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
                 org.traincontrol.automationui.TileGraph.TileKey.class, org.traincontrol.automationui.TileGraph.TileKey.class,
-                Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
+                Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu$PathOptions"));
 
             make.setAccessible(true);
 
             final org.traincontrol.automation.Point[] standing = new org.traincontrol.automation.Point[1];
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> standing[0] = ui[0].getAutonomyPointForTile(station[0]));
+            javax.swing.SwingUtilities.invokeAndWait(() -> standing[0] = ui[0].stationCaptions().getAutonomyPointForTile(station[0]));
 
             final Object options = gather.invoke(null, ui[0], standing[0]);
 

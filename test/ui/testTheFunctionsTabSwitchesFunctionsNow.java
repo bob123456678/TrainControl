@@ -11,7 +11,7 @@ import static org.testng.Assert.assertTrue;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.gui.widgets.RowIcons;
@@ -56,7 +56,7 @@ public class testTheFunctionsTabSwitchesFunctionsNow extends support.SettingsCla
     @BeforeMethod
     public void lay() throws Exception
     {
-        loc = fixture.layDcc(NAME, 3701, LocomotiveSettingsFrame.Tab.FUNCTIONS);
+        loc = fixture.layDcc(NAME, 3701, LocomotiveSettingsWindow.Tab.FUNCTIONS);
     }
 
     private static JTable table()
@@ -271,7 +271,7 @@ public class testTheFunctionsTabSwitchesFunctionsNow extends support.SettingsCla
         assertTrue(loc.getF(F), "Cancel undid a switch");
         assertTrue(sent(mark).isEmpty(), "Cancel sent " + sent(mark));
 
-        assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.FUNCTIONS, null));
+        assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsWindow.Tab.FUNCTIONS, null));
         assertTrue(SettingsWindow.awaited() != null);
 
         Components.onTheEventThread(() ->

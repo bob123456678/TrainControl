@@ -498,7 +498,7 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
 
     private static void openTheEditor() throws Exception
     {
-        SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(PAGE));
+        SwingUtilities.invokeLater(() -> ui.editorWindows().openAutonomyEditorOnPage(PAGE));
 
         support.Components.waitFor(() ->
         {
@@ -673,7 +673,7 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
 
     private static void untilItHasGone(java.awt.Window editor) throws Exception
     {
-        support.Components.waitFor(() -> !editor.isDisplayable() && ui.whyLayoutCannotBeEdited() == null, 30000);
+        support.Components.waitFor(() -> !editor.isDisplayable() && ui.editorWindows().whyLayoutCannotBeEdited() == null, 30000);
 
         assertFalse(editor.isDisplayable(), "the editor did not close");
     }

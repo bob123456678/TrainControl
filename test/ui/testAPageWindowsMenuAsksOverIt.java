@@ -27,7 +27,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.LayoutPopupUI;
+import org.traincontrol.gui.LayoutPopupWindow;
 import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomy.ArrivalSidePrompt;
@@ -61,7 +61,7 @@ public class testAPageWindowsMenuAsksOverIt
     private static MarklinControlStation model;
     private static TrainControlUI ui;
     private static AutonomySession session;
-    private static LayoutPopupUI page;
+    private static LayoutPopupWindow page;
     private static Locomotive train;
     private static boolean echoWas;
 
@@ -251,14 +251,14 @@ public class testAPageWindowsMenuAsksOverIt
     {
         return Components.onTheEventThread(() ->
         {
-            Point point = ui.getAutonomyPointForTile(square);
+            Point point = ui.stationCaptions().getAutonomyPointForTile(square);
 
             assertTrue(railway().moveLocomotive(HIS_TRAIN, point.getName(), false, true),
                 "precondition: " + HIS_TRAIN + " could not stand on " + square);
 
             ui.updateVisiblePoints();
 
-            return ui.getAutonomyPointForTile(square);
+            return ui.stationCaptions().getAutonomyPointForTile(square);
         });
     }
 
@@ -285,7 +285,7 @@ public class testAPageWindowsMenuAsksOverIt
     /**
      * Start on an open menu, grayed since, says why over the window the menu was in.
      *
-     * MUTATION: `ui` for `ui.dialogParent()` at Start's catch in `LayoutRightclickAutonomyMenu`, or leave the menu's
+     * MUTATION: `ui` for `ui.dialogParent()` at Start's catch in `DiagramAutonomyContextMenu`, or leave the menu's
      * items out of `itemsPressFromWindow`, and it hangs off the main window.
      */
     @Test
@@ -318,7 +318,7 @@ public class testAPageWindowsMenuAsksOverIt
     /**
      * Graceful Stop once a stop has been asked says so over the window the menu was in.
      *
-     * MUTATION: `ui` for `ui.dialogParent()` at Stop's catch in `LayoutRightclickAutonomyMenu`, and it hangs off the main
+     * MUTATION: `ui` for `ui.dialogParent()` at Stop's catch in `DiagramAutonomyContextMenu`, and it hangs off the main
      * window.
      */
     @Test
@@ -438,7 +438,7 @@ public class testAPageWindowsMenuAsksOverIt
 
         List<Locomotive> toRun = new ArrayList<>(railway().getLocomotivesToRun());
 
-        LayoutPopupUI going = AskingWindows.openThePage(ui);
+        LayoutPopupWindow going = AskingWindows.openThePage(ui);
 
         try
         {
@@ -788,7 +788,7 @@ public class testAPageWindowsMenuAsksOverIt
             "the question is not the page's");
 
         assertTrue(Components.waitFor(() -> !railway().getActiveLocomotives().isEmpty()
-            || railway().getLocomotiveLocation(train) != ui.getAutonomyPointForTile(post), PATIENCE_MS),
+            || railway().getLocomotiveLocation(train) != ui.stationCaptions().getAutonomyPointForTile(post), PATIENCE_MS),
             "Yes sent nothing");
 
         assertTrue(Components.waitFor(() -> railway().getActiveLocomotives().isEmpty(), 120000),
@@ -802,7 +802,7 @@ public class testAPageWindowsMenuAsksOverIt
     {
         for (TileKey square : session.mayTurnTiles())
         {
-            Point point = ui.getAutonomyPointForTile(square);
+            Point point = ui.stationCaptions().getAutonomyPointForTile(square);
 
             if (!square.getPage().equals(mainB.getPage()) || point == null || !point.isDestination()) continue;
 
@@ -820,7 +820,7 @@ public class testAPageWindowsMenuAsksOverIt
     {
         List<String> labels = new ArrayList<>();
 
-        Point point = ui.getAutonomyPointForTile(square);
+        Point point = ui.stationCaptions().getAutonomyPointForTile(square);
 
         for (String side : ArrivalSidePrompt.choicesFor(railway(), point, session.unbarredArrivalSides(square)))
         {
@@ -850,7 +850,7 @@ public class testAPageWindowsMenuAsksOverIt
         List<String> sides = sidesOffered(square);
 
         String question = I18n.f("autolayout.ui.askArrivalSide", org.traincontrol.automationui.StationIndex
-            .withoutArrivalSuffix(ui.getAutonomyPointForTile(square).getName()));
+            .withoutArrivalSuffix(ui.stationCaptions().getAutonomyPointForTile(square).getName()));
 
         for (Window window : bothWindows())
         {
@@ -897,9 +897,9 @@ public class testAPageWindowsMenuAsksOverIt
             TileKey here = new TileKey(mainB.getPage(), each.getX(), each.getY());
 
             if (each.getType() == LayoutDiagramComponent.componentType.STRAIGHT && !session.getStore().isStation(here)
-                && ui.getAutonomyPointForTile(here) != null) track = here;
+                && ui.stationCaptions().getAutonomyPointForTile(here) != null) track = here;
 
-            if (each.isFeedback() && !session.getStore().isStation(here) && ui.getAutonomyPointForTile(here) != null) track = here;
+            if (each.isFeedback() && !session.getStore().isStation(here) && ui.stationCaptions().getAutonomyPointForTile(here) != null) track = here;
         }
 
         assertNotNull(track, "precondition: no square that autonomy knows and is no station");
@@ -1010,7 +1010,7 @@ public class testAPageWindowsMenuAsksOverIt
     /** A claim made on a square, from a page window of its page. */
     private interface OnTunnel
     {
-        void run(TileKey tunnel, LayoutPopupUI there) throws Exception;
+        void run(TileKey tunnel, LayoutPopupWindow there) throws Exception;
     }
 
     /** With a page window of the square's page, which is closed and the page before put back afterward. */
@@ -1020,7 +1020,7 @@ public class testAPageWindowsMenuAsksOverIt
 
         AskingWindows.showThePageOf(ui, tunnel);
 
-        LayoutPopupUI there = AskingWindows.openThePage(ui);
+        LayoutPopupWindow there = AskingWindows.openThePage(ui);
 
         try
         {

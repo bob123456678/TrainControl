@@ -95,11 +95,25 @@ public interface ViewListener
     public void locFunctionsOff(Locomotive l);
     public void lightsOn(List<String> locomotives);
     public void log(String s);
+    /** As {@link #log(String)}, at a level the log window marks (FR-190). */
+    public default void log(String s, java.util.logging.Level level)
+    {
+        log(s);
+    }
     public void log(Exception e);
     public void stopAllLocs();
     public int syncWithCS2();
     public boolean wasLastSyncPartial();
+    /** How many of the last sync's count are routes it added or replaced; the rest are locomotives. */
+    public int getLastSyncRoutes();
+    /** Locomotives the last sync left unsettled (FR-249); -1 after an import. */
+    public int getUnsettledCount();
+    public void setUnsettledCount(int count);
     public String getLastSyncError();
+    /** The layout folder the last sync could not read, so the layout in use was kept; null when there was none. */
+    public String getLayoutFolderUnread();
+    /** The layout folder a start could not read; null once one is. */
+    public String getLayoutFolderHeld();
     public List<String> getLayoutList();
     public List<String> getLayoutListByName();
     public String getPageNameForId(int id);
@@ -111,6 +125,9 @@ public interface ViewListener
     public boolean getFeedbackState(String name);
     public boolean setFeedbackState(String name, boolean state); // for simulation purposes
     public boolean isCS3();
+    /** As the station states them, else null (FR-242). */
+    public String getStationFirmware();
+    public String getStationSerial();
     public String getCS3AppUrl();
     public boolean newRoute(String name, List<RouteCommand> route, int s88, Route.s88Triggers s88Trigger, boolean routeEnabled, NodeExpression conditions);
     public boolean editRoute(String name, String newName, List<RouteCommand> route, int s88, Route.s88Triggers s88Trigger, boolean routeEnabled, NodeExpression conditions);
@@ -271,12 +288,11 @@ public interface ViewListener
     public void downloadLayout(File path) throws Exception;
     public List<String[]> getLocomotivesToRenameFromImport() throws Exception;
 
-    /**
-     * The rename check with its refusal count, so an empty proposal list can be told apart from
-     * everything having been declined
-     * @throws java.lang.Exception
-     */
-    public RenameProposals getRenameProposals() throws Exception;
+    /** The rename check (FR-249); without `log`, quietly, a failed read giving null. */
+    public RenameProposals getRenameProposals(boolean log) throws Exception;
+
+    /** Adds the Central Station's locomotive here beside any at its address (FR-249); null when its name is taken. */
+    public Locomotive addStationLocomotive(Locomotive station);
     public String exportLocsToCSV();
 
     /**
@@ -285,5 +301,10 @@ public interface ViewListener
      */
     public String exportAccessoryActuationsToCSV();
     public void logf(String key, Object... args);
+    /** As {@link #logf(String, Object...)}, at a level the log window marks. */
+    public default void logf(java.util.logging.Level level, String key, Object... args)
+    {
+        logf(key, args);
+    }
     public Feedback newFeedback(int id, CANMessage message);
 }

@@ -11,7 +11,7 @@ import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.base.RouteCommand;
-import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
@@ -28,7 +28,7 @@ import support.SourceOf;
  * show.  The third door, the Central Station's name proposal, sits inside a loop over a modal list, so it is read.
  *
  * MUTATION: take the refusal out of either door, and the matching claim fails; leave the member list out of
- * `LocomotiveSettingsFrame.MultiUnitTab` while autonomy runs, and the Central Station list claim fails.
+ * `LocomotiveSettingsWindow.MultiUnitTab` while autonomy runs, and the Central Station list claim fails.
  *
  * @author Adam
  */
@@ -123,7 +123,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
             // THE EDIT DOOR, the Locomotive Settings window's Save, which renames and re-addresses.
             final org.traincontrol.base.Locomotive loc = model.getLocByName(LOC);
 
-            assertTrue(support.SettingsWindow.open(window, loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null),
+            assertTrue(support.SettingsWindow.open(window, loc, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null),
                 "precondition: the window did not open on a locomotive a running route drives");
 
             support.SettingsWindow.type("settings.name", LOC + " renamed");
@@ -143,7 +143,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
             final javax.swing.JPopupMenu[] database = new javax.swing.JPopupMenu[1];
 
-            SwingUtilities.invokeAndWait(() -> database[0] = new org.traincontrol.gui.locomotive.RightClickSelectorMenu(window, null, loc));
+            SwingUtilities.invokeAndWait(() -> database[0] = new org.traincontrol.gui.locomotive.LocomotiveSelectorContextMenu(window, null, loc));
 
             assertNull(multiUnitItemIn(database[0]), "the locomotive database's menu still offers a multi-unit item of its own");
 
@@ -152,7 +152,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
             assertNotNull(settings, "the locomotive database's menu offers no Locomotive Settings...");
 
-            SwingUtilities.invokeAndWait(() -> window.openLocomotiveSettings(loc, LocomotiveSettingsFrame.Tab.MULTI_UNIT, null));
+            SwingUtilities.invokeAndWait(() -> window.openLocomotiveSettings(loc, LocomotiveSettingsWindow.Tab.MULTI_UNIT, null));
 
             said = savingAMemberAsksOnce(UNIT);
 
@@ -168,13 +168,13 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
             SwingUtilities.invokeAndWait(() -> window.mapLocToCurrentButton(LOC));
 
-            final Class<?> listenerClass = Class.forName("org.traincontrol.gui.locomotive.RightClickMenuListener");
+            final Class<?> listenerClass = Class.forName("org.traincontrol.gui.locomotive.LocomotiveButtonContextMenu");
 
             final Object listener = listenerClass.getConstructor(TrainControlUI.class, javax.swing.JButton.class)
                 .newInstance(window, button);
 
             final java.lang.reflect.Constructor<?> make = Class.forName(
-                "org.traincontrol.gui.locomotive.RightClickMenuListener$RightClickMenu").getDeclaredConstructor(listenerClass,
+                "org.traincontrol.gui.locomotive.LocomotiveButtonContextMenu$RightClickMenu").getDeclaredConstructor(listenerClass,
                 TrainControlUI.class);
 
             make.setAccessible(true);
@@ -214,7 +214,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
             // AND ASKED AGAIN AT OK: another locomotive's multi-unit, with the driven one ticked into it
             final org.traincontrol.base.Locomotive unit = model.getLocByName(UNIT);
 
-            assertTrue(support.SettingsWindow.open(window, unit, LocomotiveSettingsFrame.Tab.MULTI_UNIT, null),
+            assertTrue(support.SettingsWindow.open(window, unit, LocomotiveSettingsWindow.Tab.MULTI_UNIT, null),
                 "precondition: the window did not open on the multi-unit's own tab");
 
             said = savingAMemberAsksOnce(LOC);
@@ -253,7 +253,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
             {
                 assertTrue(model.isAutonomyRunning(), "precondition: the model does not read autonomy as busy");
 
-                assertTrue(support.SettingsWindow.open(window, centralStations, LocomotiveSettingsFrame.Tab.MULTI_UNIT, null),
+                assertTrue(support.SettingsWindow.open(window, centralStations, LocomotiveSettingsWindow.Tab.MULTI_UNIT, null),
                     "the window did not open on a Central Station multi-unit while autonomy was busy");
 
                 support.Components.settle();
@@ -313,21 +313,35 @@ public class testARouteDrivenLocomotiveIsNotEdited
         }
     }
 
-    /** The Central Station's name proposal asks it too, of both names, before it renames. */
+    /**
+     * The Central Station's name proposal asks it too, of both names, before it renames: the row's reason (FR-249)
+     * covers the current name through whyLeftAsItIs and the proposed one directly, and Apply renames only without one.
+     */
     @Test
     public void testTheNameProposalAsksItFirst() throws Exception
     {
-        String source = SourceOf.declaration("private List<Locomotive> askAboutRenames(Component c, RenameProposals proposals)");
+        String source = SourceOf.declaration(
+            "private RenameProposals differences(List<MarklinLocomotive> parsedLocs, boolean partial, boolean log)");
 
-        int current = source.indexOf("if (RunGates.refuseWhileARouteDrivesIt(this, c, currentName)) continue;");
-        int proposed = source.indexOf("if (RunGates.refuseWhileARouteDrivesIt(this, c, newName)) continue;");
+        int current = source.indexOf("now = whyLeftAsItIs(here)");
+        int proposed = source.indexOf("this.runningRouteDriving(to)");
 
-        assertTrue(current > 0 && proposed > 0, "the Central Station's name proposal does not ask about both names"
+        boolean itself = SourceOf.declaration("private String whyLeftAsItIs(").contains("runningRouteDriving(here.getName())");
+
+        assertTrue(current > 0 && proposed > 0 && itself, "the Central Station's name proposal does not ask about both names"
             + " (CS3-B1, SVB-C2)");
 
-        int renames = source.indexOf("renameLoc(", proposed);
+        String apply = SourceOf.declaration("static int[] apply(Main ui, Locomotive only, Component c, RenameProposals asked,");
+        int asks = apply.indexOf("f.whyNot(true)");
+        int renames = apply.indexOf("ui.renameAsTheStation(c, r)", asks);
 
-        assertTrue(renames > proposed, "the name proposal renames before it asks (OB-287)");
+        assertTrue(asks > 0 && renames > asks, "the name proposal renames before it asks (OB-287)");
+
+        // And again of both names just before the rename, as a route may have begun since the second read
+        String renamed = SourceOf.declaration("static String renamed(TrainControlUI ui, Component c, RenameProposals.Row r)");
+        int again = renamed.indexOf("RunGates.refuseWhileARouteDrivesIt(ui, c, newName)");
+        assertTrue(renamed.contains("RunGates.refuseWhileARouteDrivesIt(ui, c, currentName)") && again > 0
+            && renamed.indexOf("renameLoc(", again) > again, "the rename does not ask of both names just before it");
     }
 
     /** The locomotive and route of this claim. */
@@ -339,8 +353,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
      * commands by NAME with delays between them, so a sync landing part-way along would send the rest to a different
      * decoder.  The sync's address step is asked directly, since the whole sync needs a station on the network.
      *
-     * MUTATION: drop `|| this.runningRouteDriving(l.getName()) != null` from `adoptCentralStationAddress`, and this
-     * fails.
+     * MUTATION: drop the `runningRouteDriving` clause from `MarklinControlStation.whyLeftAsItIs`, and this fails.
      */
     @Test
     public void testASyncDoesNotReAddressALocomotiveARouteDrives() throws Exception
@@ -385,6 +398,9 @@ public class testARouteDrivenLocomotiveIsNotEdited
             // THE CENTRAL STATION'S DESCRIPTION: the same locomotive and decoder, at another address
             org.traincontrol.marklin.MarklinLocomotive fromTheStation = new org.traincontrol.marklin.MarklinLocomotive(
                 model, 67, org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, SYNCED);
+
+            // As a pressed Sync told to use the station's address marks it (FR-246)
+            model.getLocByName(SYNCED).setTakenStationAddress(67);
 
             model.adoptCentralStationAddress(fromTheStation,
                 new ArrayList<org.traincontrol.marklin.MarklinLocomotive>());
@@ -459,7 +475,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
     {
         try (support.Answering answering = support.Answering.start(message -> support.Answering.pressAt(0)))
         {
-            assertTrue(support.SettingsWindow.open(window, unit, LocomotiveSettingsFrame.Tab.MULTI_UNIT, null),
+            assertTrue(support.SettingsWindow.open(window, unit, LocomotiveSettingsWindow.Tab.MULTI_UNIT, null),
                 "precondition: the window did not open on a Central Station multi-unit");
 
             support.Components.settle();

@@ -21,7 +21,7 @@ import org.testng.annotations.Test;
  * fromLine, and still be the same list of commands.
  *
  * That round trip is not a theoretical concern - it is what the route editor does every time it is
- * opened and saved (TrainControlUI populates the editor from toCSV, and RouteEditorFrame's save path parses
+ * opened and saved (TrainControlUI populates the editor from toCSV, and RouteEditorWindow's save path parses
  * each line with fromLine).  It was broken for feedback commands: toLine ended every branch with a
  * newline except that one, and toCSV concatenates without a separator, so a feedback command was glued
  * to whatever followed it:
@@ -213,7 +213,7 @@ public class testRouteRoundTrip
 
         assertEquals(NodeExpression.toList(kept), Arrays.asList(notAt), "the locomotive database lost the not");
 
-        // A duplicate is made from the route's own commands and conditions, as TrainControlUI.duplicateRoute does
+        // A duplicate is made from the route's own commands and conditions, as RouteListPanel.duplicateRoute does
         String copy = "RT not at (copy FR-141)";
 
         assertTrue(model.newRoute(copy, route.getRoute(), route.getS88(), route.getTriggerType(), false,

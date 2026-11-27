@@ -54,6 +54,13 @@ public final class StationRig implements AutoCloseable
     public StationRig(File root, BiFunction<String, Integer, byte[]> answer, boolean window, boolean atStartUp)
         throws Exception
     {
+        this(root, answer, window, atStartUp, null);
+    }
+
+    /** The same over a copy of `railway`, a layout folder the window reads its autonomy railway from (null: none). */
+    public StationRig(File root, BiFunction<String, Integer, byte[]> answer, boolean window, boolean atStartUp,
+        File railway) throws Exception
+    {
         MarklinControlStation started = null;
         LayoutSandbox opened = null;
         StandInStation standIn = null;
@@ -62,11 +69,15 @@ public final class StationRig implements AutoCloseable
         {
             standIn = new StandInStation(answer);
             System.setProperty(Util.DATA_DIR_PROPERTY, Files.createDirectories(new File(root, "data").toPath()).toString());
-            opened = LayoutSandbox.open(new File(root, "none"));
-            TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+            opened = LayoutSandbox.open(railway != null ? railway : new File(root, "none"));
+            if (railway == null) TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
             if (atStartUp) TestStationAddress.set(standIn.address());
 
             started = window ? TestStation.simulatedWithWindow() : TestStation.simulated();
+
+            // A message counted, so no window warns 15 s on that the station is silent: that modal warning, posted into
+            // a later claim, holds the sync whose spinner it opened over until someone answers it (OB-508)
+            Reflect.field(MarklinControlStation.class, "numMessagesProcessed").setInt(started, 1);
         }
         catch (Exception | Error e)
         {
@@ -123,7 +134,7 @@ public final class StationRig implements AutoCloseable
 
     private String renames(String title) throws Exception
     {
-        return this.station.recorded(title, () -> this.model.getRenameProposals().getProposals().size());
+        return this.station.recorded(title, () -> this.model.getRenameProposals(true).getProposals().size());
     }
 
     /** The names of the files a download wrote into the folder's config, sorted. */

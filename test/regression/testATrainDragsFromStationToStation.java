@@ -534,7 +534,8 @@ public class testATrainDragsFromStationToStation
 
         // A name carried, as the first drag event lifts it
         onTheEventThread(() -> editor.showCaptionGhost(
-            new java.awt.image.BufferedImage(10, 10, java.awt.image.BufferedImage.TYPE_INT_ARGB), 0, 0));
+            new javax.swing.ImageIcon(new java.awt.image.BufferedImage(10, 10, java.awt.image.BufferedImage.TYPE_INT_ARGB)),
+            0, 0));
 
         assertNotNull(ghost(), "precondition: no name is being carried");
 
@@ -1254,7 +1255,7 @@ public class testATrainDragsFromStationToStation
      * Where the paste would ask, the drag asks nothing and the mark tells the truth (FR-160): on a station trains may
      * turn at, a green mark means the train lands; and a drag handed a square that is no station meets no dialog.
      *
-     * MUTATION: removing `!dropping` from the tail-side check in `DiagramLocGestures` stops a paste there with the
+     * MUTATION: removing `!dropping` from the tail-side check in `DiagramTrainKeys` stops a paste there with the
      * mark green; removing `if (dropping) return true;` before `errorTrainOnlyAtStation` shows that dialog; refusing
      * every may-turn square in `canDropTrain` grays the mark.
      */
@@ -1289,7 +1290,7 @@ public class testATrainDragsFromStationToStation
 
             for (TileKey tile : session.getReducer().getPoints().keySet())
             {
-                if (PAGE.equals(tile.getPage()) && !session.getStore().isStation(tile) && ui.getAutonomyPointForTile(tile) != null)
+                if (PAGE.equals(tile.getPage()) && !session.getStore().isStation(tile) && ui.stationCaptions().getAutonomyPointForTile(tile) != null)
                 {
                     notAStation = tile;
                 }
@@ -1542,7 +1543,7 @@ public class testATrainDragsFromStationToStation
      * road is open for Adam: on these two squares neither door records one.
      *
      * MUTATION: dropping the side a drag works out (`if (dropping) ui.tailAtTheLanding = null;` after
-     * `ArrivalSidePrompt.forPlacement` in `DiagramLocGestures`) leaves the side the paste records unrecorded.
+     * `ArrivalSidePrompt.forPlacement` in `DiagramTrainKeys`) leaves the side the paste records unrecorded.
      */
     @Test(timeOut = 300000)
     public void testADragRecordsTheSideAPasteRecordsWhereEveryStationMayTurn() throws Exception
@@ -2165,9 +2166,9 @@ public class testATrainDragsFromStationToStation
         onTheEventThread(() ->
         {
             selected.set(ui, train);
-            ui.setHoveredDiagramTile(PAGE, from.getX(), from.getY());
+            ui.diagramLocGestures().setHoveredDiagramTile(PAGE, from.getX(), from.getY());
             gesture.invoke(ui, KeyEvent.VK_X, true);
-            ui.setHoveredDiagramTile(PAGE, to.getX(), to.getY());
+            ui.diagramLocGestures().setHoveredDiagramTile(PAGE, to.getX(), to.getY());
             gesture.invoke(ui, KeyEvent.VK_V, true);
         });
 

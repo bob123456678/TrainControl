@@ -253,7 +253,7 @@ public class testTheRouteListShowsWhatRuns
                 for (java.awt.Window window : java.awt.Window.getWindows())
                 {
                     if (window instanceof javax.swing.JDialog
-                        || "RouteEditorFrame".equals(window.getClass().getSimpleName()))
+                        || "RouteEditorWindow".equals(window.getClass().getSimpleName()))
                     {
                         window.dispose();
                     }
@@ -267,8 +267,8 @@ public class testTheRouteListShowsWhatRuns
      * triangle (FR-164).  Read as the renderer paints the cell; the power is turned off and on by the station's report,
      * as a Central Station's GO and STOP arrive.
      *
-     * MUTATION: in `CustomTableRenderer.paintComponent`, change `if (routeListEditsRoutes())` to `if (false)`, and the
-     * wrench is never painted.
+     * MUTATION: in `CustomTableRenderer.paintComponent`, change `if (routeListPanel.routeListEditsRoutes())` to
+     * `if (false)`, and the wrench is never painted.
      */
     @Test
     public void testTheButtonIsAWrenchWithThePowerOffAndATriangleWithItOn() throws Exception
@@ -403,7 +403,7 @@ public class testTheRouteListShowsWhatRuns
     /**
      * The right-click menu's Execute Route still runs the route with the power off (FR-164).
      *
-     * MUTATION: in `RightClickRouteMenu`, give the Execute Route item `setEnabled(ui.getModel().getPowerState())`, and
+     * MUTATION: in `RouteContextMenu`, give the Execute Route item `setEnabled(ui.getModel().getPowerState())`, and
      * this fails.
      */
     @Test
@@ -459,7 +459,7 @@ public class testTheRouteListShowsWhatRuns
      * The menu opens with a grayed, bold line naming the route and its id, a divider, and then Execute Route, plain
      * (FR-164).
      *
-     * MUTATION: in `RightClickRouteMenu`, delete the header's `setFont(...)` line, and this fails.
+     * MUTATION: in `RouteContextMenu`, delete the header's `setFont(...)` line, and this fails.
      */
     @Test
     public void testTheMenuOpensWithAGrayHeaderAndExecuteRouteBelowIt() throws Exception
@@ -709,6 +709,121 @@ public class testTheRouteListShowsWhatRuns
     }
 
     /**
+     * Find Route scrolls the route it found into view when the list is scrolled away from it, and the pointer arriving
+     * on the highlight dismisses it (FR-044, MT-218).
+     *
+     * MUTATION: drop `scrollRectToVisible` from `RouteListPanel.showRouteInTheList`, or `foundRoute = null` from
+     * `RouteListPanel.clearFoundRoute`, and this fails.
+     */
+    @Test
+    public void testFindRouteScrollsToTheRouteAndThePointerDismissesIt() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "findable quokka", 246);
+        final JTable table = routeTable();
+
+        // Scrolled to the far end from the route, then another tab in front
+        Components.select(table);
+        Components.settle();
+        final Rectangle before = cellOf(route);
+        final boolean routeIsLow = before.y > table.getHeight() / 2;
+        SwingUtilities.invokeAndWait(() -> table.scrollRectToVisible(routeIsLow ? new Rectangle(0, 0, 1, 1)
+            : new Rectangle(0, table.getHeight() - 1, 1, 1)));
+        Components.settle();
+
+        assertFalse(Components.onTheEventThread(() -> table.getVisibleRect().intersects(before)), "precondition: the"
+            + " route list shows every route at once, so there is nothing to scroll to");
+
+        SwingUtilities.invokeAndWait(() -> ((javax.swing.JTabbedPane) SwingUtilities.getAncestorOfClass(
+            javax.swing.JTabbedPane.class, table)).setSelectedIndex(0));
+
+        final javax.swing.AbstractButton find = support.Components.withText(ui,
+            org.traincontrol.util.I18n.t("route.ui.menuFindRoute"));
+
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.type("QUOKKA")))
+        {
+            SwingUtilities.invokeLater(find::doClick);
+
+            assertTrue(answering.awaitAsked(1, 10000), "Find Route asked nothing");
+            assertTrue(until(table::isShowing, 5000), "Find Route did not bring the route list forward");
+
+            Components.settle();
+        }
+
+        assertTrue(until(() -> Components.onTheEventThread(() ->
+        {
+            Rectangle cell = cellOf(route);
+
+            return cell != null && table.getVisibleRect().contains(cell);
+        }), 5000), "Find Route left the route it found scrolled out of view");
+
+        final Color found = backgroundOf(route);
+
+        // The pointer arrives on the highlighted cell
+        SwingUtilities.invokeAndWait(() ->
+        {
+            Rectangle cell = cellOf(route);
+
+            table.dispatchEvent(new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_MOVED,
+                System.currentTimeMillis(), 0, cell.x + 6, (int) cell.getCenterY(), 0, false));
+        });
+
+        assertTrue(until(() -> !backgroundOf(route).equals(found), 5000), "the pointer arrived on the route Find Route"
+            + " highlighted and the highlight stayed");
+    }
+
+    /**
+     * Resetting the spinners puts every running route's play button back and forgets when each was marked: a database
+     * sync, an import and a completed route edit reset them (FR-043).
+     *
+     * MUTATION: drop `routesExecuting.clear()` or `startedRunningAt.clear()` from `RouteListPanel.resetRouteSpinners`,
+     * and this fails.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testResettingTheSpinnersPutsEveryPlayButtonBack() throws Exception
+    {
+        final String first = aQuickRoute(PREFIX + "spun one", 246);
+        final String second = aQuickRoute(PREFIX + "spun two", 247);
+
+        final Color atRest = backgroundOf(first);
+        final Color secondAtRest = backgroundOf(second);
+
+        final java.util.Set<String> running = (java.util.Set<String>) Reflect.get(TrainControlUI.class, ui,
+            "routesExecuting");
+        final java.util.Map<String, Long> since = (java.util.Map<String, Long>) Reflect.get(TrainControlUI.class, ui,
+            "startedRunningAt");
+
+        try
+        {
+            // Marked as the play button marks them, and held: neither route really runs
+            for (String name : new String[] {first, second})
+            {
+                running.add(name);
+                since.put(name, System.currentTimeMillis());
+            }
+
+            refresh();
+
+            assertNotEquals(backgroundOf(first), atRest, "precondition: a running route's cell is not gray");
+
+            SwingUtilities.invokeAndWait(ui.routeListPanel()::resetRouteSpinners);
+
+            refresh();
+
+            assertEquals(backgroundOf(first), atRest, "a reset left the first route's play button gray");
+            assertEquals(backgroundOf(second), secondAtRest, "a reset left the second route's play button gray");
+            assertTrue(since.isEmpty(), "a reset kept when routes were marked: " + since);
+        }
+        finally
+        {
+            running.remove(first);
+            running.remove(second);
+            since.remove(first);
+            since.remove(second);
+        }
+    }
+
+    /**
      * Find Route, given a name no route has, says so, naming what was typed.
      */
     @Test
@@ -927,7 +1042,7 @@ public class testTheRouteListShowsWhatRuns
             {
                 for (java.awt.Window window : java.awt.Window.getWindows())
                 {
-                    if ("RouteEditorFrame".equals(window.getClass().getSimpleName())) window.dispose();
+                    if ("RouteEditorWindow".equals(window.getClass().getSimpleName())) window.dispose();
                 }
             });
         }
@@ -936,7 +1051,7 @@ public class testTheRouteListShowsWhatRuns
     /**
      * The right-click menu's Change Route ID, answered with an id no route has, gives the route that id.
      *
-     * MUTATION: in `TrainControlUI.changeRouteId`, `if (newId != currentRoute.getId())` to `if (false)`.
+     * MUTATION: in `RouteListPanel.changeRouteId`, `if (newId != currentRoute.getId())` to `if (false)`.
      */
     @Test
     public void testChangeRouteIdGivesTheRouteTheTypedId() throws Exception
@@ -975,8 +1090,8 @@ public class testTheRouteListShowsWhatRuns
     /**
      * Change Route ID, answered with the id another route has, says so and leaves the route its own id.
      *
-     * MUTATION: in `TrainControlUI.changeRouteId`, `if (!this.model.changeRouteId(routeName, newId))` to
-     * `if (!this.model.changeRouteId(routeName, newId) && false)`.
+     * MUTATION: in `RouteListPanel.changeRouteId`, `if (!this.ui.getModel().changeRouteId(routeName, newId))` to
+     * `if (!this.ui.getModel().changeRouteId(routeName, newId) && false)`.
      */
     @Test
     public void testChangeRouteIdToATakenIdSaysSoAndKeepsTheId() throws Exception
@@ -1012,11 +1127,37 @@ public class testTheRouteListShowsWhatRuns
     }
 
     /**
+     * Change Route ID, answered with text that is no number, says the id must be a positive integer and leaves the
+     * route its own id.
+     *
+     * MUTATION: in `RouteListPanel.changeRouteId`, `route.ui.errorIdMustBePositiveInteger` to
+     * `route.ui.errorDuplicateRouteId`.
+     */
+    @Test
+    public void testChangeRouteIdToTextSaysItMustBeANumberAndKeepsTheId() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "keeps its id for text", 250);
+
+        final int was = model.getRouteId(route);
+
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.type("abc")))
+        {
+            SwingUtilities.invokeLater(() -> ui.changeRouteId(route));
+
+            assertTrue(answering.awaitAsked(2, 10000), "Change Route ID to text did not say so: " + answering.asked());
+
+            assertEquals(answering.asked().get(1), org.traincontrol.util.I18n.t("route.ui.errorIdMustBePositiveInteger"));
+        }
+
+        assertEquals(model.getRouteId(route), was, "the route lost its id to a non-numeric answer");
+    }
+
+    /**
      * Delete Route, answered Yes, removes the route and the commands of other routes that ran it, after a question
      * that says how many routes run it.
      *
-     * MUTATION: in `TrainControlUI.deleteRoute`, `this.model.deleteRouteAndItsCalls(route.getName())` to
-     * `this.model.deleteRoute(route.getName())`.
+     * MUTATION: in `RouteListPanel.deleteRoute`, `this.ui.getModel().deleteRouteAndItsCalls(route.getName())` to
+     * `this.ui.getModel().deleteRoute(route.getName())`.
      */
     @Test
     public void testDeleteRouteAnsweredYesRemovesItAndTheCommandsThatRunIt() throws Exception
@@ -1060,7 +1201,7 @@ public class testTheRouteListShowsWhatRuns
     /**
      * Delete Route, answered No, removes nothing.
      *
-     * MUTATION: in `TrainControlUI.deleteRoute`, `if (dialogResult == JOptionPane.YES_OPTION)` to `if (true)`.
+     * MUTATION: in `RouteListPanel.deleteRoute`, `if (dialogResult == JOptionPane.YES_OPTION)` to `if (true)`.
      */
     @Test
     public void testDeleteRouteAnsweredNoKeepsIt() throws Exception
@@ -1097,7 +1238,7 @@ public class testTheRouteListShowsWhatRuns
      * Enable Auto Execution from the right-click menu arms the route, and the station reporting its sensor clear then
      * made then fires it: its accessories switch.
      *
-     * MUTATION: in `TrainControlUI.enableOrDisableRoute`, `writeRouteEnabledState(r, enable);` to
+     * MUTATION: in `RouteListPanel.enableOrDisableRoute`, `writeRouteEnabledState(r, enable);` to
      * `writeRouteEnabledState(r, false);`.
      */
     @Test
@@ -1140,7 +1281,7 @@ public class testTheRouteListShowsWhatRuns
      * Disable Auto Execution from the right-click menu disarms the route: the station reporting its sensor clear then
      * made runs nothing.
      *
-     * MUTATION: in `TrainControlUI.enableOrDisableRoute`, `writeRouteEnabledState(r, enable);` to
+     * MUTATION: in `RouteListPanel.enableOrDisableRoute`, `writeRouteEnabledState(r, enable);` to
      * `writeRouteEnabledState(r, true);`.
      */
     @Test
@@ -1176,6 +1317,30 @@ public class testTheRouteListShowsWhatRuns
 
             disarm(route);
         }
+    }
+
+    /**
+     * Enable Auto Execution on a route with no sensor is refused, saying a sensor is required, and the route stays
+     * disabled.
+     *
+     * MUTATION: in `RouteListPanel.enableOrDisableRoute`, `if (!enable || r.hasS88())` to `if (true)`.
+     */
+    @Test
+    public void testEnableAutoExecutionWithoutASensorIsRefused() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "no sensor to arm", 251);
+
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.pressAt(0)))
+        {
+            ui.enableOrDisableRoute(route, true);
+
+            assertTrue(answering.awaitAsked(1, 10000), "Enable Auto Execution on a route with no sensor said nothing");
+
+            assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f("route.ui.errorS88RequiredForAutoFire",
+                route));
+        }
+
+        assertFalse(model.getRoute(route).isEnabled(), "a route with no sensor was armed");
     }
 
     /** An id no route has, among the ids this program hands out itself. */
@@ -1266,7 +1431,7 @@ public class testTheRouteListShowsWhatRuns
      * A route renamed elsewhere while its editor is open: Save asks, naming both names and starting on No, and Yes
      * saves onto the route under its new name, keeping its id.
      *
-     * MUTATION: in `RouteEditorFrame.nameToSaveAs`, `return typed != null && typed.equals(originalName) ? nowCalled : typed;`
+     * MUTATION: in `RouteEditorWindow.nameToSaveAs`, `return typed != null && typed.equals(originalName) ? nowCalled : typed;`
      * to `return typed;`; or the rename's `confirmedMove(..., 1)` to `confirmedMove(..., 0)`.
      */
     @Test
@@ -1312,7 +1477,7 @@ public class testTheRouteListShowsWhatRuns
     /**
      * The same question answered No saves nothing, and leaves the editor open.
      *
-     * MUTATION: in `RouteEditorFrame.onSave`, the rename's `if (!confirmedMove(...)) return;` to
+     * MUTATION: in `RouteEditorWindow.onSave`, the rename's `if (!confirmedMove(...)) return;` to
      * `confirmedMove(...);`.
      */
     @Test
@@ -1354,7 +1519,7 @@ public class testTheRouteListShowsWhatRuns
      * A route deleted elsewhere while its editor is open: Save asks whether to save it as a new route, starting on Yes,
      * and Yes does.
      *
-     * MUTATION: in `RouteEditorFrame.onSave`, the `newRoute` call under `"gone".equals(moved)` to `false`; or the gone
+     * MUTATION: in `RouteEditorWindow.onSave`, the `newRoute` call under `"gone".equals(moved)` to `false`; or the gone
      * route's `confirmedMove(..., 0)` to `confirmedMove(..., 1)`.
      */
     @Test
@@ -1396,7 +1561,7 @@ public class testTheRouteListShowsWhatRuns
      * A route changed elsewhere while its editor is open: Save asks, starting on No, and No keeps the other change and
      * the editor.
      *
-     * MUTATION: in `RouteEditorFrame.onSave`, `"changed".equals(moved) && !confirmedMove(` to
+     * MUTATION: in `RouteEditorWindow.onSave`, `"changed".equals(moved) && !confirmedMove(` to
      * `false && !confirmedMove(`; or the change's `confirmedMove(..., 1)` to `confirmedMove(..., 0)`.
      */
     @Test
@@ -1445,7 +1610,7 @@ public class testTheRouteListShowsWhatRuns
     /**
      * Cancel over a change typed into the editor asks first, and No keeps the editor and what was typed.
      *
-     * MUTATION: in `RouteEditorFrame.closeIfThrowingNothingAway`, `if (answer == 0) dispose();` to `dispose();`.
+     * MUTATION: in `RouteEditorWindow.closeIfThrowingNothingAway`, `if (answer == 0) dispose();` to `dispose();`.
      */
     @Test
     public void testCancelOverATypedChangeAnsweredNoKeepsTheEditor() throws Exception
@@ -1531,7 +1696,7 @@ public class testTheRouteListShowsWhatRuns
         {
             for (java.awt.Window window : java.awt.Window.getWindows())
             {
-                if ("RouteEditorFrame".equals(window.getClass().getSimpleName())) window.dispose();
+                if ("RouteEditorWindow".equals(window.getClass().getSimpleName())) window.dispose();
             }
         });
     }
@@ -1562,6 +1727,40 @@ public class testTheRouteListShowsWhatRuns
         throws Exception
     {
         support.RouteListDoors.click(ui, route, onThePlayButton, kind, popup);
+    }
+
+    /**
+     * The route under the pointer in the route list is the route of the cell there, whichever row it is, and nothing is
+     * under a pointer off the rows.
+     *
+     * MUTATION: in `RouteListPanel.getRouteAtCursor`, ask the row for `0` in place of the point's row, and this fails.
+     */
+    @Test
+    public void testThePointerPicksTheRouteUnderIt() throws Exception
+    {
+        String first = aSlowRoute(PREFIX + "pick one", 1);
+        String second = aSlowRoute(PREFIX + "pick two", 1);
+
+        for (String name : new String[] {first, second})
+        {
+            Rectangle cell = cellOf(name);
+
+            assertNotNull(cell, "precondition: " + name + " is not in the route list");
+
+            Object picked = pointerOver(cell.x + 6, (int) cell.getCenterY());
+
+            assertNotNull(picked, "the pointer is on the cell of " + name + " and no route is under it");
+            assertEquals(((org.traincontrol.base.Route) picked).getName(), name,
+                "the pointer is on the cell of " + name + " and another route is under it");
+        }
+
+        assertNull(pointerOver(-5, -5), "the pointer is off the list and a route is under it");
+    }
+
+    private static Object pointerOver(final int x, final int y)
+    {
+        return Components.onTheEventThread(() -> ui.getRouteAtCursor(new java.awt.event.MouseEvent(routeTable(),
+            java.awt.event.MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), 0, x, y, 0, false)));
     }
 
     /**
@@ -1650,7 +1849,7 @@ public class testTheRouteListShowsWhatRuns
      * A right-click as Windows sends it, the popup trigger on the release and then a click, opens the route's menu and
      * leaves it open, with the power on and off (MT-876).
      *
-     * MUTATION: drop `this.RouteList.addMouseListener(new RightClickRouteMenu(this))` from `TrainControlUI`, and no
+     * MUTATION: drop `this.RouteList.addMouseListener(new RouteContextMenu(this))` from `TrainControlUI`, and no
      * menu opens.
      */
     @Test
@@ -1799,7 +1998,7 @@ public class testTheRouteListShowsWhatRuns
     {
         for (java.awt.Window window : java.awt.Window.getWindows())
         {
-            if ("RouteEditorFrame".equals(window.getClass().getSimpleName()) && window.isShowing()) return true;
+            if ("RouteEditorWindow".equals(window.getClass().getSimpleName()) && window.isShowing()) return true;
         }
 
         return false;
@@ -1829,7 +2028,7 @@ public class testTheRouteListShowsWhatRuns
 
     private static void refresh() throws Exception
     {
-        SwingUtilities.invokeAndWait(() -> ui.refreshRouteList());
+        SwingUtilities.invokeAndWait(() -> ui.routeListPanel().refreshRouteList());
 
         for (int turn = 0; turn < 4; turn++) SwingUtilities.invokeAndWait(() -> { });
     }

@@ -170,7 +170,7 @@ public class TailCrossedPrompt
         if (!wouldAsk(layout, at, arrivedFrom, trainLength)) return Answer.NOT_ASKED;
 
         // WHETHER AN EDITOR IS OPEN AS IT IS ASKED, for the door to know whether one opened in the wait
-        boolean editorWasOpen = parent instanceof TrainControlUI && ((TrainControlUI) parent).isLayoutEditorOpen();
+        boolean editorWasOpen = parent instanceof TrainControlUI && ((TrainControlUI) parent).editorWindows().isLayoutEditorOpen();
 
         List<Choice> choices = choicesFor(layout, at, arrivedFrom, trainLength, shown);
 
@@ -193,7 +193,7 @@ public class TailCrossedPrompt
             : reply(over, train, shownName(shown, at), choices, preselectedIndex(choices, recorded));
 
         boolean editorOpened = !editorWasOpen && parent instanceof TrainControlUI
-            && ((TrainControlUI) parent).isLayoutEditorOpen();
+            && ((TrainControlUI) parent).editorWindows().isLayoutEditorOpen();
 
         return new Answer(reply.answered, reply.answered && reply.choice != null ? reply.choice.getRoad() : null,
             editorOpened);
@@ -711,13 +711,10 @@ public class TailCrossedPrompt
     /**
      * One tail question put on the diagram: its sensors lit, a small window saying what to do, and the answer handed
      * back when a lit sensor is clicked, Not Known is pressed, or it is closed.  Waits as a modal dialog waits (on the
-     * event thread through a secondary loop, off it on a latch), so the door carries on as it did with the list.
+     * event thread through a secondary loop, off it on a latch).
      */
     private static final class DiagramPick
     {
-        /** Long enough for anyone to find the squares; the pick ends the highlight itself as soon as it is answered. */
-        private static final int HOLD_MS = 30 * 60 * 1000;
-
         private final TrainControlUI ui;
         private final Map<TileGraph.TileKey, List<Choice>> bySquare;
         private final String train;
@@ -746,10 +743,9 @@ public class TailCrossedPrompt
 
             TrainControlUI ui = (TrainControlUI) parent;
 
-            // Not with an editor open: the autonomy editor's Place door asks from the main window too, its squares are
-            // lit with the main window's but do not take the click, and the small window would go to the top of a main
-            // window the editor covers.  The list is asked where the operator is working.
-            if (ui.isLayoutEditorOpen()) return null;
+            // Not with an editor open: its squares do not take the click and the small window would sit under the
+            // editor, so the list is asked where the operator is working.
+            if (ui.editorWindows().isLayoutEditorOpen()) return null;
 
             AutonomySession session = ui.getAutonomySession();
 
@@ -823,7 +819,7 @@ public class TailCrossedPrompt
             done = then;
             armed = this;
 
-            light(true);
+            DiagramHighlights.hold(ui, bySquare.keySet(), true);
 
             JPanel panel = new JPanel(new BorderLayout(0, 10));
 
@@ -920,7 +916,7 @@ public class TailCrossedPrompt
             }
 
             // Not one of them: the lit squares again, to say where to click.
-            light(true);
+            DiagramHighlights.hold(ui, bySquare.keySet(), true);
 
             return true;
         }
@@ -933,23 +929,11 @@ public class TailCrossedPrompt
 
             if (armed == this) armed = null;
 
-            light(false);
+            DiagramHighlights.hold(ui, bySquare.keySet(), false);
 
             if (prompt != null) prompt.dispose();
 
             if (done != null) done.accept(reply);
-        }
-
-        private void light(boolean on)
-        {
-            for (TileGraph.TileKey square : bySquare.keySet())
-            {
-                for (LayoutLabel label : ui.getDiagramTileRegistry().labelsFor(square))
-                {
-                    if (on) label.flashHighlight(org.traincontrol.util.ImageUtil.HIGHLIGHT, HOLD_MS);
-                    else label.endFlash();
-                }
-            }
         }
     }
 

@@ -169,6 +169,7 @@ not fix it. Name the square.
 - `ui.testPageLinksGoByPageId`
 - `regression.testTheAutonomyTabSavesWhatTheDialogDid`
 - `ui.testTheLocomotiveSettingsAutonomyTab`
+- `ui.testTheSyncAsksAboutRenamedLocomotives`
 - `ui.testRightClickMenuTipsCanBeHidden`
 - `ui.testChangeDirectionIsOneClick`
 - `regression.testTheLogIsStampedAndExports`
@@ -184,3 +185,4 @@ not fix it. Name the square.
 - `ui.testReturnHomeGivesTheSamePlanEveryTime`
 - `regression.testTheOverlayBoxDuringARun`
 - `ui.testShowAddressesWithAnEditorOpen`
+- `core.testTheLoaderReadsEveryFileAsBefore`

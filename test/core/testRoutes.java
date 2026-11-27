@@ -687,13 +687,13 @@ public class testRoutes
     public void testADelayBelowTheFloorIsShownAsTheFloor() throws Exception
     {
         java.lang.reflect.Method floor =
-            Class.forName("org.traincontrol.gui.RouteEditorFrame")
+            Class.forName("org.traincontrol.gui.RouteEditorWindow")
                 .getDeclaredMethod("delayTheRailwayWillUse", int.class);
 
         floor.setAccessible(true);
 
         java.lang.reflect.Method typed =
-            Class.forName("org.traincontrol.gui.RouteEditorFrame")
+            Class.forName("org.traincontrol.gui.RouteEditorWindow")
                 .getDeclaredMethod("delayOf", String.class, int.class);
 
         typed.setAccessible(true);

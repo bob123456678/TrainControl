@@ -22,7 +22,7 @@ import org.traincontrol.automationui.GraphReducer;
 import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.gui.LayoutLabel;
-import org.traincontrol.gui.LayoutPopupUI;
+import org.traincontrol.gui.LayoutPopupWindow;
 import org.traincontrol.gui.layouteditor.LayoutEditorAddressPopup;
 import org.traincontrol.util.I18n;
 import support.Components;
@@ -51,7 +51,7 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
      * On a local layout shown in file order, clicking an arrow shows the page the name-sorted list says, in the main
      * window and in a page popup, and the autonomy session is built over the name-sorted pages.
      *
-     * MUTATION: `goToLayoutPage` in `TrainControlUI` or `LayoutPopupUI` indexes the shown list instead of the
+     * MUTATION: `goToLayoutPage` in `TrainControlUI` or `LayoutPopupWindow` indexes the shown list instead of the
      * name-sorted one, or `AutonomyLifecycle` feeds the session the shown list, and this fails.
      */
     @Test
@@ -135,7 +135,7 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
                 + ", not the page at that place in the name-sorted list, " + byName.get(number));
 
             // And in a page popup showing the same page
-            final LayoutPopupUI popup = showPopup(page);
+            final LayoutPopupWindow popup = showPopup(page);
 
             Mouse.click(arrowOn(popup, number));
 
@@ -162,11 +162,11 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
     }
 
     @SuppressWarnings("unchecked")
-    private List<LayoutPopupUI> popups()
+    private List<LayoutPopupWindow> popups()
     {
         try
         {
-            return (List<LayoutPopupUI>) Reflect.get(org.traincontrol.gui.TrainControlUI.class, ui, "popups");
+            return (List<LayoutPopupWindow>) Reflect.get(org.traincontrol.gui.TrainControlUI.class, ui, "popups");
         }
         catch (ReflectiveOperationException e)
         {
@@ -175,11 +175,11 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
     }
 
     /** Opens a popup on this page, as the window does. */
-    private LayoutPopupUI showPopup(final String page) throws Exception
+    private LayoutPopupWindow showPopup(final String page) throws Exception
     {
-        final LayoutPopupUI popup = Components.onTheEventThread(() ->
+        final LayoutPopupWindow popup = Components.onTheEventThread(() ->
         {
-            LayoutPopupUI made = new LayoutPopupUI(model.getLayout(page), 30, ui);
+            LayoutPopupWindow made = new LayoutPopupWindow(model.getLayout(page), 30, ui);
 
             made.render();
             made.setVisible(true);
@@ -201,7 +201,7 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
      * A page popup whose page is at another place in the shown list than in the name-sorted list stays on its page, and
      * keeps its size and place, when the diagrams are refreshed (a Show Addresses tick, an edit, a page action).
      *
-     * MUTATION: `LayoutPopupUI.refreshDiagram` passes its saved shown place to the arrow door again (the place is read
+     * MUTATION: `LayoutPopupWindow.refreshDiagram` passes its saved shown place to the arrow door again (the place is read
      * as an arrow's number), and the popup jumps to another page.
      */
     @Test
@@ -233,7 +233,7 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
 
         assertNotNull(page, "precondition: every page is at the same place in both lists");
 
-        LayoutPopupUI popup = showPopup(page);
+        LayoutPopupWindow popup = showPopup(page);
 
         assertEquals(popupPage(popup), page);
 
@@ -257,7 +257,7 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
         Components.settle();
 
         // The popup draws its page in a posted task: given time to move, if it is going to
-        final LayoutPopupUI refreshed = popup;
+        final LayoutPopupWindow refreshed = popup;
         final String stays = page;
 
         assertFalse(Components.waitFor(() -> !stays.equals(popupPage(refreshed)), 1500), "a refresh moved the popup to"
@@ -567,11 +567,11 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
         return sorted;
     }
 
-    private static String popupPage(LayoutPopupUI popup)
+    private static String popupPage(LayoutPopupWindow popup)
     {
         try
         {
-            return ((org.traincontrol.base.LayoutDiagram) Reflect.get(LayoutPopupUI.class, popup, "layout")).getName();
+            return ((org.traincontrol.base.LayoutDiagram) Reflect.get(LayoutPopupWindow.class, popup, "layout")).getName();
         }
         catch (ReflectiveOperationException e)
         {

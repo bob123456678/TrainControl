@@ -17,7 +17,7 @@ import org.traincontrol.base.Accessory;
 import org.traincontrol.base.CommandRow;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.RouteCommand;
-import org.traincontrol.gui.RouteEditorFrame;
+import org.traincontrol.gui.RouteEditorWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
@@ -101,7 +101,7 @@ public class testBuildingARouteByHand
     {
         final int routesBefore = model().getRouteList().size();
 
-        final RouteEditorFrame frame = addRoute(YARD);
+        final RouteEditorWindow frame = addRoute(YARD);
 
         try
         {
@@ -222,7 +222,7 @@ public class testBuildingARouteByHand
      * and its first switch given no address, is refused by Save, naming both; once the address is typed Save still
      * refuses, naming only the sensor, and with the sensor typed too the model holds the route as corrected.
      *
-     * MUTATION: in `RouteEditorFrame.everythingWrong`, drop the `frameAutomaticNeedsSensor` refusal, and the first
+     * MUTATION: in `RouteEditorWindow.everythingWrong`, drop the `frameAutomaticNeedsSensor` refusal, and the first
      * refusal names only the row.
      */
     @Test
@@ -235,7 +235,7 @@ public class testBuildingARouteByHand
             "0 (" + org.traincontrol.base.Accessory.DEFAULT_IMPLICIT_PROTOCOL + ")"));
         final String noSensor = I18n.t("route.ui.frameAutomaticNeedsSensor");
 
-        final RouteEditorFrame frame = addRoute(SIDING);
+        final RouteEditorWindow frame = addRoute(SIDING);
 
         try
         {
@@ -285,7 +285,7 @@ public class testBuildingARouteByHand
      * key and a right-click on the conditions are each tried; Save is grayed, Cancel closes without asking, and the
      * model's route is as it was.
      *
-     * MUTATION: in `RouteEditorFrame.becomeReadOnly`, drop `if (saveButton != null) saveButton.setEnabled(false);`,
+     * MUTATION: in `RouteEditorWindow.becomeReadOnly`, drop `if (saveButton != null) saveButton.setEnabled(false);`,
      * and Save is offered on the station's route.
      */
     @Test
@@ -309,7 +309,7 @@ public class testBuildingARouteByHand
 
         final String before = everythingOf(model().getRoute(SHUTTLE));
 
-        final RouteEditorFrame frame = (RouteEditorFrame) support.RouteListDoors.open(ui(), SHUTTLE,
+        final RouteEditorWindow frame = (RouteEditorWindow) support.RouteListDoors.open(ui(), SHUTTLE,
             "route.ui.menuViewRouteDetails");
 
         try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
@@ -353,7 +353,7 @@ public class testBuildingARouteByHand
     }
 
     /** Add Route on the Routes tab, and the new route's name typed over the one it offers; its editor. */
-    private static RouteEditorFrame addRoute(String name)
+    private static RouteEditorWindow addRoute(String name)
     {
         javax.swing.AbstractButton add = Components.withText(ui(), I18n.t("ui.main.addRoute"));
 
@@ -362,7 +362,7 @@ public class testBuildingARouteByHand
 
         assertTrue(Components.waitFor(() -> editorShowing() != null, 10000), "Add Route opened no route editor");
 
-        RouteEditorFrame frame = editorShowing();
+        RouteEditorWindow frame = editorShowing();
 
         typeInto(beside(frame, "route.ui.frameName", JTextField.class), name);
 
@@ -370,7 +370,7 @@ public class testBuildingARouteByHand
     }
 
     /** Presses Save expecting its refusal, goes back to fix it, and gives back what the refusal said. */
-    private static String refusal(RouteEditorFrame frame) throws Exception
+    private static String refusal(RouteEditorWindow frame) throws Exception
     {
         try (Answering answering = Answering.start(message -> Answering.press(I18n.t("route.ui.frameGoAndFixIt"))))
         {
@@ -401,7 +401,7 @@ public class testBuildingARouteByHand
     {
         Components.onTheEventThread(() ->
         {
-            ui().refreshRouteList();
+            ui().routeListPanel().refreshRouteList();
 
             return null;
         });

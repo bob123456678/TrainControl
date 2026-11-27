@@ -193,7 +193,7 @@ public class testTheKeyboardPages
      * Delete Page, from the page menu, takes away an empty page: the pages after it move up with their trains and
      * their names, the page number that was deleted now shows what followed it, and the new count is what is stored.
      *
-     * MUTATION: loop `at < going` instead of `at < this.numLocMappings` where `deleteCurrentLocMappingPage` moves
+     * MUTATION: loop `at < going` instead of `at < count` where `LocomotiveKeyboardPages.deleteCurrentLocMappingPage` moves
      * the names up, and the names stay on the wrong pages.
      */
     @Test
@@ -235,7 +235,7 @@ public class testTheKeyboardPages
     /**
      * Deleting the last page leaves the others as they were, shows the page that is last now, and Next is grayed on it.
      *
-     * MUTATION: `this.locMapping.remove(0)` in place of `remove(going - 1)` in `deleteCurrentLocMappingPage`, and the
+     * MUTATION: `this.locMapping.remove(0)` in place of `remove(number - 1)` in `TrainControlUI.removePage`, and the
      * trains move up a page.
      */
     @Test
@@ -307,6 +307,21 @@ public class testTheKeyboardPages
 
         assertEquals(askedByDeleting(), I18n.f("page.ui.errorNeedAtLeast", 2), "the refusal does not say why");
         assertEquals(ui.getNumLocMappings(), 2, "a page was deleted below two");
+    }
+
+    /**
+     * The locomotive tab's icon wears the page showing as a blue badge from page 2 on; page 1 has the plain icon.
+     *
+     * MUTATION: return `icon` at once in `LocomotiveKeyboardPages.withPageBadge`, and page 3 wears no badge.
+     */
+    @Test
+    public void testThePageShowingIsBadgedOnTheLocomotiveTab() throws Exception
+    {
+        turnTo(3);
+        assertTrue(badgeInk() > 20, "page 3 is not badged on the locomotive tab: " + badgeInk() + " blue pixels");
+
+        turnTo(1);
+        assertEquals(badgeInk(), 0, "page 1 wears a badge on the locomotive tab");
     }
 
     // Quick Find
@@ -874,7 +889,7 @@ public class testTheKeyboardPages
      * A wiggle of a few pixels is a click, not a drag; the right button never drags; and an empty key has nothing to
      * drag.  None of them picks anything up.
      *
-     * MUTATION: `DRAG_THRESHOLD = 0` in `LocButtonTransferHandler`, and the wiggle picks the locomotive up.
+     * MUTATION: `DRAG_THRESHOLD = 0` in `LocomotiveButtonTransferHandler`, and the wiggle picks the locomotive up.
      */
     @Test
     public void testOnlyARealDragFromAFullKeyPicksAnythingUp() throws Exception
@@ -959,7 +974,7 @@ public class testTheKeyboardPages
 
             Components.onTheEventThread(() ->
             {
-                ui.deleteCurrentLocMappingPage();
+                ui.locMappingPages().deleteCurrentLocMappingPage(ui);
 
                 return null;
             });
@@ -969,7 +984,7 @@ public class testTheKeyboardPages
         {
             Components.onTheEventThread(() ->
             {
-                ui.addLocMappingPage();
+                ui.locMappingPages().addLocMappingPage(ui);
 
                 return null;
             });
@@ -1119,7 +1134,7 @@ public class testTheKeyboardPages
     {
         try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.ok"))))
         {
-            Thread asking = new Thread(() -> ui.deleteCurrentLocMappingPage());
+            Thread asking = new Thread(() -> ui.locMappingPages().deleteCurrentLocMappingPage(ui));
 
             asking.setDaemon(true);
             asking.start();
@@ -1316,6 +1331,17 @@ public class testTheKeyboardPages
         return (Component) field0("KeyboardTab");
     }
 
+    /** How many pixels of the locomotive tab's picture are the badge's blue, fully opaque. */
+    private static int badgeInk()
+    {
+        java.awt.Image tab = Components.onTheEventThread(
+            () -> ((javax.swing.ImageIcon) ((JTabbedPane) keyboardOrNull()).getIconAt(0)).getImage());
+
+        return support.Pixels.count(org.traincontrol.util.ImageUtil.toTransparentBufferedImage(tab),
+            argb -> (argb >>> 24) == 0xFF && Math.abs((argb >> 16 & 0xFF) - 0x26) < 16
+                && Math.abs((argb >> 8 & 0xFF) - 0x75) < 16 && Math.abs((argb & 0xFF) - 0xBF) < 16);
+    }
+
     private static Component keyboard() throws Exception
     {
         return (Component) field("KeyboardTab");
@@ -1335,7 +1361,7 @@ public class testTheKeyboardPages
     {
         try
         {
-            Reflect.method(TrainControlUI.class, method).invoke(ui);
+            Reflect.method(org.traincontrol.gui.LocomotiveKeyboardPages.class, method).invoke(ui.locMappingPages());
         }
         catch (ReflectiveOperationException e)
         {

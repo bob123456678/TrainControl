@@ -5,6 +5,7 @@ import javax.swing.SwingUtilities;
 import static org.traincontrol.base.Accessory.accessoryDecoderType.DCC;
 import static org.traincontrol.base.Accessory.accessoryDecoderType.MM2;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.gui.DiagramHighlights.AddressedAs;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -28,8 +29,8 @@ import support.Teardown;
  * accessory address 1, so "accessory 10" is an address nothing on the page answers to as an accessory and one that an
  * s88 answers to.
  *
- * MUTATION: drop the `answersTo` test from the loop in `highlightAddresses` and the first claim goes red - the s88
- * lights for an accessory address.
+ * MUTATION: drop the `answersTo` test from the loop in `DiagramHighlights.highlightAddresses` and the first claim
+ * goes red - the s88 lights for an accessory address.
  *
  * @author Adam
  */
@@ -90,7 +91,7 @@ public class testTheRouteHighlightAsksWhatATileIs
     @Test
     public void testASensorIsNotLitByAnAccessoryAddress() throws Exception
     {
-        int lit = light(S88_AT_WEST_END, TrainControlUI.AddressedAs.ACCESSORY);
+        int lit = light(S88_AT_WEST_END, AddressedAs.ACCESSORY);
 
         assertEquals(lit, 0,
             "an accessory address lit " + lit + " tile(s) on a page whose only accessory is numbered "
@@ -110,7 +111,7 @@ public class testTheRouteHighlightAsksWhatATileIs
     @Test
     public void testTheSameAddressAsASensorDoesLightIt() throws Exception
     {
-        int lit = light(S88_AT_WEST_END, TrainControlUI.AddressedAs.FEEDBACK);
+        int lit = light(S88_AT_WEST_END, AddressedAs.FEEDBACK);
 
         assertTrue(lit > 0,
             "the sensor numbered " + S88_AT_WEST_END + " does not light when the address is asked of"
@@ -126,7 +127,7 @@ public class testTheRouteHighlightAsksWhatATileIs
     @Test
     public void testAnAccessoryAddressLightsTheAccessory() throws Exception
     {
-        int lit = light(ACCESSORY_OF_THE_TURNOUT, TrainControlUI.AddressedAs.ACCESSORY);
+        int lit = light(ACCESSORY_OF_THE_TURNOUT, AddressedAs.ACCESSORY);
 
         assertTrue(lit > 0,
             "the turnout numbered " + ACCESSORY_OF_THE_TURNOUT + " does not light for its own"
@@ -194,7 +195,8 @@ public class testTheRouteHighlightAsksWhatATileIs
      * And the window asks the decoder: the scenario's MM2 turnout is not lit for a DCC command (the door Highlight on
      * Diagram uses).
      *
-     * MUTATION: have `highlightAccessories` pass the addresses on without their protocols and this fails.
+     * MUTATION: have `DiagramHighlights.highlightAccessories` pass the addresses on without their protocols and this
+     * fails.
      */
     @Test
     public void testTheHighlightAsksTheDecoder() throws Exception
@@ -203,9 +205,9 @@ public class testTheRouteHighlightAsksWhatATileIs
 
         final int[] lit = new int[2];
 
-        SwingUtilities.invokeAndWait(() -> lit[0] = ui.highlightAccessories(
+        SwingUtilities.invokeAndWait(() -> lit[0] = ui.diagramHighlights().highlightAccessories(
             Collections.singletonMap(ACCESSORY_OF_THE_TURNOUT, Collections.singleton(DCC)),
-            org.traincontrol.util.ImageUtil.HIGHLIGHT, 4000));
+            org.traincontrol.util.ImageUtil.HIGHLIGHT, 4000, null));
 
         Components.drain(3);
 
@@ -214,9 +216,9 @@ public class testTheRouteHighlightAsksWhatATileIs
 
         endEveryFlash();
 
-        SwingUtilities.invokeAndWait(() -> lit[1] = ui.highlightAccessories(
+        SwingUtilities.invokeAndWait(() -> lit[1] = ui.diagramHighlights().highlightAccessories(
             Collections.singletonMap(ACCESSORY_OF_THE_TURNOUT, Collections.singleton(MM2)),
-            org.traincontrol.util.ImageUtil.HIGHLIGHT, 4000));
+            org.traincontrol.util.ImageUtil.HIGHLIGHT, 4000, null));
 
         Components.drain(3);
 
@@ -237,13 +239,13 @@ public class testTheRouteHighlightAsksWhatATileIs
     }
 
     /** Lights one address, of one kind, and lets the event thread finish; how many labels were lit. */
-    private static int light(final int address, final TrainControlUI.AddressedAs kind) throws Exception
+    private static int light(final int address, final AddressedAs kind) throws Exception
     {
         endEveryFlash();
 
         final int[] lit = new int[1];
 
-        SwingUtilities.invokeAndWait(() -> lit[0] = ui.highlightAddresses(
+        SwingUtilities.invokeAndWait(() -> lit[0] = ui.diagramHighlights().highlightAddresses(
             Collections.singleton(address), kind, org.traincontrol.util.ImageUtil.HIGHLIGHT, 4000));
 
         Components.drain(3);

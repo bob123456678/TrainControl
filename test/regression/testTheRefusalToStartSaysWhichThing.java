@@ -73,9 +73,9 @@ public class testTheRefusalToStartSaysWhichThing
 
         // The diagram menu's file, whole; the autonomy page has a sentence of its own, so it is left out of the counts
         // that are about the main window.
-        String menu = SourceOf.withoutComments(SourceOf.fileDeclaring("final class LayoutRightclickAutonomyMenu extends"));
+        String menu = SourceOf.withoutComments(SourceOf.fileDeclaring("final class DiagramAutonomyContextMenu extends"));
 
-        String page = SourceOf.withoutComments(SourceOf.fileDeclaring("public class AutonomyViewerPanel extends"));
+        String page = SourceOf.withoutComments(SourceOf.fileDeclaring("public class AutonomyConfigurationsPanel extends"));
 
         assertTrue(ui.contains("whyAutonomyWillNotStart(int errors, int blocking, boolean broken)"),
             "the one rule has gone, so there is nothing for the three doors to agree through");

@@ -392,7 +392,7 @@ public class testSwitchingToACentralStationLayout
                 "the sandbox fixture has no pages, so this test cannot tell a correct flag from one "
                 + "that is stuck at false");
 
-            assertTrue(ui.isLayoutLoaded(),
+            assertTrue(ui.editorWindows().isLayoutLoaded(),
                 "the window says no layout is loaded while the model has "
                 + model.getLayoutList().size() + " pages - which is exactly the state Adam saw: the "
                 + "diagram on screen and the application offering to create a track diagram");

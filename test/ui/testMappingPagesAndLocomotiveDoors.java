@@ -30,7 +30,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.RightClickTips;
+import org.traincontrol.gui.HoverTooltips;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -101,9 +101,9 @@ public class testMappingPagesAndLocomotiveDoors
         assertNotNull(ui, "the model has no window");
 
         // The key menu's keys are read while it is open, where a tick of Hide Hover Tooltips (FR-199) hides them.
-        tipsWere = TrainControlUI.getPrefs().get(RightClickTips.PREF, null);
+        tipsWere = TrainControlUI.getPrefs().get(HoverTooltips.PREF, null);
 
-        TrainControlUI.getPrefs().putBoolean(RightClickTips.PREF, false);
+        TrainControlUI.getPrefs().putBoolean(HoverTooltips.PREF, false);
 
         Components.settle();
 
@@ -124,7 +124,7 @@ public class testMappingPagesAndLocomotiveDoors
         {
             Components.onTheEventThread(() ->
             {
-                ui.addLocMappingPage();
+                ui.locMappingPages().addLocMappingPage(ui);
 
                 return null;
             });
@@ -166,8 +166,8 @@ public class testMappingPagesAndLocomotiveDoors
         }
         finally
         {
-            if (tipsWere == null) TrainControlUI.getPrefs().remove(RightClickTips.PREF);
-            else TrainControlUI.getPrefs().put(RightClickTips.PREF, tipsWere);
+            if (tipsWere == null) TrainControlUI.getPrefs().remove(HoverTooltips.PREF);
+            else TrainControlUI.getPrefs().put(HoverTooltips.PREF, tipsWere);
 
             if (sandbox != null) sandbox.close();
         }
@@ -334,19 +334,24 @@ public class testMappingPagesAndLocomotiveDoors
     }
 
     /**
-     * Reset Mappings answered Yes empties the page showing and no other; answered No it empties nothing.
+     * Reset Mappings, asked over the main window, answered Yes empties the page showing and no other; answered No it
+     * empties nothing.
      *
      * MUTATION: clear whatever the answer in `clearCurrentPage`, and the No half fails; take `doClearCurrentPage()`
-     * out, and the Yes half fails.
+     * out, and the Yes half fails; ask over null, and the question hangs off no window.
      */
     @Test
     public void testResetMappingsEmptiesOnlyThisPageAndOnlyOnYes() throws Exception
     {
         AbstractButton reset = pageMenuItem(I18n.t("page.ui.menuResetCurrentMappings"));
 
-        List<String> no = answering(I18n.t("ui.no"), () -> SwingUtilities.invokeLater(reset::doClick));
+        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.no"))))
+        {
+            SwingUtilities.invokeLater(reset::doClick);
 
-        assertEquals(no.size(), 1, "Reset Mappings asked nothing: " + no);
+            assertTrue(answering.awaitAsked(1, WAIT), "Reset Mappings asked nothing");
+            assertSame(answering.questions().get(0).owner, ui, "Reset Mappings asks over another window");
+        }
 
         Components.settle();
 
@@ -364,6 +369,106 @@ public class testMappingPagesAndLocomotiveDoors
         turnTo(pageQ);
 
         assertSame(onKey(KeyEvent.VK_A), three, "Reset Mappings emptied another page as well");
+    }
+
+    /**
+     * Reset Mappings lets go of the active locomotive only if it was on the page emptied: clearing a page the train
+     * is not on leaves it active, clearing the page it is on releases it.
+     *
+     * MUTATION: `if (false) ui.releaseActiveLoc();` or `ui.releaseActiveLoc();` for the test in
+     * `LocomotiveKeyboardPages.doClearCurrentPage`, and this fails.
+     */
+    @Test
+    public void testResetMappingsReleasesTheActiveLocomotiveOnlyFromItsOwnPage() throws Exception
+    {
+        turnTo(pageQ);
+
+        Reflect.set(TrainControlUI.class, ui, "activeLoc", one);
+
+        resetCurrentPage();
+
+        assertNull(onKey(KeyEvent.VK_A), "precondition: the page was not emptied");
+        assertSame(ui.getActiveLoc(), one, "emptying a page the train is not on took the keyboard from it");
+
+        turnTo(pageP);
+
+        Reflect.set(TrainControlUI.class, ui, "activeLoc", one);
+
+        resetCurrentPage();
+
+        assertTrue(waitFor(() -> ui.getActiveLoc() == null), "emptying the train's own page left it active");
+    }
+
+    /**
+     * Menus and dialogs word a page by "Page 5 (Example)", the name cut to MAX_PAGE_NAME_LENGTH_TOP letters and
+     * "..."; shown in the paste confirmation.
+     *
+     * MUTATION: cut at MAX_PAGE_NAME_LENGTH_TOP - 1 in `LocomotiveKeyboardPages.getPageName`, and this fails.
+     */
+    @Test
+    public void testThePasteQuestionCutsALongPageName() throws Exception
+    {
+        String name = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        int cut = TrainControlUI.MAX_PAGE_NAME_LENGTH_TOP;
+
+        assertTrue(name.length() > cut, "precondition: the name is not longer than the cut");
+
+        @SuppressWarnings("unchecked")
+        Map<Integer, String> names = (Map<Integer, String>) field("pageNames");
+
+        names.put(pageP, name);
+
+        try
+        {
+            copyMappingsAndTurnTo(pageQ);
+
+            AbstractButton paste = pageMenuItem(I18n.t("page.ui.menuPasteMappings"));
+
+            List<String> asked = answering(I18n.t("ui.no"), () -> SwingUtilities.invokeLater(paste::doClick));
+
+            assertTrue(asked.get(0).contains(I18n.f("page.ui.confirmReplaceMappings", I18n.f("page.ui.pageNo", pageQ),
+                I18n.f("page.ui.plainPageName", pageP, name.substring(0, cut) + "..."))),
+                "the question does not word the long name as cut, got: " + asked.get(0));
+        }
+        finally
+        {
+            names.remove(pageP);
+        }
+    }
+
+    /**
+     * Rename Page asks, over the main window, for the page's name and names it, trimmed, in the label too; its own name
+     * is taken again, and a name another page has is refused with a message and the page keeps its name.
+     *
+     * MUTATION: in `LocomotiveKeyboardPages.renameCurrentPage`, leave out the `namesOfPages().contains(input)` test, and the
+     * other page's name is taken.
+     */
+    @Test
+    public void testRenamePageNamesThePageAndRefusesATakenName() throws Exception
+    {
+        @SuppressWarnings("unchecked")
+        Map<Integer, String> names = (Map<Integer, String>) field("pageNames");
+        String prompt = I18n.f("page.ui.promptEnterPageName", pageQ);
+
+        names.put(pageP, "P6 taken");
+        turnTo(pageQ);
+
+        try
+        {
+            assertEquals(renamePage("  P6 yard ", 1), Arrays.asList(prompt), "Rename Page asked");
+            assertEquals(Arrays.asList(names.get(pageQ), ((JLabel) field("LocMappingNumberLabel")).getText()),
+                Arrays.asList("P6 yard", "P6 yard"), "the name, then the label");
+
+            assertEquals(renamePage("P6 yard", 1), Arrays.asList(prompt), "its own name");
+            assertEquals(renamePage("P6 taken ", 2), Arrays.asList(prompt, I18n.t("page.ui.errorDuplicatePageName")),
+                "a taken name");
+            assertEquals(names.get(pageQ), "P6 yard", "a taken name was given to the page");
+        }
+        finally
+        {
+            names.remove(pageP);
+            names.remove(pageQ);
+        }
     }
 
     // The locomotive's doors
@@ -401,7 +506,7 @@ public class testMappingPagesAndLocomotiveDoors
      * Control+Enter in the Locomotive Settings window is Save, pressed in the field typed into (FR-200): the year is kept
      * and the window closes.
      *
-     * MUTATION: drop the Control+Enter binding from `LocomotiveSettingsFrame`, and the year is not kept.
+     * MUTATION: drop the Control+Enter binding from `LocomotiveSettingsWindow`, and the year is not kept.
      */
     @Test
     public void testControlEnterSavesTheSettings() throws Exception
@@ -675,7 +780,7 @@ public class testMappingPagesAndLocomotiveDoors
      * tooltip that only named the key; the key is shown, not bound, so only the window's own key handling acts on it.
      * With no speed preset, the grayed Apply item keeps the tip that says why.
      *
-     * MUTATION: in `RightClickMenuListener.keyed`, a plain `setAccelerator` (the item binds its key); or swap two rows'
+     * MUTATION: in `LocomotiveButtonContextMenu.keyed`, a plain `setAccelerator` (the item binds its key); or swap two rows'
      * names there.
      */
     @Test
@@ -861,6 +966,16 @@ public class testMappingPagesAndLocomotiveDoors
         turnTo(page);
     }
 
+    /** Reset Mappings on the page showing, answered Yes. */
+    private static void resetCurrentPage() throws Exception
+    {
+        AbstractButton reset = pageMenuItem(I18n.t("page.ui.menuResetCurrentMappings"));
+
+        answering(I18n.t("ui.yes"), () -> SwingUtilities.invokeLater(reset::doClick));
+
+        Components.settle();
+    }
+
     /** Turns to a page by its tab, as clicking the tab does. */
     private static void turnTo(int page) throws Exception
     {
@@ -929,6 +1044,28 @@ public class testMappingPagesAndLocomotiveDoors
         assertNotNull(chosen, "the page menu has no \"" + item + "\"");
 
         return chosen;
+    }
+
+    /** Rename Page from the page menu, typed in answer and every message after it closed; what was asked. */
+    private static List<String> renamePage(String typed, int questions) throws Exception
+    {
+        int page = ui.getLocMappingNumber();
+        AbstractButton rename = pageMenuItem(I18n.f("page.ui.menuRenamePage", page));
+        String prompt = I18n.f("page.ui.promptEnterPageName", page);
+
+        try (Answering answering = Answering.start(message -> message.equals(prompt) ? Answering.type(typed) : null))
+        {
+            SwingUtilities.invokeLater(rename::doClick);
+
+            assertTrue(answering.awaitAsked(questions, WAIT), "Rename Page asked " + answering.asked());
+
+            Components.settle();
+
+            for (Answering.Question q : answering.questions())
+                assertSame(q.owner, ui, "\"" + q.message + "\" hangs off another window");
+
+            return answering.asked();
+        }
     }
 
     /**

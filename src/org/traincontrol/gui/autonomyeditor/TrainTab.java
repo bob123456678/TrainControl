@@ -23,7 +23,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.InfoMark;
-import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomy.ArrivalSidePrompt;
@@ -220,7 +220,7 @@ final class TrainTab extends StationWindowBase.RoomyPanel
     {
         TrainControlUI main = editor.parentWindow();
 
-        return editor.menuOnly && main != null && !main.isLayoutEditorOpen() && main.aRunHoldsTheSetup();
+        return editor.menuOnly && main != null && !main.editorWindows().isLayoutEditorOpen() && main.aRunHoldsTheSetup();
     }
 
     private Locomotive train(String name)
@@ -399,7 +399,7 @@ final class TrainTab extends StationWindowBase.RoomyPanel
 
         if (main == null || model == null) return;
 
-        main.pressFromWindow(window, () -> main.openLocomotiveSettings(model, LocomotiveSettingsFrame.Tab.AUTONOMY, null));
+        main.pressFromWindow(window, () -> main.openLocomotiveSettings(model, LocomotiveSettingsWindow.Tab.AUTONOMY, null));
     }
 
     private void pressActive()

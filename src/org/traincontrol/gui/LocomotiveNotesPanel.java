@@ -88,7 +88,7 @@ final class LocomotiveNotesPanel extends JPanel
 
         if (onChange != null)
         {
-            javax.swing.event.DocumentListener tell = Typing.tell(onChange);
+            javax.swing.event.DocumentListener tell = OnTextEdit.tell(onChange);
 
             startYear.getDocument().addDocumentListener(tell);
             endYear.getDocument().addDocumentListener(tell);

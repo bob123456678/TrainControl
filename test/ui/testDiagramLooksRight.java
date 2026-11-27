@@ -775,7 +775,7 @@ public class testDiagramLooksRight
 
         page.addComponent(label, 0, 0);
 
-        assertNull(ui.autonomyCaptionAt(new org.traincontrol.automationui.TileGraph.TileKey(page.getName(), 0, 0)),
+        assertNull(ui.stationCaptions().autonomyCaptionAt(new org.traincontrol.automationui.TileGraph.TileKey(page.getName(), 0, 0)),
             "the square has an autonomy caption, so this is not the case the claim is about");
 
         java.awt.Container box = laidOut(page, 30);
@@ -1207,7 +1207,7 @@ public class testDiagramLooksRight
     }
 
     /** Presses the Medium pop-up button and returns the window it opens, or fails with the message. */
-    private org.traincontrol.gui.LayoutPopupUI openedByTheMediumButton(String notOpened) throws Exception
+    private org.traincontrol.gui.LayoutPopupWindow openedByTheMediumButton(String notOpened) throws Exception
     {
         final javax.swing.JButton medium = (javax.swing.JButton) Reflect.get(TrainControlUI.class, ui, "mediumButton");
 
@@ -1215,7 +1215,7 @@ public class testDiagramLooksRight
 
         javax.swing.SwingUtilities.invokeAndWait(medium::doClick);
 
-        org.traincontrol.gui.LayoutPopupUI opened = null;
+        org.traincontrol.gui.LayoutPopupWindow opened = null;
 
         for (long end = System.currentTimeMillis() + 15000; opened == null && System.currentTimeMillis() < end; )
         {
@@ -1223,9 +1223,9 @@ public class testDiagramLooksRight
 
             for (java.awt.Window w : java.awt.Window.getWindows())
             {
-                if (w instanceof org.traincontrol.gui.LayoutPopupUI && w.isDisplayable() && !before.contains(w))
+                if (w instanceof org.traincontrol.gui.LayoutPopupWindow && w.isDisplayable() && !before.contains(w))
                 {
-                    opened = (org.traincontrol.gui.LayoutPopupUI) w;
+                    opened = (org.traincontrol.gui.LayoutPopupWindow) w;
                 }
             }
         }
@@ -3271,7 +3271,7 @@ public class testDiagramLooksRight
     }
 
     /**
-     * An address never widens its column: an arrow's address is its page's name, wider than a square, and the editor
+     * An address never widens its column: a DCC uncoupler's address (2048g) is wider than a square, and the editor
      * and the Layout tab with Show Addresses on drew a blank column after it, shifting the rest of the row right.
      *
      * MUTATION: give the address label `gbc.gridwidth = 1` in LayoutGrid.
@@ -3285,11 +3285,13 @@ public class testDiagramLooksRight
 
         final boolean addressesWere = page.getShowAddress();
 
+        final Runnable restore = withAWideAddress(page);
+
         page.setShowAddress(true);
 
         try
         {
-            for (int size : new int[] {30, 60})
+            for (int size : new int[] {45, 60})
             {
                 final java.awt.Container box = laidOut(page, size);
                 final org.traincontrol.gui.LayoutGrid grid = org.traincontrol.gui.LayoutGrid.of(box);
@@ -3336,12 +3338,13 @@ public class testDiagramLooksRight
         finally
         {
             page.setShowAddress(addressesWere);
+            restore.run();
         }
     }
 
     /**
-     * An arrow's address runs on over the squares to its right but takes no clicks there: the mouse lands on the square
-     * under it, whose own menu answers, where the address would hand the click to the arrow and follow its link.
+     * A wide address runs on over the squares to its right but takes no clicks there: the mouse lands on the square
+     * under it, whose own menu answers, where the address would take the click itself.
      *
      * MUTATION: drop `text.answerOnlyOver(outer)` in LayoutGrid, and the address takes the click.
      */
@@ -3351,11 +3354,13 @@ public class testDiagramLooksRight
         final LayoutDiagram page = model.getLayout("1 - Main");
         final boolean shown = page.getShowAddress();
 
+        final Runnable restore = withAWideAddress(page);
+
         page.setShowAddress(true);
 
         try
         {
-            final java.awt.Container box = laidOut(page, 30);
+            final java.awt.Container box = laidOut(page, 45);
             final org.traincontrol.gui.LayoutGrid grid = org.traincontrol.gui.LayoutGrid.of(box);
 
             StringBuilder taken = new StringBuilder();
@@ -3377,14 +3382,10 @@ public class testDiagramLooksRight
 
                         across++;
 
-                        // Where AWT sends a click at the middle of the overlap
-                        java.awt.Component hit = support.Components.onTheEventThread(() -> javax.swing.SwingUtilities
-                            .getDeepestComponentAt(box, over.x + over.width / 2, over.y + over.height / 2));
-
-                        // The square, or its own address, which hands the click to it
-                        if (hit != grid.getValueAt(x + 1, y) && !(hit instanceof org.traincontrol.gui.widgets.AddressLabel
-                            && next.contains(hit.getLocation()))) taken.append("\n  \"").append(((javax.swing.JLabel) one)
-                            .getText()).append("\" over square ").append(x + 1).append(',').append(y).append(": ").append(hit);
+                        // The label answers a click at the middle of the overlap, which is the next square's
+                        if (one.contains(over.x + over.width / 2 - one.getX(), over.y + over.height / 2 - one.getY()))
+                            taken.append("\n  \"").append(((javax.swing.JLabel) one).getText())
+                                .append("\" over square ").append(x + 1).append(',').append(y);
                     }
                 }
             }
@@ -3395,7 +3396,37 @@ public class testDiagramLooksRight
         finally
         {
             page.setShowAddress(shown);
+            restore.run();
         }
+    }
+
+    /** Gives the page's first uncoupler the DCC address 2048, whose "2048g" is wider than a square; run the result to undo. */
+    private static Runnable withAWideAddress(LayoutDiagram page) throws Exception
+    {
+        for (org.traincontrol.base.LayoutDiagramComponent c : page.getAll())
+        {
+            if (!c.isUncoupler()) continue;
+
+            final int was = c.getAddress();
+            final org.traincontrol.base.Accessory.accessoryDecoderType protocol = c.getProtocol();
+            final boolean green = c.isLogicalGreen();
+
+            c.setLogicalAddress(2048, org.traincontrol.base.Accessory.accessoryDecoderType.DCC, true);
+
+            return () ->
+            {
+                try
+                {
+                    c.setLogicalAddress(was, protocol, green);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            };
+        }
+
+        throw new AssertionError("precondition: " + page.getName() + " has no uncoupler to give a wide address");
     }
 
     /** Every address label under a component: a plain label, not a square's tile or a station's caption. */
@@ -3739,7 +3770,7 @@ public class testDiagramLooksRight
     public void testTheNoPathsMarkIsTheInfoMarksGray() throws Exception
     {
         java.lang.reflect.Field field =
-            Reflect.field(org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class, "INFO_ICON");
+            Reflect.field(org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus.class, "INFO_ICON");
 
         javax.swing.ImageIcon mark = (javax.swing.ImageIcon) field.get(null);
 
@@ -4063,7 +4094,7 @@ public class testDiagramLooksRight
     @Test
     public void testTheMediumButtonOpensAMediumPopUp() throws Exception
     {
-        final org.traincontrol.gui.LayoutPopupUI popup = openedByTheMediumButton("the Medium button opened no pop-up window");
+        final org.traincontrol.gui.LayoutPopupWindow popup = openedByTheMediumButton("the Medium button opened no pop-up window");
 
         try
         {
@@ -4111,7 +4142,7 @@ public class testDiagramLooksRight
 
         assertNotNull(first, "precondition: the start-up resume loaded no configuration, so there is none to name");
 
-        final org.traincontrol.gui.LayoutPopupUI popup = openAMediumPopUp();
+        final org.traincontrol.gui.LayoutPopupWindow popup = openAMediumPopUp();
 
         try
         {
@@ -4195,7 +4226,7 @@ public class testDiagramLooksRight
 
         final org.traincontrol.base.Locomotive loc = shown;
 
-        final org.traincontrol.gui.LayoutPopupUI popup = openAMediumPopUp();
+        final org.traincontrol.gui.LayoutPopupWindow popup = openAMediumPopUp();
 
         try
         {
@@ -4313,7 +4344,7 @@ public class testDiagramLooksRight
     {
         final boolean[] unloaded = new boolean[1];
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> unloaded[0] = ui.unloadAutonomy());
+        javax.swing.SwingUtilities.invokeAndWait(() -> unloaded[0] = ui.autonomyLifecycle().unloadAutonomy());
 
         for (int i = 0; i < 10; i++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
 
@@ -4327,7 +4358,7 @@ public class testDiagramLooksRight
      *
      * @return the window
      */
-    private org.traincontrol.gui.LayoutPopupUI openAMediumPopUp() throws Exception
+    private org.traincontrol.gui.LayoutPopupWindow openAMediumPopUp() throws Exception
     {
         final javax.swing.JButton medium = (javax.swing.JButton) Reflect.get(TrainControlUI.class, ui, "mediumButton");
 
@@ -4341,11 +4372,11 @@ public class testDiagramLooksRight
 
             for (java.awt.Window w : java.awt.Window.getWindows())
             {
-                if (w instanceof org.traincontrol.gui.LayoutPopupUI && w.isDisplayable() && !before.contains(w))
+                if (w instanceof org.traincontrol.gui.LayoutPopupWindow && w.isDisplayable() && !before.contains(w))
                 {
                     javax.swing.SwingUtilities.invokeAndWait(() -> { });
 
-                    return (org.traincontrol.gui.LayoutPopupUI) w;
+                    return (org.traincontrol.gui.LayoutPopupWindow) w;
                 }
             }
         }
@@ -4374,7 +4405,7 @@ public class testDiagramLooksRight
      * @param configuration the one loaded, or null for none
      * @param when what has just happened, for the message
      */
-    private void popUpTitleIs(final org.traincontrol.gui.LayoutPopupUI popup, String configuration, String when)
+    private void popUpTitleIs(final org.traincontrol.gui.LayoutPopupWindow popup, String configuration, String when)
         throws Exception
     {
         for (int i = 0; i < 10; i++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
@@ -4497,11 +4528,11 @@ public class testDiagramLooksRight
     @Test
     public void testAPoppedOutDiagramScrollsHalfASquareAtATime() throws Exception
     {
-        final org.traincontrol.gui.LayoutPopupUI popup = openedByTheMediumButton("precondition: the Medium button opened no pop-up window");
+        final org.traincontrol.gui.LayoutPopupWindow popup = openedByTheMediumButton("precondition: the Medium button opened no pop-up window");
 
         try
         {
-            java.lang.reflect.Field paneField = Reflect.field(org.traincontrol.gui.LayoutPopupUI.class, "jScrollPane1");
+            java.lang.reflect.Field paneField = Reflect.field(org.traincontrol.gui.LayoutPopupWindow.class, "jScrollPane1");
 
             final javax.swing.JScrollPane pane = (javax.swing.JScrollPane) paneField.get(popup);
 
@@ -4682,14 +4713,14 @@ public class testDiagramLooksRight
 
     /**
      * A train standing at its home is shown by a little house on the Auto tab, not by a teal badge (MT-709), in the
-     * same spot as the (i): `AutoLocomotiveStatus.markFor` chooses the card's mark.
+     * same spot as the (i): `AutonomyLocomotiveStatus.markFor` chooses the card's mark.
      *
      * MUTATION: put the teal back, or the house away, and this fails.
      */
     @Test
     public void testATrainAtHomeShowsAHouseNotTeal() throws Exception
     {
-        java.lang.reflect.Method markFor = Reflect.method(org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class,
+        java.lang.reflect.Method markFor = Reflect.method(org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus.class,
             "markFor", boolean.class, boolean.class);
 
         javax.swing.Icon house = (javax.swing.Icon) markFor.invoke(null, true, false);

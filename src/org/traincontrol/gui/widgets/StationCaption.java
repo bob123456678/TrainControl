@@ -642,8 +642,13 @@ public class StationCaption extends JLabel
     public Dimension getPreferredSize()
     {
         Dimension was = super.getPreferredSize();
+        if (!pill)
+        {
+            int most = widest(getText());
+            if (most > 0) was.width += Math.max(0, most - getFontMetrics(getFont()).stringWidth(getText()));
 
-        if (!pill) return was;
+            return was;
+        }
 
         if (rotated)
         {
@@ -659,6 +664,28 @@ public class StationCaption extends JLabel
         was.width += (int) Math.round(lineHeight() * SIDE_PADDING * 2);
 
         return was;
+    }
+
+    /** The widest the text lays out at a common scale in any text smoothing (the scaled Graphics' wider advances). */
+    private int widest(String text)
+    {
+        Font font = getFont();
+        int most = 0;
+        if (font == null || text == null || text.isEmpty() || BasicHTML.isHTMLString(text)) return 0;
+        Object[] smoothing = {RenderingHints.VALUE_TEXT_ANTIALIAS_ON, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF,
+            RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB, RenderingHints.VALUE_TEXT_ANTIALIAS_GASP};
+        for (double scale : new double[] {1, 1.25, 1.5, 1.75, 2, 2.25})
+        {
+            for (Object how : smoothing)
+            {
+                Graphics2D g = new java.awt.image.BufferedImage(1, 1, 1).createGraphics();
+                g.scale(scale, scale);
+                g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, how);
+                most = Math.max(most, g.getFontMetrics(font).stringWidth(text));
+                g.dispose();
+            }
+        }
+        return most;
     }
 
     /**

@@ -1,29 +1,38 @@
 package org.traincontrol.gui;
 
+import java.awt.HeadlessException;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.Route;
+import org.traincontrol.gui.widgets.BusyDialog;
+import org.traincontrol.gui.widgets.DetailsArea;
+import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 
 /**
  * The route list on the Routes tab: running a route (its play button, a click on its row, and every other door, which
- * all come through `executeRoute`), editing and duplicating one, arming or disarming them in bulk, finding one by
- * name, and refreshing the list.
+ * all come through `executeRoute`), asking about its conflict, holding its button gray while it runs, editing and
+ * duplicating one, arming or disarming them in bulk, finding one by name and showing it, and refreshing the list.
  *
  * The list's cell renderer (`TrainControlUI.CustomTableRenderer`) is a public class of the window and stays there, as
  * do the hover handlers and every field.
  */
-final class RouteListPanel
+public final class RouteListPanel
 {
     private final TrainControlUI ui;
 
@@ -33,9 +42,9 @@ final class RouteListPanel
     }
 
     /**
-     * `TrainControlUI.executeRoute`'s body.
+     * Runs the named route, unless it is already running.
      */
-    void executeRoute(String route)
+    public void executeRoute(String route)
     {
         // The same answer at all three doors (the OB-057/OB-090 shape).  A debounce, not a lock: `execRoute` returns
         // once it has spawned the route thread, so the name is cleared 600 ms later.  Logged rather than silent: the
@@ -50,7 +59,7 @@ final class RouteListPanel
         // Marked before the thread starts, so the spinner is up by the time the pointer leaves the button (FR-043).
         // Every door that runs a route comes through here, including the right-click menu's own Execute (Adam:
         // "executing the route from there should also start the spinner.").
-        this.ui.routeStarted(route);
+        routeStarted(route);
 
         new Thread(() ->
         {
@@ -69,7 +78,7 @@ final class RouteListPanel
                 // the operator's own yes overrides anything.
                 if (picked != null)
                 {
-                    TrainControlUI.RouteConflict answer = this.ui.askAboutRouteConflict(picked, this.ui, null);
+                    TrainControlUI.RouteConflict answer = askAboutRouteConflict(picked, this.ui, null);
 
                     if (answer == TrainControlUI.RouteConflict.OVERRIDE)
                     {
@@ -130,14 +139,136 @@ final class RouteListPanel
                     + (System.currentTimeMillis() - began) + "ms");
             }
 
-            this.ui.releaseTheRoutePlayButton(route);
+            releaseTheRoutePlayButton(route);
         }
     }
 
+    /** `known` is the accessory and reason key when the caller already has them; null to ask the route itself. */
+    TrainControlUI.RouteConflict askAboutRouteConflict(MarklinRoute route, java.awt.Component over, String[] known)
+    {
+        if (route == null) return TrainControlUI.RouteConflict.REFUSED;
+
+        String[] why = known != null ? known : route.conflictingAccessoryAndReason();
+        String conflict = why == null ? null : why[0];
+
+        // No conflict any more is its own answer (autonomy releases accessories from its own threads, so it can clear
+        // after the caller's check): false would silently do nothing, true would run the route with every conflict
+        // check off.
+        if (conflict == null) return TrainControlUI.RouteConflict.NOTHING_TO_CONFIRM;
+
+        Object[] options = { I18n.t("ui.ok"), I18n.t("ui.cancel") };
+        final int[] choice = {JOptionPane.CLOSED_OPTION};
+
+        // The reason the route gave: `heldReason` tells a turnout on a locked path from a signal protecting a platform
+        // with a train PARKED at it, and the dialog must not ask about a moving train in both cases.
+        String reason = why == null ? null : why[1];
+
+        // A platform only RESERVED is asked about as that: a locked path holds its destination for a train still on its
+        // way.
+        String question = "route.refusedSignalProtectingOccupiedPlatform".equals(reason)
+            ? "layout.ui.confirmRouteProtectingSignal"
+            : "route.refusedSignalProtectingReservedPlatform".equals(reason)
+                ? "layout.ui.confirmRouteProtectingReservedSignal" : "layout.ui.confirmRouteActiveRoute";
+
+        Runnable ask = () -> choice[0] = JOptionPane.showOptionDialog(
+            over == null || !over.isShowing() ? this.ui : over,
+            I18n.f(question, route.getName(), conflict),
+            I18n.t("layout.ui.dialogPleaseConfirm"),
+            JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
+
+        try
+        {
+            if (SwingUtilities.isEventDispatchThread()) ask.run();
+            else SwingUtilities.invokeAndWait(ask);
+        }
+        catch (InterruptedException | java.lang.reflect.InvocationTargetException couldNotAsk)
+        {
+            this.ui.getModel().log(couldNotAsk);
+
+            return TrainControlUI.RouteConflict.REFUSED;
+        }
+
+        // Only an explicit OK; Escape and the close box mean no.
+        return choice[0] == 0 ? TrainControlUI.RouteConflict.OVERRIDE : TrainControlUI.RouteConflict.REFUSED;
+    }
+
+    /** Marks a route as running (`route` is its name) and starts the animation. */
+    void routeStarted(String route)
+    {
+        if (route == null) return;
+
+        this.ui.routesExecuting.add(route);
+        this.ui.startedRunningAt.put(route, System.currentTimeMillis());
+
+        // Said in debug: "nothing happens visually" cannot be told from "too quick to see" without a measurement.
+        if (this.ui.getModel() != null && this.ui.getModel().isDebug())
+        {
+            this.ui.getModel().log("Route " + route + " marked as running");
+        }
+
+        // A rebuild rather than a repaint (MT-217): refreshRouteList replaces the table's model, so every cell redraws.
+        SwingUtilities.invokeLater(() -> refreshRouteList());
+    }
+
+    /** The button comes back once the gray has been on screen long enough, not when the route ends. */
+    void releaseTheRoutePlayButton(String route)
+    {
+        if (route == null) return;
+
+        // The later of the route's end and the gray having been on screen long enough.  A floor rather than a fixed
+        // hold, which would be wrong if execution ever became synchronous; today `execRoute` returns at once, so the
+        // floor is nearly the whole wait.
+        Long since = this.ui.startedRunningAt.get(route);
+        long showFor = since == null ? 0
+            : TrainControlUI.ROUTE_MINIMUM_VISIBLE_MS - (System.currentTimeMillis() - since);
+
+        if (showFor > 0)
+        {
+            SwingUtilities.invokeLater(() ->
+            {
+                javax.swing.Timer rest = new javax.swing.Timer((int) showFor,
+                    e -> clearRunningRoute(route));
+
+                rest.setRepeats(false);
+                rest.start();
+            });
+
+            return;
+        }
+
+        clearRunningRoute(route);
+    }
+
+    private void clearRunningRoute(String route)
+    {
+        this.ui.routesExecuting.remove(route);
+
+        Long began = this.ui.startedRunningAt.remove(route);
+
+        if (this.ui.getModel() != null && this.ui.getModel().isDebug())
+        {
+            this.ui.getModel().log("Route " + route + " no longer running"
+                + (began == null ? "" : " after " + (System.currentTimeMillis() - began) + "ms"));
+        }
+
+        SwingUtilities.invokeLater(() -> refreshRouteList());
+    }
+
     /**
-     * `TrainControlUI.editRoute`'s body.
+     * Puts every play button back; called by a database sync, an import and a completed route edit, not by
+     * `refreshRouteList`, which a route finishing also reaches, so the first route to complete would wipe the spinner
+     * off every other running one.
      */
-    void editRoute(String routeName)
+    public void resetRouteSpinners()
+    {
+        this.ui.routesExecuting.clear();
+        this.ui.startedRunningAt.clear();
+    }
+
+    /**
+     * Opens the named route in the route editor, asking over the window the call came from.
+     */
+    public void editRoute(String routeName)
     {
         // Another window's door hears the refusal over it, on the event thread, ahead of the worker's
         final java.awt.Window askedFrom = this.ui.dialogParent();
@@ -186,7 +317,7 @@ final class RouteListPanel
 
                         // The route itself, rather than its name to look up again: this window is handed what it is to
                         // show, which makes its read-only behavior testable without a control station on the network.
-                        this.ui.routeEditor = new RouteEditorFrame(this.ui, routeName, currentRoute);
+                        this.ui.routeEditor = new RouteEditorWindow(this.ui, routeName, currentRoute);
 
                         // Not over a locked route's own title: a route from the Central Station opens with every
                         // control grayed and its title is the only thing that says why.
@@ -199,9 +330,9 @@ final class RouteListPanel
     }
 
     /**
-     * `TrainControlUI.duplicateRoute`'s body.
+     * Makes a copy of the named route.
      */
-    void duplicateRoute(String routeName)
+    public void duplicateRoute(String routeName)
     {
         new Thread(()->
         {  
@@ -245,7 +376,7 @@ final class RouteListPanel
     }
 
     /**
-     * `TrainControlUI.BulkEnableOrDisable`'s body.
+     * Asks for a search string, then enables or disables every route whose name matches.
      */
     void BulkEnableOrDisable(boolean enable)
     {
@@ -265,7 +396,217 @@ final class RouteListPanel
         // getName().contains(null) threw on a worker, skipping the sync and refresh that follow it.
         if (searchString == null || "".equals(searchString)) return;
 
-        this.ui.enableOrDisableMatching(searchString, enable);
+        enableOrDisableMatching(searchString, enable);
+    }
+
+    /** Sets automatic execution for each route whose name contains `search` ("*" for all), past the prompt (MT-467). */
+    public void enableOrDisableMatching(String search, boolean enable)
+    {
+        new Thread(()->
+        {
+            // Whether the station has heard of any of them (OB-155): one sync per batch, none when every route was
+            // allocated here.
+            boolean anyOnTheStation = false;
+            LayoutDiagram before = this.ui.shownDiagram();
+
+            for (String routeName : this.ui.getModel().getRouteList())
+            {
+                Route r = this.ui.getModel().getRoute(routeName);
+
+                // The list is a copy but the lookup is not, and a sync's re-read of a station route briefly removes an
+                // id: a name from a list may not be a route.
+                if (r == null) continue;
+
+                if (r.hasS88() || r.isEnabled())
+                {
+                    if (r.getName().contains(search) || "*".equals(search))
+                    {
+                         // Read before the write, which replaces the route object; the lock, not the id, says whether
+                         // the station carried it.
+                         if (r.isLocked()) anyOnTheStation = true;
+
+                         // The same write enableOrDisableRoute uses, so the two cannot drift; the guards around it stay
+                         // separate because this loop syncs once per batch, not once per route.
+                         writeRouteEnabledState(r, enable);
+                    }
+                }
+            }
+
+            if (anyOnTheStation) this.ui.syncAfterAnEdit();
+
+            this.ui.redrawRouteSquaresOrRebuild(before);
+            refreshRouteList();
+        }).start();
+    }
+
+    /** The one route-enabled write both callers make, so it cannot drift; guards and syncs stay with the callers. */
+    void writeRouteEnabledState(Route r, boolean enable)
+    {
+        this.ui.getModel().editRoute(r.getName(), r.getName(), r.getRoute(), r.getS88(), r.getTriggerType(), enable,
+                r.getConditions());
+    }
+
+    /** `TrainControlUI.deleteRoute`'s body. */
+    void deleteRoute(String routeName)
+    {
+        Route route = this.ui.getModel().getRoute(routeName);
+        
+        if (route != null)
+        {            
+            // Counted before the delete, as afterwards nothing is left to count: deleting a route removes the other
+            // routes' commands that run it, and the question says how many routes call it.
+            int calledBy = this.ui.getModel().routesCalling(route.getName()).size();
+
+            int dialogResult = JOptionPane.showOptionDialog(
+                this.ui.routePanel(),
+                calledBy > 0
+                    ? I18n.f("route.ui.confirmDeleteRouteWithCallers", route.getName(), calledBy)
+                    : I18n.f("route.ui.confirmDeleteRoute", route.getName()),
+                I18n.t("route.ui.dialogDeleteRoute"),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                TrainControlUI.YES_NO_OPTS,
+                // Default to No: Enter should not delete a route by accident.
+                TrainControlUI.YES_NO_OPTS[1]
+            );
+            
+            if (dialogResult == JOptionPane.YES_OPTION)
+            {
+                // Read before the delete, the only moment the lock exists (OB-155).  The lock, not the id, says whether
+                // the station carried the route; see enableOrDisableRoute.
+                boolean wasLocal = !route.isLocked();
+
+                LayoutDiagram before = this.ui.shownDiagram();
+
+                // Not the model's `deleteRoute`, which `editRoute` uses to delete and re-add and which keeps callers:
+                // this takes the route out of every route that runs it.
+                this.ui.getModel().deleteRouteAndItsCalls(route.getName());
+                refreshRouteList();
+
+                // Only when the station could have known the route: one with no lock never came from the station, so a
+                // sync (the whole database, behind a modal spinner) can bring back nothing about it.
+                if (!wasLocal) this.ui.syncAfterAnEdit();
+
+                // Again after the sync, as `duplicateRoute` does: the sync re-adds routes, so the table would point at
+                // replaced instances.
+                if (!wasLocal) refreshRouteList();
+
+                this.ui.redrawRouteSquaresOrRebuild(before);
+                this.ui.repaintLoc();
+            }
+        }
+    }
+
+    /** Prompts for a new route ID; the model refuses one already taken, and a non-numeric answer is said as such. */
+    void changeRouteId(String routeName)
+    {        
+        try
+        {
+            Route currentRoute = this.ui.getModel().getRoute(routeName);
+            
+            if (currentRoute != null)
+            {
+                String input = JOptionPane.showInputDialog(
+                    this.ui,
+                    I18n.t("route.ui.promptEnterNewRouteId"),
+                    currentRoute.getId()
+                );
+
+                if (input != null)
+                {
+                    int newId = Math.abs(Integer.parseInt(input));
+
+                    if (newId != currentRoute.getId())
+                    {
+                        LayoutDiagram before = this.ui.shownDiagram();
+
+                        if (!this.ui.getModel().changeRouteId(routeName, newId))
+                        {
+                            JOptionPane.showMessageDialog(
+                                this.ui,
+                                I18n.t("route.ui.errorDuplicateRouteId")
+                            );
+                        }
+
+                        // Both ends, because either could be the station's (OB-155): the old route's lock says whether
+                        // it carried the route, the new id's range whether it could have issued the id.
+                        if (!org.traincontrol.marklin.MarklinControlStation.isLocalRouteId(newId)
+                            || currentRoute.isLocked())
+                        {
+                            this.ui.syncAfterAnEdit();
+                        }
+
+                        this.ui.redrawRouteSquaresOrRebuild(before);
+                        refreshRouteList();
+                    }
+                }
+            }
+        }
+        catch (HeadlessException | NumberFormatException e)
+        {
+            JOptionPane.showMessageDialog(
+                this.ui,
+                I18n.t("route.ui.errorIdMustBePositiveInteger")
+            );
+        }
+    }
+
+    /** `TrainControlUI.getRouteAtCursor`'s body. */
+    Route getRouteAtCursor(MouseEvent evt)
+    {
+        try
+        {
+            javax.swing.JTable list = this.ui.routeList();
+
+            return (Route) list.getValueAt(list.rowAtPoint(evt.getPoint()), list.columnAtPoint(evt.getPoint()));
+        }
+        catch (RuntimeException e)
+        {
+            return null;
+        }  
+    }
+
+    /** `TrainControlUI.enableOrDisableRoute`'s body. */
+    void enableOrDisableRoute(String routeName, boolean enable)
+    {
+        new Thread(() ->
+        {
+            Route r = this.ui.getModel().getRoute(routeName);
+
+            // A name from a list is not a route: `editRoute` and a sync's re-read of a station route both delete and
+            // re-add, so a route can be absent between choosing the name and this lookup, and on a worker with no
+            // handler that fails silently.
+            if (r == null) return;
+
+            // Only enabling needs an s88, which is what lets a route FIRE itself; a route enabled with no s88 (Bulk's
+            // filter allows it) must still be disableable from its own right-click item.
+            if (!enable || r.hasS88())
+            {
+                // Sync only when the station carried the route (OB-155): the write below is a delete-and-re-add in the
+                // LOCAL database and tells the station nothing, so for any other route the round trip (the whole
+                // database, behind a modal spinner) brings back nothing.  The route's LOCK says it (only the sync's
+                // import sets it), the id does not: most of Adam's own routes predate `isLocalRouteId`'s cutover.  Read
+                // before the write, which replaces the route object.
+                final boolean stationCarriedIt = r.isLocked();
+                final LayoutDiagram before = this.ui.shownDiagram();
+
+                writeRouteEnabledState(r, enable);
+
+                if (stationCarriedIt) this.ui.syncAfterAnEdit();
+
+                this.ui.redrawRouteSquaresOrRebuild(before);
+
+                refreshRouteList();
+            }
+            else
+            {
+                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                    this.ui,
+                    I18n.f("route.ui.errorS88RequiredForAutoFire", r.getName())
+                ));
+            }
+        }).start();
     }
 
     /**
@@ -279,7 +620,7 @@ final class RouteListPanel
         // executes without confirming.  If route is left-clicked elsewhere, pop up the confirmation first.  If
         // right-clicked, then show the right click menu."): the confirmation was removed when a left click anywhere ran
         // the route, and having to aim, which only the button asks, makes it unnecessary.
-        this.ui.clearFoundRoute();
+        clearFoundRoute();
 
         Route route = this.ui.getRouteAtCursor(evt);
 
@@ -287,7 +628,7 @@ final class RouteListPanel
 
         if (!SwingUtilities.isLeftMouseButton(evt))
         {
-            // The right-click menu is RightClickRouteMenu's own business - it listens for the popup
+            // The right-click menu is RouteContextMenu's own business - it listens for the popup
             // trigger on press and release, which is where a platform decides what a right click is.
             return;
         }
@@ -295,7 +636,7 @@ final class RouteListPanel
         // WITH THE POWER OFF, THE CELL OPENS THE ROUTE'S EDITOR (FR-140): nothing could run, so the click is taken as
         // wanting to see or change the route.  The button, drawn as a wrench then, does the same (FR-164); the
         // right-click menu's Execute Route still runs it.
-        if (this.ui.routeListEditsRoutes())
+        if (routeListEditsRoutes())
         {
             editRoute(route.getName());
 
@@ -330,6 +671,12 @@ final class RouteListPanel
 
         // Revert preference
         this.ui.windowAlwaysOnTopAsChosen();
+    }
+
+    /** Whether the route list opens a route's editor rather than running it: the power is off (FR-140, FR-164). */
+    boolean routeListEditsRoutes()
+    {
+        return this.ui.getModel() != null && !this.ui.getModel().getPowerState();
     }
 
     /**
@@ -391,7 +738,48 @@ final class RouteListPanel
             if (found == null) return;
         }
 
-        this.ui.showRouteInTheList(found);
+        showRouteInTheList(found);
+    }
+
+    /** Brings the route list up, scrolls to a route (`name`, as the model spells it) and highlights it. */
+    void showRouteInTheList(String name)
+    {
+        this.ui.foundRoute = name;
+
+        // Found by identity, not by index: the designer's ordering is not a contract.
+        int routesAt = this.ui.keyboardTab().indexOfComponent(this.ui.routePanel());
+
+        if (routesAt >= 0) this.ui.keyboardTab().setSelectedIndex(routesAt);
+
+        javax.swing.JTable table = this.ui.routeList();
+
+        for (int row = 0; row < table.getRowCount(); row++)
+        {
+            for (int column = 0; column < table.getColumnCount(); column++)
+            {
+                Object at = table.getValueAt(row, column);
+
+                if (!(at instanceof Route) || !name.equals(((Route) at).getName())) continue;
+
+                table.scrollRectToVisible(table.getCellRect(row, column, true));
+                table.repaint();
+
+                return;
+            }
+        }
+
+        // In the model but not in the table (mid-rebuild, or filtered out): the highlight is set, so the next repaint
+        // shows it.
+        table.repaint();
+    }
+
+    /** Forgets the found route, so the highlight does not outlive the question it answered. */
+    void clearFoundRoute()
+    {
+        if (this.ui.foundRoute == null) return;
+
+        this.ui.foundRoute = null;
+        this.ui.routeList().repaint();
     }
 
     /**
@@ -405,9 +793,9 @@ final class RouteListPanel
     }
 
     /**
-     * `TrainControlUI.refreshRouteList`'s body.
+     * Rebuilds the route list from the model.
      */
-    void refreshRouteList()
+    public void refreshRouteList()
     {
         // singlePass, not invokeLater: joins a pass already running rather than asking for another.
         TrainControlUI.singlePass(() ->
@@ -464,5 +852,129 @@ final class RouteListPanel
 
             // this.RouteList.setToolTipText("Left click route to execute, right click to edit");
         });
+    }
+
+    /** Routes > Import Routes: the file, the replace question, the re-arm question, then the import under BusyDialog. */
+    void importRoutes()
+    {
+        // The chooser stays on the event thread (OB-137): a modal JFileChooser shown from another thread is painted
+        // from two threads at once.  The slow half (parsing, the Central Station sync) runs off it under BusyDialog.
+        JFileChooser fc = this.ui.getFileChooser(JFileChooser.OPEN_DIALOG, "json");
+
+        if (fc.showOpenDialog(this.ui) != JFileChooser.APPROVE_OPTION) return;
+
+        final File chosen = fc.getSelectedFile();
+
+        // Every route there is goes (`importRoutes`), so it asks first, saying how many; No is the default.
+        int existing = this.ui.getModel().getRouteList().size();
+
+        String replaces = existing == 1 ? I18n.t("route.ui.confirmReplaceTheOneRoute")
+            : I18n.f("route.ui.confirmReplaceAllRoutes", existing);
+
+        if (existing > 0 && JOptionPane.showOptionDialog(this.ui, replaces, I18n.t("route.ui.titleImportRoutes"),
+            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, TrainControlUI.YES_NO_OPTS,
+            TrainControlUI.YES_NO_OPTS[1])
+            != JOptionPane.YES_OPTION) return;
+
+        // Held rather than thrown: the work half must not raise a dialog.
+        final Exception[] failed = new Exception[1];
+        final int[] added = new int[1];
+        final int[] rearmed = new int[1];
+
+        // Read and asked about here, before anything is replaced: routes saved armed come back armed only if the user
+        // says so.  A file this cannot read is reported by the import below.
+        String read = null;
+
+        try
+        {
+            read = new String(Files.readAllBytes(Paths.get(chosen.getPath())), StandardCharsets.UTF_8);
+        }
+        catch (Exception unreadable)
+        {
+            failed[0] = unreadable;
+        }
+
+        final String json = read;
+
+        final List<String> savedArmed = json == null
+            ? Collections.<String>emptyList() : this.ui.getModel().routesSavedArmed(json);
+
+        // No is the default: an import that starts nothing cannot surprise anybody.  Routes by name (MT-496), in a
+        // Details list under the question.
+        final boolean arm = !savedArmed.isEmpty() && JOptionPane.showOptionDialog(this.ui,
+            DetailsArea.message(I18n.f("route.ui.confirmRearmImported", savedArmed.size()), savedArmed),
+            I18n.t("route.ui.confirmRearmImportedTitle"),
+            JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, TrainControlUI.YES_NO_OPTS,
+            TrainControlUI.YES_NO_OPTS[1])
+            == JOptionPane.YES_OPTION;
+
+        final LayoutDiagram before = this.ui.shownDiagram();
+
+        this.ui.importRoutesMenuItem().setEnabled(false);
+
+        BusyDialog.run(this.ui, I18n.t("ui.busySyncingWithCS"),
+            () ->
+            {
+                if (failed[0] != null) return;
+
+                try
+                {
+                    added[0] = this.ui.getModel().importRoutes(json, arm);
+
+                    // Counted from what the import armed, as the log counts it (MT-497): a route with no sensor is not
+                    // armed.
+                    for (String name : savedArmed)
+                    {
+                        Route imported = this.ui.getModel().getRoute(name);
+
+                        if (arm && imported != null && imported.isEnabled()) rearmed[0]++;
+                    }
+
+                    TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, chosen.getParent());
+
+                    this.ui.syncAfterAnEdit();
+                }
+                catch (Exception e)
+                {
+                    failed[0] = e;
+                }
+            },
+            () ->
+            {
+                this.ui.importRoutesMenuItem().setEnabled(true);
+
+                if (failed[0] != null)
+                {
+                    JOptionPane.showMessageDialog(this.ui,
+                        I18n.t("route.ui.errorFailedToImportRoutesCheckLog"));
+
+                    this.ui.getModel().logf("route.errorImportFailedWithMessage", failed[0].getMessage());
+
+                    this.ui.getModel().log(failed[0]);
+
+                    return;
+                }
+
+                this.ui.redrawRouteSquaresOrRebuild(before);
+                this.ui.repaintLoc();
+
+                resetRouteSpinners();
+                refreshRouteList();
+
+                // The routes arrive off and the door says so, or, asked, the ones saved armed come back armed.  A route
+                // with an emergency stop among other commands is split into a stop-only route, named too.
+                List<String> split = new ArrayList<>();
+
+                for (String[] pair : this.ui.getModel().getRoutesSplitByLastImport()) split.add(pair[0]);
+
+                String notice = rearmed[0] > 0
+                    ? I18n.f(MarklinControlStation.IMPORTED_ROUTES_REARMED, added[0],
+                        rearmed[0])
+                    : I18n.f(MarklinControlStation.IMPORTED_ROUTES_NOTICE, added[0],
+                        I18n.t("ui.main.bulkEnable"), I18n.t("route.ui.menuEnableAutoExecution"));
+
+                JOptionPane.showMessageDialog(this.ui, split.isEmpty() ? notice
+                    : DetailsArea.message(notice + "\n\n" + I18n.t("route.ui.infoImportSplitStopRoutes"), split));
+            });
     }
 }

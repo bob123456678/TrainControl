@@ -47,7 +47,7 @@ final class EditorPrompts
 
         String refused = applyNumber(tile, key, entered, unset);
 
-        if (refused != null) JOptionPane.showMessageDialog(editor.owner(), AutonomyEditorPanel.wrapped(refused));
+        if (refused != null) JOptionPane.showMessageDialog(editor.owner(), refused);
     }
 
     /**
@@ -149,8 +149,7 @@ final class EditorPrompts
             }
         });
 
-        // Nothing to offer, which means nothing is stored - the loop above puts every stored
-        // entry on the list. So returning here cannot hide anything.
+        // Nothing to offer means nothing is stored: the loop above lists every stored entry.
         if (choices.isEmpty())
         {
             // Grayed, because there is nothing a click could find (MT-376: "if there are no stations on the diagram
@@ -161,7 +160,7 @@ final class EditorPrompts
             final JButton close = new JButton(UIManager.getString("OptionPane.cancelButtonText"));
 
             final JOptionPane pane = new JOptionPane(
-                AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.infoNoOtherPointsToBlockWith")),
+                I18n.t("autosetup.ui.infoNoOtherPointsToBlockWith"),
                 JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION, null,
                 new Object[] { pickNow, close }, close);
 

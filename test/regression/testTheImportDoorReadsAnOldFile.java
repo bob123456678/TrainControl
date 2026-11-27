@@ -33,7 +33,7 @@ import support.Reflect;
 /**
  * The Autonomy menu's Import, driven as Adam drives it, on a sandbox copy of his railway with his own 2.7.4c file.
  *
- * The door is `AutonomyViewerPanel.importConfiguration`, answered from a thread of its own, as he would answer it.
+ * The door is `AutonomyConfigurationsPanel.importConfiguration`, answered from a thread of its own, as he would answer it.
  * What each import then says, logs and leaves in the setup is what MT-491 and MT-298 ask him to read.
  *
  * @author Adam
@@ -1349,12 +1349,12 @@ public class testTheImportDoorReadsAnOldFile
 
             assertTrue((Boolean) noEditorOpen.get(ui[0]), "precondition: the window reads an editor as open");
 
-            final org.traincontrol.gui.RouteEditorFrame[] editor = new org.traincontrol.gui.RouteEditorFrame[1];
+            final org.traincontrol.gui.RouteEditorWindow[] editor = new org.traincontrol.gui.RouteEditorWindow[1];
 
-            SwingUtilities.invokeAndWait(() -> editor[0] = new org.traincontrol.gui.RouteEditorFrame(ui[0], routeName,
+            SwingUtilities.invokeAndWait(() -> editor[0] = new org.traincontrol.gui.RouteEditorWindow(ui[0], routeName,
                 ui[0].getModel().getRoute(routeName)));
 
-            final java.lang.reflect.Method save = Reflect.method(org.traincontrol.gui.RouteEditorFrame.class, "onSave");
+            final java.lang.reflect.Method save = Reflect.method(org.traincontrol.gui.RouteEditorWindow.class, "onSave");
 
             startAnsweringYes(asked, going);
 
@@ -1898,7 +1898,7 @@ public class testTheImportDoorReadsAnOldFile
 
             assertTrue(unloaded.isCurrentLayout(), "precondition: the railway running is not the current one");
 
-            List<String> asked = answeringYes(() -> ui[0].unloadAutonomy());
+            List<String> asked = answeringYes(() -> ui[0].autonomyLifecycle().unloadAutonomy());
 
             assertTrue(asked.contains(I18n.t("autolayout.ui.confirmReloadJsonStopsRunningLocomotives")), "precondition:"
                 + " Unload did not ask to stop the trains: " + asked);
@@ -1989,7 +1989,7 @@ public class testTheImportDoorReadsAnOldFile
 
             declined.set(ui, true);
 
-            answeringYes(() -> ui.unloadAutonomy());
+            answeringYes(() -> ui.autonomyLifecycle().unloadAutonomy());
 
             assertFalse(ui.getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
 
@@ -2020,7 +2020,7 @@ public class testTheImportDoorReadsAnOldFile
                 assertFalse(ui.getModel().hasAutoLayout(), "after Unload the latency ping built a railway, which"
                     + " hasAutoLayout then answers yes about (RLV8-C2)");
 
-                Reflect.method(TrainControlUI.class, "repaintTimetable").invoke(ui);
+                Reflect.method(org.traincontrol.gui.TimetableTab.class, "repaintTimetable").invoke(ui.timetableTab());
 
                 for (int turn = 0; turn < 4; turn++) SwingUtilities.invokeAndWait(() -> { });
 
@@ -2107,7 +2107,7 @@ public class testTheImportDoorReadsAnOldFile
             final String train = (String) dispatched[0];
             final String from = (String) dispatched[1];
 
-            List<String> asked = answeringYes(() -> ui[0].unloadAutonomy());
+            List<String> asked = answeringYes(() -> ui[0].autonomyLifecycle().unloadAutonomy());
 
             assertTrue(asked.contains(I18n.t("autolayout.ui.confirmReloadJsonStopsRunningLocomotives")), "precondition:"
                 + " Unload did not ask to stop the trains: " + asked);
@@ -2324,7 +2324,7 @@ public class testTheImportDoorReadsAnOldFile
 
             declined.set(ui, true);
 
-            answeringYes(() -> ui.unloadAutonomy());
+            answeringYes(() -> ui.autonomyLifecycle().unloadAutonomy());
 
             assertFalse(ui.getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
 
@@ -2429,14 +2429,14 @@ public class testTheImportDoorReadsAnOldFile
 
             railway.restoreReversalsOnArrival(owed);
 
-            SwingUtilities.invokeAndWait(() -> ui[0].reconcileFacingWhenIdle());
+            SwingUtilities.invokeAndWait(() -> ui[0].diagramLocGestures().reconcileFacingWhenIdle());
 
             assertEquals(railway.turnedOnArrivalAt(turned), at.getName(), "precondition: the turn was written while "
                 + dispatched[0] + " was under way");
 
             if (unload)
             {
-                answeringYes(() -> ui[0].unloadAutonomy());
+                answeringYes(() -> ui[0].autonomyLifecycle().unloadAutonomy());
 
                 assertFalse(ui[0].getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
             }
@@ -2731,7 +2731,7 @@ public class testTheImportDoorReadsAnOldFile
     static org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel openTheEditorFor(TrainControlUI ui, TileKey at,
         List<TileKey> related) throws Exception
     {
-        answeringYes(() -> ui.openAutonomyEditor(at, related));
+        answeringYes(() -> ui.editorWindows().openAutonomyEditor(at, related));
 
         java.lang.reflect.Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
@@ -2775,7 +2775,7 @@ public class testTheImportDoorReadsAnOldFile
         {
             editor.dispose();
 
-            ui.autonomyEditorClosed();
+            ui.editorWindows().autonomyEditorClosed();
         });
 
         for (int turn = 0; turn < 10; turn++) SwingUtilities.invokeAndWait(() -> { });
@@ -3414,7 +3414,7 @@ public class testTheImportDoorReadsAnOldFile
             railway.setMinDelay(0);
             railway.setMaxDelay(0);
 
-            answeringYes(() -> ui.unloadAutonomy());
+            answeringYes(() -> ui.autonomyLifecycle().unloadAutonomy());
 
             assertFalse(ui.getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
 
@@ -3461,7 +3461,7 @@ public class testTheImportDoorReadsAnOldFile
             final org.traincontrol.automation.Point at = standing;
             final TileKey square = session.getStationIndex().squareOf(at.getName());
 
-            answeringYes(() -> ui.unloadAutonomy());
+            answeringYes(() -> ui.autonomyLifecycle().unloadAutonomy());
 
             assertFalse(ui.getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
 
@@ -3480,8 +3480,8 @@ public class testTheImportDoorReadsAnOldFile
                 {
                     labels.invoke(captions, at);
                     arrow.invoke(captions, at, square);
-                    ui.getAutonomyPointForTile(square);
-                    ui.getAutonomyOccupantsForTile(square);
+                    ui.stationCaptions().getAutonomyPointForTile(square);
+                    ui.stationCaptions().getAutonomyOccupantsForTile(square);
                 }
                 catch (ReflectiveOperationException e)
                 {
@@ -3609,7 +3609,7 @@ public class testTheImportDoorReadsAnOldFile
 
             declined.set(ui, true);
 
-            answeringYes(() -> ui.unloadAutonomy());
+            answeringYes(() -> ui.autonomyLifecycle().unloadAutonomy());
 
             assertFalse(ui.getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
 
@@ -4767,7 +4767,7 @@ public class testTheImportDoorReadsAnOldFile
 
             startAnsweringYes(asked, going);
 
-            SwingUtilities.invokeAndWait(() -> ui.clearTimetable());
+            SwingUtilities.invokeAndWait(() -> ui.timetableTab().clearTimetable());
 
             long until = System.currentTimeMillis() + 10000;
 

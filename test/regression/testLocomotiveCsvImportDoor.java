@@ -41,20 +41,171 @@ public class testLocomotiveCsvImportDoor
     private static final String IMPORT = I18n.t("loc.ui.importCsvButton");
     private static final String CANCEL = I18n.t("ui.cancel");
 
+    /** The import question while it shows, for a claim's `whenAsked` to read and press. */
+    private static volatile JOptionPane asking;
+
     /** What the door showed and did. */
     private static final class Seen
     {
         volatile boolean chose;
         volatile String question;
+        /** The question was answered, after `whenAsked` ran. */
+        volatile boolean answered;
         volatile List<String> questionDetails = Collections.emptyList();
+        /** Every dialog's title, in the order they showed. */
+        final List<String> titles = Collections.synchronizedList(new ArrayList<>());
         final List<String> said = Collections.synchronizedList(new ArrayList<>());
         final List<support.PopupShape> saidShapes = Collections.synchronizedList(new ArrayList<>());
+        /** The titles of the dialogs that stood lower than an always-on-top main window, so under it. */
+        final List<String> under = Collections.synchronizedList(new ArrayList<>());
     }
 
     /** The shared shape of a claim: a window, a file, an answer, and the door pressed. */
     private interface Claim
     {
         void check(TrainControlUI ui, MarklinControlStation model) throws Exception;
+    }
+
+    /**
+     * The duplicates popup keeps its heading close: with nothing to say above the table it starts the popup, and with a
+     * sentence it sits no more than the house gap (6 px) under it; the table sits no more than 6 px under the heading
+     * (MT-1097).
+     *
+     * MUTATION: in `LocomotiveCsvDoor`, drop `bare`, or put the 12 px strut back, or in `DetailsArea.message` give the
+     * BorderLayout its 8 px gap with no list, and this fails.
+     */
+    @Test
+    public void testTheDuplicatesHeadingSitsCloseAboveTheTable() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            final int held = freeAddress(model, 13000), free = freeAddress(model, held - 1);
+
+            model.newMFXLocomotive("gap here", held);
+            File bare = write(HEADER + mfx("gap twin", held));
+            File said = write(HEADER + mfx("gap twin", held) + mfx("gap alone", free));
+
+            try
+            {
+                int[] none = gapsAround(ui, bare), some = gapsAround(ui, said);
+
+                assertEquals(none[0], 0, "a popup with nothing above the table starts " + none[0] + " px above its heading");
+                assertTrue(some[0] >= 0 && some[0] <= 6, "the heading sits " + some[0] + " px under the sentence");
+                assertTrue(none[1] >= 0 && none[1] <= 6 && some[1] >= 0 && some[1] <= 6,
+                    "the table sits " + none[1] + " and " + some[1] + " px under the heading");
+            }
+            finally
+            {
+                bare.delete();
+                said.delete();
+                model.deleteLoc("gap here");
+            }
+        });
+    }
+
+    /** The gaps in the duplicates popup for `file`: above its heading (from the sentence, or the popup's top), and below. */
+    private static int[] gapsAround(TrainControlUI ui, File file) throws Exception
+    {
+        final int[] gaps = new int[2];
+
+        press(ui, file, CANCEL, s -> s.answered, () -> support.Components.onTheEventThread(() ->
+        {
+            List<javax.swing.JTextArea> sentence = support.Components.all(asking, javax.swing.JTextArea.class, a -> true);
+            javax.swing.JLabel heading = support.Components.all(asking, javax.swing.JLabel.class,
+                l -> l.getText() != null && l.getText().startsWith("Locomotives that may already")).get(0);
+            org.traincontrol.gui.widgets.ChoiceTable table = support.Components.all(asking,
+                org.traincontrol.gui.widgets.ChoiceTable.class, t -> true).get(0);
+            java.awt.Rectangle head = SwingUtilities.convertRectangle(heading.getParent().getParent(),
+                heading.getParent().getBounds(), asking);
+            java.awt.Rectangle grid = SwingUtilities.convertRectangle(table.getParent(), table.getBounds(), asking);
+
+            gaps[0] = heading.getParent().getY();
+            if (!sentence.isEmpty())
+            {
+                java.awt.Rectangle text = SwingUtilities.convertRectangle(sentence.get(0).getParent(),
+                    sentence.get(0).getBounds(), asking);
+                gaps[0] = head.y - (text.y + text.height);
+            }
+            gaps[1] = grid.y - (head.y + head.height);
+
+            return null;
+        }));
+
+        return gaps;
+    }
+
+    /**
+     * The duplicates popup is no wider than the main window, and the table scrolls sideways only past it (MT-1097).
+     *
+     * MUTATION: in `LocomotiveCsvDoor`, leave out the `limitWidth` call, and the popup is wider than a 700 px window;
+     * reserve 140 instead of 72 scaled + 18, and a window just wide enough for the popup still scrolls the table.
+     */
+    @Test
+    public void testTheDuplicatesPopupIsNoWiderThanTheMainWindow() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            final int held = freeAddress(model, 13000);
+            model.newMFXLocomotive("wide here", held);
+            File file = write(HEADER + mfx("wide twin", held));
+
+            try
+            {
+                int natural = popupWidth(ui, file, java.awt.Toolkit.getDefaultToolkit().getScreenSize().width);
+                int exact = popupWidth(ui, file, natural), narrower = popupWidth(ui, file, natural - 1);
+
+                assertTrue(natural > 300, "precondition: the popup is " + natural + " px wide");
+                assertEquals(exact, natural, "a window as wide as the popup: it is " + exact + " px, not " + natural);
+                assertTrue(narrower <= natural - 1, "one pixel narrower the popup is " + narrower + " px in a "
+                    + (natural - 1) + " px window");
+                assertTrue(narrower < natural, "the table did not narrow in the " + (natural - 1) + " px window");
+                assertTrue(popupWidth(ui, file, 700) <= 700, "the popup is wider than a 700 px window");
+            }
+            finally
+            {
+                file.delete();
+                model.deleteLoc("wide here");
+            }
+        });
+    }
+
+    /** The duplicates popup's width with the main window `width` px wide (the window as it was is restored). */
+    private static int popupWidth(TrainControlUI ui, File file, int width) throws Exception
+    {
+        final int[] shown = new int[2];
+        final java.awt.Dimension was = support.Components.onTheEventThread(() -> ui.getSize());
+        final java.awt.Dimension least = support.Components.onTheEventThread(() -> ui.getMinimumSize());
+
+        try
+        {
+            support.Components.onTheEventThread(() ->
+            {
+                ui.setMinimumSize(new java.awt.Dimension(300, 300));
+                ui.setSize(width, was.height);
+                ui.setVisible(true);
+                return null;
+            });
+            press(ui, file, CANCEL, s -> s.answered, () -> support.Components.onTheEventThread(() ->
+            {
+                shown[0] = SwingUtilities.getWindowAncestor(asking).getWidth();
+                shown[1] = ui.getWidth();
+
+                return null;
+            }));
+        }
+        finally
+        {
+            support.Components.onTheEventThread(() ->
+            {
+                ui.setMinimumSize(least);
+                ui.setVisible(false);
+                ui.setSize(was);
+                return null;
+            });
+        }
+
+        assertEquals(shown[1], width, "precondition: the main window did not take the width");
+        return shown[0];
     }
 
     /**
@@ -82,8 +233,16 @@ public class testLocomotiveCsvImportDoor
         final boolean[] going = {true};
         final java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
-        Thread answering = new Thread(() -> support.DialogWatch.until(() -> going[0], 150, dialog ->
+        // Stopped as it wakes, so a watcher left from an earlier press never answers the next press's question
+        Thread answering = new Thread(() -> support.DialogWatch.untilStillGoing(() -> going[0], 150, dialog ->
         {
+            if (handled.add(dialog))
+            {
+                seen.titles.add(dialog.getTitle());
+
+                if (ui.isAlwaysOnTop() && !dialog.isAlwaysOnTop()) seen.under.add(dialog.getTitle());
+            }
+
             JFileChooser chooser = support.Components.inside(dialog.getContentPane(), JFileChooser.class);
 
             if (chooser != null)
@@ -118,8 +277,11 @@ public class testLocomotiveCsvImportDoor
             {
                 seen.question = shape.sentence;
                 seen.questionDetails = shape.details;
+                asking = pane;
 
                 if (whenAsked != null) whenAsked.run();
+
+                seen.answered = true;
 
                 SwingUtilities.invokeLater(() ->
                 {
@@ -255,7 +417,7 @@ public class testLocomotiveCsvImportDoor
                 Seen seen = press(ui, file, CANCEL, s -> s.question != null);
 
                 assertNotNull(seen.question, "the door did not ask before changing anything");
-                assertEquals(words(seen.question), words(I18n.f("loc.ui.confirmImportCsv", 1, 1) + "\n\n"
+                assertEquals(words(seen.question), words(counts(1, 1) + "\n\n"
                     + I18n.f("loc.ui.confirmImportCsvReaddress", 1) + "\n\n" + I18n.f("loc.ui.confirmImportCsvUnreadable", 1)));
                 assertEquals(seen.questionDetails, Collections.singletonList(I18n.f("loc.ui.importCsvChangeLine", there, "MM2 20",
                     "DCC 21")), "the question does not list the locomotive that changes address, old and new");
@@ -374,7 +536,7 @@ public class testLocomotiveCsvImportDoor
      * MT-991 steps 1 to 3 as written: the file Export to CSV saves, its first row's Start Year made "c. 1950", imported
      * again.  The summary counts one skipped row and names line 2 with its cell, and every locomotive is as it was.
      *
-     * MUTATION: in `LocomotiveCsvDoor.tell`, leave out the `infoImportCsvSkipped` sentence, and this fails.
+     * MUTATION: in `LocomotiveCsvImport.tell`, leave out the `infoImportCsvSkipped` sentence, and this fails.
      */
     @Test
     public void testAnExportWithOneBadYearImportsTheRestAndNamesItsLine() throws Exception
@@ -416,6 +578,121 @@ public class testLocomotiveCsvImportDoor
                 file.delete();
             }
         });
+    }
+
+    /**
+     * With Always on Top on, Export to CSV's chooser and panel stand as high as the main window, never hidden under
+     * it while they hold every window (OB-522): the chooser opens before the panel is in a window.  A closed window
+     * stops being their owner, or the next would reopen it.
+     *
+     * MUTATION: drop `JOptionPane.setRootFrame(this)` from `TrainControlUI`'s constructor and the chooser hangs off
+     * Swing's hidden shared frame, under the window; drop the line in `TrainControlUI.dispose` and the last fails.
+     */
+    @Test
+    public void testTheExportStandsAboveAnAlwaysOnTopWindow() throws Exception
+    {
+        final java.awt.Frame[] window = {null};
+
+        inAWindow((ui, model) ->
+        {
+            window[0] = ui;
+
+            final JMenuItem onTop = (JMenuItem) Reflect.get(TrainControlUI.class, ui, "windowAlwaysOnTopMenuItem");
+            final boolean was = onTop.isSelected();
+            File file = new File(System.getProperty("java.io.tmpdir"), "tc-export-" + System.nanoTime() + ".csv");
+
+            try
+            {
+                if (!was) SwingUtilities.invokeAndWait(onTop::doClick);
+
+                assertTrue(ui.isAlwaysOnTop(), "precondition: Always on Top did not put the window on top");
+
+                Seen seen = press(ui, "exportLocsToCSVMenuItem", file, null, s -> file.length() > 0, null);
+
+                assertTrue(seen.chose && file.length() > 0, "the export's chooser never saved; dialogs: " + seen.titles);
+                assertEquals(seen.under, Collections.emptyList(), "these stood under the always-on-top window,"
+                    + " holding it unclickable: " + seen.under + " of " + seen.titles);
+            }
+            finally
+            {
+                if (onTop.isSelected() != was) SwingUtilities.invokeAndWait(onTop::doClick);
+
+                file.delete();
+            }
+        });
+
+        assertTrue(JOptionPane.getRootFrame() != window[0], "the closed window still owns every windowless dialog");
+    }
+
+    /**
+     * Canceling the Save window Export to CSV opens at once ends the export: no panel and no message follow (OB-525).
+     *
+     * MUTATION: show the panel whatever `JsonExportPanel.isCancelled()` says and the export window opens after Cancel.
+     */
+    @Test
+    public void testCancelingTheCsvExportsSaveWindowEndsTheExport() throws Exception
+    {
+        inAWindow((ui, model) ->
+            cancelTheSaveWindow(ui, "exportLocsToCSVMenuItem", I18n.t("loc.ui.dialogExportLocomotiveData")));
+    }
+
+    /** The same for Export Routes. */
+    @Test
+    public void testCancelingTheRoutesExportsSaveWindowEndsTheExport() throws Exception
+    {
+        inAWindow((ui, model) ->
+            cancelTheSaveWindow(ui, "exportRoutesMenuItem", I18n.t("route.ui.dialogExportRouteData")));
+    }
+
+    /** Cancels the door's Save window, waits until it is gone, and looks for the export's window `title`. */
+    private static void cancelTheSaveWindow(TrainControlUI ui, String door, String title) throws Exception
+    {
+        try
+        {
+            Seen seen = press(ui, door, null, null, s -> s.chose, null);
+
+            assertTrue(seen.chose, door + ": the export's chooser never showed");
+
+            support.Components.waitFor(() -> !showing(null), 60000);
+
+            SwingUtilities.invokeAndWait(() -> { });
+            SwingUtilities.invokeAndWait(() -> { });
+
+            assertFalse(showing(title), door + ": the export window opened after Cancel");
+            assertEquals(seen.said, Collections.emptyList(), door + ": a message followed Cancel");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (java.awt.Window each : java.awt.Window.getWindows())
+                {
+                    if (each.isShowing() && each instanceof java.awt.Dialog && isExportWindow((java.awt.Dialog) each)) each.dispose();
+                }
+            });
+        }
+    }
+
+    private static boolean isExportWindow(java.awt.Dialog dialog)
+    {
+        return I18n.t("loc.ui.dialogExportLocomotiveData").equals(dialog.getTitle())
+            || I18n.t("route.ui.dialogExportRouteData").equals(dialog.getTitle());
+    }
+
+    /** Whether a dialog titled `title` is showing, or, for null, one holding a file chooser. */
+    private static boolean showing(String title)
+    {
+        for (java.awt.Window each : java.awt.Window.getWindows())
+        {
+            if (!each.isShowing() || !(each instanceof javax.swing.JDialog)) continue;
+
+            javax.swing.JDialog dialog = (javax.swing.JDialog) each;
+
+            if (title == null ? support.Components.inside(dialog.getContentPane(), JFileChooser.class) != null
+                : title.equals(dialog.getTitle())) return true;
+        }
+
+        return false;
     }
 
     /**
@@ -486,7 +763,7 @@ public class testLocomotiveCsvImportDoor
     /**
      * MT-894 step 6: the same train, its speed still showing after the power is switched off, is still refused by name.
      *
-     * MUTATION: in `LocomotiveSettings.hasSpeed(ViewListener, Locomotive)`, add `&& model.getPowerState()`, and this fails.
+     * MUTATION: in `LocomotiveEditRule.hasSpeed(ViewListener, Locomotive)`, add `&& model.getPowerState()`, and this fails.
      */
     @Test
     public void testATrainWithASpeedIsRefusedWithThePowerOff() throws Exception
@@ -988,7 +1265,7 @@ public class testLocomotiveCsvImportDoor
 
                 Seen seen = press(ui, first, IMPORT, s -> !s.said.isEmpty());
 
-                assertEquals(words(seen.question), words(I18n.f("loc.ui.confirmImportCsv", 0, all)), "the question about"
+                assertEquals(words(seen.question), words(counts(0, all)), "the question about"
                     + " a file just exported does not say every locomotive is merged and nothing else");
                 assertTrue(seen.questionDetails.isEmpty(), "the question lists changes in a file just exported: "
                     + seen.questionDetails);
@@ -1046,7 +1323,7 @@ public class testLocomotiveCsvImportDoor
                 int before = model.getLocomotives().size();
                 Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty());
 
-                assertTrue(words(seen.question).startsWith(words(I18n.f("loc.ui.confirmImportCsv", 1, before))),
+                assertTrue(words(seen.question).startsWith(words(counts(1, before))),
                     "the question does not count one new locomotive: " + seen.question);
                 assertTrue(seen.questionDetails.contains(I18n.f("loc.ui.importCsvChangeLine", moved, "MFX " + from,
                     "MFX " + to)), "the question does not list the address change by name, old to new: "
@@ -1130,6 +1407,489 @@ public class testLocomotiveCsvImportDoor
             assertEquals(timed.getAddress(), 21, "the row's address was not taken because of its runtime");
             assertEquals(timed.getDecoderType(), Locomotive.decoderType.DCC);
             assertEquals(timed.getTotalRuntime(), 3600000L, "a runtime of 12:99:00 was filed");
+        });
+    }
+
+    /** Runs `look` while the question shows; a failure is kept in `failed`, so the question is still answered. */
+    private static Runnable safely(List<String> failed, Runnable look)
+    {
+        return () ->
+        {
+            try
+            {
+                look.run();
+            }
+            catch (Throwable t)
+            {
+                failed.add(String.valueOf(t));
+            }
+        };
+    }
+
+    /** The selected radios of the question's table, by name ("row:ANSWER"), top to bottom. */
+    private static List<String> picked()
+    {
+        List<String> out = new ArrayList<>();
+
+        for (javax.swing.JRadioButton b : support.Components.all(asking, javax.swing.JRadioButton.class,
+            javax.swing.JRadioButton::isSelected)) out.add(b.getName());
+
+        return out;
+    }
+
+    /** Clicks the question's control named `name`, or saying `text` when name is null, and waits for what it does. */
+    private static void click(String name, String text)
+    {
+        javax.swing.AbstractButton b = name != null ? support.Components.named(asking, name,
+            javax.swing.AbstractButton.class) : support.Components.withText(asking, text);
+
+        support.Components.onTheEventThread(() ->
+        {
+            b.doClick();
+            return null;
+        });
+    }
+
+    /** What the question says of the new and the merged counts: a count of 0 is left out, and 1 reads in the singular. */
+    private static String counts(int added, int merged)
+    {
+        return (added == 0 ? "" : I18n.f(added == 1 ? "loc.ui.confirmImportCsvOne" : "loc.ui.confirmImportCsv", added))
+            + (added == 0 || merged == 0 ? "" : " ") + (merged == 0 ? "" : I18n.f(merged == 1
+            ? "loc.ui.confirmImportCsvMergeOne" : "loc.ui.confirmImportCsvMerge", merged));
+    }
+
+    /** A file row for a new mfx locomotive. */
+    private static String mfx(String name, int address)
+    {
+        return name + ",,MFX," + address + ",0,0:00:00,0,0,,\n";
+    }
+
+    /**
+     * A new name at a decoder address a locomotive here holds is a possible duplicate (FR-249): the question shows it in
+     * a table, one row starting on Merge, and counts only the other new locomotive with the new ones.  A file with no
+     * possible duplicate has no table, and Cancel imports nothing.
+     *
+     * MUTATION: make `MarklinLocomotiveCsv.duplicates` find none, or leave out `setAll(Choice.MERGE)` in the
+     * `LocomotiveCsvImport.Duplicates` constructor, and this fails.
+     */
+    @Test
+    public void testAPossibleDuplicateIsAskedInATableAndCancelImportsNothing() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            final String here = "FR249 door here", twin = "FR249 door twin", alone = "FR249 door alone";
+            final int held = freeAddress(model, 13000);
+
+            model.newMFXLocomotive(here, held);
+
+            final int free = freeAddress(model, held - 1);
+            File file = write(HEADER + mfx(twin, held) + mfx(alone, free));
+            File plain = write(HEADER + mfx(alone, free));
+            List<String> rows = new ArrayList<>(), none = new ArrayList<>(), failed = new ArrayList<>();
+
+            try
+            {
+                Map<String, String> before = everyLocomotive(model);
+                Seen seen = press(ui, file, CANCEL, s -> s.answered, safely(failed, () -> rows.addAll(picked())));
+
+                assertEquals(failed, Collections.emptyList());
+                assertEquals(rows, Collections.singletonList(twin + ":MERGE"),
+                    "the table is not one row for the possible duplicate, on Merge");
+                assertTrue(words(seen.question).startsWith(words(counts(1, 0))),
+                    "the question counts the possible duplicate with the new ones: " + seen.question);
+                assertTrue(seen.question.contains(I18n.f("loc.ui.importCsvDuplicates", 1)),
+                    "the table has no heading: " + seen.question);
+                assertTrue(seen.question.contains("already be in the database"),
+                    "the heading does not say what the rows are: " + seen.question);
+                assertEquals(everyLocomotive(model), before, "Cancel imported something");
+                assertTrue(seen.said.isEmpty(), "Cancel went on to say something: " + seen.said);
+
+                press(ui, plain, CANCEL, s -> s.answered, safely(failed, () -> none.addAll(picked())));
+
+                assertEquals(failed, Collections.emptyList());
+                assertTrue(none.isEmpty(), "a file with no possible duplicate showed a table: " + none);
+            }
+            finally
+            {
+                file.delete();
+                plain.delete();
+                model.deleteLoc(here);
+            }
+        });
+    }
+
+    /**
+     * Each answer in the duplicates' table is carried out (FR-249): Keep Both adds the file's locomotive beside the one
+     * here, Ignore leaves it out, and Merge renames a train standing on the layout to the file's name, the same
+     * locomotive, so it stays where it stands and keeps its timetable entry.  The message counts them, and the import
+     * runs no Sync, but the rename marks the menu as the station may now differ.
+     *
+     * MUTATION: in `MarklinLocomotiveCsv.apply`, add a Merge row as Keep Both or an Ignore row as Keep Both, or in
+     * `ManualSync.imported`, mark only re-addressed locomotives, and this fails.
+     */
+    @Test
+    public void testEachAnswerInTheDuplicatesTableIsCarriedOut() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            org.traincontrol.automation.Layout layout = model.getAutoLayout();
+            org.traincontrol.automation.Point standing = null;
+
+            // A train standing alone at its decoder address, so its Merge is offered
+            for (org.traincontrol.automation.Point p : layout.getPoints())
+            {
+                Locomotive l = p.getCurrentLocomotive();
+                long sharing = l == null ? 0 : model.getLocomotives().stream().filter(o -> o.getAddress()
+                    == l.getAddress() && o.getDecoderType() == l.getDecoderType()).count();
+
+                if (standing == null && sharing == 1 && l.getDecoderType() != Locomotive.decoderType.MULTI_UNIT) standing = p;
+            }
+
+            assertNotNull(standing, "precondition: no train stands alone at its address in the snapshot");
+
+            final org.traincontrol.automation.Point stands = standing;
+            final Locomotive train = stands.getCurrentLocomotive();
+            final String was = train.getName(), both = "FR249 door both", left = "FR249 door left", taken = "FR249 door took";
+            final String bothHere = "FR249 door both here", leftHere = "FR249 door left here";
+            final int a = freeAddress(model, 13000);
+
+            model.newMFXLocomotive(bothHere, a);
+
+            final int b = freeAddress(model, a - 1);
+
+            model.newMFXLocomotive(leftHere, b);
+
+            org.traincontrol.automation.TimetablePath entry = new org.traincontrol.automation.TimetablePath(train,
+                Collections.singletonList(layout.getEdges().iterator().next()), 0);
+
+            layout.getTimetable().add(entry);
+
+            File file = write(HEADER + mfx(both, a) + mfx(left, b) + taken + ",," + train.getDecoderType() + ","
+                + train.getAddress() + ",0,0:00:00,0,0,,\n");
+            List<String> failed = new ArrayList<>();
+            final int unsettled = model.getUnsettledCount();
+
+            try
+            {
+                Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty(), safely(failed, () ->
+                {
+                    click(both + ":BOTH", null);
+                    click(left + ":IGNORE", null);
+                    click(taken + ":MERGE", null);
+                }));
+
+                assertEquals(failed, Collections.emptyList());
+                assertNotNull(model.getLocByName(both), "Keep Both did not add the file's locomotive");
+                assertNotNull(model.getLocByName(bothHere), "Keep Both lost the locomotive here");
+                assertNull(model.getLocByName(left), "Ignore added the file's locomotive");
+                assertNotNull(model.getLocByName(leftHere), "Ignore lost the locomotive here");
+                assertTrue(model.getLocByName(taken) == train, "Merge did not rename the locomotive here");
+                assertNull(model.getLocByName(was), "Merge left the old name behind");
+                assertTrue(stands.getCurrentLocomotive() == train, "the renamed train no longer stands where it stood");
+                assertTrue(layout.getTimetable().contains(entry) && entry.getLoc() == train,
+                    "the renamed train lost its timetable entry");
+                assertTrue(seen.said.get(0).contains(I18n.t("loc.ui.infoImportCsvRenamedOne"))
+                    && seen.said.get(0).contains(I18n.t("loc.ui.infoImportCsvIgnoredOne")),
+                    "the message does not count the answers: " + seen.said);
+                assertFalse(seen.titles.contains(I18n.t("sync.ui.title")), "the import ran a Sync: " + seen.titles);
+                assertEquals(model.getUnsettledCount(), -1, "the rename did not mark the menu");
+            }
+            finally
+            {
+                model.setUnsettledCount(unsettled);
+                layout.getTimetable().remove(entry);
+
+                if (model.getLocByName(taken) == train) model.renameLoc(taken, was);
+
+                file.delete();
+
+                for (String name : new String[] {both, left, bothHere, leftHere}) model.deleteLoc(name);
+            }
+        });
+    }
+
+    /**
+     * Replace renames the locomotive here to the file's name and takes the file's details, its functions as a new
+     * locomotive has them, keeping its running time (FR-249).  The finishing message counts it apart from a Merge, and
+     * its rename marks the menu, as the station may now differ.
+     *
+     * MUTATION: in `MarklinLocomotiveCsv.apply`, leave out `clear` for a Replace row, or leave Replace's rename out of
+     * `result.renamed`; in `LocomotiveCsvImport.tell`, leave out the Replace line, and this fails.
+     */
+    @Test
+    public void testReplaceTakesTheFilesDetailsIsCountedAndMarksTheMenu() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            final String was = "FR249 door replaced here", name = "FR249 door replaced";
+            final int address = freeAddress(model, 13000);
+            Locomotive here = model.newMFXLocomotive(was, address);
+
+            here.setFunctionType(2, 9, 0);
+            here.setPreferredSpeed(40);
+            here.setStructuredNotes(1900, 0, "DR", "kept here");
+            here.raiseTotalRuntimeTo(3600000L, "2026-01-02");
+
+            File file = write(HEADER + name + ",,MFX," + address + ",25,0:00:00,1960,0,DB,\n");
+            List<String> failed = new ArrayList<>();
+            final int unsettled = model.getUnsettledCount();
+
+            try
+            {
+                Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty(), safely(failed, () -> click(name + ":REPLACE",
+                    null)));
+
+                assertEquals(failed, Collections.emptyList());
+                assertTrue(model.getLocByName(name) == here && model.getLocByName(was) == null,
+                    "Replace did not rename the locomotive here");
+                assertEquals(here.getFunctionTypes(), new int[here.getNumF()], "Replace kept the functions");
+                assertEquals(here.getPreferredSpeed() + " " + here.getStructuredNotes().getStartYear() + " "
+                    + here.getStructuredNotes().getRailway() + " [" + here.getStructuredNotes().getNotes() + "]",
+                    "25 1960 DB []", "Replace did not take the file's details");
+                assertEquals(here.getTotalRuntime(), 3600000L, "Replace lost the running time");
+                assertTrue(seen.said.get(0).contains(I18n.t("loc.ui.infoImportCsvReplacedOne"))
+                    && !seen.said.get(0).contains(I18n.t("loc.ui.infoImportCsvRenamedOne"))
+                    && seen.said.get(0).contains(I18n.f("loc.ui.infoImportCsvDone", 0, 0)),
+                    "the message does not count the Replace apart from a Merge: " + seen.said);
+                assertEquals(model.getUnsettledCount(), -1, "the Replace's rename did not mark the menu");
+            }
+            finally
+            {
+                model.setUnsettledCount(unsettled);
+                file.delete();
+                model.deleteLoc(name);
+                model.deleteLoc(was);
+            }
+        });
+    }
+
+    /**
+     * Merge and Replace are grayed, with the reason on hover beside "(can't apply)", where several locomotives here share
+     * the address, where the file also lists the locomotive here, and where it is running or a route drives it; a second
+     * row for one locomotive here is grayed once the first takes it (FR-249).  A row whose Merge is grayed starts on
+     * Keep Both.  The Replace heading skips every grayed row; Ignore's sets every row.
+     *
+     * MUTATION: in `MarklinLocomotiveCsv.duplicates`, leave out the RUNNING reason; in `LocomotiveCsvImport.Duplicates`,
+     * give Replace no reason, or let `setAll` pick a grayed choice, and this fails.
+     */
+    @Test
+    public void testMergeAndReplaceAreGrayedWithTheirReasonAndFallBackToKeepBoth() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            final String s1 = "FR249 door s1", s2 = "FR249 door s2", listed = "FR249 door listed", rolling = "FR249 door rolling";
+            final String held = "FR249 door held", sNew = "FR249 door s new", lNew = "FR249 door l new";
+            final String rNew = "FR249 door r new", t1 = "FR249 door t1", t2 = "FR249 door t2";
+            final String driven = "FR249 door driven", dNew = "FR249 door d new", route = "FR249 door route";
+            final int s = freeAddress(model, 13000);
+
+            model.newMFXLocomotive(s1, s);
+            model.newMFXLocomotive(s2, s);
+
+            final int l = freeAddress(model, s - 1);
+
+            model.newMFXLocomotive(listed, l);
+
+            final int r = freeAddress(model, l - 1);
+            Locomotive moving = model.newMFXLocomotive(rolling, r);
+            final int t = freeAddress(model, r - 1);
+
+            model.newMFXLocomotive(held, t);
+
+            final int d = freeAddress(model, t - 1);
+            RouteCommand fires = RouteCommand.RouteCommandFunction(driven, 1, true);
+
+            model.newMFXLocomotive(driven, d);
+            fires.setDelay(20000);
+            model.newRoute(route, new ArrayList<>(Collections.singletonList(fires)), 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+            File file = write(HEADER + mfx(sNew, s) + mfx(lNew, l) + mfx(listed, l) + mfx(rNew, r) + mfx(dNew, d)
+                + mfx(t1, t) + mfx(t2, t));
+            List<String> failed = new ArrayList<>(), reasons = new ArrayList<>(), onReplace = new ArrayList<>();
+            List<String> onIgnore = new ArrayList<>(), tookTip = new ArrayList<>(), start = new ArrayList<>();
+
+            try
+            {
+                model.go();
+                model.waitForPowerState(true);
+                moving.setSpeed(30);
+                moving.waitForSpeedAtOrAbove(1);
+                new Thread(() -> model.execRoute(route)).start();
+                support.Components.waitFor(() -> model.getRoute(route).isExecuting(), 5000);
+
+                Map<String, String> before = everyLocomotive(model);
+
+                press(ui, file, CANCEL, seen -> seen.answered, safely(failed, () ->
+                {
+                    String cant = I18n.t("sync.ui.cantApply");
+
+                    start.addAll(picked());
+
+                    for (javax.swing.JLabel mark : support.Components.all(asking, javax.swing.JLabel.class,
+                        x -> cant.equals(x.getText()) && x.isVisible() && x.getName() == null)) reasons.add(mark.getToolTipText());
+
+                    for (String row : new String[] {sNew, lNew, rNew, dNew, t2})
+                    {
+                        for (String answer : new String[] {":MERGE", ":REPLACE"})
+                        {
+                            javax.swing.AbstractButton b = support.Components.named(asking, row + answer,
+                                javax.swing.AbstractButton.class);
+
+                            if (b == null || b.isEnabled()) failed.add(row + answer + " is not grayed");
+                            else if (row != t2) reasons.add(b.getToolTipText());
+                        }
+                    }
+
+                    javax.swing.JLabel took = support.Components.named(asking, t2 + ":taken", javax.swing.JLabel.class);
+
+                    tookTip.add(took.getText().equals(cant) + " " + took.getToolTipText());
+                    click(null, I18n.t("loc.ui.importCsvReplace"));
+                    onReplace.addAll(picked());
+                    click(null, I18n.t("sync.ui.ignore"));
+                    onIgnore.addAll(picked());
+                }));
+
+                String several = I18n.f("loc.ui.importCsvWhySeveral", "MFX " + s);
+                String lists = I18n.f("loc.ui.importCsvWhyListed", listed);
+                String runs = I18n.f("loc.ui.importCsvWhyRunning", rolling);
+                String drives = I18n.f("loc.ui.importCsvWhyRunning", driven);
+
+                assertEquals(failed, Collections.emptyList());
+                assertEquals(start, java.util.Arrays.asList(sNew + ":BOTH", lNew + ":BOTH", rNew + ":BOTH", dNew + ":BOTH",
+                    t1 + ":MERGE", t2 + ":BOTH"), "a row whose Merge is grayed or taken does not start on Keep Both");
+                assertEquals(reasons, java.util.Arrays.asList(several, lists, runs, drives, several, several, lists, lists,
+                    runs, runs, drives, drives), "each grayed Merge and Replace does not say why, beside (can't apply) and "
+                    + "on hover");
+                assertEquals(onReplace, java.util.Arrays.asList(sNew + ":BOTH", lNew + ":BOTH", rNew + ":BOTH",
+                    dNew + ":BOTH", t1 + ":REPLACE", t2 + ":BOTH"),
+                    "the Replace heading did not skip the grayed rows and the one taken");
+                assertEquals(tookTip, Collections.singletonList("true " + I18n.f("loc.ui.importCsvWhyTaken", t1, held)),
+                    "the row whose locomotive another row took does not say so");
+                assertEquals(onIgnore, java.util.Arrays.asList(sNew + ":IGNORE", lNew + ":IGNORE", rNew + ":IGNORE",
+                    dNew + ":IGNORE", t1 + ":IGNORE", t2 + ":IGNORE"), "the Ignore heading did not set every row");
+                assertEquals(everyLocomotive(model), before, "Cancel imported something");
+            }
+            finally
+            {
+                moving.setSpeed(0);
+                moving.waitForSpeedBelow(1);
+                model.stop();
+                model.waitForPowerState(false);
+                file.delete();
+                model.deleteRoute(route);
+
+                for (String name : new String[] {s1, s2, listed, rolling, held, driven}) model.deleteLoc(name);
+            }
+        });
+    }
+
+    /**
+     * "(can't apply)" beside a row's file name, where another row takes its locomotive, leaves every Merge and Replace
+     * in view: no scroll bar shows, as the dialog was sized with the mark (FR-249).
+     *
+     * MUTATION: in `LocomotiveCsvImport.Duplicates.addRow`, leave out the mark's reserved width, and this fails.
+     */
+    @Test
+    public void testATakenMarkLeavesEveryKeepNewInView() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            final String here = "FR249 door holder", first = "FR249 door first", second = "FR249 door second";
+            final int address = freeAddress(model, 13000);
+
+            model.newMFXLocomotive(here, address);
+
+            File file = write(HEADER + mfx(first, address) + mfx(second, address));
+            List<String> failed = new ArrayList<>(), out = new ArrayList<>();
+
+            try
+            {
+                press(ui, file, CANCEL, s -> s.answered, safely(failed, () ->
+                {
+                    click(first + ":REPLACE", null);
+                    support.Components.settle();
+                    out.addAll(support.Components.onTheEventThread(() ->
+                    {
+                        List<String> bad = new ArrayList<>();
+                        org.traincontrol.gui.widgets.ChoiceTable table = support.Components.inside(asking,
+                            org.traincontrol.gui.widgets.ChoiceTable.class);
+
+                        if (table.getHorizontalScrollBar().isVisible()) bad.add("a scroll bar shows");
+
+                        for (javax.swing.AbstractButton b : support.Components.all(asking, javax.swing.AbstractButton.class,
+                            x -> x.getName() != null && x.getName().matches(".*:(MERGE|REPLACE)")))
+                        {
+                            if (!table.getViewport().getViewRect().contains(javax.swing.SwingUtilities.convertRectangle(
+                                b.getParent(), b.getBounds(), table.getViewport().getView()))) bad.add(b.getName());
+                        }
+
+                        return bad;
+                    }));
+                }));
+
+                assertEquals(failed, Collections.emptyList());
+                assertEquals(out, Collections.emptyList(), "the taken mark pushed a Merge or Replace out of view");
+            }
+            finally
+            {
+                file.delete();
+                model.deleteLoc(here);
+            }
+        });
+    }
+
+    /**
+     * An answer that can no longer be carried out is said in the finishing message: a Merge with nothing left to rename
+     * is added beside it, and an Ignore on a row no longer a duplicate is added, each named with why (FR-249).
+     *
+     * MUTATION: in `LocomotiveCsvImport.tell`, leave out the two lines, and this fails.
+     */
+    @Test
+    public void testAnAnswerThatCannotBeCarriedOutIsSaidAtTheEnd() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            final String holdsNew = "FR249 door holds new", holdsOld = "FR249 door holds old";
+            final String keepNew = "FR249 door new one", keepOld = "FR249 door old one";
+            final int a = freeAddress(model, 13000);
+
+            model.newMFXLocomotive(holdsNew, a);
+
+            final int b = freeAddress(model, a - 1);
+
+            model.newMFXLocomotive(holdsOld, b);
+
+            File file = write(HEADER + mfx(keepNew, a) + mfx(keepOld, b));
+            List<String> failed = new ArrayList<>();
+
+            try
+            {
+                Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty(), safely(failed, () ->
+                {
+                    click(keepNew + ":MERGE", null);
+                    click(keepOld + ":IGNORE", null);
+
+                    // Behind the question, both rows stop being possible duplicates
+                    model.deleteLoc(holdsNew);
+                    model.deleteLoc(holdsOld);
+                }));
+
+                assertEquals(failed, Collections.emptyList());
+                assertNotNull(model.getLocByName(keepNew), "the Merge row was not added");
+                assertNotNull(model.getLocByName(keepOld), "the Ignore row was not added");
+                assertTrue(seen.said.get(0).contains(I18n.f("loc.ui.infoImportCsvNotRenamed", keepNew + " ("
+                    + I18n.t("loc.ui.importCsvNotGone") + ")")), "the message does not say the rename was not made: "
+                    + seen.said);
+                assertTrue(seen.said.get(0).contains(I18n.f("loc.ui.infoImportCsvNotLeftOut", keepOld)),
+                    "the message does not say the row was not left out: " + seen.said);
+            }
+            finally
+            {
+                file.delete();
+
+                for (String name : new String[] {holdsNew, holdsOld, keepNew, keepOld}) model.deleteLoc(name);
+            }
         });
     }
 }

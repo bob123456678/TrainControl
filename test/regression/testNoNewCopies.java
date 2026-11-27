@@ -31,13 +31,13 @@ import support.CopyScan;
 public class testNoNewCopies
 {
     /** The groups as they stand.  Never raise it. */
-    private static final int GROUPS_ALLOWED = 66;
+    private static final int GROUPS_ALLOWED = 65;
 
     /**
      * The tokens standing in a second or later copy in `test/`, summed over its groups: an upper bound, so a commit that
      * removes copies need not touch it.  Never raise it; `docs/tools/codesize.py` prints the figure now, to lower it to.
      */
-    private static final long TEST_COPIED_TOKENS_ALLOWED = 176593;
+    private static final long TEST_COPIED_TOKENS_ALLOWED = 176566;
 
     /** Each group: the classes holding its copies with how many each, and the tokens of its longest copy. */
     private static final String[] GROUPS = {
@@ -75,10 +75,9 @@ public class testNoNewCopies
         "LayoutDiagram:2 (78)",
         "LayoutDiagramComponent:2 (189)",
         "LayoutDiagramComponent:2 (171)",
-        "LocIconCropDialog:1,TileAnnotation:1 (95)",
-        "LocIconCropDialog:2 (66)",
-        "LocomotiveKeyboardMapping:1,MarklinAccessory:1,TimetablePath:1 (105)",
-        "MarklinControlStation:1,TrainControlUI:1 (72)",
+        "LocomotiveIconCropDialog:1,TileAnnotation:1 (95)",
+        "LocomotiveIconCropDialog:2 (66)",
+        "LocomotiveButtonSlot:1,MarklinAccessory:1,TimetablePath:1 (105)",
         "MarklinControlStation:3 (64)",
         "MarklinLocomotive:2 (75)",
         "MarklinRoute:2 (85)",
@@ -90,7 +89,7 @@ public class testNoNewCopies
         "RouteCommand:1,TrainControlUI:1 (138)",
         "RouteCommand:2 (109)",
         "RouteCommand:2 (64)",
-        "RouteEditorFrame:2 (65)",
+        "RouteEditorWindow:2 (65)",
         "RowIcons:2 (64)",
         "TileAnnotation:1,TileOverlay:1 (101)",
         "TileAnnotation:3,TileOverlay:1 (86)",
@@ -98,7 +97,7 @@ public class testNoNewCopies
         "TileGraph:1,TileSelection:1 (72)",
         "TrainControlUI:2 (225)",
         "TrainControlUI:2 (209)",
-        "TrainControlUI:4 (192)", // the form-accessor runs the gui collaborators read through, lately AutonomyLifecycle
+        "TrainControlUI:4 (179)", // the form-accessor runs the gui collaborators read through, lately AutonomyLifecycle
         "TrainControlUI:2 (93)",
         "TrainControlUI:2 (81)",
         "TrainControlUI:2 (62)",

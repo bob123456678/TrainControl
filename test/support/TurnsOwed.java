@@ -10,7 +10,7 @@ public final class TurnsOwed
     {
     }
 
-    /** `DiagramLocGestures.writeTheTurnsOwed` on the window's collaborator, waited for. */
+    /** `DiagramTrainKeys.writeTheTurnsOwed` on the window's collaborator, waited for. */
     public static void write(TrainControlUI ui) throws Exception
     {
         final Object gestures = Reflect.get(TrainControlUI.class, ui, "diagramLocGestures");

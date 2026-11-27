@@ -128,13 +128,13 @@ public class testYourOwnRoutesToggleWithoutASync
 
             // One batch at a time, as the prompt in front of each allows: two batches at once race each other's
             // delete-and-re-add over the same database, which is not what this is about.
-            ui.enableOrDisableMatching(PREFIX + "bulk f", true);
+            ui.routeListPanel().enableOrDisableMatching(PREFIX + "bulk f", true);
 
             assertTrue(until(() -> isEnabled(first), 10000), "precondition: the first batch never reached its route");
 
             settle();
 
-            ui.enableOrDisableMatching(PREFIX + "bulk s", true);
+            ui.routeListPanel().enableOrDisableMatching(PREFIX + "bulk s", true);
 
             assertTrue(until(() -> isEnabled(second) && isEnabled(station), 10000),
                 "precondition: the second batch never reached its routes");
@@ -189,7 +189,7 @@ public class testYourOwnRoutesToggleWithoutASync
             {
                 try
                 {
-                    text[0] = ((javax.swing.JTextArea) Reflect.get(TrainControlUI.class, ui, "debugArea")).getText();
+                    text[0] = ((org.traincontrol.gui.app.LogPanel) Reflect.get(TrainControlUI.class, ui, "logView")).text();
                 }
                 catch (ReflectiveOperationException e)
                 {

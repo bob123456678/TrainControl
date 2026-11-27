@@ -105,7 +105,7 @@ public class testATrainIsPutOnlyWhereItCanStart
 
         assertTrue(!usable.isEmpty() && !usable.contains(westbound), "precondition: the menu's list is " + usable);
 
-        java.lang.reflect.Method rule = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu")
+        java.lang.reflect.Method rule = Class.forName("org.traincontrol.gui.DiagramAutonomyContextMenu")
             .getDeclaredMethod("copyToPlaceOn", AutonomySession.class, TileKey.class, Layout.class, Side.class, List.class);
 
         rule.setAccessible(true);

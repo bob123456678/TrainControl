@@ -305,7 +305,7 @@ public class testThePlaceDoorsKeepTheHeading
             TailCrossedPrompt.answerForTests(null);
 
             // THE EDITOR, as Autonomy > Edit Autonomy > 1 - Main opens it.
-            SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(tunnel.getPage()));
+            SwingUtilities.invokeLater(() -> ui.editorWindows().openAutonomyEditorOnPage(tunnel.getPage()));
 
             final java.awt.Window[] opened = new java.awt.Window[1];
 
@@ -438,21 +438,21 @@ public class testThePlaceDoorsKeepTheHeading
             train.setTrainLength(5);
 
             // NO EDITOR LEFT FROM THE CLAIM BEFORE: closing one finishes after the window has gone.
-            for (long end = System.currentTimeMillis() + 20000; (ui.isLayoutEditorOpen()
-                || ui.whyLayoutCannotBeEdited() != null) && System.currentTimeMillis() < end; )
+            for (long end = System.currentTimeMillis() + 20000; (ui.editorWindows().isLayoutEditorOpen()
+                || ui.editorWindows().whyLayoutCannotBeEdited() != null) && System.currentTimeMillis() < end; )
             {
                 Thread.sleep(100);
 
                 Components.drain(1);
             }
 
-            assertFalse(ui.isLayoutEditorOpen(), "precondition: an editor from the claim before is still open");
+            assertFalse(ui.editorWindows().isLayoutEditorOpen(), "precondition: an editor from the claim before is still open");
 
-            assertNull(ui.whyLayoutCannotBeEdited(), "precondition: the layout cannot be edited: "
-                + ui.whyLayoutCannotBeEdited());
+            assertNull(ui.editorWindows().whyLayoutCannotBeEdited(), "precondition: the layout cannot be edited: "
+                + ui.editorWindows().whyLayoutCannotBeEdited());
 
             // THE EDITOR, as Autonomy > Edit Autonomy opens it - and then minimized.
-            SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(tunnel.getPage()));
+            SwingUtilities.invokeLater(() -> ui.editorWindows().openAutonomyEditorOnPage(tunnel.getPage()));
 
             for (long end = System.currentTimeMillis() + 60000; editor == null && System.currentTimeMillis() < end; )
             {
@@ -557,7 +557,7 @@ public class testThePlaceDoorsKeepTheHeading
 
         String leaving = I18n.t("layout.ui.dialogExitConfirmation");
 
-        for (long end = System.currentTimeMillis() + 15000; (editor.isDisplayable() || ui.whyLayoutCannotBeEdited() != null)
+        for (long end = System.currentTimeMillis() + 15000; (editor.isDisplayable() || ui.editorWindows().whyLayoutCannotBeEdited() != null)
             && System.currentTimeMillis() < end; )
         {
             Thread.sleep(100);
@@ -780,7 +780,7 @@ public class testThePlaceDoorsKeepTheHeading
         {
             try
             {
-                ui.setHoveredDiagramTile(over.getPage(), over.getX(), over.getY());
+                ui.diagramLocGestures().setHoveredDiagramTile(over.getPage(), over.getX(), over.getY());
 
                 handled[0] = door.invoke(ui, key, true);
             }

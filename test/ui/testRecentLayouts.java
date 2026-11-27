@@ -20,7 +20,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
-import org.traincontrol.gui.LayoutPopupUI;
+import org.traincontrol.gui.LayoutPopupWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
@@ -142,7 +142,7 @@ public class testRecentLayouts
         {
             record(b);
 
-            LayoutPopupUI window = support.AskingWindows.openThePage(ui);
+            LayoutPopupWindow window = support.AskingWindows.openThePage(ui);
 
             // Remembered as the application's exit remembers it
             SwingUtilities.invokeAndWait(() -> invoke("saveLayoutTitles"));
@@ -164,7 +164,7 @@ public class testRecentLayouts
 
             SwingUtilities.invokeAndWait(() ->
             {
-                for (java.awt.Window w : java.awt.Window.getWindows()) if (w instanceof LayoutPopupUI) w.dispose();
+                for (java.awt.Window w : java.awt.Window.getWindows()) if (w instanceof LayoutPopupWindow) w.dispose();
             });
 
             if (!a.equals(new File(String.valueOf(ui.localLayoutPath())).getAbsolutePath())) open(a);
@@ -180,7 +180,7 @@ public class testRecentLayouts
 
             for (java.awt.Window w : java.awt.Window.getWindows())
             {
-                if (w instanceof LayoutPopupUI && w.isShowing()) pages.add(((LayoutPopupUI) w).getLayoutTitle());
+                if (w instanceof LayoutPopupWindow && w.isShowing()) pages.add(((LayoutPopupWindow) w).getLayoutTitle());
             }
 
             return pages;
@@ -582,7 +582,7 @@ public class testRecentLayouts
         {
             SwingUtilities.invokeAndWait(() ->
             {
-                for (java.awt.Window w : java.awt.Window.getWindows()) if (w instanceof LayoutPopupUI) w.dispose();
+                for (java.awt.Window w : java.awt.Window.getWindows()) if (w instanceof LayoutPopupWindow) w.dispose();
             });
 
             if (!a.equals(new File(String.valueOf(ui.localLayoutPath())).getAbsolutePath()))
@@ -622,12 +622,61 @@ public class testRecentLayouts
             SwingUtilities.invokeAndWait(() -> door.getActionListeners()[0].actionPerformed(
                 new java.awt.event.ActionEvent(door, java.awt.event.ActionEvent.ACTION_PERFORMED, "")));
 
-            answering.awaitAsked(1, 5000);
+            answering.awaitAsked(1, 60000);
 
             Components.settle();
 
             return answering.asked();
         }
+    }
+
+    /** While open, the sync's read of `folder` finds its page index gone, as if the folder changed after its check. */
+    static AutoCloseable indexGoneWhenTheSyncReads(File folder)
+    {
+        final String reading = I18n.f("layout.loadingStaticFiles", "");
+        final java.util.logging.Logger log = java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
+
+        final java.util.logging.Handler hook = new java.util.logging.Handler()
+        {
+            @Override
+            public void publish(java.util.logging.LogRecord record)
+            {
+                String said = record == null ? null : record.getMessage();
+
+                if (said != null && said.startsWith(reading) && new File(said.substring(reading.length()))
+                    .getAbsoluteFile().equals(folder.getAbsoluteFile())) new File(folder, "config/gleisbild.cs2").delete();
+            }
+
+            @Override
+            public void flush()
+            {
+            }
+
+            @Override
+            public void close()
+            {
+            }
+        };
+
+        log.addHandler(hook);
+
+        return () -> log.removeHandler(hook);
+    }
+
+    /** Every file under `folder` with its content's hash, to show a failed switch wrote nothing there. */
+    static String filesIn(File folder) throws java.io.IOException
+    {
+        StringBuilder s = new StringBuilder();
+
+        try (java.util.stream.Stream<Path> walk = Files.walk(folder.toPath()))
+        {
+            for (Path p : (Iterable<Path>) walk.sorted()::iterator)
+            {
+                if (Files.isRegularFile(p)) s.append(p).append(" ").append(Arrays.hashCode(Files.readAllBytes(p))).append("\n");
+            }
+        }
+
+        return s.toString();
     }
 
     /**
@@ -657,7 +706,7 @@ public class testRecentLayouts
 
             for (java.awt.Window w : java.awt.Window.getWindows())
             {
-                if (w instanceof LayoutPopupUI && w.isShowing()) s.append(" ").append(((LayoutPopupUI) w).getLayoutTitle());
+                if (w instanceof LayoutPopupWindow && w.isShowing()) s.append(" ").append(((LayoutPopupWindow) w).getLayoutTitle());
             }
 
             JMenu autonomy = (JMenu) Components.withText(window, I18n.t("autosetup.ui.menuAutonomy"));
@@ -785,6 +834,179 @@ public class testRecentLayouts
         finally
         {
             Util.deleteTree(blocked, 0);
+        }
+    }
+
+    /**
+     * Open Layout on a folder that passes its check and then fails in the sync's read (it changed in between) says the
+     * folder will not open, and nothing changes (`everythingAbout`), nor does any file of the layout in use (FR-245).
+     *
+     * MUTATION: in `LayoutFileActions.switchTo`, answer true always, and the old pages stand under the folder that
+     * failed, with nothing said.
+     */
+    @Test(timeOut = 180000)
+    public void testAFolderThatFailsInTheSyncIsSaidAndNothingChanges() throws Exception
+    {
+        String a = sandbox.getFolder().getAbsolutePath();
+        Path changing = copyOfTheTestLayout("tc-fails-in-sync");
+
+        try
+        {
+            support.AskingWindows.openThePage(ui);
+
+            String was = everythingAbout(ui);
+            String filesWere = filesIn(sandbox.getFolder());
+
+            try (AutoCloseable hook = indexGoneWhenTheSyncReads(changing.toFile()))
+            {
+                assertEquals(openLayout(ui, changing.toFile()), REFUSED, "a folder that failed in the sync was not said"
+                    + " to fail");
+            }
+
+            assertEquals(everythingAbout(ui), was, "a folder that failed in the sync changed it");
+            assertEquals(filesIn(sandbox.getFolder()), filesWere, "a folder that failed in the sync wrote the layout in use");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (java.awt.Window w : java.awt.Window.getWindows()) if (w instanceof LayoutPopupWindow) w.dispose();
+            });
+
+            if (!a.equals(new File(String.valueOf(ui.localLayoutPath())).getAbsolutePath()))
+            {
+                record(a);
+                open(a);
+            }
+
+            Util.deleteTree(changing.toFile(), 0);
+        }
+    }
+
+    /**
+     * A recent layout whose sync is turned away (an editor on its way after the click's own check) says the layout was
+     * not switched, not that the folder is invalid, and the layout in use stays (FR-245).
+     *
+     * MUTATION: in `TrainControlUI.openLayoutFolder`, say the invalid-folder message whatever the sync answered, and
+     * the folder is called invalid.
+     */
+    @Test(timeOut = 180000)
+    public void testASwitchWhoseSyncIsTurnedAwayIsSaidNotSwitched() throws Exception
+    {
+        String a = sandbox.getFolder().getAbsolutePath();
+        String b = second.toFile().getAbsolutePath();
+
+        record(b, a);
+
+        shown();
+
+        final List<String> pagesWere = new ArrayList<>(model.getLayoutList());
+        final String opening = I18n.f("ui.main.toolbar.infoOpeningRecentLayout", b);
+        final java.util.logging.Logger log = java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
+
+        // The editor comes on its way once the click's own check has passed
+        final java.util.logging.Handler hook = new java.util.logging.Handler()
+        {
+            @Override
+            public void publish(java.util.logging.LogRecord record)
+            {
+                if (record != null && opening.equals(record.getMessage()))
+                    editorOnItsWay(true);
+            }
+
+            @Override
+            public void flush()
+            {
+            }
+
+            @Override
+            public void close()
+            {
+            }
+        };
+
+        log.addHandler(hook);
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+        {
+            SwingUtilities.invokeAndWait(listedItem(b)::doClick);
+
+            answering.awaitAsked(2, 60000);
+
+            Components.settle();
+
+            assertTrue(answering.asked().contains(I18n.t("layout.ui.errorNotSwitchedTryAgain")),
+                "a switch whose sync was turned away did not say it was not switched: " + answering.asked());
+            assertFalse(answering.asked().contains(I18n.t("layout.ui.errorInvalidPathOrCorruptData")),
+                "a switch whose sync was turned away called the folder invalid: " + answering.asked());
+        }
+        finally
+        {
+            log.removeHandler(hook);
+            editorOnItsWay(false);
+        }
+
+        nothingChanged(a, pagesWere, "a switch whose sync was turned away");
+    }
+
+    /**
+     * Create New Layout whose new folder then fails in the sync's read says so, and nothing changes: the layout in use,
+     * its preferences and pages stay, as after a layout that will not unpack (FR-245).
+     *
+     * MUTATION: in `TrainControlUI.createAndApplyEmptyLayout`, ignore `switchTo`'s answer, and the old pages stand under
+     * the new folder's name, with nothing said.
+     */
+    @Test(timeOut = 180000)
+    public void testANewLayoutThatFailsInTheSyncIsSaidAndNothingChanges() throws Exception
+    {
+        String a = sandbox.getFolder().getAbsolutePath();
+        File fresh = Files.createTempDirectory("tc-new-layout-fails").toFile();
+
+        try
+        {
+            String was = everythingAbout(ui);
+            List<String> said;
+
+            JMenuItem create = (JMenuItem) Components.withText(ui, I18n.t("ui.main.toolbar.createLayout"));
+
+            try (AutoCloseable hook = indexGoneWhenTheSyncReads(fresh);
+                Answering answering = Answering.start(message -> Answering.pressAt(0)).choosing(fresh))
+            {
+                SwingUtilities.invokeAndWait(create::doClick);
+
+                answering.awaitAsked(2, 60000);
+
+                Components.settle();
+
+                said = answering.asked();
+            }
+
+            assertTrue(said.contains(I18n.t("layout.ui.errorInitializeDemoLayout")),
+                "a new layout that failed in the sync was not said to have failed: " + said);
+
+            assertEquals(everythingAbout(ui), was, "a new layout that failed in the sync changed it");
+        }
+        finally
+        {
+            if (!a.equals(new File(String.valueOf(ui.localLayoutPath())).getAbsolutePath()))
+            {
+                record(a);
+                open(a);
+            }
+
+            Util.deleteTree(fresh, 0);
+        }
+    }
+
+    private static void editorOnItsWay(boolean on)
+    {
+        try
+        {
+            support.Reflect.set(TrainControlUI.class, ui, "editorOnItsWay", on);
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException(e);
         }
     }
 

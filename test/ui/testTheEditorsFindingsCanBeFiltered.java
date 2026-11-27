@@ -442,7 +442,7 @@ public class testTheEditorsFindingsCanBeFiltered
         {
             for (LayoutEditor each : opened) close(each);
 
-            SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
+            SwingUtilities.invokeAndWait(() -> ui.editorWindows().setEditLayoutEnabled(true));
         }
     }
 
@@ -459,7 +459,7 @@ public class testTheEditorsFindingsCanBeFiltered
         try
         {
             // Opened as the main window opens it, so a closing tells it
-            LayoutEditor first = openedBy(() -> ui.openAutonomyEditor(new TileKey(PAGE, 1, 1)), null);
+            LayoutEditor first = openedBy(() -> ui.editorWindows().openAutonomyEditor(new TileKey(PAGE, 1, 1)), null);
 
             opened.add(first);
 
@@ -476,7 +476,7 @@ public class testTheEditorsFindingsCanBeFiltered
 
             close(second, true);
 
-            LayoutEditor next = openedBy(() -> ui.openAutonomyEditor(new TileKey(PAGE, 1, 1)), second);
+            LayoutEditor next = openedBy(() -> ui.editorWindows().openAutonomyEditor(new TileKey(PAGE, 1, 1)), second);
 
             opened.add(next);
 
@@ -487,7 +487,7 @@ public class testTheEditorsFindingsCanBeFiltered
         {
             for (LayoutEditor each : opened) close(each);
 
-            SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
+            SwingUtilities.invokeAndWait(() -> ui.editorWindows().setEditLayoutEnabled(true));
         }
     }
 
@@ -857,7 +857,7 @@ public class testTheEditorsFindingsCanBeFiltered
     {
         support.Components.onTheEventThread(() ->
         {
-            ui.setEditLayoutEnabled(true);
+            ui.editorWindows().setEditLayoutEnabled(true);
             opening.run();
 
             return null;

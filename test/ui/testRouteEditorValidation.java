@@ -32,7 +32,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame editor = open();
+        final org.traincontrol.gui.RouteEditorWindow editor = open();
 
         try
         {
@@ -118,7 +118,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        org.traincontrol.gui.RouteEditorFrame frame = open();
+        org.traincontrol.gui.RouteEditorWindow frame = open();
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
@@ -168,7 +168,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        org.traincontrol.gui.RouteEditorFrame frame = open();
+        org.traincontrol.gui.RouteEditorWindow frame = open();
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
@@ -190,7 +190,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        org.traincontrol.gui.RouteEditorFrame frame = open();
+        org.traincontrol.gui.RouteEditorWindow frame = open();
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
@@ -233,7 +233,7 @@ public class testRouteEditorValidation
     {
         java.util.Properties english = new java.util.Properties();
 
-        try (java.io.InputStream in = org.traincontrol.gui.RouteEditorFrame.class
+        try (java.io.InputStream in = org.traincontrol.gui.RouteEditorWindow.class
             .getResourceAsStream("/org/traincontrol/resources/messages.properties"))
         {
             english.load(in);
@@ -266,7 +266,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -321,11 +321,11 @@ public class testRouteEditorValidation
         return Reflect.get(owner.getClass(), owner, name);
     }
 
-    private static javax.swing.JTable commandsOf(org.traincontrol.gui.RouteEditorFrame frame)
+    private static javax.swing.JTable commandsOf(org.traincontrol.gui.RouteEditorWindow frame)
     {
         try
         {
-            return (javax.swing.JTable) support.Reflect.get(org.traincontrol.gui.RouteEditorFrame.class, frame, "commands");
+            return (javax.swing.JTable) support.Reflect.get(org.traincontrol.gui.RouteEditorWindow.class, frame, "commands");
         }
         catch (Exception e)
         {
@@ -333,29 +333,29 @@ public class testRouteEditorValidation
         }
     }
 
-    private static org.traincontrol.gui.RouteEditorFrame open() throws Exception
+    private static org.traincontrol.gui.RouteEditorWindow open() throws Exception
     {
         return open(null);
     }
 
     /** An editor opened on a route, as a double-click on it opens one; null for a new route. */
-    private static org.traincontrol.gui.RouteEditorFrame open(final org.traincontrol.base.Route route) throws Exception
+    private static org.traincontrol.gui.RouteEditorWindow open(final org.traincontrol.base.Route route) throws Exception
     {
-        final org.traincontrol.gui.RouteEditorFrame[] frame =
-            new org.traincontrol.gui.RouteEditorFrame[1];
+        final org.traincontrol.gui.RouteEditorWindow[] frame =
+            new org.traincontrol.gui.RouteEditorWindow[1];
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> frame[0] = new org.traincontrol.gui.RouteEditorFrame(null,
+        javax.swing.SwingUtilities.invokeAndWait(() -> frame[0] = new org.traincontrol.gui.RouteEditorWindow(null,
             route == null ? null : route.getName(), route));
 
         return frame[0];
     }
 
-    private static void close(org.traincontrol.gui.RouteEditorFrame frame) throws Exception
+    private static void close(org.traincontrol.gui.RouteEditorWindow frame) throws Exception
     {
         javax.swing.SwingUtilities.invokeAndWait(() -> frame.dispose());
     }
 
-    private static void showRows(org.traincontrol.gui.RouteEditorFrame frame,
+    private static void showRows(org.traincontrol.gui.RouteEditorWindow frame,
         java.util.List<org.traincontrol.base.ConditionOutline.Row> rows) throws Exception
     {
         javax.swing.SwingUtilities.invokeAndWait(() ->
@@ -366,7 +366,7 @@ public class testRouteEditorValidation
         });
     }
 
-    private static void setRows(org.traincontrol.gui.RouteEditorFrame frame,
+    private static void setRows(org.traincontrol.gui.RouteEditorWindow frame,
         java.util.List<org.traincontrol.base.ConditionOutline.Row> rows) throws Exception
     {
         javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(rows));
@@ -406,7 +406,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -455,7 +455,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -518,7 +518,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -564,7 +564,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -603,7 +603,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -638,7 +638,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -661,10 +661,10 @@ public class testRouteEditorValidation
             assertTrue(text[0].contains("<b>" + or + "</b>"),
                 "the joining word is not bold in \"Reads as\": " + text[0]);
 
-            assertTrue(text[0].contains("color=\"" + org.traincontrol.gui.RouteEditorFrame.READS_STOP_COLOUR + "\">off</font>"),
+            assertTrue(text[0].contains("color=\"" + org.traincontrol.gui.RouteEditorWindow.READS_STOP_COLOUR + "\">off</font>"),
                 "\"off\" is not red in \"Reads as\": " + text[0]);
 
-            assertTrue(text[0].contains("color=\"" + org.traincontrol.gui.RouteEditorFrame.READS_GO_COLOUR + "\">on</font>"),
+            assertTrue(text[0].contains("color=\"" + org.traincontrol.gui.RouteEditorWindow.READS_GO_COLOUR + "\">on</font>"),
                 "\"on\" is not green in \"Reads as\": " + text[0]);
         }
         finally
@@ -683,7 +683,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -724,7 +724,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -762,7 +762,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -845,7 +845,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -899,7 +899,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -948,7 +948,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -1015,7 +1015,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -1070,7 +1070,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -1106,7 +1106,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -1155,7 +1155,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -1192,7 +1192,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -1251,7 +1251,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -1358,7 +1358,7 @@ public class testRouteEditorValidation
 
     private static void insertsAsTheCasesSay(final Object[][] cases) throws Exception
     {
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -1412,7 +1412,7 @@ public class testRouteEditorValidation
             {2, " 1:21 1AND 1:22 0OR 1:24 1AND 1:25 1AND 1:1"},
         };
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -1462,7 +1462,7 @@ public class testRouteEditorValidation
         needsADisplay();
 
         final String three = " 0:21 0AND 0:22 0AND 0:23";
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -1542,7 +1542,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -1604,7 +1604,7 @@ public class testRouteEditorValidation
     }
 
     /** Presses 7 where the window sends the keyboard and says which cell it began editing, then cancels the edit. */
-    private static String digitEdits(final org.traincontrol.gui.RouteEditorFrame frame, final javax.swing.JTable table)
+    private static String digitEdits(final org.traincontrol.gui.RouteEditorWindow frame, final javax.swing.JTable table)
     {
         asIfFocused(frame, owner -> support.Keys.press(owner, java.awt.event.KeyEvent.VK_7));
 
@@ -1621,7 +1621,7 @@ public class testRouteEditorValidation
     }
 
     /** Keys go where the window sends the keyboard; it answers as focus owner, as a test window rarely is one. */
-    private static void asIfFocused(final org.traincontrol.gui.RouteEditorFrame frame,
+    private static void asIfFocused(final org.traincontrol.gui.RouteEditorWindow frame,
         final java.util.function.Consumer<java.awt.Component> keys)
     {
         asIfFocusedOn(support.Keys.focusOwnerOf(frame), keys);
@@ -1663,7 +1663,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -1739,7 +1739,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -1813,7 +1813,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -1866,16 +1866,16 @@ public class testRouteEditorValidation
             org.traincontrol.base.Route.s88Triggers.CLEAR_THEN_OCCUPIED, true,
             org.traincontrol.base.ConditionOutline.toExpression(fromLevels(" 1:21 1AND 1:22 0OR 0:23")));
 
-        final org.traincontrol.gui.RouteEditorFrame[] opened = new org.traincontrol.gui.RouteEditorFrame[1];
+        final org.traincontrol.gui.RouteEditorWindow[] opened = new org.traincontrol.gui.RouteEditorWindow[1];
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
-            opened[0] = new org.traincontrol.gui.RouteEditorFrame(null, route.getName(), route);
+            opened[0] = new org.traincontrol.gui.RouteEditorWindow(null, route.getName(), route);
             opened[0].pack();
             opened[0].setVisible(true);
         });
 
-        final org.traincontrol.gui.RouteEditorFrame frame = opened[0];
+        final org.traincontrol.gui.RouteEditorWindow frame = opened[0];
 
         try
         {
@@ -1927,7 +1927,7 @@ public class testRouteEditorValidation
     }
 
     /** "Reads as" cut to brackets, sensors and joining words, in English: "(#21 and #1) or #23". */
-    private static String readsLike(org.traincontrol.gui.RouteEditorFrame frame)
+    private static String readsLike(org.traincontrol.gui.RouteEditorWindow frame)
     {
         String and = I18n.t("route.ui.joinAnd");
         String or = I18n.t("route.ui.joinOr");
@@ -1960,18 +1960,18 @@ public class testRouteEditorValidation
         support.RouteEditing.rightClickAndChoose(table, line, key);
     }
 
-    private static String plainReading(org.traincontrol.gui.RouteEditorFrame frame)
+    private static String plainReading(org.traincontrol.gui.RouteEditorWindow frame)
     {
         return support.Components.onTheEventThread(() -> frame.readsAsForTest()).replaceAll("<[^>]*>", "")
             .replaceAll("\\s+", " ").trim();
     }
 
-    private static javax.swing.JTable conditionTable(org.traincontrol.gui.RouteEditorFrame frame)
+    private static javax.swing.JTable conditionTable(org.traincontrol.gui.RouteEditorWindow frame)
     {
         return table(frame, "ConditionTable");
     }
 
-    private static javax.swing.JTable table(org.traincontrol.gui.RouteEditorFrame frame, final String kind)
+    private static javax.swing.JTable table(org.traincontrol.gui.RouteEditorWindow frame, final String kind)
     {
         return support.RouteEditing.table(frame, kind);
     }
@@ -2025,7 +2025,7 @@ public class testRouteEditorValidation
         return support.RouteEditing.call(table, name, argument);
     }
 
-    private static void press(final org.traincontrol.gui.RouteEditorFrame frame, String key)
+    private static void press(final org.traincontrol.gui.RouteEditorWindow frame, String key)
     {
         support.RouteEditing.press(frame, key);
     }
@@ -2051,7 +2051,7 @@ public class testRouteEditorValidation
     }
 
     /** The bold parts of "Reads as" other than the joining words, each cut to its sensor: "[S88 #23]". */
-    private static String bold(org.traincontrol.gui.RouteEditorFrame frame)
+    private static String bold(org.traincontrol.gui.RouteEditorWindow frame)
     {
         java.util.List<String> out = new java.util.ArrayList<>();
         java.util.regex.Matcher bold = java.util.regex.Pattern.compile("<b>(.*?)</b>").matcher(
@@ -2100,7 +2100,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
         final java.util.Locale was = org.traincontrol.util.I18n.getLocale();
 
         try
@@ -2159,7 +2159,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -2186,7 +2186,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -2237,7 +2237,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -2323,7 +2323,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -2374,7 +2374,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
         final java.util.Locale was = org.traincontrol.util.I18n.getLocale();
 
         try
@@ -2446,7 +2446,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
         final java.util.Locale was = org.traincontrol.util.I18n.getLocale();
 
         try
@@ -2521,7 +2521,7 @@ public class testRouteEditorValidation
     }
 
     /** Each line as depth and sensor, or depth and word: " 1:1 1OR 0:4". */
-    private static String levels(org.traincontrol.gui.RouteEditorFrame frame)
+    private static String levels(org.traincontrol.gui.RouteEditorWindow frame)
     {
         return levelsOf(frame.conditionRowsForTest());
     }
@@ -2540,7 +2540,7 @@ public class testRouteEditorValidation
     }
 
     /** A condition line's address and setting as stored, read the way the table reads them. */
-    private static String shown(org.traincontrol.gui.RouteEditorFrame frame, int line)
+    private static String shown(org.traincontrol.gui.RouteEditorWindow frame, int line)
     {
         CommandRow row = CommandRow.of(frame.conditionRowsForTest().get(line).getCommand());
 
@@ -2568,7 +2568,7 @@ public class testRouteEditorValidation
         return out;
     }
 
-    private static String depths(org.traincontrol.gui.RouteEditorFrame frame)
+    private static String depths(org.traincontrol.gui.RouteEditorWindow frame)
     {
         StringBuilder out = new StringBuilder();
 
@@ -2585,7 +2585,7 @@ public class testRouteEditorValidation
      * The SHAPE of the expression the outline means - "And(Or(x,x),x)"; the top node's class alone cannot tell `(A or
      * B) and C` from its defect.
      */
-    private static String reads(org.traincontrol.gui.RouteEditorFrame frame)
+    private static String reads(org.traincontrol.gui.RouteEditorWindow frame)
     {
         return shape(org.traincontrol.base.ConditionOutline.toExpression(
             frame.conditionRowsForTest()));
@@ -2646,7 +2646,7 @@ public class testRouteEditorValidation
 
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -2697,7 +2697,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -2744,7 +2744,7 @@ public class testRouteEditorValidation
 
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -2809,7 +2809,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -2861,7 +2861,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open(lockedWithOneCommand());
+        final org.traincontrol.gui.RouteEditorWindow frame = open(lockedWithOneCommand());
 
         try
         {
@@ -2955,7 +2955,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -3026,7 +3026,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -3082,7 +3082,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -3148,7 +3148,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -3263,7 +3263,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -3325,7 +3325,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -3377,7 +3377,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -3422,7 +3422,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -3487,7 +3487,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -3549,7 +3549,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -3603,7 +3603,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -3670,7 +3670,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -3716,7 +3716,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -3768,7 +3768,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -3835,8 +3835,8 @@ public class testRouteEditorValidation
                 for (int column = 0; column < table.getColumnCount(); column++)
                 {
                     Object value = table.getValueAt(1, column);
-                    boolean arrow = org.traincontrol.gui.RouteEditorFrame.markMoveUp().equals(value)
-                        || org.traincontrol.gui.RouteEditorFrame.markMoveDown().equals(value);
+                    boolean arrow = org.traincontrol.gui.RouteEditorWindow.markMoveUp().equals(value)
+                        || org.traincontrol.gui.RouteEditorWindow.markMoveDown().equals(value);
 
                     out.append(arrow ? value : table.isCellSelected(1, column) ? "+" : "-");
                 }
@@ -4059,7 +4059,7 @@ public class testRouteEditorValidation
 
             assertTrue(support.Components.onTheEventThread(table::isEditing), "precondition: the cell is still edited");
 
-            org.traincontrol.gui.RouteEditorFrame.discardAnswerForTest = Boolean.FALSE;
+            org.traincontrol.gui.RouteEditorWindow.discardAnswerForTest = Boolean.FALSE;
 
             try
             {
@@ -4068,7 +4068,7 @@ public class testRouteEditorValidation
             }
             finally
             {
-                org.traincontrol.gui.RouteEditorFrame.discardAnswerForTest = null;
+                org.traincontrol.gui.RouteEditorWindow.discardAnswerForTest = null;
             }
 
             assertEquals(targets(frame), " 14 12", "the typed target, once the exit has asked");
@@ -4223,7 +4223,7 @@ public class testRouteEditorValidation
     {
         inAnEditor(frame ->
         {
-            java.lang.reflect.Field named = Reflect.field(org.traincontrol.gui.RouteEditorFrame.class, "readsAs");
+            java.lang.reflect.Field named = Reflect.field(org.traincontrol.gui.RouteEditorWindow.class, "readsAs");
 
             final javax.swing.JLabel reads = (javax.swing.JLabel) named.get(frame);
 
@@ -4365,7 +4365,7 @@ public class testRouteEditorValidation
      * Where a section's row of actions is, through one of its buttons: the button's top in the window, the row's bottom
      * and the bottom inside the frame round the table, and the row's bottom in the window.
      */
-    private static java.util.concurrent.Callable<int[]> footOf(final org.traincontrol.gui.RouteEditorFrame frame,
+    private static java.util.concurrent.Callable<int[]> footOf(final org.traincontrol.gui.RouteEditorWindow frame,
         final javax.swing.JTable table, final javax.swing.AbstractButton button)
     {
         return () ->
@@ -4421,8 +4421,8 @@ public class testRouteEditorValidation
                 return out.toString();
             });
 
-            String trash = org.traincontrol.gui.RouteEditorFrame.markDelete();
-            String copy = org.traincontrol.gui.RouteEditorFrame.markCopy();
+            String trash = org.traincontrol.gui.RouteEditorWindow.markDelete();
+            String copy = org.traincontrol.gui.RouteEditorWindow.markCopy();
 
             assertEquals(marks, " " + trash + "+ " + copy + "+ " + trash + "+ " + copy + "+", "the last two columns of"
                 + " a command, then of a condition: the mark, + where it draws an icon");
@@ -4517,19 +4517,19 @@ public class testRouteEditorValidation
         javax.swing.SwingUtilities.invokeAndWait(() -> table.getModel().setValueAt(typed, row, COMMAND_TARGET));
     }
 
-    private static javax.swing.AbstractButton commandButton(final org.traincontrol.gui.RouteEditorFrame frame,
+    private static javax.swing.AbstractButton commandButton(final org.traincontrol.gui.RouteEditorWindow frame,
         String key)
     {
         return support.RouteEditing.commandButton(frame, key);
     }
 
-    private static void pressOnTheCommands(final org.traincontrol.gui.RouteEditorFrame frame, String key)
+    private static void pressOnTheCommands(final org.traincontrol.gui.RouteEditorWindow frame, String key)
     {
         support.RouteEditing.pressOnTheCommands(frame, key);
     }
 
     /** The commands' Undo and Redo, each + when it can be pressed and - when grayed: "+Undo -Redo". */
-    private static String undoAndRedo(final org.traincontrol.gui.RouteEditorFrame frame)
+    private static String undoAndRedo(final org.traincontrol.gui.RouteEditorWindow frame)
     {
         javax.swing.AbstractButton undo = commandButton(frame, "route.ui.menuUndo");
         javax.swing.AbstractButton redo = commandButton(frame, "route.ui.menuRedo");
@@ -4548,7 +4548,7 @@ public class testRouteEditorValidation
     }
 
     /** An outline, these outline rows selected, Duplicate chosen on the last: the outline it leaves. */
-    private static String duplicated(org.traincontrol.gui.RouteEditorFrame frame, javax.swing.JTable table,
+    private static String duplicated(org.traincontrol.gui.RouteEditorWindow frame, javax.swing.JTable table,
         String outline, int first, int last) throws Exception
     {
         setRows(frame, fromLevels(outline));
@@ -4567,7 +4567,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open(route);
+        final org.traincontrol.gui.RouteEditorWindow frame = open(route);
 
         try
         {
@@ -4583,7 +4583,7 @@ public class testRouteEditorValidation
 
     private interface EditorClaim
     {
-        void run(org.traincontrol.gui.RouteEditorFrame frame) throws Exception;
+        void run(org.traincontrol.gui.RouteEditorWindow frame) throws Exception;
     }
 
     private static final int COMMAND_TARGET = 3;
@@ -4592,7 +4592,7 @@ public class testRouteEditorValidation
     private static final int CONDITION_COPY = 6;
 
     /** The frame with accessory commands at these addresses, packed and showing; its command table. */
-    private static javax.swing.JTable showCommands(org.traincontrol.gui.RouteEditorFrame frame, int... addresses)
+    private static javax.swing.JTable showCommands(org.traincontrol.gui.RouteEditorWindow frame, int... addresses)
         throws Exception
     {
         javax.swing.SwingUtilities.invokeAndWait(() ->
@@ -4611,7 +4611,7 @@ public class testRouteEditorValidation
     }
 
     /** Each command's target in order, " 11 12" , a new one's as "_". */
-    private static String targets(org.traincontrol.gui.RouteEditorFrame frame)
+    private static String targets(org.traincontrol.gui.RouteEditorWindow frame)
     {
         return support.Components.onTheEventThread(() ->
         {
@@ -4629,7 +4629,7 @@ public class testRouteEditorValidation
     }
 
     /** The commands' targets and the selected rows: " 11 12 [1]". */
-    private static String state(org.traincontrol.gui.RouteEditorFrame frame, javax.swing.JTable table)
+    private static String state(org.traincontrol.gui.RouteEditorWindow frame, javax.swing.JTable table)
     {
         return targets(frame) + " " + selectedRows(table);
     }
@@ -4640,7 +4640,7 @@ public class testRouteEditorValidation
         support.RouteEditing.drag(table, row, to);
     }
 
-    private static boolean enabled(final org.traincontrol.gui.RouteEditorFrame frame, String key)
+    private static boolean enabled(final org.traincontrol.gui.RouteEditorWindow frame, String key)
     {
         javax.swing.AbstractButton button = notOnTheCommands(frame, key);
 
@@ -4650,14 +4650,14 @@ public class testRouteEditorValidation
     }
 
     /** The button saying this outside the commands' section: the conditions' Undo, not the commands'. */
-    private static javax.swing.AbstractButton notOnTheCommands(final org.traincontrol.gui.RouteEditorFrame frame,
+    private static javax.swing.AbstractButton notOnTheCommands(final org.traincontrol.gui.RouteEditorWindow frame,
         String key)
     {
         return support.RouteEditing.notOnTheCommands(frame, key);
     }
 
     /** The commands' section of the window: their frame, the row under it, and Capture. */
-    private static java.awt.Container commandSection(final org.traincontrol.gui.RouteEditorFrame frame)
+    private static java.awt.Container commandSection(final org.traincontrol.gui.RouteEditorWindow frame)
     {
         return support.RouteEditing.commandSection(frame);
     }
@@ -4685,7 +4685,7 @@ public class testRouteEditorValidation
                 java.util.Locale.setDefault(new java.util.Locale(language));
                 I18n.setLocale(new java.util.Locale(language));
 
-                final org.traincontrol.gui.RouteEditorFrame frame = open();
+                final org.traincontrol.gui.RouteEditorWindow frame = open();
 
                 try
                 {
@@ -4758,7 +4758,7 @@ public class testRouteEditorValidation
      *
      * @return whether the notice stands under the heading rather than beside it
      */
-    private static boolean headingLine(final org.traincontrol.gui.RouteEditorFrame frame, final String where)
+    private static boolean headingLine(final org.traincontrol.gui.RouteEditorWindow frame, final String where)
         throws Exception
     {
         final javax.swing.JTable table = conditionTable(frame);
@@ -4827,7 +4827,7 @@ public class testRouteEditorValidation
                 java.util.Locale.setDefault(new java.util.Locale(language));
                 I18n.setLocale(new java.util.Locale(language));
 
-                final org.traincontrol.gui.RouteEditorFrame frame = open();
+                final org.traincontrol.gui.RouteEditorWindow frame = open();
 
                 try
                 {
@@ -4888,7 +4888,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -4916,7 +4916,7 @@ public class testRouteEditorValidation
         return out;
     }
 
-    private static void assertTheMinimumHeightAndTheHandles(final org.traincontrol.gui.RouteEditorFrame frame)
+    private static void assertTheMinimumHeightAndTheHandles(final org.traincontrol.gui.RouteEditorWindow frame)
     {
         final javax.swing.JTable[] tables = {table(frame, "CommandTable"), table(frame, "ConditionTable")};
 
@@ -4958,7 +4958,7 @@ public class testRouteEditorValidation
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorWindow frame = open();
 
         try
         {
@@ -5024,7 +5024,7 @@ public class testRouteEditorValidation
         }
     }
 
-    private static org.traincontrol.base.NodeExpression heldBy(org.traincontrol.gui.RouteEditorFrame frame)
+    private static org.traincontrol.base.NodeExpression heldBy(org.traincontrol.gui.RouteEditorWindow frame)
     {
         return org.traincontrol.base.ConditionOutline.toExpression(frame.conditionRowsForTest());
     }
@@ -5318,11 +5318,11 @@ public class testRouteEditorValidation
     /** A route editor on one practical shape, and the gestures the steps use. */
     private static final class Practical
     {
-        final org.traincontrol.gui.RouteEditorFrame frame;
+        final org.traincontrol.gui.RouteEditorWindow frame;
         final javax.swing.JTable table;
         final java.util.Map<String, RouteCommand> terms;
 
-        private Practical(org.traincontrol.gui.RouteEditorFrame frame, java.util.Map<String, RouteCommand> terms)
+        private Practical(org.traincontrol.gui.RouteEditorWindow frame, java.util.Map<String, RouteCommand> terms)
         {
             this.frame = frame;
             this.table = conditionTable(frame);
@@ -5332,11 +5332,11 @@ public class testRouteEditorValidation
         static Practical open(org.traincontrol.gui.TrainControlUI ui, String name, java.util.Map<String, RouteCommand> terms)
             throws Exception
         {
-            final org.traincontrol.gui.RouteEditorFrame[] made = new org.traincontrol.gui.RouteEditorFrame[1];
+            final org.traincontrol.gui.RouteEditorWindow[] made = new org.traincontrol.gui.RouteEditorWindow[1];
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
-                made[0] = new org.traincontrol.gui.RouteEditorFrame(ui, name);
+                made[0] = new org.traincontrol.gui.RouteEditorWindow(ui, name);
                 made[0].pack();
                 made[0].setVisible(true);
             });

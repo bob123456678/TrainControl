@@ -120,8 +120,13 @@ public abstract class Locomotive
     // The Central Station's name for this locomotive that a pressed Sync offered and the user turned down (FR-220)
     private String declinedStationName;
 
-    // The one the Sync running now offered and did not apply, so it adds no copy under it; never saved
-    private String heldBackStationName;
+    // The station's name for it when the last sync found it renamed there, so no copy is added under it; never saved
+    private volatile String heldBackStationName;
+    // The station's address the user kept against, saved; the one this Sync was told to use, never saved (FR-246)
+    private Integer declinedStationAddress;
+    private Integer takenStationAddress;
+    // Told to Ignore what the station differs on, saved (FR-249)
+    private volatile boolean syncIgnored;
     
     // Used to pause autonomous operation - not persisted.  Volatile, not under the monitor: a command can hold that
     // for a stalled network write, and windows read this every second.
@@ -1558,16 +1563,46 @@ public abstract class Locomotive
         this.declinedStationName = name;
     }
 
-    /** Marks the station's name the Sync running now offered for this locomotive and did not apply; null clears it. */
+    /** Marks the station's name for this locomotive when the sync found it renamed there; null clears it. */
     public void setHeldBackStationName(String name)
     {
         this.heldBackStationName = name;
     }
 
-    /** Whether this locomotive keeps its name over the station's: turned down, or held back by the Sync running now. */
+    /** Whether this locomotive keeps its name over the station's: turned down, or held back by the last sync. */
     public boolean keepsItsNameOver(String stationName)
     {
         return stationName.equals(this.declinedStationName) || stationName.equals(this.heldBackStationName);
+    }
+
+    /** The station's address kept against, or null; Sync does not offer it again. */
+    public Integer getDeclinedStationAddress()
+    {
+        return this.declinedStationAddress;
+    }
+
+    public void setDeclinedStationAddress(Integer address)
+    {
+        this.declinedStationAddress = address;
+    }
+
+    public void setTakenStationAddress(Integer address)
+    {
+        this.takenStationAddress = address;
+    }
+
+    public boolean takesStationAddress(int address)
+    {
+        return Integer.valueOf(address).equals(this.takenStationAddress);
+    }
+
+    public boolean isSyncIgnored()
+    {
+        return this.syncIgnored;
+    }
+    public void setSyncIgnored(boolean ignored)
+    {
+        this.syncIgnored = ignored;
     }
 
     /**

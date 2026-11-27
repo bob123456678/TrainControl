@@ -100,7 +100,9 @@ public class testAutonomyDiagramStore
 
     /**
      * Autonomy needs somewhere to put its files, and a layout read from the Central Station has no folder
-     * until it is downloaded.  The store says so rather than pretending to save.
+     * until it is downloaded.  The store says so rather than pretending to save, in words, as the log shows them.
+     *
+     * MUTATION: in `AutonomyCompanionStore.save`, throw `ERROR_NOT_LOCAL` untranslated.
      */
     @Test
     public void testALayoutWithNoFolderCannotHoldASetup()
@@ -117,8 +119,9 @@ public class testAutonomyDiagramStore
         }
         catch (IOException expected)
         {
-            // and it names the reason, so the UI can offer the download
-            assertTrue(expected.getMessage().contains("autosetup"), expected.getMessage());
+            // and it names the reason, with its remedy, the download
+            assertTrue(expected.getMessage().equals(org.traincontrol.util.I18n.t(AutonomyCompanionStore.ERROR_NOT_LOCAL)),
+                expected.getMessage());
         }
     }
 
@@ -1292,6 +1295,60 @@ public class testAutonomyDiagramStore
     }
 
     /**
+     * A configuration renamed away and back rewrites its file whole, so the repairs a failed save left that file
+     * lacking go: the next read does not do them again over what was written.
+     *
+     * MUTATION: in `renameConfiguration`, leave out removing the files' repairs from the record, and this fails.
+     */
+    @Test
+    public void testARenamedConfigurationsFileLacksNothing() throws IOException
+    {
+        AutonomyCompanionStore.Lacking record = new AutonomyCompanionStore.Lacking();
+        store.shareLacking(record);
+        store.createConfiguration("Main", null);
+        place(store.getConfiguration("Main"), "1:4,4", "Kept");
+        store.save();
+
+        // As a failed save of a deletion of Kept and a rename onto it leaves the file
+        store.lacks(record, java.util.Arrays.asList("Main"), "Kept", null);
+        store.lacks(record, java.util.Arrays.asList("Main"), "Was", "Kept");
+        store.renameConfiguration("Main", "Tmp");
+        store.renameConfiguration("Tmp", "Main");
+        store.load();
+
+        assertTrue(store.getConfiguration("Main").toString().contains("\"Kept\""), "the read did the repairs again"
+            + " over the written file: " + store.getConfiguration("Main"));
+    }
+
+    /**
+     * A deleted configuration takes the repairs its file lacked with it: a file of that name brought back, as a sync
+     * client can, is read as it was written.
+     *
+     * MUTATION: in `deleteConfiguration`, leave out removing the file's repairs from the record, and this fails.
+     */
+    @Test
+    public void testADeletedConfigurationsFileLacksNothing() throws IOException
+    {
+        AutonomyCompanionStore.Lacking record = new AutonomyCompanionStore.Lacking();
+        File file = new File(layout, "config/autonomy/configuration-Other.json");
+        store.shareLacking(record);
+        store.createConfiguration("Main", null);
+        store.createConfiguration("Other", null);
+        place(store.getConfiguration("Other"), "1:4,4", "Kept");
+        store.save();
+        assertTrue(file.isFile(), "precondition: the configuration is not kept in " + file);
+
+        byte[] written = Files.readAllBytes(file.toPath());
+        store.lacks(record, java.util.Arrays.asList("Other"), "Kept", null);
+        store.deleteConfiguration("Other");
+        Files.write(file.toPath(), written);
+        store.load();
+
+        assertTrue(store.getConfiguration("Other").toString().contains("\"Kept\""), "the read did a deleted file's"
+            + " repair over the file brought back: " + store.getConfiguration("Other"));
+    }
+
+    /**
      * Deleting everything removes the files and the decisions, and leaves the track diagram alone.
      */
     @Test
@@ -2120,7 +2177,7 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        assertTrue(AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name"),
+        assertTrue(AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name", null),
             "the setup on disk was not found, so nothing below tests anything");
 
         AutonomyCompanionStore reloaded = reloadedStore();
@@ -2140,6 +2197,57 @@ public class testAutonomyDiagramStore
     }
 
     /**
+     * A repair of a setup nothing has open that cannot write a configuration names the ones it left as they were on
+     * disk: those from the first write that failed on, or every one when a read failed.
+     *
+     * MUTATION: in `repairOnDisk`, name `getUnwritten()` alone, or leave `unwritten.remove` out of `save`, and this
+     * fails.
+     */
+    @Test
+    public void testARepairThatCannotWriteNamesTheConfigurationsItLeft() throws Exception
+    {
+        for (String name : new String[] {"Day", "Night"})
+        {
+            store.createConfiguration(name, null);
+            place(store.getConfiguration(name), "1:4,4", "Old Name");
+        }
+
+        store.setActiveConfiguration("Day");
+        store.save();
+
+        File night = new File(layout, "config/autonomy/configuration-Night.json");
+        byte[] before = Files.readAllBytes(night.toPath());
+        java.util.List<String> left = null;
+
+        try (java.io.FileInputStream held = new java.io.FileInputStream(night))
+        {
+            AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name", null);
+        }
+        catch (AutonomyCompanionStore.NotWritten e)
+        {
+            left = e.configurations;
+        }
+
+        assertEquals(left, java.util.Arrays.asList("Night"), "a write held at Night did not name Night alone");
+        assertEquals(Files.readAllBytes(night.toPath()), before, "the held configuration was written");
+
+        left = null;
+
+        try (java.io.RandomAccessFile held = new java.io.RandomAccessFile(night, "rw");
+            java.nio.channels.FileLock lock = held.getChannel().lock())
+        {
+            AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name", null);
+        }
+        catch (AutonomyCompanionStore.NotWritten e)
+        {
+            left = e.configurations;
+        }
+
+        assertEquals(left, java.util.Arrays.asList("Day", "Night"), "a read that failed did not name every"
+            + " configuration");
+    }
+
+    /**
      * And a delete reaches it the same way.
      */
     @Test
@@ -2152,7 +2260,7 @@ public class testAutonomyDiagramStore
 
         store.save();
 
-        assertTrue(AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Going", null),
+        assertTrue(AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Going", null, null),
             "the setup on disk was not found, so nothing below tests anything");
 
         AutonomyCompanionStore reloaded = reloadedStore();
@@ -2176,7 +2284,7 @@ public class testAutonomyDiagramStore
 
         try
         {
-            assertFalse(AutonomyCompanionStore.repairLocomotiveOnDisk(bare, "Old Name", "New Name"),
+            assertFalse(AutonomyCompanionStore.repairLocomotiveOnDisk(bare, "Old Name", "New Name", null),
                 "a layout with no setup reported that it had repaired one");
 
             assertFalse(new File(bare, "config").exists(),
@@ -2215,7 +2323,7 @@ public class testAutonomyDiagramStore
         assertTrue(before.contains("\"Main\""),
             "the fixture never recorded its page names, so nothing below tests anything: " + before);
 
-        assertTrue(AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name"));
+        assertTrue(AutonomyCompanionStore.repairLocomotiveOnDisk(layout, "Old Name", "New Name", null));
 
         AutonomyCompanionStore reloaded = reloadedUnder(twoPages());
 

@@ -52,13 +52,15 @@ RED_S="$S/redgreen-red"
 
 [ -n "$PATCH" ] && PATCH="$(cd "$(dirname "$PATCH")" && pwd)/$(basename "$PATCH")"
 
-# One.sh takes pkg.Class, or label:pkg.Class.method for one method.
+# One.sh takes pkg.Class, or label:pkg.Class.method for one method.  A claim names a method when the segment before
+# its last is a test class (testX); unit classes in package folders (org.traincontrol.gui.testX) have more dots.
 ARGS=""
 
 for c in $CLAIMS
 do
-    case "$c" in
-        *.*.*) cls="${c%.*}"; ARGS="$ARGS ${cls#*.}:$c";;
+    cls="${c%.*}"
+    case "${cls##*.}" in
+        test*) ARGS="$ARGS ${cls##*.}:$c";;
         *) ARGS="$ARGS $c";;
     esac
 done

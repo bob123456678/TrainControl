@@ -53,7 +53,7 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
      * where it was.  The file no longer names it, and the log says so once and one dialog does.  Then an ordinary
      * reload does the same for a home given to another such name, and says nothing more of the first.
      *
-     * MUTATION: take the call out of `AutonomyViewerPanel.loadPrepared`, or the dialog out of it, and this fails.
+     * MUTATION: take the call out of `AutonomyConfigurationsPanel.loadPrepared`, or the dialog out of it, and this fails.
      */
     @Test
     public void testAStartUpLetsGoOfAStandingTrainTheDatabaseDoesNotHold() throws Exception
@@ -139,8 +139,8 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
 
             assertFalse(offered.toString().contains(GONE),"the right-click menu at " + STANDS + " still offers " + offered
                 + " (OB-349)");
-            assertNull(ui[0].autonomyCaptionTextAt(STANDS), "the editor's caption at " + STANDS + " still names a train");
-            assertNull(ui[0].autonomyHomeAt(STANDS), "the home caption at " + STANDS + " still names " + GONE);
+            assertNull(ui[0].stationCaptions().autonomyCaptionTextAt(STANDS), "the editor's caption at " + STANDS + " still names a train");
+            assertNull(ui[0].stationCaptions().autonomyHomeAt(STANDS), "the home caption at " + STANDS + " still names " + GONE);
             assertFalse(session.tilesWithALocomotive().contains(STANDS), "the setup's placements still include " + STANDS);
             assertFalse(session.placementsAutonomyWillWrite().containsValue(GONE), "a build would still place " + GONE);
 

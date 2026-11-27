@@ -117,7 +117,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
             // The precondition, measured: the drain declines this one and puts it back; if it could be written the
             // final assertion would be a race.
-            ui.reconcileFacingWhenIdle();
+            ui.diagramLocGestures().reconcileFacingWhenIdle();
 
             Components.drain(1);
 
@@ -222,7 +222,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
         for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
         {
-            if (!page.equals(square.getPage()) || ui.autonomyCaptionAt(square) != null) continue;
+            if (!page.equals(square.getPage()) || ui.stationCaptions().autonomyCaptionAt(square) != null) continue;
 
             java.util.Map<org.traincontrol.automationui.TileGraph.RouteId, ?> roads = session.getGraph().getRoutes(square);
 
@@ -261,7 +261,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
         for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
         {
-            org.traincontrol.automationui.TileGraph.TileKey captioned = page.equals(square.getPage()) ? ui.autonomyCaptionAt(square) : null;
+            org.traincontrol.automationui.TileGraph.TileKey captioned = page.equals(square.getPage()) ? ui.stationCaptions().autonomyCaptionAt(square) : null;
 
             if (captioned != null && session.getStore().getPointName(captioned) != null)
             {
@@ -587,7 +587,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
         for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
         {
-            org.traincontrol.automationui.TileGraph.TileKey captioned = ui.autonomyCaptionAt(square);
+            org.traincontrol.automationui.TileGraph.TileKey captioned = ui.stationCaptions().autonomyCaptionAt(square);
 
             if (captioned != null && session.getStore().getPointName(captioned) != null)
             {
@@ -933,7 +933,7 @@ public class testAPendingTurnSurvivesTheRebuild
         final org.traincontrol.automationui.TileGraph.TileKey station = drawnOnce[0];
         final org.traincontrol.automationui.TileGraph.TileKey square = drawnOnce[1];
 
-        final org.traincontrol.gui.LayoutPopupUI popup = openAMediumPopUp();
+        final org.traincontrol.gui.LayoutPopupWindow popup = openAMediumPopUp();
 
         try
         {
@@ -991,14 +991,14 @@ public class testAPendingTurnSurvivesTheRebuild
 
         prefs.putBoolean(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, true);
 
-        org.traincontrol.gui.LayoutPopupUI popup = null;
+        org.traincontrol.gui.LayoutPopupWindow popup = null;
         String kept = null;
 
         try
         {
             popup = openAMediumPopUp();
 
-            final org.traincontrol.gui.LayoutPopupUI window = popup;
+            final org.traincontrol.gui.LayoutPopupWindow window = popup;
 
             kept = "LayoutPopupUI_" + window.getLayoutTitle() + "_" + window.getLayoutSize();
 
@@ -1092,7 +1092,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
             if (popup != null)
             {
-                final org.traincontrol.gui.LayoutPopupUI closing = popup;
+                final org.traincontrol.gui.LayoutPopupWindow closing = popup;
 
                 javax.swing.SwingUtilities.invokeAndWait(closing::dispose);
             }
@@ -1111,7 +1111,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
     /** How many of the station's registered caption labels sit inside this pop-up. */
     private static int labelsInPopup(final org.traincontrol.automationui.TileGraph.TileKey station,
-        final org.traincontrol.gui.LayoutPopupUI popup) throws Exception
+        final org.traincontrol.gui.LayoutPopupWindow popup) throws Exception
     {
         final int[] count = new int[1];
 
@@ -1127,7 +1127,7 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /** The Medium button's pop-up of the page shown, once it is up. */
-    private static org.traincontrol.gui.LayoutPopupUI openAMediumPopUp() throws Exception
+    private static org.traincontrol.gui.LayoutPopupWindow openAMediumPopUp() throws Exception
     {
         final javax.swing.JButton medium = (javax.swing.JButton) Reflect.get(TrainControlUI.class, ui, "mediumButton");
 
@@ -1141,13 +1141,13 @@ public class testAPendingTurnSurvivesTheRebuild
 
             for (java.awt.Window w : java.awt.Window.getWindows())
             {
-                if (w instanceof org.traincontrol.gui.LayoutPopupUI && w.isDisplayable() && !before.contains(w))
+                if (w instanceof org.traincontrol.gui.LayoutPopupWindow && w.isDisplayable() && !before.contains(w))
                 {
                     javax.swing.SwingUtilities.invokeAndWait(() -> { });
 
                     Thread.sleep(1500);
 
-                    return (org.traincontrol.gui.LayoutPopupUI) w;
+                    return (org.traincontrol.gui.LayoutPopupWindow) w;
                 }
             }
         }
@@ -1228,7 +1228,7 @@ public class testAPendingTurnSurvivesTheRebuild
         {
             if (!shownPage.equals(square.getPage()) || ui.getLayoutStations(square).isEmpty()) continue;
 
-            java.util.List<org.traincontrol.automation.Point> standing = ui.getAutonomyOccupantsForTile(square);
+            java.util.List<org.traincontrol.automation.Point> standing = ui.stationCaptions().getAutonomyOccupantsForTile(square);
 
             if (!standing.isEmpty() && session.getStore().getPointName(square) != null)
             {
@@ -1423,7 +1423,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
         for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
         {
-            if (!page.equals(square.getPage()) || ui.autonomyCaptionAt(square) != null) continue;
+            if (!page.equals(square.getPage()) || ui.stationCaptions().autonomyCaptionAt(square) != null) continue;
 
             java.util.Map<org.traincontrol.automationui.TileGraph.RouteId, ?> roads = session.getGraph().getRoutes(square);
 
@@ -1532,7 +1532,7 @@ public class testAPendingTurnSurvivesTheRebuild
             before.restoreReversalsOnArrival(Collections.singletonMap(PENDING_LOC, at.getName()));
 
             // THE PRECONDITION, MEASURED: nobody can write it, so it is still owed at the rename
-            ui.reconcileFacingWhenIdle();
+            ui.diagramLocGestures().reconcileFacingWhenIdle();
 
             Components.drain(1);
 

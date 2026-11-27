@@ -2582,6 +2582,42 @@ public class testStationSettingsWindow
     }
 
     /**
+     * The Importance row's (i) says which way the number counts, in both states: at the default (a station whose importance
+     * is unset, so the text read is `flyPriorityNoneNow`) and with a number typed (`flyPriorityNow`).
+     *
+     * Each also says a negative number makes a last choice, not "ranks after 0" (MT-1102).
+     *
+     * MUTATION: drop the negative sentence or the Routing Logic name from `flyPriorityChange`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testThePriorityMarkSaysAHigherImportanceIsPreferred() throws Exception
+    {
+        TileKey unset = stationsOn(PAGE).stream().filter(each -> Components.onTheEventThread(() ->
+            session.getPointProperty(each, "priority") == null)).findFirst()
+            .orElseThrow(() -> new AssertionError("precondition: every station has an importance set"));
+        StationSettingsWindow window = StationDoors.open(panel, unset);
+
+        StationDoors.current(window);
+
+        String said = "A higher number makes autonomy prefer this station";
+        String negative = "a negative one makes it a last choice";
+        String logic = "Routing Logic";
+        String atDefault = Components.onTheEventThread(() -> window.flyoverForTest("priority"));
+
+        assertTrue(atDefault.contains("the default") && atDefault.contains(said) && atDefault.contains(negative) && atDefault.contains(logic),
+            "the Importance (i) at the default does not say which way the number counts and what a negative one does");
+
+        StationDoors.typeAndEnter(window, "station.priority", "4");
+
+        String typed = Components.onTheEventThread(() -> window.flyoverForTest("priority"));
+
+        assertTrue(typed.contains("4.") && !typed.contains("the default") && typed.contains(said) && typed.contains(negative) && typed.contains(logic),
+            "the Importance (i) with a number typed does not say which way the number counts and what a negative one does");
+
+        StationDoors.close(window);
+    }
+
+    /**
      * A click on a station opens its Station Settings and changes no arrow, even one an older version's setup left on it
      * (Adam: "have may depart just control the arrows on the station", OB-472); May depart shows that arrow, live.
      *
@@ -4000,10 +4036,9 @@ public class testStationSettingsWindow
     }
 
     /**
-     * The picture draws no green arrow on the station's square (Adam: "make sure that station popup also doesn't show
-     * the red/green arrows on the station track", OB-472), and a red one only at a side May depart shuts:
-     * TopMainR1, allowing its one way in, wears none (OB-494), and one way toward its side A draws red at its side B
-     * alone.
+     * Whatever the diagram's options, the picture draws a green arrow on the station's square at each side trains may
+     * leave by and a red one only at a side May depart shuts (MT-1106): TopMainR1, allowing its one way in, wears no way
+     * in (OB-494); open both ways it draws green at both sides, one way toward its side A green at A and red at B.
      *
      * MUTATION: have `StationPicture.show` give the station no marks, and this fails.
      */
@@ -4014,22 +4049,352 @@ public class testStationSettingsWindow
 
         StationSettingsWindow window = StationDoors.open(panel, square);
 
+        String[] road = Components.onTheEventThread(() -> new String[] {
+            String.valueOf(session.getRoutes(square).values().iterator().next().getA()),
+            String.valueOf(session.getRoutes(square).values().iterator().next().getB())});
+
         assertWays(window, set());
+        assertEquals(sidesDrawnIn(window, ONE_WAY_GREEN), set(road), "a station leaving both ways lacks a green arrow");
         assertEquals(sidesDrawnIn(window, CLOSED_RED), set(), "a station leaving both ways wears a red arrow");
 
         StationDoors.close(window);
 
         restrictAsAFileWould(square, Direction.TOWARD_A);
 
-        String shut = Components.onTheEventThread(() ->
-            String.valueOf(session.getRoutes(square).values().iterator().next().getB()));
-
         window = StationDoors.open(panel, square);
 
-        assertEquals(sidesDrawnIn(window, ONE_WAY_GREEN), set(), "a one-way station wears a green arrow");
-        assertEquals(sidesDrawnIn(window, CLOSED_RED), set(shut), "a one-way station's red arrow is not at the side it shuts");
+        assertEquals(sidesDrawnIn(window, ONE_WAY_GREEN), set(road[0]), "a one-way station's green arrow is not at the side"
+            + " it leaves by");
+        assertEquals(sidesDrawnIn(window, CLOSED_RED), set(road[1]), "a one-way station's red arrow is not at the side it"
+            + " shuts");
 
         StationDoors.close(window);
+    }
+
+    /**
+     * The picture draws every red and green arrow, square for square, under each choice of the diagram's two arrow options
+     * (MT-1106): the station's own, a next square's every arm.  A one-way station, a next switch
+     * with an arm off the station's road, and one with a red there.  A next square wears its greens whatever the options,
+     * as the picture's controls, and one that follows its run is left out: the diagram draws that on the run's first square.
+     *
+     * MUTATION: have `StationPicture.show` draw the station's square with no green, or keep only a next square's roads that
+     * meet the station, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testThePictureDrawsEveryArrowWhateverTheOptions() throws Exception
+    {
+        java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+        String restricted = prefs.get(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, null);
+        String allowed = prefs.get(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, null);
+
+        restrictAsAFileWould(Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "TopMainR1")),
+            Direction.TOWARD_A);
+
+        try
+        {
+            for (boolean[] options : new boolean[][] {{true, false}, {true, true}, {false, true}, {false, false}})
+            {
+                prefs.putBoolean(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, options[0]);
+                prefs.putBoolean(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, options[1]);
+
+                for (String name : new String[] {"TopMainR1", "TopR1ParkLong", "BottomSecondary"})
+                {
+                    TileKey station = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, name));
+
+                    StationSettingsWindow window = StationDoors.open(panel, station);
+
+                    try
+                    {
+                        assertEquals(arrowsIn(window, station, true), arrowsIn(window, station, false), name + "'s picture"
+                            + " leaves out arrows, with restrictions " + options[0] + " and allowed " + options[1]);
+                    }
+                    finally
+                    {
+                        StationDoors.close(window);
+                    }
+                }
+            }
+        }
+        finally
+        {
+            if (restricted == null) prefs.remove(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS);
+            else prefs.put(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, restricted);
+
+            if (allowed == null) prefs.remove(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS);
+            else prefs.put(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, allowed);
+        }
+    }
+
+    /**
+     * With Display Allowed Directions ticked, a station that lets trains leave every way draws its green arrows in the
+     * picture, as on the diagram (MT-1106); a click on its square steps May depart, with the hand and the tooltip; one
+     * with a way shut keeps its greens beside the red.
+     *
+     * MUTATION: have `SessionRuns.staticAnnotations` leave out an open station's greens, or key the click on the painted
+     * arrows, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAnOpenStationDrawsItsGreenInThePictureAndTakesTheClick() throws Exception
+    {
+        java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+        String[] keys = {TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS};
+        String[] kept = {prefs.get(keys[0], null), prefs.get(keys[1], null)};
+
+        TileKey square = aStationWhereMayDepart();
+
+        prefs.putBoolean(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, true);
+        prefs.putBoolean(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, true);
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+        StationSettingsWindow second = null;
+
+        try
+        {
+            assertFalse(arrowsIn(window, square, true).get("SQUARE").startsWith("G[] "), "an open station's picture draws no"
+                + " green: " + arrowsIn(window, square, true).get("SQUARE"));
+
+            String[] hover = new String[3];
+            int first = Components.onTheEventThread(() -> departList(window).getSelectedIndex());
+
+            routedClick(window, "DEPART", hover);
+            StationDoors.current(window);
+
+            assertNotEquals((int) Components.onTheEventThread(() -> departList(window).getSelectedIndex()), first,
+                "a click on the station did not step May depart");
+            assertTrue(hover[2] != null && hover[2].contains(I18n.t("autosetup.ui.stationPicDepart")), "the station's tooltip"
+                + " is " + hover[2]);
+            assertTrue(Components.onTheEventThread(() -> HandPointer.isHand(StationDoors.part(window, "station.picture.ways",
+                javax.swing.JComponent.class).getCursor())), "no hand over the station");
+        }
+        finally
+        {
+            StationDoors.close(window);
+        }
+
+        try
+        {
+            restrictAsAFileWould(square, Direction.TOWARD_A);
+
+            second = StationDoors.open(panel, square);
+
+            assertFalse(arrowsIn(second, square, true).get("SQUARE").startsWith("G[] "), "a restricted station's picture lost"
+                + " its green arrows");
+            assertEquals(arrowsIn(second, square, true), arrowsIn(second, square, false), "the picture draws other arrows"
+                + " than the diagram on a restricted station");
+        }
+        finally
+        {
+            if (second != null) StationDoors.close(second);
+
+            for (int key = 0; key < keys.length; key++)
+            {
+                if (kept[key] == null) prefs.remove(keys[key]);
+                else prefs.put(keys[key], kept[key]);
+            }
+        }
+    }
+
+    /**
+     * With both of the diagram's arrow options off, the picture's station still draws its green and red arrows (MT-1106).
+     *
+     * MUTATION: have `StationPicture.drawStation` ask the diagram's two options again, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testThePictureDrawsTheStationsArrowsWithTheOptionsOff() throws Exception
+    {
+        java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+        String restricted = prefs.get(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, null);
+        String allowed = prefs.get(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, null);
+
+        TileKey station = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "TopMainR1"));
+
+        restrictAsAFileWould(station, Direction.TOWARD_A);
+
+        prefs.putBoolean(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, false);
+        prefs.putBoolean(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, false);
+
+        StationSettingsWindow window = StationDoors.open(panel, station);
+
+        try
+        {
+            String drawn = arrowsIn(window, station, true).get("SQUARE");
+
+            assertTrue(!drawn.startsWith("G[] ") && !drawn.endsWith("R[]"), "with both options off the picture's station"
+                + " lacks a green or a red arrow: " + drawn);
+        }
+        finally
+        {
+            StationDoors.close(window);
+
+            if (restricted == null) prefs.remove(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS);
+            else prefs.put(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, restricted);
+
+            if (allowed == null) prefs.remove(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS);
+            else prefs.put(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, allowed);
+        }
+    }
+
+    /**
+     * A click on the station in the picture steps May depart to its list's next answer, through the list, round every
+     * answer and back to the first, and the picture's red arrow follows each step (OB-511; Adam: "when clicking the
+     * arrows on the station in the station editor, can we get it to cycle the "can depart" dropdown options?").  The
+     * pointer over it is the hand, and its tooltip says what the click does.
+     *
+     * MUTATION: have `StationSettingsWindow.departNext` leave the list alone, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAClickOnTheStationStepsMayDepart() throws Exception
+    {
+        TileKey square = aStationWhereMayDepart();
+        RouteId road = onlyRoad(square);
+
+        org.traincontrol.automationui.TilePorts.Route route = Components.onTheEventThread(() -> session.getRoutes(square).get(road));
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        try
+        {
+            javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
+
+            int answers = Components.onTheEventThread(() -> departList(window).getItemCount());
+            int first = Components.onTheEventThread(() -> departList(window).getSelectedIndex());
+
+            assertTrue(answers >= 3, "precondition: May depart offers " + answers + " answers");
+
+            for (int step = 1; step <= answers; step++)
+            {
+                String[] hover = new String[3];
+
+                routedClick(window, "DEPART", hover);
+                StationDoors.current(window);
+
+                assertTrue(hover[2] != null && hover[2].contains(I18n.t("autosetup.ui.stationPicDepart")), "the station's tooltip"
+                    + " is " + hover[2]);
+                assertTrue(Components.onTheEventThread(() -> HandPointer.isHand(block.getCursor())), "no hand over the station");
+
+                int now = (first + step) % answers;
+
+                assertEquals((int) Components.onTheEventThread(() -> departList(window).getSelectedIndex()), now, "click "
+                    + step + " did not step May depart to its next answer");
+
+                Direction way = wayOf(square, road);
+
+                assertEquals(way, meant(square, road, departShows(window)), "the station does not run as May depart says");
+
+                Set<String> shut = way == Direction.BOTH ? set() : set(String.valueOf(way == Direction.TOWARD_A ? route.getB()
+                    : route.getA()));
+
+                assertEquals(sidesDrawnIn(window, CLOSED_RED), shut, "the picture's red arrow after click " + step);
+            }
+        }
+        finally
+        {
+            StationDoors.close(window);
+        }
+    }
+
+    /**
+     * Where May depart is grayed, at a track end, a click on the station changes neither the list nor the setup, and its
+     * tooltip gives the (i)'s reason (OB-511).
+     *
+     * MUTATION: have `StationSettingsWindow.departNext` step a grayed list too, and this fails on the tooltip: the grayed list puts a step back before the click returns, so only the tooltip shows it.
+     */
+    @Test(timeOut = 120000)
+    public void testAGrayedMayDepartIsNotSteppedByAClick() throws Exception
+    {
+        TileKey square = aPlainStationWhere(each -> session.deadEndSide(each) != null && leavesBothWays(each),
+            "at the end of a line");
+
+        String end = Components.onTheEventThread(() -> String.valueOf(session.deadEndSide(square)));
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        try
+        {
+            assertFalse(StationDoors.live(window, "station.depart.0"), "precondition: May depart is live at a track end");
+
+            Object shown = departShows(window);
+            String before = setup();
+            String[] hover = new String[3];
+
+            routedClick(window, "DEPART", hover);
+
+            StationDoors.current(window);
+
+            assertEquals(departShows(window), shown, "a click stepped a grayed May depart");
+            assertEquals(setup(), before, "a click on a station with May depart grayed changed the setup");
+            assertTrue(hover[2] != null && hover[2].contains(I18n.f("autosetup.ui.flyDepartForced", I18n.t("autosetup.ui.side"
+                + end))), "the tooltip does not say why: " + hover[2]);
+        }
+        finally
+        {
+            StationDoors.close(window);
+        }
+    }
+
+    /** May depart's first list. */
+    private static javax.swing.JComboBox<?> departList(StationSettingsWindow window)
+    {
+        return Components.named(window, "station.depart.0", javax.swing.JComboBox.class);
+    }
+
+    /** Each picture square's arrows by side, as the picture draws them or as the diagram's pass does; a follower left out. */
+    private static Map<String, String> arrowsIn(StationSettingsWindow window, TileKey station, boolean picture) throws Exception
+    {
+        javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
+
+        return Components.onTheEventThread(() ->
+        {
+            BufferedImage drawn = drawnOn(block);
+
+            Map<String, String> out = new java.util.TreeMap<>();
+
+            for (Map.Entry<String, java.awt.Shape> each : window.pictureMarksForTest().entrySet())
+            {
+                if (!each.getKey().startsWith("SQUARE")) continue;
+
+                boolean own = each.getKey().equals("SQUARE");
+
+                TileKey square = own ? station
+                    : station.beside(org.traincontrol.automationui.TilePorts.Side.valueOf(each.getKey().substring(7)));
+
+                if (session.followsItsRun(square)) continue;
+
+                if (picture)
+                {
+                    out.put(each.getKey(), arrowSides(drawn, (java.awt.Rectangle) each.getValue()));
+
+                    continue;
+                }
+
+                org.traincontrol.automationui.TileAnnotation diagram = session.staticAnnotations(
+                    java.util.Collections.singleton(square), true, true).get(square);
+
+                BufferedImage alone = new BufferedImage(60, 60, BufferedImage.TYPE_INT_RGB);
+
+                java.awt.Graphics2D g = alone.createGraphics();
+
+                g.setColor(Color.WHITE);
+                g.fillRect(0, 0, alone.getWidth(), alone.getHeight());
+
+                if (diagram != null) diagram.paint(g, alone.getWidth(), alone.getHeight());
+
+                g.dispose();
+
+                out.put(each.getKey(), arrowSides(alone, new java.awt.Rectangle(0, 0, alone.getWidth(), alone.getHeight())));
+            }
+
+            return out;
+        });
+    }
+
+    /** The sides of a square that green and red arrow pixels lie nearest to, as "G[..] R[..]". */
+    private static String arrowSides(BufferedImage image, java.awt.Rectangle at)
+    {
+        return "G" + sidesIn(image, at, ONE_WAY_GREEN) + " R" + sidesIn(image, at, CLOSED_RED);
     }
 
     /**
@@ -4598,6 +4963,179 @@ public class testStationSettingsWindow
 
         StationDoors.close(window);
     }
+
+    /**
+     * Opened from the track diagram, a click that lets trains leave the station along its next square carries on past
+     * the plain sensor at that run's end as the session's rule does (MT-1068), after a notice owned by Station
+     * Settings, with every square past the run held lit on the track diagram while it asks and put out after; Carry
+     * On sets them (D194).
+     *
+     * MUTATION: have `AutonomyEditorPanel.light` leave the track diagram's squares unlit, or have `nextSquare` pass
+     * `offer` false, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAClickOnANextSquareCarriesOnAlongTheLine() throws Exception
+    {
+        closeTheEditor();
+
+        TileKey[] found = aLineThatCarriesOn();
+        org.traincontrol.automationui.TilePorts.Side side = sideBetween(found[0], found[1]);
+        org.json.JSONObject start = Components.onTheEventThread(() -> session.snapshotSetup());
+        Set<TileKey> further = Components.onTheEventThread(() ->
+            session.alongTheLine(found[1], onlyRoad(found[1]), Direction.BOTH).keySet());
+
+        assertTrue(further.contains(found[2]), "precondition: opening the run carries on to nothing past the sensor");
+
+        Map<TileKey, Set<String>> wanted = new LinkedHashMap<>();
+
+        Components.onTheEventThread(() -> session.setRunDirection(found[1], onlyRoad(found[1]), Direction.BOTH, true));
+        for (TileKey each : further) wanted.put(each, armsInForce(each));
+        Components.onTheEventThread(() -> session.restoreSetup(start));
+
+        StationSettingsWindow window = openedFromTheDiagramsMenu(found[0]);
+        Set<TileKey> lit = new LinkedHashSet<>();
+
+        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("autosetup.ui.buttonCarryOn")))
+            .looking(dialog ->
+        {
+            for (TileKey each : further)
+            {
+                if (ui.getDiagramTileRegistry().labelsFor(each).stream().anyMatch(label -> label.isFlashOutstanding()))
+                {
+                    lit.add(each);
+                }
+            }
+        }))
+        {
+            clickOn(window, "NEXT." + side + "." + side);
+            StationDoors.current(window);
+
+            assertEquals(answering.questions().size(), 1, "the click did not ask about the squares past the run");
+            assertSame(answering.questions().get(0).owner, window, "the notice is not owned by Station Settings");
+        }
+
+        assertEquals(lit, further, "the squares past the run were not lit on the track diagram while it asked");
+        assertFalse(Components.onTheEventThread(() -> ui.getDiagramTileRegistry().labelsFor(found[2]).stream()
+            .anyMatch(label -> label.isFlashOutstanding())), "the track diagram stayed lit after the notice");
+
+        for (TileKey each : further)
+        {
+            assertEquals(armsInForce(each), wanted.get(each), each + " was set otherwise than the rule");
+        }
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * In the autonomy editor the picture's notice outlines the run and every square past it to change, and offers Carry
+     * On, This Run Alone and Cancel: Cancel changes nothing, and This Run Alone sets the run and nothing past it (D194).
+     *
+     * MUTATION: have `AutonomyEditorPanel.alongTheLine` answer This Run Alone as Carry On, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testThePicturesNoticeOffersThisRunAloneAndCancel() throws Exception
+    {
+        TileKey[] found = aLineThatCarriesOn();
+        org.traincontrol.automationui.TilePorts.Side side = sideBetween(found[0], found[1]);
+        Set<TileKey> run = Components.onTheEventThread(() ->
+            new LinkedHashSet<>(session.getGraph().runOf(found[1]).getTiles()));
+        Set<TileKey> lit = new LinkedHashSet<>(run);
+        lit.addAll(Components.onTheEventThread(() ->
+            session.alongTheLine(found[1], onlyRoad(found[1]), Direction.BOTH).keySet()));
+        Map<TileKey, Set<String>> before = new LinkedHashMap<>();
+        for (TileKey each : lit) before.put(each, armsInForce(each));
+
+        StationSettingsWindow window = StationDoors.open(panel, found[0]);
+        Set<TileKey> outlined = new LinkedHashSet<>();
+        List<Answering.Question> asked = new java.util.ArrayList<>();
+
+        for (String answer : new String[] {I18n.t("ui.cancel"), I18n.t("autosetup.ui.buttonThisRunAlone")})
+        {
+            try (Answering answering = Answering.start(message -> Answering.press(answer)).looking(dialog ->
+            {
+                for (TileKey each : lit) if (panel.isOutlined(each)) outlined.add(each);
+            }))
+            {
+                clickOn(window, "NEXT." + side + "." + side);
+                StationDoors.current(window);
+                asked.addAll(answering.questions());
+            }
+
+            for (TileKey each : lit)
+            {
+                boolean set = answer.equals(I18n.t("autosetup.ui.buttonThisRunAlone")) && run.contains(each);
+                assertEquals(!armsInForce(each).equals(before.get(each)), set, each + " changed or not after " + answer);
+            }
+        }
+
+        assertEquals(asked.size(), 2, "the picture did not ask each time");
+        assertEquals(asked.get(0).message, I18n.t("autosetup.ui.alongTheLine"), "the notice's words");
+        assertEquals(asked.get(0).buttons, Arrays.asList(I18n.t("autosetup.ui.buttonCarryOn"),
+            I18n.t("autosetup.ui.buttonThisRunAlone"), I18n.t("ui.cancel")), "the notice's answers");
+        assertEquals(outlined, lit, "the squares to change were not all outlined in the editor while it asked");
+        assertFalse(Components.onTheEventThread(() -> panel.isOutlined(found[2])), "the outline outlived the notice");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * A station with a following square whose run ends, away from the station, at a sensor that is no station with a
+     * run past it, both runs set one way toward the station: {station, square, the square past the sensor, the sensor}.
+     */
+    private static TileKey[] aLineThatCarriesOn()
+    {
+        TileKey[] found = Components.onTheEventThread(() ->
+        {
+            org.traincontrol.automationui.TileGraph graph = session.getGraph();
+
+            for (TileKey each : session.getReducer().getPoints().keySet())
+            {
+                if (!PAGE.equals(each.getPage()) || !session.getStore().isStation(each)) continue;
+
+                for (org.traincontrol.automationui.TilePorts.Side side : SIDES)
+                {
+                    org.traincontrol.automationui.TileGraph.Run run = graph.runOf(each.beside(side));
+
+                    if (run == null || !touches(each, side) || !touches(each.beside(side), side.opposite())) continue;
+
+                    TileKey far = each.equals(run.getStart()) ? run.getEnd()
+                        : each.equals(run.getEnd()) ? run.getStart() : null;
+
+                    if (far == null || far.equals(each) || session.getStore().isStation(far)
+                        || !graph.getTiles().get(far).isFeedback()) continue;
+
+                    for (org.traincontrol.automationui.TilePorts.Side out : SIDES)
+                    {
+                        TileKey past = far.beside(out);
+
+                        if (graph.runOf(past) != null && graph.runOf(past) != run && touches(far, out)
+                            && touches(past, out.opposite()))
+                        {
+                            return new TileKey[] {each, each.beside(side), past, far};
+                        }
+                    }
+                }
+            }
+
+            throw new AssertionError("precondition: no station on " + PAGE + " whose next run ends at a plain sensor with"
+                + " a run past it");
+        });
+
+        runAwayFrom(found[1], sideBetween(found[0], found[1]));
+        Components.onTheEventThread(() ->
+        {
+            org.traincontrol.automationui.TilePorts.Route theirs = session.getRoutes(found[2]).get(onlyRoad(found[2]));
+            boolean aIsTheSensor = theirs.getA() == session.getGraph().sideTowardNeighbour(found[2], found[3]);
+
+            return session.setRunDirection(found[2], onlyRoad(found[2]),
+                aIsTheSensor ? Direction.TOWARD_A : Direction.TOWARD_B);
+        });
+
+        return found;
+    }
+
+    private static final org.traincontrol.automationui.TilePorts.Side[] SIDES =
+        org.traincontrol.automationui.TilePorts.Side.values();
 
     /**
      * From an open run, a click on either arm of a following square shuts that arm on the whole run: the square leaves
@@ -5406,10 +5944,14 @@ public class testStationSettingsWindow
     /** Whether a mark's tooltip gives the reason its click can change nothing. */
     private static boolean refusal(String tip, String key)
     {
-        String side = key.substring(key.length() - 1);
+        List<String> reasons = new java.util.ArrayList<>(Arrays.asList(I18n.t("autosetup.ui.stationPicInKept"),
+            I18n.t("autosetup.ui.stationPicCannot")));
 
-        for (String reason : new String[] {I18n.t("autosetup.ui.stationPicInKept"),
-            I18n.t("autosetup.ui.stationPicCannot"), I18n.f("autosetup.ui.hintOneWayIn", I18n.t("autosetup.ui.side" + side))})
+        // A mark at a side: the station's own ("DEPART") has none
+        if (key.contains(".")) reasons.add(I18n.f("autosetup.ui.hintOneWayIn",
+            I18n.t("autosetup.ui.side" + key.substring(key.length() - 1))));
+
+        for (String reason : reasons)
         {
             if (tip != null && tip.contains(reason)) return true;
         }
@@ -5506,12 +6048,10 @@ public class testStationSettingsWindow
     private static final int TRACE_YELLOW = 0xffd600;
     private static final int TRACE_ORANGE = 0xff9628;
 
-    /** What the picture's station shows: its open ways in, and no green arrow, as it wears no track arrows (OB-472). */
+    /** The open ways in the picture's station shows. */
     private static void assertWays(StationSettingsWindow window, Set<String> in) throws Exception
     {
         assertEquals(Components.onTheEventThread(window::pictureWaysInForTest), in, "the ways in");
-
-        assertEquals(sidesDrawnIn(window, ONE_WAY_GREEN), set(), "the sides of the station a green arrow is drawn at");
     }
 
     /** The sides of the picture's station square that pixels of exactly this color lie nearest to. */
@@ -5520,31 +6060,31 @@ public class testStationSettingsWindow
         javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
 
         return Components.onTheEventThread(() ->
+            sidesIn(drawnOn(block), (java.awt.Rectangle) window.pictureMarksForTest().get("SQUARE"), color));
+    }
+
+    /** The sides of a square of an image that pixels of exactly this color lie nearest to. */
+    private static Set<String> sidesIn(java.awt.image.BufferedImage image, java.awt.Rectangle at, int color)
+    {
+        Set<String> out = new java.util.TreeSet<>();
+
+        for (int y = at.y; y < at.y + at.height; y++)
         {
-            java.awt.image.BufferedImage image = drawnOn(block);
-
-            java.awt.Rectangle at = (java.awt.Rectangle) window.pictureMarksForTest().get("SQUARE");
-
-            Set<String> out = new java.util.TreeSet<>();
-
-            for (int y = at.y; y < at.y + at.height; y++)
+            for (int x = at.x; x < at.x + at.width; x++)
             {
-                for (int x = at.x; x < at.x + at.width; x++)
-                {
-                    if ((image.getRGB(x, y) & 0xffffff) != color) continue;
+                if ((image.getRGB(x, y) & 0xffffff) != color) continue;
 
-                    int[] to = {y - at.y, at.x + at.width - 1 - x, at.y + at.height - 1 - y, x - at.x};
+                int[] to = {y - at.y, at.x + at.width - 1 - x, at.y + at.height - 1 - y, x - at.x};
 
-                    int nearest = 0;
+                int nearest = 0;
 
-                    for (int i = 1; i < 4; i++) if (to[i] < to[nearest]) nearest = i;
+                for (int i = 1; i < 4; i++) if (to[i] < to[nearest]) nearest = i;
 
-                    out.add(new String[] {"N", "E", "S", "W"}[nearest]);
-                }
+                out.add(new String[] {"N", "E", "S", "W"}[nearest]);
             }
+        }
 
-            return out;
-        });
+        return out;
     }
 
     /** A strongly red pixel, as a signal's lamp is and no arrow of a next square is. */

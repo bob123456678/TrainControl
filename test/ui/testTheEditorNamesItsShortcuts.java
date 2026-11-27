@@ -349,7 +349,7 @@ public class testTheEditorNamesItsShortcuts
 
         final boolean[] unloaded = new boolean[1];
 
-        SwingUtilities.invokeAndWait(() -> unloaded[0] = ui.unloadAutonomy());
+        SwingUtilities.invokeAndWait(() -> unloaded[0] = ui.autonomyLifecycle().unloadAutonomy());
 
         settleTheEditor();
 
@@ -610,7 +610,7 @@ public class testTheEditorNamesItsShortcuts
     private static javax.swing.JPopupMenu theTrackMenu(LayoutEditor track, org.traincontrol.gui.LayoutLabel on,
         org.traincontrol.base.LayoutDiagramComponent what) throws Exception
     {
-        final java.lang.reflect.Constructor<?> make = Class.forName("org.traincontrol.gui.layouteditor.LayoutEditorRightclickMenu")
+        final java.lang.reflect.Constructor<?> make = Class.forName("org.traincontrol.gui.layouteditor.LayoutEditorContextMenu")
             .getConstructor(LayoutEditor.class, TrainControlUI.class, org.traincontrol.gui.LayoutLabel.class,
                 org.traincontrol.base.LayoutDiagramComponent.class);
 
@@ -658,7 +658,7 @@ public class testTheEditorNamesItsShortcuts
      * stroke the editor's key handler acts on, with no tooltip that only names it and no binding of its own;
      * every such key is shown somewhere on the menu.
      *
-     * MUTATION: a plain `setAccelerator` in `LayoutEditorRightclickMenu.keyed` (the items bind their keys), or
+     * MUTATION: a plain `setAccelerator` in `LayoutEditorContextMenu.keyed` (the items bind their keys), or
      * `LayoutEditor.REDO_KEY` on Undo, or no `showShortcut` on the Selection submenu's Rotate.
      */
     @Test
@@ -2435,7 +2435,7 @@ public class testTheEditorNamesItsShortcuts
         // THE MAIN WINDOW AS AFTER EVERY EDITOR HAS CLOSED: other claims of this class build editors of their own and put
         // them away with a bare dispose, which does not give Edit back - and a door asked while Edit is gray answers with a
         // dialog that waits on the screen
-        SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
+        SwingUtilities.invokeAndWait(() -> ui.editorWindows().setEditLayoutEnabled(true));
 
         // Every window this claim opens, put away in the finally
         List<LayoutEditor> opened = new ArrayList<>();
@@ -2447,7 +2447,7 @@ public class testTheEditorNamesItsShortcuts
             String says = I18n.t("autosetup.ui.tooltipClickToChangeDirections");
 
             // OPENED AS THE MAIN WINDOW OPENS IT
-            a = openedBy(() -> ui.openAutonomyEditor(new TileKey(PAGE, 1, 1)), null);
+            a = openedBy(() -> ui.editorWindows().openAutonomyEditor(new TileKey(PAGE, 1, 1)), null);
 
             opened.add(a);
 
@@ -2530,7 +2530,7 @@ public class testTheEditorNamesItsShortcuts
 
             assertFalse(from.isDisplayable(), "precondition: the X did not close the editor");
 
-            LayoutEditor c = openedBy(() -> ui.openAutonomyEditor(new TileKey(PAGE, 1, 1)), from);
+            LayoutEditor c = openedBy(() -> ui.editorWindows().openAutonomyEditor(new TileKey(PAGE, 1, 1)), from);
 
             opened.add(c);
 
@@ -2578,7 +2578,7 @@ public class testTheEditorNamesItsShortcuts
             settleTheEditor();
 
             // Edit as every editor closed leaves it, whatever stopped this claim part way
-            SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
+            SwingUtilities.invokeAndWait(() -> ui.editorWindows().setEditLayoutEnabled(true));
 
             // THE CLASS'S EDITOR BACK, as setUpClass built it
             editor = anAutonomyEditor();
@@ -2609,7 +2609,7 @@ public class testTheEditorNamesItsShortcuts
         final LayoutEditor first = editor;
 
         SwingUtilities.invokeAndWait(() -> first.dispose());
-        SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
+        SwingUtilities.invokeAndWait(() -> ui.editorWindows().setEditLayoutEnabled(true));
 
         LayoutEditor a = null;
 
@@ -2623,7 +2623,7 @@ public class testTheEditorNamesItsShortcuts
 
             SwingUtilities.invokeAndWait(() -> ui.setAlwaysOnTop(true));
 
-            a = openedBy(() -> ui.openAutonomyEditor(new TileKey(PAGE, 1, 1)), null);
+            a = openedBy(() -> ui.editorWindows().openAutonomyEditor(new TileKey(PAGE, 1, 1)), null);
 
             assertFalse(ui.isAlwaysOnTop(), "precondition: opening the autonomy editor left the main window on top of it");
 
@@ -2682,7 +2682,7 @@ public class testTheEditorNamesItsShortcuts
 
             SwingUtilities.invokeAndWait(() -> ui.setAlwaysOnTop(onTopWas));
 
-            SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
+            SwingUtilities.invokeAndWait(() -> ui.editorWindows().setEditLayoutEnabled(true));
 
             editor = anAutonomyEditor();
 
@@ -2852,7 +2852,7 @@ public class testTheEditorNamesItsShortcuts
     /** The newest lines of the main window's log, for a failure to say what went wrong. */
     private static String logTop() throws Exception
     {
-        String text = ((javax.swing.JTextArea) Reflect.get(TrainControlUI.class, ui, "debugArea")).getText();
+        String text = ((org.traincontrol.gui.app.LogPanel) Reflect.get(TrainControlUI.class, ui, "logView")).text();
 
         return text.substring(0, Math.min(1500, text.length()));
     }

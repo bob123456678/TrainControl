@@ -153,7 +153,7 @@ public class testTheRefusalsAreAskedAtTheDoors
             "an import writes the setup's shared half under an open editor"},
         {"    public void exportConfiguration()", EDITOR,
             "an export folds the running railway into the setup first"},
-        {"    public void duplicate()", EDITOR,
+        {"    private void copyConfiguration(", EDITOR,
             "a new configuration is written into the setup an open editor holds"},
         {"    public void rename()", EDITOR,
             "renaming the running configuration leaves the editor's Cancel restoring a name the window no longer runs"},
@@ -161,7 +161,7 @@ public class testTheRefusalsAreAskedAtTheDoors
             "deleting resets the session, and the editor's Cancel recreates the configuration"},
         {"    private static void deleteEverything(", EDITOR,
             "deleting the whole setup under an open editor"},
-        {"    boolean unloadAutonomy()", EDITOR,
+        {"    public boolean unloadAutonomy()", EDITOR,
             "Stop Using Autonomy resets the session under an open editor"},
         {"    public boolean refusedWhileRunning()", EDITOR,
             "every door that loads a configuration asks here, and a load saves the setup under an open editor"},
@@ -174,7 +174,7 @@ public class testTheRefusalsAreAskedAtTheDoors
             "the Layout menu's saves and rebuilds commit work an editor has not saved"},
         {"    private static PathOptions gatherPathOptions(", "anEditorIsOpenOrOnItsWay()",
             "the right-click menu gathers on a worker, so it can be built between Edit and the editor showing"},
-        {"    private LayoutRightclickAutonomyMenu(TrainControlUI ui,", "anEditorIsOpenOrOnItsWay()",
+        {"    private DiagramAutonomyContextMenu(TrainControlUI ui,", "anEditorIsOpenOrOnItsWay()",
             "anything done from the right-click menu is overwritten by the editor's own copy of the setup"},
 
         // And the rest.
@@ -195,8 +195,8 @@ public class testTheRefusalsAreAskedAtTheDoors
             "the same, at OK, for a dialog that was open when a run began (RSA-A1)"},
         {"private void syncFullLocStateMenuItemActionPerformed(", AUTONOMY,
             "a full sync rewrites the locomotive database under a running railway"},
-        {"private List<Locomotive> askAboutRenames(Component c, RenameProposals proposals)", AUTONOMY,
-            "the renames a sync asks about rename locomotives in the database a run is driving"},
+        {"static int[] apply(Main ui, Locomotive only, Component c, RenameProposals asked,", AUTONOMY,
+            "the renames the Sync's table applies rename locomotives in the database a run is driving"},
         {"private void deleteLayoutMenuItemActionPerformed(", SETUP + "|" + EDITOR,
             "deleting a page the running railway or an open editor is using"},
         {"    private boolean refusedAsAPageEdit(", SETUP + "|" + EDITOR,
@@ -205,9 +205,9 @@ public class testTheRefusalsAreAskedAtTheDoors
             "combining rewrites several pages into one"},
         {"private void AddRouteButtonActionPerformed(", EDITOR,
             "a route is part of the diagram the editor holds"},
-        {"    void editRoute(String routeName)", EDITOR,
+        {"    public void editRoute(String routeName)", EDITOR + "|refuseWhileEditorOpen(askedFrom)",
             "the same, from the other door - and this one asks from a worker thread, which is why the "
-            + "refusal posts its dialog rather than showing it"},
+            + "refusal posts its dialog rather than showing it; first over the window it was asked from"},
         {"public void doSync(", AUTONOMY,
             "a Central Station sync replaces the databases underneath a running railway"},
         {"    boolean writeNameAndAddress(Component source, Locomotive l,", AUTONOMY,
@@ -219,7 +219,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         // Not the excluded-page label (`openAutonomyEditorIfItCan`): opening with an editor already open is not refused
         // anywhere (`openLayoutEditor` brings that window forward), and asking the refusal first would show "Close the
         // editor first" in exactly the state that item handles.
-        {"    void refreshAutonomyPrompt(", EDITOR,
+        {"    public void refreshAutonomyPrompt(", EDITOR,
             "the banner is a single button drawn before the state it guards against is entered, so it "
             + "cannot grey itself the way the menu does - its Load button asks (loading saves the setup "
             + "under an open editor); its Fix Setup button opens the editor, which brings an open one "
@@ -296,8 +296,8 @@ public class testTheRefusalsAreAskedAtTheDoors
         }
 
         // The two hand doors are classes of their own, read whole.
-        for (String hand : new String[] {"public final class AutoLocomotiveStatus extends",
-            "final class LayoutRightclickAutonomyMenu extends"})
+        for (String hand : new String[] {"public final class AutonomyLocomotiveStatus extends",
+            "final class DiagramAutonomyContextMenu extends"})
         {
             String source = SourceOf.withoutComments(SourceOf.fileDeclaring(hand));
 
@@ -387,9 +387,12 @@ public class testTheRefusalsAreAskedAtTheDoors
         // Over the whole program's code.
         String source = SourceOf.allCode();
 
-        // One of each occurrence is the declaration of the method itself (`refuseWhileAutonomyRunning`'s is `RunGates`';
-        // the doors call it there, with no delegator on the window).
-        int asked = occurrences(source, EDITOR) - 1 + occurrences(source, AUTONOMY) - 1 + occurrences(source, GATE) - 1;
+        // One of each occurrence is the declaration of the method itself (`refuseWhileAutonomyRunning`'s is `RunGates`').
+        // Three more are ManualSync's seam, which is no door of its own: `Main`'s declaration, and the window's one-line
+        // delegator to `RunGates` (its declaration and its one call); `apply`, which calls it, is a declared door.
+        int seam = 3;
+        int asked = occurrences(source, EDITOR) - 1 + occurrences(source, AUTONOMY) - 1 - seam
+            + occurrences(source, GATE) - 1;
 
         // Counted inside the declared doors, not from the list's own arithmetic: two errors can cancel in a total,
         // while reading the bodies names a door that does not ask and counts one that asks twice as two.
@@ -619,7 +622,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         boolean carried = false;
 
         for (java.lang.reflect.Field field : Class.forName(
-            "org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions").getDeclaredFields())
+            "org.traincontrol.gui.DiagramAutonomyContextMenu$PathOptions").getDeclaredFields())
         {
             if (field.getType() == org.traincontrol.automation.Layout.class) carried = true;
         }

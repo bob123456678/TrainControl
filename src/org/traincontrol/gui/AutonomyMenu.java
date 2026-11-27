@@ -86,7 +86,7 @@ public class AutonomyMenu extends JMenu
     /** Autonomy Settings as last built, or null: the one item a run leaves live. */
     private JMenuItem settingsItem;
 
-    private AutonomyViewerPanel actions()
+    private AutonomyConfigurationsPanel actions()
     {
         return ui.getAutonomyViewerPanel();
     }
@@ -171,7 +171,7 @@ public class AutonomyMenu extends JMenu
         // pointed at a JMenu no longer in this popup.
         lastPagesMenu = null;
 
-        final AutonomyViewerPanel actions = actions();
+        final AutonomyConfigurationsPanel actions = actions();
         AutonomySession session = ui.getAutonomySession();
 
         if (actions == null || session == null)
@@ -317,9 +317,9 @@ public class AutonomyMenu extends JMenu
             // And not while trains are running (OB-045): a grayed item says before the click what a refusal says after.
             // While autonomy runs `guardWhileRunning` grays the rest of the menu with it, bar Autonomy Settings and
             // Documentation; this item asks the editor's own refusals as well, at rest, through
-            // `whyAutonomyEditorCannotOpen` as LayoutRightclickAutonomyMenu.addSetupMenu does, rather than re-deriving
+            // `whyAutonomyEditorCannotOpen` as DiagramAutonomyContextMenu.addSetupMenu does, rather than re-deriving
             // them by hand.
-            String editRefusal = ui.whyAutonomyEditorCannotOpen();
+            String editRefusal = ui.editorWindows().whyAutonomyEditorCannotOpen();
             boolean pagesAvailable = edit.getItemCount() > 0;
 
             edit.setEnabled(editRefusal == null && pagesAvailable);
@@ -363,7 +363,7 @@ public class AutonomyMenu extends JMenu
      * Adding a configuration, offered for the very first setup alone (Adam: "One door: do it").  Once one exists,
      * Manage's New Configuration copies it, so a station's rules, the settings and the speeds are never entered twice.
      */
-    private JMenuItem addConfigurationItem(final AutonomyViewerPanel actions)
+    private JMenuItem addConfigurationItem(final AutonomyConfigurationsPanel actions)
     {
         JMenuItem add = item(I18n.t("autosetup.ui.menuInitialize"), () ->
         {
@@ -405,7 +405,7 @@ public class AutonomyMenu extends JMenu
 
             if (session.getStore().getExcludedPages().contains(name)) continue;
 
-            edit.add(item(name, () -> ui.openAutonomyEditorOnPage(name)));
+            edit.add(item(name, () -> ui.editorWindows().openAutonomyEditorOnPage(name)));
         }
 
         return edit;
@@ -415,23 +415,31 @@ public class AutonomyMenu extends JMenu
      * Fills the one Manage list, for the Autonomy menu and the Autonomy tab's Manage button.  Each door keeps its own
      * refusal; what acts on the configuration in use is grayed until one is, Delete (OB-319) only with none to delete.
      */
-    static void addManageItems(java.awt.Container into, final TrainControlUI ui, final AutonomyViewerPanel actions,
+    static void addManageItems(java.awt.Container into, final TrainControlUI ui, final AutonomyConfigurationsPanel actions,
         final AutonomySession session)
     {
         boolean loaded = ui.getActiveDiagramConfiguration() != null;
 
         String needsLoaded = AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipNeedsLoaded"));
 
-        // One door to a new configuration (Adam: "One door: do it"): a copy of the one chosen, asking whether where the
-        // trains stand and the timetable come too.  Add a Configuration is offered only before there is one.
+        // New starts blank (no locomotives, no timetable); Save As duplicates the one in use.  Add a Configuration is
+        // offered only before there is one.
         JMenuItem copy = item(I18n.t("autosetup.ui.menuNewConfiguration"), () ->
         {
-            actions.duplicate();
+            actions.newConfiguration();
 
             ui.autonomyMenuActed();
         });
 
         copy.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipNewConfiguration")));
+
+        JMenuItem saveAs = item(I18n.t("autosetup.ui.menuSaveAsConfiguration"), () ->
+        {
+            actions.saveAs();
+            ui.autonomyMenuActed();
+        });
+
+        saveAs.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipSaveAsConfiguration")));
 
         JMenuItem rename = item(I18n.t("autosetup.ui.menuRenameConfiguration"), () ->
         {
@@ -458,7 +466,7 @@ public class AutonomyMenu extends JMenu
 
         JMenuItem exportItem = item(I18n.t("autosetup.ui.btnExportConfiguration"), () -> actions.exportConfiguration());
 
-        for (JMenuItem each : new JMenuItem[] {copy, rename, exportItem})
+        for (JMenuItem each : new JMenuItem[] {saveAs, rename, exportItem})
         {
             each.setEnabled(loaded);
 
@@ -473,7 +481,7 @@ public class AutonomyMenu extends JMenu
 
         // Stopping without deleting, the smaller of the two things wanted here: every other path replaces one
         // configuration with another.
-        JMenuItem unload = item(I18n.t("autosetup.ui.menuUnloadAutonomy"), () -> ui.unloadAutonomy());
+        JMenuItem unload = item(I18n.t("autosetup.ui.menuUnloadAutonomy"), () -> ui.autonomyLifecycle().unloadAutonomy());
 
         unload.setEnabled(loaded);
         unload.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.hintUnloadAutonomy")));
@@ -483,7 +491,7 @@ public class AutonomyMenu extends JMenu
 
         forget.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.hintDeleteSetup")));
 
-        for (Component part : new Component[] {copy, rename, deleteOne,
+        for (Component part : new Component[] {copy, new JPopupMenu.Separator(), saveAs, rename, deleteOne,
             new JPopupMenu.Separator(), importItem, exportItem, new JPopupMenu.Separator(),
             unload, forget})
         {

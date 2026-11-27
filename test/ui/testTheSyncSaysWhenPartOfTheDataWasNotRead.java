@@ -4,15 +4,19 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
+import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 import support.Answering;
+import support.Components;
 import support.Reflect;
 import support.Settle;
 import support.StandInStation;
@@ -23,9 +27,9 @@ import support.StationRig;
  * (FR-169): the dialog the Sync menu raises, and the notice a start-up raises.  The sync is made through the real window
  * against a stand-in CS3, and the questions the program asks are read as the user would see them.
  *
- * MUTATION: have TrainControlUI.doSync always pick "ui.infoSyncCompleteItemsAdded" for its text, and the sync with an
- * unreadable route list says "Sync complete. Items added: 0" and nothing more; drop the `view.showSyncPartial()` call
- * of MarklinControlStation.init, and the start-up says nothing.
+ * MUTATION: have ManualSync.saySynced always pass `partial` false, and the sync with an unreadable route list
+ * says everything matches; drop the `view.showSyncPartial()` call of MarklinControlStation.init, and the start-up says
+ * nothing; show a partial read as information in ManualSync.saySynced, and it is not a warning.
  *
  * @author Adam
  */
@@ -71,16 +75,201 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
                     String partial = answering.asked().get(1);
                     String notice = answering.asked().get(2);
 
-                    assertEquals(plain, I18n.f("ui.infoSyncCompleteItemsAdded", "0"), "a sync that read everything says so");
-                    assertEquals(partial, I18n.f("ui.infoSyncCompletePartial", "0"));
+                    assertEquals(plain, I18n.t("ui.infoSyncNothingDiffers"), "a sync that read everything says so");
+                    assertEquals(answering.questions().get(0).type, JOptionPane.INFORMATION_MESSAGE,
+                        "all read, not information");
+                    assertEquals(answering.questions().get(1).type, JOptionPane.WARNING_MESSAGE,
+                        "part read, not a warning");
+                    assertEquals(answering.questions().get(0).title, I18n.t("sync.ui.title"), "the message's title");
+                    assertEquals(partial, I18n.t("ui.infoSyncComplete") + "\n\n" + I18n.t("ui.infoSyncPartial"));
                     assertTrue(partial.contains("could not be read") && partial.contains("log"), "it says part was not read: " + partial);
-                    assertTrue(partial.contains("Items added: 0"), "and still says what was added: " + partial);
+                    assertFalse(partial.contains(I18n.t("ui.infoSyncNothingDiffers")), "and never that all matches: "
+                        + partial);
                     assertEquals(notice, I18n.t("ui.startupSyncPartial"));
                     assertTrue(notice.contains("could not be read") && notice.contains("sync again"), "start-up says so: " + notice);
                 }
             }
             finally
             {
+                SwingUtilities.invokeAndWait(ui::dispose);
+            }
+        }
+    }
+
+    /**
+     * A start whose layout folder will not read, with the station answering, keeps the folder: the preference still
+     * names it, the station's layout stands in as the layout in use for the session, the start says so once by the
+     * folder's name, the exit keeps the folder's page windows remembered, and the next start reads the folder once it
+     * is back (FR-245).
+     *
+     * MUTATION: in `MarklinControlStation.syncLayoutsFromConfiguredSource`, empty the preference again at a start; or
+     * leave out the `view.showLayoutFolderHeld` call of `MarklinControlStation.init`; or `!layoutFolderHeld()` in
+     * `TrainControlUI.saveLayoutTitles`; each fails its own assertion.
+     */
+    @Test(timeOut = 240000)
+    @SuppressWarnings("unchecked")
+    public void testAStartWhoseLayoutFolderWillNotReadKeepsItAndSaysSo() throws Exception
+    {
+        final java.io.File root = Files.createTempDirectory("tc-start-unread").toFile();
+        final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+        final boolean rememberWas = prefs.getBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, true);
+        String titles = null;
+
+        // An empty folder: its index cannot be read
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0));
+            StationRig rig = new StationRig(root, StandInStation.cs3("260", INFO), true, true,
+                new java.io.File(root, "none")))
+        {
+            TrainControlUI ui = (TrainControlUI) rig.model.getGUI();
+            String folder = prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+            String said = I18n.f("layout.ui.warnFolderUnreadAtStart", folder);
+
+            try
+            {
+                startUpSyncDone(ui);
+                assertFalse(folder.isEmpty(), "the start let the layout folder go");
+                assertTrue(Components.waitFor(() -> answering.asked().contains(said), 30000), "the start did not say"
+                    + " the folder could not be read: " + answering.asked());
+                Components.settle();
+                assertEquals(answering.asked().stream().filter(said::equals).count(), 1L, "not said once");
+                assertEquals(answering.questions().get(answering.asked().indexOf(said)).type,
+                    JOptionPane.WARNING_MESSAGE, "not as a warning");
+                assertTrue(rig.model.getLayoutList().contains("Startpackung") && ui.isRemoteLayout(),
+                    "the station's layout does not stand in: " + rig.model.getLayoutList());
+
+                // The exit
+                titles = TrainControlUI.LAYOUT_TITLES_PREF + "_" + ((java.util.Map<String, Integer>) Reflect.get(
+                    TrainControlUI.class, ui, "layoutSizes")).values().iterator().next();
+                prefs.putBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, true);
+                prefs.put(titles, "1 - Main");
+                SwingUtilities.invokeAndWait(() -> ui.saveState(false));
+
+                assertEquals(prefs.get(titles, null), "1 - Main", "the exit forgot the folder's page windows");
+                assertEquals(prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, ""), folder, "the exit let the folder"
+                    + " go");
+
+                // The next start, the folder back
+                support.Trees.copyForTheRun(new java.io.File("test/test_layout"), new java.io.File(folder));
+                rig.model.clearLayouts();
+
+                assertTrue(rig.model.syncWithCS2() >= 0, "the next start's sync failed");
+                assertTrue(rig.model.getLayoutList().contains("1 - Main") && !ui.isRemoteLayout(), "the folder back,"
+                    + " the next start did not read it: " + rig.model.getLayoutList());
+            }
+            finally
+            {
+                prefs.putBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, rememberWas);
+                if (titles != null) prefs.remove(titles);
+                SwingUtilities.invokeAndWait(ui::dispose);
+            }
+        }
+    }
+
+    /**
+     * While a start holds an unreadable layout folder, Switch to Central Station Layout is offered and lets the folder
+     * go, as for any local folder: the preference is emptied and nothing is held, so the next start says nothing
+     * (FR-245).
+     *
+     * MUTATION: in `TrainControlUI.repaintPathLabel`, keep the switch gray while the folder is held; or leave out the
+     * `layoutFolderHeld = null` of `MarklinControlStation.syncLayoutsFromConfiguredSource`; each fails its assertion.
+     */
+    @Test(timeOut = 240000)
+    public void testSwitchToTheStationsLayoutLetsAHeldFolderGo() throws Exception
+    {
+        final java.io.File root = Files.createTempDirectory("tc-start-held").toFile();
+        final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+        final java.lang.reflect.Field simulation = Reflect.field(org.traincontrol.marklin.MarklinControlStation.class,
+            "simulation");
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0));
+            StationRig rig = new StationRig(root, StandInStation.cs3("260", INFO), true, true,
+                new java.io.File(root, "none")))
+        {
+            TrainControlUI ui = (TrainControlUI) rig.model.getGUI();
+            javax.swing.JMenuItem door = (javax.swing.JMenuItem) Reflect.field(TrainControlUI.class,
+                "switchCSLayoutMenuItem").get(ui);
+            String folder = prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+
+            try
+            {
+                startUpSyncDone(ui);
+                assertEquals(rig.model.getLayoutFolderHeld(), folder, "precondition: the start held no folder");
+                ui.repaintPathLabel();
+                Components.settle();
+                assertEquals(Components.onTheEventThread(door::getToolTipText), I18n.t(
+                    "ui.main.toolbar.tooltip.centralStationNotConnected"), "gray in a simulation, it says the wrong why");
+
+                // A station on the wire, which the stand-in is and a simulation is not
+                simulation.setBoolean(rig.model, false);
+                rig.model.setNetworkCommState(true);
+                ui.repaintPathLabel();
+                Components.settle();
+                assertTrue(Components.onTheEventThread(door::isEnabled), "the switch is gray while the folder is"
+                    + " held: " + door.getToolTipText());
+
+                SwingUtilities.invokeAndWait(door::doClick);
+                assertTrue(Settle.until(() -> prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "").isEmpty(), 30000),
+                    "the switch kept the folder");
+                assertTrue(syncEnded(ui), "the switch's sync did not end; log " + logTail(rig));
+                assertTrue(Settle.until(() -> rig.model.getLayoutList().contains("Startpackung"), 30000),
+                    "the station's layout is not shown: " + rig.model.getLayoutList());
+                assertNull(rig.model.getLayoutFolderHeld(), "the folder is still held, so the next start says so again");
+                assertTrue(ui.isRemoteLayout(), "the station's layout is not the one in use");
+            }
+            finally
+            {
+                simulation.setBoolean(rig.model, true);
+                SwingUtilities.invokeAndWait(ui::dispose);
+            }
+        }
+    }
+
+    /**
+     * A start with no station whose layout folder will not read keeps the folder: nobody there takes the default No,
+     * and the question, as the start asks it, names the folder and starts on No, which keeps it too (FR-245).
+     *
+     * MUTATION: in `TrainControlUI.createAndApplyEmptyLayout`, take Yes unattended (`proceed = true`), or ask the old
+     * question starting on Yes; each fails its assertion.
+     */
+    @Test(timeOut = 240000)
+    public void testAStartWithNoStationNamesTheUnreadFolderAndKeepsIt() throws Exception
+    {
+        final java.io.File root = Files.createTempDirectory("tc-start-alone").toFile();
+        final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+        final String[] no = {null};
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(message.equals(no[0]) ? 1 : 0));
+            StationRig rig = new StationRig(root, StandInStation.cs3("260", INFO), true, false,
+                new java.io.File(root, "none")))
+        {
+            TrainControlUI ui = (TrainControlUI) rig.model.getGUI();
+            String folder = prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+
+            try
+            {
+                startUpSyncDone(ui);
+                Components.settle();
+                assertFalse(folder.isEmpty(), "precondition: no layout folder set");
+                assertEquals(prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, ""), folder, "the start let the folder"
+                    + " go for a demo layout; said " + answering.asked());
+
+                // Somebody there is asked, and answers No
+                no[0] = I18n.f("layout.ui.confirmDemoLayoutFolderUnread", folder,
+                    new java.io.File(TrainControlUI.DEMO_LAYOUT_OUTPUT_PATH).getAbsolutePath());
+                int before = answering.asked().size();
+                TrainControlUI.setUnattended(false);
+                SwingUtilities.invokeLater(() -> ui.createAndApplyEmptyLayout(TrainControlUI.DEMO_LAYOUT_OUTPUT_PATH,
+                    true));
+                assertTrue(answering.awaitAsked(before + 1, 30000), "nothing was asked");
+                assertEquals(answering.asked().get(before), no[0], "the question does not name the folder");
+                assertEquals(answering.questions().get(before).startsOn, String.valueOf(TrainControlUI.YES_NO_OPTS[1]),
+                    "the question does not start on No");
+                Components.settle();
+                assertEquals(prefs.get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, ""), folder, "No let the folder go");
+            }
+            finally
+            {
+                TrainControlUI.setUnattended(true);
                 SwingUtilities.invokeAndWait(ui::dispose);
             }
         }
@@ -103,7 +292,13 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
 
         AtomicBoolean inFlight = (AtomicBoolean) Reflect.field(TrainControlUI.class, "syncInFlight").get(ui);
 
-        return Settle.until(() -> !inFlight.get(), 60000);
+        if (!Settle.until(() -> !inFlight.get(), 60000)) return false;
+
+        // The flag clears inside the event that ran the sync: the rest of that event, then what it posted (the start-up's
+        // diagram refresh, which says "no track diagram" if a claim's sync has the layouts cleared when it runs)
+        Components.drain(2);
+
+        return true;
     }
 
     /** The last lines the model logged, for a failure's message. */
@@ -201,7 +396,7 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
                     I18n.t("ui.syncFailedCloseButton")));
                 assertEquals(failure.title, I18n.t("ui.syncFailedTitle"));
                 assertSame(failure.owner, ui, "on the main window");
-                assertEquals(answering.asked().get(1), I18n.f("ui.infoSyncCompleteItemsAdded", "0"),
+                assertEquals(answering.asked().get(1), I18n.t("ui.infoSyncNothingDiffers"),
                     "Retry synced again, and the station answered");
 
                 // Close: no further sync
@@ -220,10 +415,10 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
     }
 
     /**
-     * A locomotive's own Sync (Locomotive Settings) over a station whose route list cannot be read says on that window
-     * what the main Sync says: part was left as it was.
+     * A locomotive's own Sync (Locomotive Settings) says on that window what the main Sync says: that all matches, or,
+     * over a station whose route list cannot be read, that part was left as it was.
      *
-     * MUTATION: leave out the `saidTheSyncWasPartial` call of `TrainControlUI.syncLocomotiveFrom`, and it says nothing.
+     * MUTATION: leave out the `saySynced` call of `TrainControlUI.syncLocomotiveFrom`, and it says nothing.
      */
     @Test
     public void testALocomotiveSyncSaysWhenPartWasNotRead() throws Exception
@@ -240,18 +435,28 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
 
             try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
             {
-                // Everything read: nothing to say
-                ui.syncLocomotiveFrom(loc, window, null);
-                assertTrue(syncEnded(ui), "the first sync did not end; log " + logTail(rig));
-                assertFalse(answering.awaitAsked(1, 3000), "a sync that read everything said: " + answering.asked());
+                // Waited for by `after`: the sync starts only once a worker has read the station
+                CountDownLatch first = new CountDownLatch(1);
+                CountDownLatch second = new CountDownLatch(1);
+
+                // Everything read: everything matches
+                ui.syncLocomotiveFrom(loc, window, first::countDown);
+                assertTrue(first.await(60, TimeUnit.SECONDS), "the first sync did not end; log " + logTail(rig));
+                assertTrue(answering.awaitAsked(1, 60000), "a sync that read everything said nothing");
+                assertEquals(answering.asked().get(0), I18n.t("ui.infoSyncNothingDiffers"));
+                assertEquals(answering.questions().get(0).type, JOptionPane.INFORMATION_MESSAGE,
+                    "all read, not information");
 
                 replaced.put("/app/api/automatics", "<html>not json</html>".getBytes(StandardCharsets.UTF_8));
-                ui.syncLocomotiveFrom(loc, window, null);
-                assertTrue(answering.awaitAsked(1, 60000), "a sync that read part said nothing on the window; log "
+                ui.syncLocomotiveFrom(loc, window, second::countDown);
+                assertTrue(second.await(60, TimeUnit.SECONDS), "the second sync did not end; log " + logTail(rig));
+                assertTrue(answering.awaitAsked(2, 60000), "a sync that read part said nothing on the window; log "
                     + logTail(rig));
-                assertTrue(syncEnded(ui), "the second sync did not end; log " + logTail(rig));
-                assertEquals(answering.asked().get(0), I18n.f("ui.infoSyncCompletePartial", "0"));
-                assertSame(answering.questions().get(0).owner, window, "not on the window that asked");
+                assertEquals(answering.asked().get(1), I18n.t("ui.infoSyncComplete") + "\n\n"
+                    + I18n.t("ui.infoSyncPartial"));
+                assertSame(answering.questions().get(1).owner, window, "not on the window that asked");
+                assertEquals(answering.questions().get(1).type, JOptionPane.WARNING_MESSAGE,
+                    "part read, not a warning");
             }
             finally
             {

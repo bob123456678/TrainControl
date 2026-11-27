@@ -7,7 +7,7 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JTabbedPane;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 
@@ -22,13 +22,13 @@ public final class SettingsWindow
     }
 
     /** The Locomotive Settings window on screen, or null. */
-    public static LocomotiveSettingsFrame showing()
+    public static LocomotiveSettingsWindow showing()
     {
         return Components.onTheEventThread(() ->
         {
             for (Window w : Window.getWindows())
             {
-                if (w instanceof LocomotiveSettingsFrame && w.isShowing()) return (LocomotiveSettingsFrame) w;
+                if (w instanceof LocomotiveSettingsWindow && w.isShowing()) return (LocomotiveSettingsWindow) w;
             }
 
             return null;
@@ -36,9 +36,9 @@ public final class SettingsWindow
     }
 
     /** Waits for the window to be on screen and finished loading its icons. */
-    public static LocomotiveSettingsFrame awaited() throws Exception
+    public static LocomotiveSettingsWindow awaited() throws Exception
     {
-        LocomotiveSettingsFrame[] found = new LocomotiveSettingsFrame[1];
+        LocomotiveSettingsWindow[] found = new LocomotiveSettingsWindow[1];
 
         if (!Components.waitFor(() -> (found[0] = showing()) != null, 8000)) return null;
 
@@ -51,7 +51,7 @@ public final class SettingsWindow
     /** A part of the window by the name the program gave it. */
     public static <T extends Component> T part(String name, Class<T> type)
     {
-        LocomotiveSettingsFrame w = showing();
+        LocomotiveSettingsWindow w = showing();
 
         return w == null ? null : Components.named(w.getContentPane(), name, type);
     }
@@ -75,7 +75,7 @@ public final class SettingsWindow
     }
 
     /** Opens the window through the program's own door, as a menu item does. */
-    public static boolean open(TrainControlUI ui, Locomotive loc, LocomotiveSettingsFrame.Tab tab, Integer function)
+    public static boolean open(TrainControlUI ui, Locomotive loc, LocomotiveSettingsWindow.Tab tab, Integer function)
     {
         boolean opened = Components.onTheEventThread(() -> ui.openLocomotiveSettings(loc, tab, function));
 
@@ -91,7 +91,7 @@ public final class SettingsWindow
         {
             for (Window w : Window.getWindows())
             {
-                if (w instanceof LocomotiveSettingsFrame) w.dispose();
+                if (w instanceof LocomotiveSettingsWindow) w.dispose();
             }
 
             return null;
@@ -110,7 +110,7 @@ public final class SettingsWindow
     /** Presses Cancel and answers Discard when it asks about typing not saved: Cancel that throws the typing away. */
     public static void cancelDiscarding()
     {
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 1;
+        LocomotiveSettingsWindow.unsavedAnswerForTest = 1;
 
         try
         {
@@ -118,7 +118,7 @@ public final class SettingsWindow
         }
         finally
         {
-            LocomotiveSettingsFrame.unsavedAnswerForTest = null;
+            LocomotiveSettingsWindow.unsavedAnswerForTest = null;
         }
     }
 
@@ -408,7 +408,7 @@ public final class SettingsWindow
         final javax.swing.JPopupMenu[] tile = new javax.swing.JPopupMenu[1];
 
         javax.swing.SwingUtilities.invokeAndWait(
-            () -> tile[0] = new org.traincontrol.gui.locomotive.RightClickSelectorMenu(ui, null, loc));
+            () -> tile[0] = new org.traincontrol.gui.locomotive.LocomotiveSelectorContextMenu(ui, null, loc));
 
         AbstractButton settings = Components.withText(tile[0], I18n.t("loc.ui.menuLocomotiveSettings"));
 

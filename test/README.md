@@ -7,6 +7,7 @@ The folders, by what a test is FOR rather than by what it happens to import.
 | `core/` | The model, the protocol, the files, the graph. What the program **is**. | 191 |
 | `ui/` | Drives a window or a Swing component. Needs a display, or tests view logic. | 125 |
 | `regression/` | Written for one named defect, to stop it coming back. | 155 |
+| `unit/` | Unit tests: one class through its own API, with no window, station, port or railway. All run in one JVM. | 4 |
 | `support/` | Not tests. Fixtures the others use. | 66 |
 | `examples/` | Not tests. Sample programs for the Java API, which `core/testTheApiExamplesRun` runs and AutomationAPI.md points to. | 7 |
 | `layouts/` | Not tests either. Checked-in **railways**, one folder per shape (see below). | 7 |
@@ -29,6 +30,21 @@ green run.
 (`testLocomotiveAddressRules` exists because address 0 got past a dialog).  If you cannot name the defect, it probably
 belongs in `core/`.
 
+**`unit/`**: one class on its own, through its own API.  It never builds `TrainControlUI` or a
+`MarklinControlStation`, binds no port and opens no layout; a Swing component built alone is fine, laid out and painted
+without a window.  A class that tests package-private members lives in a package folder below `unit/`, in that package
+(`unit/org/traincontrol/gui/testDiagramHighlights.java` is `package org.traincontrol.gui;`); the others are `package
+unit;`.  `ant test-unit` runs the whole folder and its package folders in one JVM in seconds, and the battery runs it
+class by class like every other folder.  `testEveryTestIsInTheBattery` refuses a file here that, comments aside, names `TrainControlUI`,
+`MarklinControlStation`, `NetworkProxy`, `DatagramSocket`, `LayoutSandbox` or `Scenario`, or uses a `support` helper
+other than `Components` and `Pixels` (the list is in that class: add a helper there only after reading it and finding it
+builds no window, station or sandbox).  Under `ant test` a unit failure still lets the per-class list run, and the build
+fails at the end.
+
+**Unit or integration?**  Every test in `core/`, `ui/` and `regression/` that drives a window or a flow is an
+integration test.  A new class gets both: a unit test class of its own in `unit/` for its rules, and at least one
+integration test that goes red when the class's main behavior breaks in the real window.
+
 **The import is not the rule.**  `testLayoutEditorBulkEdits` imports `LayoutEditor` and lives in `regression/`,
 because it tests the setup-follows-the-track rule.  A test is filed by what it is about.
 
@@ -36,11 +52,14 @@ because it tests the setup-follows-the-track rule.  A test is filed by what it i
 
 ## Three things that are easy to get wrong
 
-**They are in packages.**  Every file starts `package core;`, `package ui;` or `package regression;`.  A class in a
-named package **cannot see a class in the default package**, so fixtures live in `support/` and are imported.
+**They are in packages.**  Every file starts `package core;`, `package ui;`, `package regression;` or `package unit;`
+(or, in a package folder of `unit/`, that package).
+A class in a named package **cannot see a class in the default package**, so fixtures live in `support/` and are
+imported.
 
-**`build.xml` needs a line per class**, or the class does not run.  It runs one class per JVM, because `NetworkProxy`
-binds a fixed UDP port and only one control station can exist per JVM.  The macro matches on `**/<class>.java`, so the
+**`build.xml` needs a line per class**, or the class does not run (a `unit/` class excepted: `test-unit` runs its
+folder).  It runs one class per JVM, because `NetworkProxy` binds a fixed UDP port and only one control station can
+exist per JVM.  The macro matches on `**/<class>.java`, so the
 folders do not change those entries.
 
 **The power state is set by an ECHO, not by `go()`.**  `model.go()` and `model.stop()` send a command and return; the

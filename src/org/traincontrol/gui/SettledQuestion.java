@@ -3,7 +3,7 @@ package org.traincontrol.gui;
 /**
  * A question answered off the event thread whose caller can wait for the answer to settle: the settle and the bounded
  * await, on a monitor the owner keeps (FR-136).  The answer and what counts as outstanding stay with each user; the
- * ask and its loop are `CoalescedAsk`'s.  The three hooks are protected, so outside the package only `settle` and
+ * ask and its loop are `CoalescedWorker`'s.  The three hooks are protected, so outside the package only `settle` and
  * `awaitSettled` call them, under the lock.
  */
 public abstract class SettledQuestion

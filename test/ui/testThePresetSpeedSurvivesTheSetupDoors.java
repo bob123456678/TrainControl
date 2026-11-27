@@ -18,7 +18,7 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.LocomotiveSettingsWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -388,7 +388,7 @@ public class testThePresetSpeedSurvivesTheSetupDoors
      * name.  Untouched, a load still reads that speed; a speed saved in the window wins over the stale copy at a load
      * that does not fold and at the rebuild from the setup.
      *
-     * MUTATION: leave `ui.recordPresetSpeedInTheSetup` out of `LocomotiveSettingsFrame.write`, and this fails.
+     * MUTATION: leave `ui.recordPresetSpeedInTheSetup` out of `LocomotiveSettingsWindow.write`, and this fails.
      */
     @Test
     public void testAnOldSetupsStoredSpeedDoesNotUndoTheWindowsSave() throws Exception
@@ -930,7 +930,7 @@ public class testThePresetSpeedSurvivesTheSetupDoors
         // Something else to start from, so that the Save has a change to write
         train.setPreferredSpeed(speed == 1 ? 2 : 1);
 
-        assertTrue(SettingsWindow.open(ui, train, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "the window did not open");
+        assertTrue(SettingsWindow.open(ui, train, LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null), "the window did not open");
         assertNotNull(SettingsWindow.awaited());
 
         Components.onTheEventThread(() ->

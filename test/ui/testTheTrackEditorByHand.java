@@ -25,7 +25,7 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.layouteditor.LayoutEditorAddressPopup;
 import org.traincontrol.gui.LayoutGrid;
 import org.traincontrol.gui.LayoutLabel;
-import org.traincontrol.gui.LayoutPopupUI;
+import org.traincontrol.gui.LayoutPopupWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -148,7 +148,7 @@ public class testTheTrackEditorByHand
      * turnout turned with Control+R and a straight put on an empty square, both done to the page object the window
      * holds (FR-216).
      *
-     * MUTATION: in `LayoutPopupUI.sameSquares`, compare `page` with `this.layout` (`TrainControlUI.sameText`) instead
+     * MUTATION: in `LayoutPopupWindow.sameSquares`, compare `page` with `this.layout` (`TrainControlUI.sameText`) instead
      * of `drawnText`, and the window keeps its old drawing.
      */
     @Test(timeOut = 200000)
@@ -158,8 +158,8 @@ public class testTheTrackEditorByHand
 
         int was = saved().getComponent(SWITCH_X, SWITCH_Y).getOrientation();
 
-        final LayoutPopupUI window = AskingWindows.openThePage(ui);
-        LayoutPopupUI fresh = null;
+        final LayoutPopupWindow window = AskingWindows.openThePage(ui);
+        LayoutPopupWindow fresh = null;
 
         try
         {
@@ -207,7 +207,7 @@ public class testTheTrackEditorByHand
     }
 
     /** The picture `window` draws on the cell where `reference` draws the square at x,y; null where it has none. */
-    private static int[] picture(final LayoutPopupUI window, final LayoutPopupUI reference, final int x, final int y)
+    private static int[] picture(final LayoutPopupWindow window, final LayoutPopupWindow reference, final int x, final int y)
     {
         return Components.onTheEventThread(() ->
         {
@@ -216,8 +216,8 @@ public class testTheTrackEditorByHand
 
             if (there == null) return null;
 
-            int[] cell = ((LayoutGrid) Reflect.get(LayoutPopupUI.class, reference, "grid")).getCoordinates(there);
-            LayoutGrid grid = (LayoutGrid) Reflect.get(LayoutPopupUI.class, window, "grid");
+            int[] cell = ((LayoutGrid) Reflect.get(LayoutPopupWindow.class, reference, "grid")).getCoordinates(there);
+            LayoutGrid grid = (LayoutGrid) Reflect.get(LayoutPopupWindow.class, window, "grid");
             LayoutLabel l = grid.getValueAt(cell[0], cell[1]);
 
             return l == null || l.getWidth() <= 0 || l.getHeight() <= 0 ? null : support.Pixels.asPainted(l);

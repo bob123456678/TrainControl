@@ -51,7 +51,7 @@ public class testEveryMessageKeyIsAskedFor
         "autosetup.ui.side",
         "autosetup.ui.facing",
 
-        // The path preference list and its tooltips, in AutonomyViewerPanel
+        // The path preference list and its tooltips, in AutonomyConfigurationsPanel
         "autolayout.ui.pathPreference",
         "autolayout.ui.tooltip.pathPreference",
 
@@ -66,7 +66,7 @@ public class testEveryMessageKeyIsAskedFor
         "autosetup.ui.tipAllowEveryPath",
         "autosetup.ui.tipClearLocomotives",
 
-        // The legacy import's two counted sentences, <key> + I18n.countForm in AutonomyViewerPanel's
+        // The legacy import's two counted sentences, <key> + I18n.countForm in AutonomyConfigurationsPanel's
         // sharedSquaresSentence and leftBehindSentence.  The plural is spelled there as a literal; the singular and
         // Polish forms are named whole here, because a bare prefix would shield the two Heading keys too
         "autosetup.ui.importSharedSquaresOne",
@@ -84,7 +84,7 @@ public class testEveryMessageKeyIsAskedFor
         "autosetup.ui.whyCanGoOne",
         "autosetup.ui.whyCanGoFew",
 
-        // RouteEditorFrame.settingLabel -> route.ui.setting.<word>, the setting words a route stores (OB-367)
+        // RouteEditorWindow.settingLabel -> route.ui.setting.<word>, the setting words a route stores (OB-367)
         "route.ui.setting.",
     };
 

@@ -782,7 +782,7 @@ public class testMessageBundles
         }
 
         // and something has to supply the {1} they now ask for: the viewer's findingRows, which both panels' lists use
-        String source = "public class AutonomyViewerPanel extends JPanel";
+        String source = "public class AutonomyConfigurationsPanel extends JPanel";
         String text = SourceOf.fileDeclaring(source);
 
         // The FIRST TWO arguments, and no claim about what follows them (OB-171).
@@ -792,8 +792,8 @@ public class testMessageBundles
             + "text \"{1}\" (OB-153)");
 
         assertTrue(SourceOf.fileDeclaring("public class AutonomyEditorPanel extends JPanel")
-            .contains("AutonomyViewerPanel.findingRows("),
-            "the editor's findings list no longer comes from AutonomyViewerPanel.findingRows, so the check above no "
+            .contains("AutonomyConfigurationsPanel.findingRows("),
+            "the editor's findings list no longer comes from AutonomyConfigurationsPanel.findingRows, so the check above no "
             + "longer covers its {1} (OB-153)");
     }
     /**
@@ -1196,8 +1196,8 @@ public class testMessageBundles
 
     /**
      * The question before closing TrainControl with trains running names everything the exit leaves unsaved: where the
-     * trains are, any change to the autonomy settings, and the timetable recorded since the last save (the exit still
-     * saves nothing while anything runs, and says so).
+     * trains stand, any change to the autonomy settings, and the timetable's progress and edits since the last save (the
+     * exit still saves nothing while anything runs, and says so).
      *
      * MUTATION: leave the settings out of the English sentence again, and this fails.
      */
@@ -1210,7 +1210,7 @@ public class testMessageBundles
 
         assertNotNull(said, "precondition: the bundle has no exit warning");
 
-        assertTrue(said.contains("Where they are") && said.contains("timetable"), "the exit warning no longer says"
+        assertTrue(said.contains("where they stand") && said.contains("timetable"), "the exit warning no longer says"
             + " where the trains are and the timetable are lost: " + said);
 
         assertTrue(said.contains("autonomy settings"), "the exit warning does not say that changes to the autonomy"

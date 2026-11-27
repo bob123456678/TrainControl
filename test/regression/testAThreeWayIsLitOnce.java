@@ -13,7 +13,7 @@ import org.traincontrol.base.ConditionOutline;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.LayoutLabel;
-import org.traincontrol.gui.RouteEditorFrame;
+import org.traincontrol.gui.RouteEditorWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
@@ -27,7 +27,8 @@ import support.Reflect;
  * Highlight on Diagram lights a three-way once, as commanded, where a route commands one of its decoders and checks the
  * other (OB-286): a square both commanded and checked is drawn as commanded, the stronger statement.
  *
- * MUTATION: light the checked accessories without leaving out the squares already commanded, and this fails.
+ * MUTATION: have `DiagramHighlights.highlightAccessories` light the checked accessories without leaving out the
+ * squares already commanded, and this fails.
  *
  * @author Adam
  */
@@ -47,7 +48,7 @@ public class testAThreeWayIsLitOnce
         support.LayoutSandbox sandbox = null;
 
         MarklinControlStation model = null;
-        final RouteEditorFrame[] frame = new RouteEditorFrame[1];
+        final RouteEditorWindow[] frame = new RouteEditorWindow[1];
 
         try
         {
@@ -116,12 +117,12 @@ public class testAThreeWayIsLitOnce
 
             SwingUtilities.invokeAndWait(() ->
             {
-                frame[0] = new RouteEditorFrame(ui, ROUTE, m.getRoute(ROUTE));
+                frame[0] = new RouteEditorWindow(ui, ROUTE, m.getRoute(ROUTE));
                 frame[0].setConditionRowsForTest(Arrays.asList(ConditionOutline.Row.condition(0,
                     RouteCommand.RouteCommandAccessory(first + 1, protocol, true))));
             });
 
-            final java.lang.reflect.Method highlight = Reflect.method(RouteEditorFrame.class, "highlightOnDiagram");
+            final java.lang.reflect.Method highlight = Reflect.method(RouteEditorWindow.class, "highlightOnDiagram");
 
             SwingUtilities.invokeLater(() ->
             {

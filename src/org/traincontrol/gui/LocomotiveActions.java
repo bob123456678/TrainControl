@@ -35,7 +35,7 @@ import org.traincontrol.base.RouteCommand;
  *
  * Every field stays on `TrainControlUI`; the dialogs are owned by the clicked component or the window.
  */
-final class LocomotiveActions
+public final class LocomotiveActions
 {
     private final TrainControlUI ui;
 
@@ -73,6 +73,7 @@ final class LocomotiveActions
         try
         {
             boolean renaming = newName != null && !l.getName().equals(newName);
+            this.ui.autonomyLifecycle.forgetUnrepaired();
 
             if (renaming)
             {
@@ -129,7 +130,7 @@ final class LocomotiveActions
                     if (RunGates.refuseALinkOrSyncWhileEditorOpen(this.ui, source)) return false;
 
                     // A new address or decoder is not written under a train with a stored speed, power on or off
-                    if (LocomotiveSettings.hasSpeed(this.ui, l))
+                    if (LocomotiveEditRule.hasSpeed(this.ui, l))
                     {
                         JOptionPane.showMessageDialog(source, I18n.f("loc.ui.stopToEdit", l.getName()));
                         return false;
@@ -149,29 +150,9 @@ final class LocomotiveActions
 
             if (renaming) this.ui.getModel().renameLoc(l.getName(), newName);
 
-            // Refresh everything
-            this.ui.clearCopyTarget();
-            this.ui.repaintLoc(true, null);
-            this.ui.repaintMappings(null, false);
-            this.ui.refreshRouteList();
-            this.ui.getLocSelector().refreshLocSelectorList();
-
-            // Update locomotive on graph
-            if (this.ui.getModel().hasAutoLayout())
-            {
-                this.ui.getModel().getAutoLayout().sanitizeMultiUnits(l);
-                this.ui.getModel().getAutoLayout().refreshUI();
-
-                // And the station labels on the track diagram (OB-081): refreshUI redraws the autonomy
-                // surfaces, but the labels beside a station are written by updateStationLabels, which every
-                // other door that changes which locomotive stands where calls.
-                this.ui.updateVisiblePoints();
-                this.ui.repaintAutoLocList(false);
-
-                // And the timetable, which names locomotives too: the guard inside `repaintTimetable` is keyed
-                // on a hash a rename cannot move (MT-149).
-                this.ui.repaintTimetable();
-            }
+            refreshAfterEdit(Collections.singletonList(l));
+            this.ui.autonomyLifecycle.sayAfterRenames(source, null, Collections.emptyList(),
+                I18n.t("autolayout.ui.tabAutonomy"));
 
             return true;
         }
@@ -183,6 +164,23 @@ final class LocomotiveActions
 
             return false;
         }
+    }
+
+    /** Redraws every window that names locomotives, after any door's rename or new address; checks `changed`'s units. */
+    void refreshAfterEdit(List<? extends Locomotive> changed)
+    {
+        this.ui.clearCopyTarget();
+        this.ui.repaintLoc(true, null);
+        this.ui.repaintMappings(null, false);
+        this.ui.routeListPanel.refreshRouteList();
+        this.ui.getLocSelector().refreshLocSelectorList();
+        if (!this.ui.getModel().hasAutoLayout()) return;
+        for (Locomotive l : changed) this.ui.getModel().getAutoLayout().sanitizeMultiUnits(l);
+        this.ui.getModel().getAutoLayout().refreshUI();
+        // refreshUI leaves the station labels (OB-081) and the timetable (MT-149), which name locomotives too
+        this.ui.updateVisiblePoints();
+        this.ui.repaintAutoLocList(false);
+        this.ui.timetableTab().repaintTimetable();
     }
 
     /**
@@ -575,7 +573,7 @@ final class LocomotiveActions
         }
     }
 
-    void deleteLoc(String value, MouseEvent evt)
+    public void deleteLoc(String value, MouseEvent evt)
     {
         deleteLoc(value, evt != null ? (Component) evt.getSource() : this.ui.dialogParent());
     }
@@ -609,7 +607,7 @@ final class LocomotiveActions
         this.answered = NOT_ASKED;
 
         // The moving rule, at every door (FR-048), and asked again at Yes.
-        if (LocomotiveSettings.refuseIfNotEditable(this.ui, this.ui.getModel().getLocByName(value), source)) return false;
+        if (LocomotiveEditRule.refuseIfNotEditable(this.ui, this.ui.getModel().getLocByName(value), source)) return false;
 
         if (this.ui.getModel().isAutonomyRunning())
         {
@@ -659,7 +657,7 @@ final class LocomotiveActions
 
             Locomotive l = this.ui.getModel().getLocByName(value);
 
-            if (LocomotiveSettings.refuseIfNotEditable(this.ui, l, source)) return false;
+            if (LocomotiveEditRule.refuseIfNotEditable(this.ui, l, source)) return false;
 
             if (l != null)
             {
@@ -699,7 +697,7 @@ final class LocomotiveActions
                 // on the track diagram (OB-081), and `repaintTimetable()` is MT-149.  A locomotive leaving the database
                 // changes which name is right, as a rename does.
                 this.ui.updateVisiblePoints();
-                this.ui.repaintTimetable();
+                this.ui.timetableTab().repaintTimetable();
                 
                 // Remove locomotive from graph
                 if (this.ui.getModel().hasAutoLayout())

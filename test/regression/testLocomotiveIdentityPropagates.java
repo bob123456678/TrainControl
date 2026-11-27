@@ -443,7 +443,7 @@ public class testLocomotiveIdentityPropagates
         // The locomotive status panel's defect: a Locomotive handed to a combo box of names.
         assertTrue(isSuspectLine("combo.setSelectedItem(point.getHomeLoc());"),
             "the scan no longer flags getHomeLoc() handed to setSelectedItem() - the shape of the "
-            + "HomeLocomotiveMenu defect it was written for - so it would not have caught the original "
+            + "ReturnHomeMenuItem defect it was written for - so it would not have caught the original "
             + "bug either");
 
         // The permitted crossing: taking the name first must NOT be flagged.
@@ -459,7 +459,7 @@ public class testLocomotiveIdentityPropagates
     private boolean isSuspectLine(String line)
     {
         // An accessor that answers a LOCOMOTIVE, used anywhere a NAME is expected: a Locomotive handed to
-        // setSelectedItem on a combo box of names (gui/HomeLocomotiveMenu.java) compiles, Swing ignores it, and the
+        // setSelectedItem on a combo box of names (gui/ReturnHomeMenuItem.java) compiles, Swing ignores it, and the
         // dialog showed "(none)" for a station that had a home, so OK cleared the assignment.  No equals is involved.
         if (!line.contains("getHomeLoc()") && !line.contains("getCurrentLocomotive()")
             && !line.contains("getBlockLocomotive()")) return false;
@@ -656,70 +656,69 @@ public class testLocomotiveIdentityPropagates
     @Test
     public void testRenamingALocomotiveRewritesTheStationLabels() throws Exception
     {
-        // EVERY renameLoc call site, not the first: there are two (the Locomotive Settings window's write, and accepting a name the Central
-        // Station proposes), near-copies, and a rule that stops at the first match would call the pair covered after
+        // EVERY renameLoc call site, not the first: there are three (the Locomotive Settings window's write, accepting a name
+        // the Central Station proposes, and the CSV import's Merge and Replace), near-copies, and a rule that stops at the first match would call the pair covered after
         // fixing one.  Asked of the whole program, naming the doors that make the two calls.
         int found = SourceOf.occurrences("model.renameLoc(") + SourceOf.occurrences("getModel().renameLoc(");
 
-        assertEquals(found, 2,
-            "expected two renameLoc call sites in the window - the settings write and the Central "
-            + "Station proposal. Found " + found + ", so either a door has been added without "
+        assertEquals(found, 3,
+            "expected three renameLoc call sites - the settings write, the Central "
+            + "Station proposal and the CSV import's Merge and Replace. Found " + found + ", so either a door has been added without "
             + "this rule being told, or one has gone and the rule is watching less than it says");
 
         List<String> doors = new ArrayList<>();
 
         doors.add(withoutComments(SourceOf.declaration("    boolean writeNameAndAddress(Component source, Locomotive l,")));
         doors.add(withoutComments(SourceOf.declaration(
-            "private List<Locomotive> askAboutRenames(Component c, RenameProposals proposals)")));
+            "static String renamed(TrainControlUI ui, Component c, RenameProposals.Row r)")));
 
         int counted = 0;
 
         for (String door : doors) counted += door.split("(?:model|getModel\\(\\))\\.renameLoc\\(", -1).length - 1;
 
-        assertEquals(counted, 2, "the two doors named here no longer hold both of the program's renameLoc calls");
+        assertEquals(counted, 2, "the two doors named here no longer hold two of the program's renameLoc calls");
 
-        // The refresh block that follows it, bounded by the catch that closes the method, or by the method's end; NOT
-        // by the next javadoc, which `withoutComments` has already removed, so the window would become the rest of the
+        // The CSV import renames in `apply`; its door, after `apply`, is where the follow-up the other doors do must be
+        String csvApply = withoutComments(SourceOf.declaration(
+            "    public Result apply(ViewListener model, Plan plan, Map<Row, Choice> choices)"));
+        String csvDoor = withoutComments(SourceOf.declaration("    static void open(TrainControlUI ui, Component source)"));
+
+        assertTrue(csvApply.contains("model.renameLoc("), "the CSV import's Merge and Replace are no longer the third renameLoc call");
+
+        // Each door calls the one refresh after its rename, before the catch that closes the method (or its end); NOT
+        // the next javadoc, which `withoutComments` has already removed, so the window would become the rest of the
         // file and the rule would pass whatever the code did.
         List<String> silent = new ArrayList<>();
 
-        List<String> quiet = new ArrayList<>();
+        doors.add(csvDoor);
 
         for (String body : doors)
         {
-            int at = Math.max(body.indexOf("model.renameLoc("), body.indexOf("getModel().renameLoc("));
-
-            // The refresh block that follows, bounded as above.
+            int at = Math.max(Math.max(body.indexOf("model.renameLoc("), body.indexOf("getModel().renameLoc(")),
+                body.indexOf("csv.apply("));
             int caught = body.indexOf("catch (Exception", at);
             int end = caught < 0 ? body.length() : caught;
 
-            assertTrue(end > at && end - at < 6000,
+            assertTrue(at > 0 && end > at && end - at < 6000,
                 "a refresh block could not be bounded, so this rule would read the rest of the file "
                 + "and pass whatever the code did");
 
-            String block = body.substring(at, end);
-
-            if (!block.contains("updateVisiblePoints"))
-            {
-                silent.add(body.substring(at, Math.min(at + 160, end)).trim());
-            }
-
-            // AND THE TIMETABLE, which names locomotives too: the fix went to the guard inside repaintTimetable and
-            // neither rename door was made to CALL it.
-            if (!block.contains("repaintTimetable"))
-            {
-                quiet.add(body.substring(at, Math.min(at + 160, end)).trim());
-            }
+            if (!body.substring(at, end).contains("refreshAfterEdit(")) silent.add(body.substring(at, Math.min(at + 160,
+                end)).trim());
         }
 
-        assertEquals(silent, new ArrayList<String>(),
-            "a locomotive rename does not rewrite the station labels, so the track diagram goes on "
-            + "showing the old name beside the train until something unrelated repaints it (OB-081): "
-            + silent);
+        assertEquals(silent, new ArrayList<String>(), "a locomotive rename door does not call the shared refresh after"
+            + " it, so the track diagram's labels or the timetable go on showing the old name: " + silent);
 
-        assertEquals(quiet, new ArrayList<String>(),
-            "a locomotive rename does not repaint the timetable, so it goes on naming a locomotive "
-            + "that no longer exists under that name - which is MT-149, whose fix was to the guard "
-            + "inside repaintTimetable and never to the doors that have to call it: " + quiet);
+        // AND THE TIMETABLE, which names locomotives too: the fix went to the guard inside repaintTimetable and no
+        // rename door was made to CALL it (MT-149); the station labels likewise (OB-081).
+        String refresh = withoutComments(SourceOf.declaration("    void refreshAfterEdit("));
+
+        assertTrue(refresh.contains("updateVisiblePoints()"), "a locomotive rename does not rewrite the station labels,"
+            + " so the track diagram goes on showing the old name beside the train until something unrelated repaints it"
+            + " (OB-081): " + refresh);
+        assertTrue(refresh.contains("repaintTimetable()"), "a locomotive rename does not repaint the timetable, so it"
+            + " goes on naming a locomotive that no longer exists under that name - which is MT-149, whose fix was to the"
+            + " guard inside repaintTimetable and never to the doors that have to call it: " + refresh);
     }
 }

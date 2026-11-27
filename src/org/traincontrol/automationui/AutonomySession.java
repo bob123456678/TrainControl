@@ -4,11 +4,9 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.Locomotive;
 
-import java.awt.AWTEvent;
 import java.awt.EventQueue;
 import java.io.File;
 import java.io.IOException;
-import java.lang.ref.WeakReference;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -5584,46 +5582,43 @@ public class AutonomySession
         return new LinkedHashSet<>(tilesWithAHome());
     }
 
-    /**
-     * The last check's findings, kept for the rest of the event that asked (one click asked twenty times) while nothing
-     * `whatTheCheckReads` covers changes; off the event thread nothing is kept.
-     */
-    private WeakReference<AWTEvent> findingsEvent;
-
-    /** What the check read when the kept findings were worked out. */
+    /** What the check read for the kept findings, kept across events until it changes (OB-459). */
     private List<Object> findingsKey;
 
     /** The kept findings; copied out, so each caller's list is its own. */
     private List<AutonomyChecks.Finding> findingsKept;
 
-    /**
-     * Everything check() reads that can change, as a key equal only while all of it is as it was: graph, reduction,
-     * index, setup snapshot, railway and trains, placed lengths, every square.
-     */
+    /** Everything check() and its callees read that can change; a new input to the check belongs here too. */
     private List<Object> whatTheCheckReads()
     {
         List<Object> key = new ArrayList<>();
 
+        // Only `rebuild` replaces the graph and the reduction; point-property doors derive the index anew too
         key.add(new Same(graph));
-        key.add(new Same(reducer));
         key.add(new Same(stationIndex));
         key.add(store.snapshotSetup().toString());
+        key.add(pagesStale);
+        key.add(I18n.getLocale());
 
-        Layout running = runningLayout == null ? null : runningLayout.get();
-
-        key.add(new Same(running));
-
+        // The railway is read only through `railwayTrains`
         StringBuilder trains = new StringBuilder();
+        Map<String, Object[]> railway = railwayTrains();
 
-        for (Map.Entry<String, Object[]> train : railwayTrains().entrySet())
+        for (Map.Entry<String, Object[]> train : railway.entrySet())
         {
             trains.append(train.getKey()).append(Arrays.deepToString(train.getValue())).append('\n');
         }
 
-        for (Map.Entry<TileKey, String> standing : trainsWhereTheyStand().entrySet())
+        // Placed trains a railway train hides still count for `modelsAnyLength`
+        Set<String> named = new LinkedHashSet<>(railway.keySet());
+
+        named.addAll(placedLocomotives().values());
+
+        named.remove(null);
+
+        for (String train : trainLengths == null ? Collections.<String>emptySet() : named)
         {
-            trains.append(standing.getKey()).append(' ').append(standing.getValue()).append('=')
-                .append(trainLengths == null ? null : trainLengths.apply(standing.getValue())).append('\n');
+            trains.append(train).append('=').append(trainLengths.apply(train)).append('\n');
         }
 
         key.add(trains.toString());
@@ -5632,7 +5627,7 @@ public class AutonomySession
 
         for (LayoutDiagram page : pages)
         {
-            key.add(new Same(page));
+            squares.append(page.getName()).append('\n');
 
             for (LayoutDiagramComponent square : page.getAll())
             {
@@ -5674,19 +5669,14 @@ public class AutonomySession
     /** Everything wrong or worth knowing about the setup as it stands. */
     public List<AutonomyChecks.Finding> check()
     {
-        AWTEvent event = EventQueue.isDispatchThread() ? EventQueue.getCurrentEvent() : null;
-
-        if (event == null || graph == null || reducer == null) return checkAfresh();
+        if (!EventQueue.isDispatchThread() || graph == null || reducer == null) return checkAfresh();
 
         List<Object> key = whatTheCheckReads();
 
-        if (findingsEvent == null || findingsEvent.get() != event || !key.equals(findingsKey))
+        if (!key.equals(findingsKey))
         {
-            List<AutonomyChecks.Finding> found = checkAfresh();
-
-            findingsEvent = new WeakReference<>(event);
+            findingsKept = checkAfresh();
             findingsKey = key;
-            findingsKept = found;
         }
 
         return new ArrayList<>(findingsKept);
@@ -6178,7 +6168,7 @@ public class AutonomySession
      * Records directions wanted on one square's roads as its arms can hold them, without re-deriving (OB-351): every
      * door comes through here, so none stores a road closed where the arrow shows it open.
      */
-    private void recordSquare(TileKey tile, Map<RouteId, Direction> wanted)
+    void recordSquare(TileKey tile, Map<RouteId, Direction> wanted)
     {
         Map<RouteId, Route> routes = graph.getRoutes(tile);
 
@@ -7362,7 +7352,7 @@ public class AutonomySession
      * Whether a train standing anywhere on this square could move at all.
      *
      * About the SQUARE, not one copy: a dead copy beside a live one must not decide it
-     * (`LayoutRightclickAutonomyMenu.placeableCopies` asks the same).
+     * (`DiagramAutonomyContextMenu.placeableCopies` asks the same).
      *
      * @param running the layout
      * @param tile the square
@@ -7815,7 +7805,8 @@ public class AutonomySession
 
     /**
      * The setup's recorded facing for the train here where the track runs that way, else null (OB-348); the record as
-     * it stands where the track cannot be asked.  The icon, caption and Change Direction menu all read this.
+     * it stands where the track cannot be asked.  What the icon and caption fall back to where neither a copy nor an
+     * only way out says (`StationIndex.onlyWayOutAt`), and what Change Direction ticks.
      */
     public Side recordedFacingAlongTheTrack(TileKey square)
     {
@@ -8544,7 +8535,19 @@ public class AutonomySession
     /** Sets a direction on every tile of a square's run, in that square's sense; returns how many tiles changed. */
     public int setRunDirection(TileKey leader, RouteId routeId, Direction direction)
     {
-        return sessionRuns.setRunDirection(leader, routeId, direction);
+        return setRunDirection(leader, routeId, direction, false);
+    }
+
+    /** The same, carried on along the line past the run where `alongTheLine` says (MT-1068). */
+    public int setRunDirection(TileKey leader, RouteId routeId, Direction direction, boolean alongTheLine)
+    {
+        return sessionRuns.setRunDirection(leader, routeId, direction, alongTheLine);
+    }
+
+    /** What setting a run's direction carries on to past the run, each road by square; empty for none (MT-1068). */
+    public Map<TileKey, Map<RouteId, Direction>> alongTheLine(TileKey tile, RouteId routeId, Direction direction)
+    {
+        return sessionRuns.alongTheLine(tile, routeId, direction);
     }
 
     /** Whether a square follows its run (not its first square), and so draws no arrows of its own (OB-321, OB-361). */

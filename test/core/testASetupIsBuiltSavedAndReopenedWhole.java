@@ -1043,7 +1043,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
 
         String[][] doors = {
             {"TrainControlUI", "boolean isAutonomyBusy()"},
-            {"LayoutRightclickAutonomyMenu", "private static PathOptions gatherPathOptions("},
+            {"DiagramAutonomyContextMenu", "private static PathOptions gatherPathOptions("},
             {"LayoutLabel", "private static boolean aboutToClearProtection("},
             // Graceful Stop's worker waits out the coast-down, while Unload is allowed
             {"TrainControlUI", "private void gracefulStopActionPerformed("}};

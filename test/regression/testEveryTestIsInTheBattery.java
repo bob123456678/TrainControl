@@ -46,7 +46,8 @@ public class testEveryTestIsInTheBattery
 
         for (File folder : new File("test").listFiles())
         {
-            if (!folder.isDirectory()) continue;
+            // test/unit runs as one suite, `ant test-unit`, with no line per class
+            if (!folder.isDirectory() || folder.getName().equals("unit")) continue;
 
             File[] files = folder.listFiles();
 
@@ -108,6 +109,58 @@ public class testEveryTestIsInTheBattery
         }
     }
 
+    /** What a unit test never builds or opens: the window, a station, its port, or a railway (test/README.md). */
+    private static final java.util.regex.Pattern NOT_A_UNIT = java.util.regex.Pattern.compile(
+        "\\b(TrainControlUI|MarklinControlStation|NetworkProxy|DatagramSocket|LayoutSandbox|Scenario)\\b");
+
+    /** The only support helpers a unit test may use: each builds no window, station or sandbox, and opens no layout. */
+    private static final List<String> UNIT_SUPPORT = java.util.Arrays.asList("Components", "Pixels");
+
+    private static final java.util.regex.Pattern SUPPORT_USE = java.util.regex.Pattern.compile("\\bsupport\\.(\\w+)");
+
+    /**
+     * The unit suite is test/unit, run in one JVM by `ant test-unit` and class by class by the battery: every file there
+     * is `package unit;` (in a package folder, that package) and a test, its code (comments stripped) names nothing that
+     * builds the window, a station or a railway, and it uses only the `support` helpers in UNIT_SUPPORT.
+     *
+     * MUTATION: put `Class<?> c = org.traincontrol.marklin.MarklinControlStation.class;` or `support.StationRig.class`
+     * in a unit class, in test/unit or a package folder of it, even after a one-line block comment, and this fails.
+     */
+    @Test
+    public void testTheUnitSuiteBuildsNoWindowOrStation() throws Exception
+    {
+        assertTrue(withoutXmlComments(new String(Files.readAllBytes(new File("build.xml").toPath()),
+            StandardCharsets.UTF_8)).contains("testincludes=\"unit/**/*.java\""), "build.xml no longer runs test/unit");
+
+        List<String> wrong = new ArrayList<>();
+
+        for (File file : filesIn(new File("test/unit")))
+        {
+            List<String> lines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8);
+            String q = qualified(file);
+
+            if (!file.getName().endsWith(".java") || !lines.contains("package " + q.replaceAll("\\.[^.]*$", "") + ";")
+                || !lines.toString().contains("@Test")) wrong.add(file.getName() + " (not a unit test class)");
+
+            for (String line : String.join("\n", lines).replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("//[^\\n]*", "")
+                .split("\n"))
+            {
+                String code = line.trim();
+
+                if (NOT_A_UNIT.matcher(code).find()) wrong.add(file.getName() + ": " + code);
+
+                for (java.util.regex.Matcher use = SUPPORT_USE.matcher(code); use.find(); )
+                {
+                    if (!UNIT_SUPPORT.contains(use.group(1))) wrong.add(file.getName() + ": support." + use.group(1));
+                }
+            }
+        }
+
+        assertEquals(wrong, new ArrayList<String>(), "test/unit holds unit tests only: one class, through its own API, "
+            + "in a JVM shared with the others, so no window, station, port or railway. Move these to core/, ui/ or "
+            + "regression/ (support helpers allowed: " + UNIT_SUPPORT + "): " + wrong);
+    }
+
     /**
      * NO TEST BUILDS ITS PAGES WITHOUT WIRING THEM.  `CS2File.parseLayout` builds the components, but
      * `MarklinControlStation.wireComponents` attaches each to a live `Accessory`; without it every switch and signal
@@ -131,13 +184,7 @@ public class testEveryTestIsInTheBattery
 
         for (File folder : new File("test").listFiles())
         {
-            if (!folder.isDirectory()) continue;
-
-            File[] files = folder.listFiles();
-
-            if (files == null) continue;
-
-            for (File file : files)
+            for (File file : filesIn(folder))
             {
                 if (!file.getName().endsWith(".java")) continue;
 
@@ -219,13 +266,7 @@ public class testEveryTestIsInTheBattery
 
         for (File folder : new File("test").listFiles())
         {
-            if (!folder.isDirectory()) continue;
-
-            File[] files = folder.listFiles();
-
-            if (files == null) continue;
-
-            for (File file : files)
+            for (File file : filesIn(folder))
             {
                 if (!file.getName().endsWith(".java")) continue;
 
@@ -327,14 +368,14 @@ public class testEveryTestIsInTheBattery
 
         List<String> unlisted = new ArrayList<>();
 
-        for (String folder : new String[] {"core", "ui", "regression", "support"})
+        for (String folder : new String[] {"core", "ui", "regression", "support", "unit"})
         {
-            for (File file : new File("test/" + folder).listFiles())
+            for (File file : filesIn(new File("test/" + folder)))
             {
                 String name = file.getName();
 
-                if (!name.endsWith(".java") || DESKTOP_WORDS_HARMLESS.contains(name)
-                    || lane.contains(folder + "." + name.substring(0, name.length() - 5))) continue;
+                if (!name.endsWith(".java") || DESKTOP_WORDS_HARMLESS.contains(name) || lane.contains(qualified(file)))
+                    continue;
 
                 for (String line : Files.readAllLines(file.toPath(), StandardCharsets.UTF_8))
                 {
@@ -358,7 +399,7 @@ public class testEveryTestIsInTheBattery
 
         for (String name : lane)
         {
-            assertTrue(exists(name.substring(name.indexOf('.') + 1)), "serial-lane.txt names " + name + ", which is not a test class");
+            assertTrue(exists(name.substring(name.lastIndexOf('.') + 1)), "serial-lane.txt names " + name + ", which is not a test class");
         }
     }
 
@@ -374,12 +415,33 @@ public class testEveryTestIsInTheBattery
 
     private boolean exists(String name)
     {
-        for (String folder : new String[] {"core", "ui", "regression", "support"})
+        for (String folder : new String[] {"core", "ui", "regression", "support", "unit"})
         {
-            if (new File("test/" + folder + "/" + name + ".java").exists()) return true;
+            for (File file : filesIn(new File("test/" + folder))) if (file.getName().equals(name + ".java")) return true;
         }
 
         return false;
+    }
+
+    /** The files in a folder of test/, and in test/unit those in its package folders too. */
+    private static List<File> filesIn(File folder)
+    {
+        List<File> out = new ArrayList<>();
+        File[] files = folder.listFiles();
+
+        for (File file : files == null ? new File[0] : files)
+        {
+            if (!file.isDirectory()) out.add(file);
+            else if (file.getPath().replace('\\', '/').startsWith("test/unit/")) out.addAll(filesIn(file));
+        }
+
+        return out;
+    }
+
+    /** A test file's class: test/core/testX.java is core.testX, and test/unit/org/x/testY.java is org.x.testY. */
+    private static String qualified(File file)
+    {
+        return file.getPath().replace('\\', '/').replaceAll("^test/(unit/(?=.*/))?|\\.java$", "").replace('/', '.');
     }
     /**
      * The build file with everything between comment delimiters removed, deliberately crude (blanking spans rather than

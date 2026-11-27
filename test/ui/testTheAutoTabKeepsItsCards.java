@@ -20,7 +20,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.TrainControlUI;
-import org.traincontrol.gui.autonomy.AutoLocomotiveStatus;
+import org.traincontrol.gui.autonomy.AutonomyLocomotiveStatus;
 import org.traincontrol.marklin.MarklinControlStation;
 import support.Components;
 import support.Reflect;
@@ -48,7 +48,7 @@ public class testTheAutoTabKeepsItsCards
     @Test(timeOut = 120000)
     public void testARebuildWithNothingChangedKeepsTheCards() throws Exception
     {
-        List<AutoLocomotiveStatus> before = cards();
+        List<AutonomyLocomotiveStatus> before = cards();
 
         Layout was = railway();
 
@@ -72,7 +72,7 @@ public class testTheAutoTabKeepsItsCards
      * and arriving from a run; after each, every card says what a new card says.  Placing and taking off change the
      * list of trains, so they build the cards; the other four keep them.
      *
-     * MUTATION: in `AutoLocomotiveStatus.showOn`, leave out the name, and the rename fails.
+     * MUTATION: in `AutonomyLocomotiveStatus.showOn`, leave out the name, and the rename fails.
      */
     @Test(timeOut = 180000)
     public void testEachChangeRedrawsItsCard() throws Exception
@@ -86,7 +86,7 @@ public class testTheAutoTabKeepsItsCards
         assertEveryCardIsAsNew();
 
         Object facing = session.facingOf(gamma.getName());
-        List<AutoLocomotiveStatus> kept = cards();
+        List<AutonomyLocomotiveStatus> kept = cards();
 
         SwingUtilities.invokeAndWait(() -> call("followTheTurn", gamma.getName()));
         quiesce();
@@ -133,12 +133,12 @@ public class testTheAutoTabKeepsItsCards
      * card goes on saying what a new card says, so a double-click cannot send the old layout's routes.  The landing is
      * driven directly, as the moment a search straddles the rebuild cannot be timed from a test.
      *
-     * MUTATION: in the four-argument `AutoLocomotiveStatus.updateState`, drop the layout comparison, and this fails.
+     * MUTATION: in the four-argument `AutonomyLocomotiveStatus.updateState`, drop the layout comparison, and this fails.
      */
     @Test(timeOut = 120000)
     public void testASearchFromBeforeTheRebuildDoesNotLand() throws Exception
     {
-        AutoLocomotiveStatus card = card(alpha);
+        AutonomyLocomotiveStatus card = card(alpha);
         Layout before = card.getRunningLayout();
 
         rebuild();
@@ -157,7 +157,7 @@ public class testTheAutoTabKeepsItsCards
      * A kept card reads the timetable's start afresh: its train's entry taken out, the card waiting for its search no
      * longer marks the station as where the timetable starts, as a new card does not.
      *
-     * MUTATION: in `AutoLocomotiveStatus.showOn`, leave out `haveGatheredTimetableStart = false`, and this fails.
+     * MUTATION: in `AutonomyLocomotiveStatus.showOn`, leave out `haveGatheredTimetableStart = false`, and this fails.
      */
     @Test(timeOut = 120000)
     public void testAKeptCardReadsTheTimetableAfresh() throws Exception
@@ -180,13 +180,35 @@ public class testTheAutoTabKeepsItsCards
     /**
      * A kept card shows its routes from the top, as a new card does, though it was scrolled down before.
      *
-     * MUTATION: in `AutoLocomotiveStatus.showOn`, leave out the scroll reset, and this fails.
+     * MUTATION: in `AutonomyLocomotiveStatus.showOn`, leave out the scroll reset, and this fails.
      */
     @Test(timeOut = 120000)
     public void testAKeptCardShowsItsRoutesFromTheTop() throws Exception
     {
         assertWaitingCardIsAsNew(card(alpha), card -> scroller(card).getViewport().setViewPosition(new java.awt.Point(0,
             40)));
+    }
+
+    /**
+     * A card's path search, off the event thread as the cards' worker runs it, with no setup built, builds none: a
+     * build there would race the doors on the event thread.
+     *
+     * MUTATION: in `AutonomyLocomotiveStatus.withoutGoingNowhere`, ask `getAutonomySession()` again, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testACardsSearchBuildsNoSetup() throws Exception
+    {
+        AutonomyLocomotiveStatus card = card(alpha);
+
+        // None built, and the event thread held meanwhile, so a build seen is the search's and not one there
+        Object[] seen = Components.withTheEventThreadHeld(() ->
+        {
+            Reflect.set(TrainControlUI.class, ui, "autonomySession", null);
+            return null;
+        }, () -> new Object[] {card.findPaths(), Reflect.get(TrainControlUI.class, ui, "autonomySession")});
+
+        assertNotNull(seen[0], "precondition: the card did not search");
+        assertNull(seen[1], "the card's search built a setup off the event thread");
     }
 
     // ---------------------------------------------------------------- the railway
@@ -370,29 +392,29 @@ public class testTheAutoTabKeepsItsCards
 
     // ---------------------------------------------------------------- the cards
 
-    private List<AutoLocomotiveStatus> cards()
+    private List<AutonomyLocomotiveStatus> cards()
     {
-        return Components.onTheEventThread(() -> Components.all(ui.getContentPane(), AutoLocomotiveStatus.class,
+        return Components.onTheEventThread(() -> Components.all(ui.getContentPane(), AutonomyLocomotiveStatus.class,
             c -> true));
     }
 
-    private AutoLocomotiveStatus card(Locomotive train)
+    private AutonomyLocomotiveStatus card(Locomotive train)
     {
-        for (AutoLocomotiveStatus card : cards()) if (card.getLocomotive() == train) return card;
+        for (AutonomyLocomotiveStatus card : cards()) if (card.getLocomotive() == train) return card;
 
         return null;
     }
 
     private String station(Locomotive train)
     {
-        AutoLocomotiveStatus card = card(train);
+        AutonomyLocomotiveStatus card = card(train);
 
         return card == null ? "(no card)" : text(card, "locStation");
     }
 
-    private void assertSameCards(List<AutoLocomotiveStatus> before, String after)
+    private void assertSameCards(List<AutonomyLocomotiveStatus> before, String after)
     {
-        List<AutoLocomotiveStatus> now = cards();
+        List<AutonomyLocomotiveStatus> now = cards();
 
         assertEquals(now.size(), before.size(), "the cards after " + after);
 
@@ -406,13 +428,13 @@ public class testTheAutoTabKeepsItsCards
     /** Every card says what a card built now for its train says once its search is in, and is on the running layout. */
     private void assertEveryCardIsAsNew() throws Exception
     {
-        for (AutoLocomotiveStatus card : cards())
+        for (AutonomyLocomotiveStatus card : cards())
         {
             Locomotive train = card.getLocomotive();
 
-            AutoLocomotiveStatus[] fresh = new AutoLocomotiveStatus[1];
+            AutonomyLocomotiveStatus[] fresh = new AutonomyLocomotiveStatus[1];
 
-            SwingUtilities.invokeAndWait(() -> fresh[0] = new AutoLocomotiveStatus(train, ui, true));
+            SwingUtilities.invokeAndWait(() -> fresh[0] = new AutonomyLocomotiveStatus(train, ui, true));
 
             List<List<Edge>> found = fresh[0].findPaths();
 
@@ -428,7 +450,7 @@ public class testTheAutoTabKeepsItsCards
      * The card, after `before`, shown on the running layout as the rebuild that keeps it does, and read in the same
      * turn of the event thread, before its search lands: it says what a new card says while it waits.
      */
-    private void assertWaitingCardIsAsNew(AutoLocomotiveStatus card, java.util.function.Consumer<AutoLocomotiveStatus>
+    private void assertWaitingCardIsAsNew(AutonomyLocomotiveStatus card, java.util.function.Consumer<AutonomyLocomotiveStatus>
         before) throws Exception
     {
         String[] looks = new String[2];
@@ -438,7 +460,7 @@ public class testTheAutoTabKeepsItsCards
             before.accept(card);
             card.showOn(railway());
 
-            AutoLocomotiveStatus fresh = new AutoLocomotiveStatus(card.getLocomotive(), ui, true);
+            AutonomyLocomotiveStatus fresh = new AutonomyLocomotiveStatus(card.getLocomotive(), ui, true);
 
             looks[0] = look(card) + " at " + scroller(card).getViewport().getViewPosition();
             looks[1] = look(fresh) + " at " + scroller(fresh).getViewport().getViewPosition();
@@ -447,13 +469,13 @@ public class testTheAutoTabKeepsItsCards
         assertEquals(looks[0], looks[1], "the kept card, waiting for its search, does not say what a new card says");
     }
 
-    private static javax.swing.JScrollPane scroller(AutoLocomotiveStatus card)
+    private static javax.swing.JScrollPane scroller(AutonomyLocomotiveStatus card)
     {
         return (javax.swing.JScrollPane) field(card, "availablePathScroll");
     }
 
     /** All a card shows, and the running layout it sends on. */
-    private String look(AutoLocomotiveStatus card)
+    private String look(AutonomyLocomotiveStatus card)
     {
         StringBuilder out = new StringBuilder();
 
@@ -481,16 +503,16 @@ public class testTheAutoTabKeepsItsCards
         return out.toString();
     }
 
-    private static String text(AutoLocomotiveStatus card, String label)
+    private static String text(AutonomyLocomotiveStatus card, String label)
     {
         return Components.onTheEventThread(() -> ((JLabel) field(card, label)).getText());
     }
 
-    private static Object field(AutoLocomotiveStatus card, String name)
+    private static Object field(AutonomyLocomotiveStatus card, String name)
     {
         try
         {
-            return Reflect.get(AutoLocomotiveStatus.class, card, name);
+            return Reflect.get(AutonomyLocomotiveStatus.class, card, name);
         }
         catch (ReflectiveOperationException e)
         {

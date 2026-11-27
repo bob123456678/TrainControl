@@ -29,7 +29,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
-import org.traincontrol.gui.locomotive.LocIconCropDialog.CropPanel;
+import org.traincontrol.gui.locomotive.LocomotiveIconCropDialog.CropPanel;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
@@ -165,7 +165,7 @@ public class testRecroppingALocomotiveIcon
 
         for (String crop : crops())
         {
-            if (!before.contains(crop)) ui.deleteLocIcon(new File(crop).toURI().toString());
+            if (!before.contains(crop)) ui.locIconActions().deleteLocIconFile(new File(crop).toURI().toString());
         }
 
         loc.setLocalImageURL(null);
@@ -214,7 +214,7 @@ public class testRecroppingALocomotiveIcon
         assertTrue(isColor(kept.getRGB(4, kept.getHeight() / 2), Color.BLUE) && isColor(kept.getRGB(kept.getWidth() - 5,
             kept.getHeight() / 2), Color.BLUE), "the crop is not the blue half the operator moved the picture to");
 
-        assertEquals(ui.cropSourceOf(url), photograph, "the crop does not remember the photograph it was cut from");
+        assertEquals(ui.locIconActions().cropSourceOf(url), photograph, "the crop does not remember the photograph it was cut from");
         assertTrue(photograph.isFile(), "re-cropping deleted the operator's own photograph");
 
         assertTrue(Components.waitFor(() -> shownIs(url), WAIT), "the picture on screen is not the crop that was kept");
@@ -269,7 +269,7 @@ public class testRecroppingALocomotiveIcon
      * Cancel keeps the icon the train had: the same file, no new crop in the icon folder, and the same picture on
      * screen, though the view had been moved first.
      *
-     * MUTATION: in `LocIconCropDialog`, have the Cancel button keep `this.cropPanel.getCroppedImage()`, and this fails.
+     * MUTATION: in `LocomotiveIconCropDialog`, have the Cancel button keep `this.cropPanel.getCroppedImage()`, and this fails.
      */
     @Test
     public void testCancelKeepsTheIconTheTrainHad() throws Exception
@@ -287,7 +287,7 @@ public class testRecroppingALocomotiveIcon
     /**
      * Escape in the crop window is a Cancel.
      *
-     * MUTATION: in the Escape action of `LocIconCropDialog`, keep `this.cropPanel.getCroppedImage()`, and this fails.
+     * MUTATION: in the Escape action of `LocomotiveIconCropDialog`, keep `this.cropPanel.getCroppedImage()`, and this fails.
      */
     @Test
     public void testEscapeKeepsTheIconTheTrainHad() throws Exception
@@ -316,7 +316,7 @@ public class testRecroppingALocomotiveIcon
     /**
      * The close box of the crop window is a Cancel as well.
      *
-     * MUTATION: in `LocIconCropDialog`, make closing do nothing (`DO_NOTHING_ON_CLOSE`), and this fails.
+     * MUTATION: in `LocomotiveIconCropDialog`, make closing do nothing (`DO_NOTHING_ON_CLOSE`), and this fails.
      */
     @Test
     public void testTheCloseBoxKeepsTheIconTheTrainHad() throws Exception
@@ -391,7 +391,7 @@ public class testRecroppingALocomotiveIcon
 
         assertFalse(firstFile.exists(), "the first crop was left in the icon folder after the second replaced it");
         assertFalse(noteOf(firstFile).exists(), "the first crop's note was left behind");
-        assertEquals(ui.cropSourceOf(loc.getLocalImageURL()), photograph, "the second crop lost the photograph it came from");
+        assertEquals(ui.locIconActions().cropSourceOf(loc.getLocalImageURL()), photograph, "the second crop lost the photograph it came from");
     }
 
     /**
@@ -453,7 +453,7 @@ public class testRecroppingALocomotiveIcon
     {
         support.SettingsWindow.closeIfOpen();
 
-        assertTrue(support.SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null),
+        assertTrue(support.SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsWindow.Tab.LOCOMOTIVE, null),
             "the settings window did not open");
         assertNotNull(support.SettingsWindow.awaited(), "the settings window is not on screen");
 

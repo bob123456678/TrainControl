@@ -1264,7 +1264,7 @@ public class testRestoreFromBackup
         org.traincontrol.base.Locomotive loc = model.getLocByName(NOTED);
         String note = "MT-1002 note " + System.nanoTime();
 
-        assertTrue(support.SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsFrame.Tab.NOTES, null)
+        assertTrue(support.SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsWindow.Tab.NOTES, null)
             && support.SettingsWindow.awaited() != null, "precondition: Locomotive Settings did not open");
 
         Components.onTheEventThread(() ->

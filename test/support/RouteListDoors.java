@@ -224,7 +224,7 @@ public final class RouteListDoors
 
         for (Window window : Window.getWindows())
         {
-            if ("RouteEditorFrame".equals(window.getClass().getSimpleName()) && window.isShowing()
+            if ("RouteEditorWindow".equals(window.getClass().getSimpleName()) && window.isShowing()
                 && title.equals(((java.awt.Frame) window).getTitle())) found++;
         }
 
@@ -238,7 +238,7 @@ public final class RouteListDoors
 
         for (Window window : Window.getWindows())
         {
-            if ("RouteEditorFrame".equals(window.getClass().getSimpleName()) && window.isShowing()) out.add(window);
+            if ("RouteEditorWindow".equals(window.getClass().getSimpleName()) && window.isShowing()) out.add(window);
         }
 
         return out;
@@ -355,7 +355,7 @@ public final class RouteListDoors
 
             Components.onTheEventThread(() ->
             {
-                ui.refreshRouteList();
+                ui.routeListPanel().refreshRouteList();
 
                 return null;
             });
@@ -463,7 +463,7 @@ public final class RouteListDoors
 
             Components.onTheEventThread(() ->
             {
-                this.ui.refreshRouteList();
+                this.ui.routeListPanel().refreshRouteList();
 
                 return null;
             });

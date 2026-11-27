@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.LocomotiveNotes;
 import org.traincontrol.base.RouteCommand;
-import org.traincontrol.gui.LocomotiveSettings;
+import org.traincontrol.gui.LocomotiveEditRule;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.model.ViewListener;
 
@@ -107,6 +107,26 @@ public final class MarklinLocomotiveCsv
         public List<String> names = new ArrayList<>();
     }
 
+    /** What to do with a possible duplicate: merge it into the one here or replace that, add both, or leave it out. */
+    public enum Choice { MERGE, REPLACE, BOTH, IGNORE }
+
+    /**
+     * Why Merge or Replace did not or may not rename the locomotive here: several hold the address, the file lists it,
+     * it runs, an earlier row took it, the row was no longer a possible duplicate, or the rename was refused.
+     */
+    public enum NotNew { SEVERAL, LISTED, RUNNING, TAKEN, GONE, REFUSED }
+
+    /** A possible duplicate (FR-249): a new row at a decoder address locomotives here hold after the plan's moves. */
+    public static final class Duplicate
+    {
+        public Row row;
+        /** Its decoder address, as "MFX 5". */
+        public String address;
+        public final List<Locomotive> here = new ArrayList<>();
+        /** Why Merge and Replace may not rename here's one; null where they may. */
+        public NotNew whyNotNew;
+    }
+
     /** What `apply` did. */
     public static final class Result
     {
@@ -126,6 +146,16 @@ public final class MarklinLocomotiveCsv
         public int addressInvalid;
         /** Multi-unit and linked rows left out. */
         public int leftOutMultiUnit;
+        /** Possible duplicates answered Ignore, so not added. */
+        public int ignored;
+        /** The file's names that locomotives here took on Merge or Replace. */
+        public final List<String> renamed = new ArrayList<>();
+        /** Of those, the ones that took every detail from the file (Replace); `merged` counts the others. */
+        public int replaced;
+        /** Rows answered Merge or Replace that were added beside the locomotive here instead, and why. */
+        public final Map<String, NotNew> notRenamed = new LinkedHashMap<>();
+        /** Rows answered Ignore that were no longer possible duplicates, so were added. */
+        public final List<String> notLeftOut = new ArrayList<>();
         public final Map<Integer, Why> skipped = new TreeMap<>();
         /** For a skipped line, the cells that made it unreadable: {heading, value} each. */
         public final Map<Integer, List<String[]>> badCells = new TreeMap<>();
@@ -334,9 +364,7 @@ public final class MarklinLocomotiveCsv
     public Plan plan(ViewListener model)
     {
         Plan plan = new Plan();
-        Map<String, String> where = new HashMap<>();
-
-        for (Locomotive loc : model.getLocomotives()) where.put(loc.getName(), label(loc.getDecoderType(), loc.getAddress()));
+        Map<String, String> where = after(model, plan);
 
         for (Row row : this.rows)
         {
@@ -377,35 +405,67 @@ public final class MarklinLocomotiveCsv
 
         for (Move move : plan.moves)
         {
-            if (LocomotiveSettings.hasSpeed(model, model.getLocByName(move.name))) moving.add(move.name);
+            if (LocomotiveEditRule.hasSpeed(model, model.getLocByName(move.name))) moving.add(move.name);
         }
 
         return moving;
     }
 
-    /** The locomotives that would end up on a decoder address another one holds, because of this import. */
-    public List<Shared> sharedAddresses(ViewListener model, Plan plan)
+    /** Each locomotive here by name, at its decoder address ("MFX 5") once the plan's moves are made. */
+    private static Map<String, String> after(ViewListener model, Plan plan)
     {
         Map<String, String> where = new LinkedHashMap<>();
-        Set<String> touched = new HashSet<>();
-
         for (Locomotive loc : model.getLocomotives()) where.put(loc.getName(), label(loc.getDecoderType(), loc.getAddress()));
+        for (Move move : plan.moves) where.put(move.name, move.to);
+        return where;
+    }
 
-        for (Move move : plan.moves)
-        {
-            where.put(move.name, move.to);
-            touched.add(move.name);
-        }
-
+    /** The possible duplicates, in file order, each with the locomotives here at its address and why not Merge. */
+    public List<Duplicate> duplicates(ViewListener model, Plan plan)
+    {
+        Map<String, String> where = after(model, plan);
+        Set<String> listed = new HashSet<>();
+        List<Duplicate> out = new ArrayList<>();
+        for (Row row : this.rows) listed.add(row.name);
         for (Row row : this.rows)
         {
-            if (model.getLocByName(row.name) == null && fateOf(row, model) == Fate.NEW)
+            if (fateOf(row, model) != Fate.NEW) continue;
+            Duplicate d = new Duplicate();
+            d.row = row;
+            d.address = label(row.type, row.address);
+            where.forEach((name, address) -> { if (address.equals(d.address)) d.here.add(model.getLocByName(name)); });
+            if (d.here.isEmpty()) continue;
+            d.here.sort((a, b) -> a.getName().compareTo(b.getName()));
+            Locomotive old = d.here.get(0);
+            d.whyNotNew = d.here.size() > 1 ? NotNew.SEVERAL : listed.contains(old.getName()) ? NotNew.LISTED
+                : LocomotiveEditRule.hasSpeed(model, old) || model.runningRouteDriving(old.getName()) != null
+                ? NotNew.RUNNING : null;
+            out.add(d);
+        }
+        return out;
+    }
+
+    /** The locomotives this import would leave on a decoder address another one holds, but for possible duplicates. */
+    public List<Shared> sharedAddresses(ViewListener model, Plan plan)
+    {
+        Map<String, String> where = after(model, plan);
+        Set<String> touched = new HashSet<>();
+        for (Move move : plan.moves) touched.add(move.name);
+        for (Row row : this.rows)
+        {
+            if (fateOf(row, model) == Fate.NEW)
             {
                 where.put(row.name, label(row.type, row.address));
                 touched.add(row.name);
             }
         }
 
+        // A possible duplicate is asked in its own table, so no shared address names or counts it
+        for (Duplicate d : duplicates(model, plan))
+        {
+            touched.remove(d.row.name);
+            where.remove(d.row.name);
+        }
         Map<String, Shared> groups = new TreeMap<>();
 
         for (Map.Entry<String, String> e : where.entrySet())
@@ -438,20 +498,52 @@ public final class MarklinLocomotiveCsv
     /** Adds and merges, and changes the addresses of the plan and no others; the single place that changes the model. */
     public Result apply(ViewListener model, Plan plan)
     {
+        return apply(model, plan, new HashMap<>());
+    }
+
+    /**
+     * The same, each possible duplicate as `choices` has it (Keep Both where it has none).  Merge and Replace rename the
+     * locomotive here through `renameLoc`, so what follows its name follows, then merge the row into it, Replace once
+     * its own details are cleared; one that may not, or whose locomotive an earlier row took, is Keep Both, and so is an
+     * Ignore whose row is no longer a possible duplicate: the result says which.
+     */
+    public Result apply(ViewListener model, Plan plan, Map<Row, Choice> choices)
+    {
         Result result = new Result();
         Map<String, Move> moves = new HashMap<>();
         Set<String> held = new HashSet<>();
+        Map<Row, Duplicate> duplicates = new HashMap<>();
+        Set<Locomotive> taken = new HashSet<>();
 
         for (Move move : plan.moves) moves.put(move.name, move);
 
+        for (Duplicate d : duplicates(model, plan)) duplicates.put(d.row, d);
         result.skipped.putAll(this.unreadable);
         result.badCells.putAll(this.badCells);
         result.kept.addAll(plan.kept);
 
         for (Row row : this.rows)
         {
+            Duplicate d = duplicates.get(row);
+            Choice choice = choices.getOrDefault(row, Choice.BOTH);
+            if (choice == Choice.IGNORE && d != null)
+            {
+                result.ignored++;
+                continue;
+            }
+            if (choice == Choice.IGNORE) result.notLeftOut.add(row.name);
+            boolean replacing = false;
+            if (choice == Choice.MERGE || choice == Choice.REPLACE)
+            {
+                NotNew why = d == null ? NotNew.GONE : d.whyNotNew != null ? d.whyNotNew
+                    : taken.add(d.here.get(0)) ? null : NotNew.TAKEN;
+                boolean renamed = why == null && model.renameLoc(d.here.get(0).getName(), row.name);
+                if (renamed) result.renamed.add(row.name);
+                else result.notRenamed.put(row.name, why == null ? NotNew.REFUSED : why);
+                replacing = renamed && choice == Choice.REPLACE;
+                if (replacing) clear(d.here.get(0));
+            }
             Fate fate = fateOf(row, model);
-
             if (row.runtimeBad) result.badRuntime++;
 
             if (fate == Fate.SKIP)
@@ -465,7 +557,8 @@ public final class MarklinLocomotiveCsv
             else if (fate == Fate.MERGE)
             {
                 merge(model, model.getLocByName(row.name), row, moves.get(row.name), held, result);
-                result.merged++;
+                if (replacing) result.replaced++;
+                else result.merged++;
             }
             else
             {
@@ -537,7 +630,7 @@ public final class MarklinLocomotiveCsv
                 return;
             }
 
-            if (LocomotiveSettings.hasSpeed(model, loc))
+            if (LocomotiveEditRule.hasSpeed(model, loc))
             {
                 held.add(label(loc.getDecoderType(), loc.getAddress()));
                 result.kept.add(late);
@@ -555,6 +648,22 @@ public final class MarklinLocomotiveCsv
                 result.kept.add(late);
             }
         }
+    }
+
+    /** Replace: empties what a new locomotive has empty, so the merge that follows takes every detail from the file. */
+    static void clear(Locomotive loc)
+    {
+        loc.setFunctionTypes(new int[loc.getNumF()], new int[loc.getNumF()]);
+        loc.unsetLocalFunctionImageURLs();
+        loc.setCustomFunctions(false);
+        loc.setPreferredFunctions(new boolean[loc.getNumF()]);
+        loc.setDepartureFunc(null);
+        loc.setArrivalFunc(null);
+        loc.setReversible(false);
+        loc.setTrainLength(0);
+        loc.setLocalImageURL(null);
+        loc.setPreferredSpeed(0);
+        loc.setStructuredNotes(0, 0, "", "");
     }
 
     /** Fills what is empty on `loc` from the row. */

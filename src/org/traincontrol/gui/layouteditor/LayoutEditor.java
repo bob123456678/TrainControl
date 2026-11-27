@@ -77,7 +77,7 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
-import org.traincontrol.gui.Listen;
+import org.traincontrol.gui.OnMouse;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.LayoutGrid;
 import org.traincontrol.gui.LayoutLabel;
@@ -89,6 +89,7 @@ import org.traincontrol.gui.widgets.PositionAwareJFrame;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.util.I18n;
+import org.traincontrol.util.SharpIcon;
 import org.json.JSONObject;
 import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.automationui.AutonomySession;
@@ -436,7 +437,7 @@ public class LayoutEditor extends PositionAwareJFrame
         if (live != null && !live.beginEditSession() && live.getStore().hasUnfinishedEditNote()
             && live.getStore().forgetTheNote() == AutonomyCompanionStore.Note.STALE)
         {
-            parent.getModel().logf("autosetup.log.noteRenewalFailed");
+            parent.getModel().logf(java.util.logging.Level.WARNING, "autosetup.log.noteRenewalFailed");
         }
 
         pictureTheRailway(live);
@@ -585,7 +586,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // Said when it fails (a sync client can win the delete); the note left is harmless.
             if (!this.autonomySessionForTheNote.endEditSession() && parent.getModel() != null)
             {
-                parent.getModel().logf("autosetup.log.editSessionNotCleared");
+                parent.getModel().logf(java.util.logging.Level.WARNING, "autosetup.log.editSessionNotCleared");
             }
 
             this.autonomySessionForTheNote = null;
@@ -594,7 +595,7 @@ public class LayoutEditor extends PositionAwareJFrame
         super.dispose();
 
         // And Edit asked again
-        if (parent != null) parent.editorWindowClosed();
+        if (parent != null) parent.editorWindows().editorWindowClosed();
     }
 
     /**
@@ -670,7 +671,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (autonomy != null && !autonomy.restoreSetup(asOpenedKeepingTheTurns(autonomy)) && parent.getModel() != null)
         {
-            parent.getModel().logf("autosetup.log.restoreFailedAfterCancel");
+            parent.getModel().logf(java.util.logging.Level.SEVERE, "autosetup.log.restoreFailedAfterCancel");
         }
         else if (autonomy != null)
         {
@@ -702,7 +703,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (!autonomy.saveQuietly() && parent.getModel() != null)
         {
-            parent.getModel().logf("autosetup.log.saveFailedAfterEdit");
+            parent.getModel().logf(java.util.logging.Level.SEVERE, "autosetup.log.saveFailedAfterEdit");
         }
     }
 
@@ -723,7 +724,7 @@ public class LayoutEditor extends PositionAwareJFrame
     private boolean redrawStarted = false;
     
     // Reference to the right click menu
-    LayoutEditorRightclickMenu popup;
+    LayoutEditorContextMenu popup;
 
     /**
      * `FlowLayout`'s gap around the diagram, included in the panel's size, or a CENTER layout puts the diagram at a
@@ -983,7 +984,7 @@ public class LayoutEditor extends PositionAwareJFrame
         // The palette.
         if (x < 0 || y < 0) return null;
 
-        return this.parent.autonomyStationNameAt(new TileGraph.TileKey(this.layout.getName(), x, y));
+        return this.parent.stationCaptions().autonomyStationNameAt(new TileGraph.TileKey(this.layout.getName(), x, y));
     }
 
     /**
@@ -1331,16 +1332,10 @@ public class LayoutEditor extends PositionAwareJFrame
             if (!(c instanceof StationCaption) || ((StationCaption) c).getText().isEmpty() || c.getX() != label.getX()
                 || c.getY() >= label.getY() + label.getHeight() || c.getY() + c.getHeight() <= label.getY()) continue;
 
-            BufferedImage shot = new BufferedImage(Math.max(1, c.getWidth()), Math.max(1, c.getHeight()),
-                BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g = shot.createGraphics();
-
-            c.paint(g);
-            g.dispose();
-
             java.awt.Point grab = SwingUtilities.convertPoint(label, pressed, c);
 
-            showCaptionGhost(shot, grab.x, grab.y);
+            showCaptionGhost(SharpIcon.painted(this, Math.max(1, c.getWidth()), Math.max(1, c.getHeight()), c::paint),
+                grab.x, grab.y);
             moveCaptionGhost(SwingUtilities.convertPoint(label, pressed, getLayeredPane()));
 
             return true;
@@ -1388,14 +1383,12 @@ public class LayoutEditor extends PositionAwareJFrame
 
         int cell = Math.max(4, (int) Math.round(size * scale));
 
-        BufferedImage picture = new BufferedImage(
-            Math.max(1, across * cell), Math.max(1, down * cell),
-            BufferedImage.TYPE_INT_ARGB);
-
-        Graphics2D g = picture.createGraphics();
-
-        try
+        // Each square through an image at its place's size in the picture's pixels: an icon paints at its own size
+        return SharpIcon.painted(this, Math.max(1, across * cell), Math.max(1, down * cell), g ->
         {
+            double s = g.getTransform().getScaleX();
+
+            g.setTransform(new java.awt.geom.AffineTransform());
             g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
             for (TileSelection.At at : this.selection.all())
@@ -1404,19 +1397,19 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 if (from == null || from.getIcon() == null) continue;
 
-                int x = (at.getX() - bounds[0]) * cell;
-                int y = (at.getY() - bounds[1]) * cell;
-
-                // Through an image: an ImageIcon paints at its own size and would spill over
+                int x = (int) Math.round((at.getX() - bounds[0]) * cell * s);
+                int y = (int) Math.round((at.getY() - bounds[1]) * cell * s);
+                int w = (int) Math.round((at.getX() - bounds[0] + 1) * cell * s) - x;
+                int h = (int) Math.round((at.getY() - bounds[1] + 1) * cell * s) - y;
                 BufferedImage one = new BufferedImage(
-                    Math.max(1, from.getIcon().getIconWidth()),
-                    Math.max(1, from.getIcon().getIconHeight()),
+                    Math.max(1, (int) Math.round(from.getIcon().getIconWidth() * w / (double) cell)),
+                    Math.max(1, (int) Math.round(from.getIcon().getIconHeight() * h / (double) cell)),
                     BufferedImage.TYPE_INT_ARGB);
-
                 Graphics2D oneG = one.createGraphics();
 
                 try
                 {
+                    oneG.scale(w / (double) cell, h / (double) cell);
                     from.getIcon().paintIcon(from, oneG, 0, 0);
                 }
                 finally
@@ -1424,15 +1417,9 @@ public class LayoutEditor extends PositionAwareJFrame
                     oneG.dispose();
                 }
 
-                g.drawImage(one, x, y, cell, cell, null);
+                g.drawImage(one, x, y, w, h, null);
             }
-        }
-        finally
-        {
-            g.dispose();
-        }
-
-        return new ImageIcon(picture);
+        });
     }
 
     /** The longest side a dragged group is drawn at, in pixels, so it does not hide the diagram. */
@@ -1747,8 +1734,8 @@ public class LayoutEditor extends PositionAwareJFrame
 
                     final String typed = currentFindingFilter();
 
-                    parent.autonomyEditorClosedFromTheEditor(
-                        () -> parent.openCarryingTheClick(clicked, typed, () -> parent.openAutonomyEditor(tile)));
+                    parent.editorWindows().autonomyEditorClosedFromTheEditor(() -> parent.editorWindows()
+                        .openCarryingTheClick(clicked, typed, () -> parent.editorWindows().openAutonomyEditor(tile)));
 
                     dispose();
                 }
@@ -1766,8 +1753,8 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 final String typed = currentFindingFilter();
 
-                parent.autonomyEditorClosedFromTheEditor(
-                    () -> parent.openCarryingTheClick(clicked, typed, () -> parent.openAutonomyEditor(at, named)));
+                parent.editorWindows().autonomyEditorClosedFromTheEditor(() -> parent.editorWindows()
+                    .openCarryingTheClick(clicked, typed, () -> parent.editorWindows().openAutonomyEditor(at, named)));
 
                 dispose();
             });
@@ -2013,7 +2000,7 @@ public class LayoutEditor extends PositionAwareJFrame
         layout.setEdit(false);
 
         // The main window puts back what opening this changed (always-on-top, Edit), which autonomy mode's path skips.
-        parent.autonomyEditorClosedFromTheEditor(null);
+        parent.editorWindows().autonomyEditorClosedFromTheEditor(null);
 
         dispose();
     }
@@ -3173,9 +3160,9 @@ public class LayoutEditor extends PositionAwareJFrame
      * @param lc what is drawn on it, or null
      * @return the menu, not yet shown
      */
-    LayoutEditorRightclickMenu menuFor(LayoutLabel label, LayoutDiagramComponent lc)
+    LayoutEditorContextMenu menuFor(LayoutLabel label, LayoutDiagramComponent lc)
     {
-        LayoutEditorRightclickMenu menu = new LayoutEditorRightclickMenu(this, parent, label, lc);
+        LayoutEditorContextMenu menu = new LayoutEditorContextMenu(this, parent, label, lc);
 
         menu.addPopupMenuListener(new javax.swing.event.PopupMenuListener()
         {
@@ -3253,13 +3240,13 @@ public class LayoutEditor extends PositionAwareJFrame
      * @param grabX where in that picture the pointer took hold
      * @param grabY likewise
      */
-    public void showCaptionGhost(java.awt.Image shot, int grabX, int grabY)
+    public void showCaptionGhost(Icon shot, int grabX, int grabY)
     {
         hideCaptionGhost();
 
         if (shot == null) return;
 
-        this.captionGhost = new JLabel(new ImageIcon(shot));
+        this.captionGhost = new JLabel(shot);
         this.captionGhost.setSize(this.captionGhost.getPreferredSize());
         this.captionGrab = new java.awt.Point(grabX, grabY);
 
@@ -4024,7 +4011,7 @@ public class LayoutEditor extends PositionAwareJFrame
           {
             // Edit is handed back on any failure here, error or exception, as this runs outside openLayoutEditor's
             // catch.
-            parent.autonomyEditorClosed();
+            parent.editorWindows().autonomyEditorClosed();
 
             if (failed instanceof RuntimeException && parent.getModel() != null)
             {
@@ -4057,8 +4044,8 @@ public class LayoutEditor extends PositionAwareJFrame
 
         final String typed = currentFindingFilter();
 
-        parent.autonomyEditorClosedFromTheEditor(
-            () -> parent.openCarryingTheClick(clicked, typed, () -> parent.openAutonomyEditor(tile)));
+        parent.editorWindows().autonomyEditorClosedFromTheEditor(
+            () -> parent.editorWindows().openCarryingTheClick(clicked, typed, () -> parent.editorWindows().openAutonomyEditor(tile)));
 
         dispose();
     }
@@ -4253,7 +4240,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 // Posted from a finally, as the other branch is, so a throw cannot leave the latch up.
                 try
                 {
-                    parent.autonomyEditorClosed();
+                    parent.editorWindows().autonomyEditorClosed();
                 }
                 finally
                 {
@@ -4354,7 +4341,7 @@ public class LayoutEditor extends PositionAwareJFrame
             boolean autonomy = wanted;
 
             // Still editable?  Asked again: it can change while a save dialog is up.
-            AutonomySession session = autonomy ? parent.editableAutonomySession() : null;
+            AutonomySession session = autonomy ? parent.editorWindows().editableAutonomySession() : null;
 
             if (autonomy && session == null)
             {
@@ -4369,7 +4356,7 @@ public class LayoutEditor extends PositionAwareJFrame
             }
 
             // The main window's idea of the page, which the editor takes from it.
-            parent.selectLayoutPage(page);
+            parent.editorWindows().selectLayoutPage(page);
 
             LayoutDiagram arriving = parent.getModel().getLayout(page);
 
@@ -4422,7 +4409,7 @@ public class LayoutEditor extends PositionAwareJFrame
             setTitle(titleFor(session != null));
 
             // Remembered only when arrived at as asked: a fallback is no choice.
-            if (autonomy == (session != null)) parent.rememberEditorChoice(session != null);
+            if (autonomy == (session != null)) parent.editorWindows().rememberEditorChoice(session != null);
 
             // The same entry (EDITOR_WINDOW_KEY): the window does not move, and only grows.
             setWindowIndex(EDITOR_WINDOW_KEY);
@@ -4432,7 +4419,7 @@ public class LayoutEditor extends PositionAwareJFrame
             saveWindowBounds();
 
             // Edit stays shut: both teardowns handed it back as if the editor had closed.
-            parent.setEditLayoutEnabled(false);
+            parent.editorWindows().setEditLayoutEnabled(false);
 
             // The undo point moves with the switch, both halves (`takeTheUndoPoint`): leaveFor settled the previous
             // page, so Cancel here puts back what this page found.
@@ -4462,7 +4449,7 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         layout.setEdit(false);
 
-        parent.setEditLayoutEnabled(true);
+        parent.editorWindows().setEditLayoutEnabled(true);
 
         // Every door out pairs setEditLayoutEnabled(true) with repaintLayout, which re-decides the Central Station
         // menus.
@@ -4613,7 +4600,7 @@ public class LayoutEditor extends PositionAwareJFrame
         JMenuItem sort = new JMenuItem(I18n.t("ui.main.toolbar.sortPages"));
 
         sort.setFocusable(false);
-        sort.addActionListener(e -> runPageAction(() -> parent.sortPagesFromTheEditor(this), false));
+        sort.addActionListener(e -> runPageAction(() -> parent.layoutFileActions().sortPagesByName(this), false));
 
         menu.add(sort);
         menu.addSeparator();
@@ -4742,7 +4729,7 @@ public class LayoutEditor extends PositionAwareJFrame
         if (parent.refuseWhileARunHoldsTheSetup(this)) return;
 
         // The handlers act on the main window's page, which may be another
-        if (onThisPage) parent.selectLayoutPage(layout.getName());
+        if (onThisPage) parent.editorWindows().selectLayoutPage(layout.getName());
 
         action.run();
     }
@@ -4775,10 +4762,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
         strip.add(pageIcon(RowIcons.arrow(14, true), RowIcons.arrow(14, true, gray),
             I18n.t(first ? "layout.ui.tooltipPageIsFirst" : "layout.ui.tooltipMovePageUp"), !first,
-            () -> parent.movePageFromTheEditor(this, -1)));
+            () -> parent.layoutFileActions().movePage(-1, this)));
         strip.add(pageIcon(RowIcons.arrow(14, false), RowIcons.arrow(14, false, gray),
             I18n.t(last ? "layout.ui.tooltipPageIsLast" : "layout.ui.tooltipMovePageDown"), !last,
-            () -> parent.movePageFromTheEditor(this, 1)));
+            () -> parent.layoutFileActions().movePage(1, this)));
 
         strip.add(Box.createHorizontalGlue());
 
@@ -4817,7 +4804,8 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         List<String> pages = parent.getModel() == null ? new ArrayList<String>() : parent.getModel().getLayoutList();
 
-        boolean offersModes = pages.size() > 1 || parent.editableAutonomySession() != null || isAutonomyMode();
+        boolean offersModes = pages.size() > 1 || parent.editorWindows().editableAutonomySession() != null
+            || isAutonomyMode();
 
         sidebar = new JPanel();
         sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
@@ -4936,7 +4924,7 @@ public class LayoutEditor extends PositionAwareJFrame
         });
 
         // On the click, not the selection change, which code and arrow keys fire too.
-        pageList.addMouseListener(Listen.clicked(e ->
+        pageList.addMouseListener(OnMouse.clicked(e ->
         {
             int row = pageRowAt(e.getPoint());
 
@@ -4979,7 +4967,7 @@ public class LayoutEditor extends PositionAwareJFrame
         column.add(trackModeButton);
         column.add(autonomyModeButton);
 
-        if (parent.editableAutonomySession() == null)
+        if (parent.editorWindows().editableAutonomySession() == null)
         {
             autonomyModeButton.setEnabled(false);
             autonomyModeButton.setToolTipText(

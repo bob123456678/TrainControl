@@ -186,19 +186,6 @@ public class testDownloadingTheStationsLayout
         }
     }
 
-    /** What the door asked, less the stand-in's warning that no CAN messages arrive, which simulation raises. */
-    private static List<String> theDoorsQuestions(Answering answering)
-    {
-        List<String> out = new ArrayList<>();
-
-        for (String message : answering.asked())
-        {
-            if (!message.startsWith(I18n.t("ui.warningNoCanMessages").split("\\{")[0])) out.add(message);
-        }
-
-        return out;
-    }
-
     /** The Autonomy menu's items as the user opens it. */
     private List<String> autonomyMenu() throws Exception
     {
@@ -258,7 +245,7 @@ public class testDownloadingTheStationsLayout
             assertFalse(autonomyMenu().contains(needsALocalLayout),
                 "after the download the Autonomy menu still says autonomy needs a layout on this computer: "
                 + autonomyMenu());
-            assertTrue(theDoorsQuestions(answering).size() == 2, "the download asked more than its two notices: "
+            assertTrue(answering.asked().size() == 2, "the download asked more than its two notices: "
                 + answering.asked());
         }
     }
@@ -527,6 +514,311 @@ public class testDownloadingTheStationsLayout
             {
                 Trees.delete(folder);
             }
+        }
+    }
+
+    /**
+     * Open Layout on a folder that then fails in the sync's read, with a station that answers: the layout in use stays,
+     * from the station's layout and from a folder of this computer's, with its sensors' states, and the log does not
+     * say a Sync would read the folder that failed, also when that folder was read before (FR-245).
+     *
+     * MUTATION: in `MarklinControlStation.syncLayoutsFromConfiguredSource`, fall back to the station's pages while a
+     * layout is in use, and the sensors only the folder draws come back clear; or in
+     * `MarklinControlStation.clearLayouts`, leave out clearing `layoutFolderRead`, and the log says it.
+     */
+    @Test(timeOut = 240000)
+    public void testAFolderThatFailsInTheSyncLeavesTheLayoutInUse() throws Exception
+    {
+        final File local = new File(root, "local");
+        final File changing = new File(root, "changing");
+
+        Trees.copyForTheRun(new File("test/test_layout"), local);
+        Trees.copyForTheRun(new File("test/test_layout"), changing);
+
+        // `changing` read once and left for the station's layout, so its failure below is a switch's all the same
+        final JMenuItem toTheStation = (JMenuItem) Reflect.get(TrainControlUI.class, ui, "switchCSLayoutMenuItem");
+        final String kept = I18n.f("layout.ui.errorFolderUnreadLayoutKept", "\n").split("\n")[1];
+
+        openTheFolder(changing);
+        SwingUtilities.invokeAndWait(() -> toTheStation.getActionListeners()[0].actionPerformed(null));
+        assertTrue(testTheSyncSaysWhenPartOfTheDataWasNotRead.syncEnded(ui) && ui.isRemoteLayout()
+            && rig.model.getLayoutList().contains("Startpackung"), "precondition: not back on the station's layout");
+
+        for (boolean fromLocal : new boolean[] {false, true})
+        {
+            if (fromLocal) openTheFolder(local);
+
+            final String from = fromLocal ? "from a folder" : "from the station's layout";
+            final List<Integer> sensors = everySensorSet();
+            final String was = testRecentLayouts.everythingAbout(ui);
+            final String filesWere = testRecentLayouts.filesIn(local);
+
+            rig.takeLog();
+
+            try (AutoCloseable hook = testRecentLayouts.indexGoneWhenTheSyncReads(changing))
+            {
+                assertEquals(testRecentLayouts.openLayout(ui, changing), testRecentLayouts.REFUSED,
+                    "a folder that failed in the sync was not said to fail, " + from);
+            }
+
+            Components.waitFor(() -> was.equals(testRecentLayouts.everythingAbout(ui)), 30000);
+            Components.settle();
+
+            assertEquals(testRecentLayouts.everythingAbout(ui), was, "a folder that failed in the sync changed it, "
+                + from);
+            assertFalse(rig.takeLog().stream().anyMatch(line -> line.contains(kept)), "a folder that failed in the sync"
+                + " was logged as if a Sync would read it, " + from);
+            assertEquals(testRecentLayouts.filesIn(local), filesWere, "a folder that failed in the sync wrote the folder"
+                + " in use, " + from);
+            assertSet(sensors, "a folder that failed in the sync cleared the sensor, " + from);
+
+            Files.copy(new File("test/test_layout/config/gleisbild.cs2").toPath(),
+                new File(changing, "config/gleisbild.cs2").toPath());
+        }
+    }
+
+    /**
+     * Open Layout on a folder that then fails in the sync's read leaves the parser on the pages in use: the Download
+     * door then copies the station's pages, not the folder that failed, and from a folder of this computer's the parser
+     * reads that folder again (FR-245).
+     *
+     * MUTATION: in `MarklinControlStation.syncLayoutsFromConfiguredSource`, leave out putting the parser back before the
+     * return while a layout is in use, and the download copies the one page of the folder that failed.
+     */
+    @Test(timeOut = 240000)
+    public void testADownloadAfterARefusedOpenCopiesThePagesInUse() throws Exception
+    {
+        final File local = new File(root, "local");
+        final File changing = new File(root, "changing");
+        final File into = aFolder("dl");
+        final byte[] onePage = "[gleisbild]\nversion\n .major=1\ngroesse\nseite\n .id=5\n .name=1 - Main\n"
+            .getBytes(StandardCharsets.UTF_8);
+        final List<String> expected = new ArrayList<>();
+
+        for (String page : rig.model.getLayoutList()) expected.add(page + ".cs2");
+
+        Trees.copyForTheRun(new File("test/test_layout"), local);
+        Trees.copyForTheRun(new File("test/test_layout"), changing);
+
+        for (boolean fromLocal : new boolean[] {false, true})
+        {
+            if (fromLocal) openTheFolder(local);
+
+            // The folder that fails names one page, so a copy of it shows
+            Files.write(new File(changing, "config/gleisbild.cs2").toPath(), onePage);
+
+            try (AutoCloseable hook = testRecentLayouts.indexGoneWhenTheSyncReads(changing))
+            {
+                assertEquals(testRecentLayouts.openLayout(ui, changing), testRecentLayouts.REFUSED,
+                    "precondition: the folder that failed in the sync was not refused");
+            }
+
+            Components.settle();
+            Files.write(new File(changing, "config/gleisbild.cs2").toPath(), onePage);
+
+            if (fromLocal)
+            {
+                String master = ((org.traincontrol.marklin.file.CS2File) Reflect.get(
+                    org.traincontrol.marklin.MarklinControlStation.class, rig.model, "fileParser")).getLayoutMasterURL();
+
+                assertTrue(master.contains(local.getAbsolutePath()), "from a folder, the parser reads " + master);
+                continue;
+            }
+
+            try (Answering answering = press(into, message -> Answering.pressAt(0)))
+            {
+                assertTrue(Components.waitFor(() -> answering.asked().contains(completeFor(into)), 60000),
+                    "the download did not complete: " + answering.asked());
+                Components.settle();
+            }
+
+            List<String> got = new ArrayList<>(java.util.Arrays.asList(new File(into, "config/gleisbilder").list()));
+
+            got.sort(null);
+            expected.sort(null);
+            assertEquals(got, expected, "after a refused open, the download did not copy the station's pages");
+        }
+    }
+
+    /**
+     * A Sync while the layout folder in use will not read keeps the layout, its preference, pages, page window,
+     * autonomy and sensors, says so by the folder's name rather than that everything matches, and still syncs the
+     * locomotives; once the folder is back, the next Sync reads it (FR-245).
+     *
+     * MUTATION: in `MarklinControlStation.syncLayoutsFromConfiguredSource`, fall back to the station's pages while a
+     * layout is in use, and the Sync switches to the station's layout; or in `ManualSync.saySynced`, show it as
+     * information, and it is not a warning.
+     */
+    @Test(timeOut = 240000)
+    public void testASyncWhileTheFolderWillNotReadKeepsTheLayoutAndSaysSo() throws Exception
+    {
+        final File local = new File(root, "local");
+        final File away = new File(root, "away");
+
+        Trees.copyForTheRun(new File("test/test_layout"), local);
+        openTheFolder(local);
+        support.AskingWindows.openThePage(ui);
+        Components.settle();
+
+        final String folder = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+        final List<Integer> sensors = everySensorSet();
+        final String was = testRecentLayouts.everythingAbout(ui);
+        final Object page = rig.model.getLayout("1 - Main");
+
+        assertTrue(was.contains("page windows: 1 - Main") && ui.getAutonomySession() != null,
+            "precondition: no page window, or no autonomy configuration loaded: " + was);
+        assertTrue(rig.model.deleteLoc("ALCO UP"), "precondition: the station's locomotive is not here");
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+        {
+            assertTrue(local.renameTo(away), "precondition: the folder could not be taken away");
+            SwingUtilities.invokeLater(() -> ui.doSync(ui));
+            assertTrue(answering.awaitAsked(1, 60000), "the Sync said nothing");
+            Components.settle();
+
+            String said = answering.asked().get(0);
+
+            assertTrue(said.contains(I18n.f("layout.ui.errorFolderUnreadLayoutKept", folder)), "the Sync did not say the"
+                + " folder could not be read: " + said);
+            assertFalse(said.contains(I18n.t("ui.infoSyncNothingDiffers")), "the Sync said everything matches: " + said);
+            assertEquals(answering.questions().get(0).type, javax.swing.JOptionPane.WARNING_MESSAGE,
+                "not as a warning");
+            assertTrue(rig.takeLog().stream().anyMatch(line -> line.contains(
+                I18n.f("layout.ui.errorFolderUnreadLayoutKept", folder))), "the Sync did not log the folder unread");
+            assertEquals(testRecentLayouts.everythingAbout(ui), was, "the Sync changed the layout in use");
+            assertSet(sensors, "the Sync cleared the sensor");
+            assertTrue(rig.model.getLocByName("ALCO UP") != null, "the Sync did not sync the locomotives");
+
+            assertTrue(away.renameTo(local), "precondition: the folder could not be put back");
+            SwingUtilities.invokeLater(() -> ui.doSync(ui));
+            assertTrue(answering.awaitAsked(2, 60000), "the second Sync said nothing");
+
+            assertEquals(answering.asked().get(1), I18n.t("ui.infoSyncNothingDiffers"), "the folder back, the Sync says");
+            assertEquals(answering.questions().get(1).type, javax.swing.JOptionPane.INFORMATION_MESSAGE,
+                "the folder back, not as information");
+            assertTrue(rig.model.getLayout("1 - Main") != page, "the folder back, the Sync did not read it");
+        }
+    }
+
+    /**
+     * Open Layout on a folder that then fails in the sync's read, while the folder in use has no pages: the station's
+     * pages that stood in for it are read away again, so the preference and the empty page list stay (FR-245).  The
+     * Autonomy menu and the session follow pages read again, so they are left out.
+     *
+     * MUTATION: in `LayoutFileActions.switchTo`, leave out the read again after a put-back, and the station's pages
+     * stay under the empty folder's name.
+     */
+    @Test(timeOut = 240000)
+    public void testAFolderThatFailsWhileNoPageIsInUseLeavesNoPage() throws Exception
+    {
+        final File empty = new File(root, "empty");
+        final File changing = new File(root, "changing");
+
+        // An empty index reads as a layout with no pages; Open Layout refuses one, so the preference names it
+        assertTrue(new File(empty, "config").mkdirs(), "precondition: no folder for the empty layout");
+        Files.write(new File(empty, "config/gleisbild.cs2").toPath(), new byte[0]);
+        Trees.copyForTheRun(new File("test/test_layout"), changing);
+        TrainControlUI.layoutFolderIs(empty.getPath());
+
+        final CountDownLatch read = new CountDownLatch(1);
+
+        SwingUtilities.invokeAndWait(() -> ui.layoutEditingCompleteThen(read::countDown));
+        assertTrue(read.await(30, TimeUnit.SECONDS) && rig.model.getLayoutList().isEmpty(),
+            "precondition: the folder with no pages left pages in use");
+        Components.settle();
+
+        final java.util.function.Supplier<String> about = () -> testRecentLayouts.everythingAbout(ui)
+            .replaceFirst("(?s)\nAutonomy menu: .*", "");
+        final String was = about.get();
+
+        try (AutoCloseable hook = testRecentLayouts.indexGoneWhenTheSyncReads(changing))
+        {
+            List<String> said = testRecentLayouts.openLayout(ui, changing);
+
+            assertEquals(said, testRecentLayouts.REFUSED, "a folder that failed in the sync was not said to fail: "
+                + said);
+        }
+
+        Components.waitFor(() -> was.equals(about.get()), 30000);
+        Components.settle();
+
+        assertEquals(about.get(), was, "a folder that failed in the sync changed the layout with no pages");
+    }
+
+    /**
+     * The page windows remembered are kept through a session with no pages, which could show none of them: the exit's
+     * save leaves them for the next start (FR-252).
+     *
+     * MUTATION: in `TrainControlUI.saveLayoutTitles`, leave out `!this.model.getLayoutList().isEmpty()`, and the exit
+     * forgets them.
+     */
+    @Test(timeOut = 120000)
+    @SuppressWarnings("unchecked")
+    public void testASessionWithNoPagesKeepsThePageWindowsRemembered() throws Exception
+    {
+        final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+        final boolean rememberWas = prefs.getBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, true);
+        final String key = TrainControlUI.LAYOUT_TITLES_PREF + "_"
+            + ((java.util.Map<String, Integer>) Reflect.get(TrainControlUI.class, ui, "layoutSizes")).values().iterator().next();
+        final String remembered = rig.model.getLayoutList().get(0);
+
+        prefs.putBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, true);
+        prefs.put(key, remembered);
+
+        try
+        {
+            rig.model.clearLayouts();
+            SwingUtilities.invokeAndWait(() -> ui.saveState(false));
+
+            assertEquals(prefs.get(key, null), remembered, "an exit with no pages forgot the page window remembered");
+        }
+        finally
+        {
+            prefs.putBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, rememberWas);
+            prefs.remove(key);
+            rig.model.refreshLayouts();
+        }
+    }
+
+    /** Layouts &gt; Open Layout's own method on `folder`, once its pages are in. */
+    private void openTheFolder(File folder) throws Exception
+    {
+        java.lang.reflect.Method open = Reflect.method(TrainControlUI.class, "openLayoutFolder", File.class);
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                open.invoke(ui, folder);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+
+        assertTrue(Components.waitFor(() -> rig.model.getLayoutList().contains("1 - Main"), 60000),
+            "precondition: the folder of this computer's did not open");
+
+        Components.settle();
+    }
+
+    /** Sets every sensor the model knows, and gives back their addresses. */
+    private List<Integer> everySensorSet()
+    {
+        List<Integer> sensors = new ArrayList<>(rig.model.knownSensors());
+
+        for (Integer id : sensors) rig.model.setFeedbackState(String.valueOf(id), true);
+
+        return sensors;
+    }
+
+    private void assertSet(List<Integer> sensors, String failure)
+    {
+        for (Integer id : sensors)
+        {
+            assertTrue(rig.model.knownSensors().contains(id) && rig.model.getFeedbackState(String.valueOf(id)),
+                failure + " " + id);
         }
     }
 }

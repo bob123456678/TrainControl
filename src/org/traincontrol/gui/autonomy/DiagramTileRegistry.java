@@ -236,13 +236,18 @@ public class DiagramTileRegistry
     }
 
     /**
-     * Forgets everything.  Only for a layout being replaced wholesale; ordinary page switching prunes
-     * itself.
+     * Blanks every square and forgets what each showed, for a setup replaced wholesale; a label on screen stays
+     * registered, as an open page window is not built again (OB-519).
      */
     public void reset()
     {
-        tiles.clear();
-        lastPublished.clear();
-        lastAnnotated.clear();
+        clearOverlays();
+        clearAnnotations();
+        // Off screen is let go: a cached page asks whether it is still wired.
+        tiles.values().removeIf(here ->
+        {
+            here.removeIf(label -> !label.isDisplayable());
+            return here.isEmpty();
+        });
     }
 }

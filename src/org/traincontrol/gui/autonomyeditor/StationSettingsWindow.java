@@ -195,7 +195,6 @@ public final class StationSettingsWindow extends StationWindowBase
     StationSettingsWindow(AutonomyEditorPanel editor, Window owner)
     {
         super(editor, owner);
-
         form.setName("station.form");
 
         buildForm();
@@ -1583,7 +1582,7 @@ public final class StationSettingsWindow extends StationWindowBase
             }
 
             final JComboBox<String> choice = same ? departChoices.get(entry.getKey())
-                : new Choice(at -> actAlone(() -> editor.setRunDirection(tile, entry.getKey(), answers.get(at))),
+                : new Choice(at -> actAlone(() -> editor.setRunDirection(tile, entry.getKey(), answers.get(at), false)),
                     labels.toArray(new String[0]));
 
             choice.setName("station.depart." + y);
@@ -1609,12 +1608,14 @@ public final class StationSettingsWindow extends StationWindowBase
         }
 
         fly("depart", StationFlyovers.depart(said == null ? I18n.t("autosetup.ui.labelNone") : said, why));
+        departWhy = why;
 
         depart.revalidate();
     }
 
-    /** The roads, with their sides, the May depart lists were built for. */
+    /** The roads, with their sides, the May depart lists were built for; and why May depart is grayed, or null. */
     private List<Object> departShape;
+    private String departWhy;
 
     private String namesOf(List<TileKey> squares)
     {
@@ -1757,6 +1758,7 @@ public final class StationSettingsWindow extends StationWindowBase
         String held = whyHeld();
 
         String[] said = mark.kind == StationPicture.Mark.Kind.IN ? wayIn(mark, press && held == null)
+            : mark.kind == StationPicture.Mark.Kind.DEPART ? departNext(press && held == null)
             : nextSquare(mark, press && held == null);
 
         String then = held != null ? held : said[1];
@@ -1800,18 +1802,23 @@ public final class StationSettingsWindow extends StationWindowBase
         return said(means, I18n.t(barred ? "autosetup.ui.stationPicInShut" : "autosetup.ui.stationPicInOpen"));
     }
 
+    /** The station's square steps May depart to its list's next answer, through the list and its refusals (OB-511). */
+    private String[] departNext(boolean press)
+    {
+        JComboBox<String> choice = departChoices.size() == 1 ? departChoices.values().iterator().next() : null;
+        if (choice == null || !choice.isEnabled()) return said(departWhy, I18n.t("autosetup.ui.stationPicCannot"));
+        if (press) choice.setSelectedIndex((choice.getSelectedIndex() + 1) % choice.getItemCount());
+        return said(null, I18n.t("autosetup.ui.stationPicDepart"));
+    }
+
     /** A next square's arrow, set as its right-click menu's Trains May Depart sets it: its one track, or that arm. */
     private String[] nextSquare(StationPicture.Mark mark, boolean press)
     {
         final TileKey square = mark.square;
-
         String name = editor.describeTile(square);
-
         Map<RouteId, TilePorts.Route> routes = editor.session.getRoutes(square);
         List<TilePorts.Side> arms = AutonomyEditorPanel.armsOf(routes);
-
         int at = arms.indexOf(mark.side);
-
         if (!editor.session.canCarryDirection(square) || at < 0) return said(null, I18n.f("autosetup.ui.stationPicNextCannot", name));
 
         // As the picture shows it: a run pointing opposite ways is drawn closed, whatever the square stores
@@ -1823,13 +1830,12 @@ public final class StationSettingsWindow extends StationWindowBase
         {
             final Map.Entry<RouteId, TilePorts.Route> only = routes.entrySet().iterator().next();
             final Direction wanted = TileGraph.answerFor(only.getValue(), arms, open ? mask & ~(1 << at) : mask | 1 << at);
-
             if (!TileGraph.directionIsPossible(wanted, only.getValue()))
             {
                 return said(null, I18n.f("autosetup.ui.stationPicNextCannot", name));
             }
 
-            if (press) actAlone(() -> editor.setRunDirection(square, only.getKey(), wanted));
+            if (press) actAlone(() -> editor.setRunDirection(square, only.getKey(), wanted, true));
         }
         else if (press)
         {
@@ -1909,8 +1915,9 @@ public final class StationSettingsWindow extends StationWindowBase
     }
 
     /**
-     * @return in the picture's block's pixels: "IN.N" (a station's way in), "AXIS.N" (that side's axis),
-     *     "NEXT.N.W" (the next square to the north's arrow at its west side), "SQUARE" and "SQUARE.N" (the squares)
+     * @return in the picture's block's pixels: "IN.N" (a station's way in), "DEPART" (the station), "AXIS.N" (that
+     *     side's axis), "NEXT.N.W" (the next square to the north's arrow at its west side), "SQUARE" and "SQUARE.N"
+     *     (the squares)
      */
     public Map<String, Shape> pictureMarksForTest()
     {
@@ -1951,6 +1958,7 @@ public final class StationSettingsWindow extends StationWindowBase
     {
         boolean next = mark.kind == StationPicture.Mark.Kind.NEIGHBOR;
 
+        if (mark.side == null) return mark.kind.name();
         return (next ? "NEXT." + sideOf(mark.square) : mark.kind.name()) + "." + mark.side.name();
     }
 

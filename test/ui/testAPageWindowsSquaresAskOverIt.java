@@ -18,7 +18,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.LayoutLabel;
-import org.traincontrol.gui.LayoutPopupUI;
+import org.traincontrol.gui.LayoutPopupWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -62,7 +62,7 @@ public class testAPageWindowsSquaresAskOverIt
 
     private static final String PLATFORM = "MainPlatform";
 
-    private static LayoutPopupUI page;
+    private static LayoutPopupWindow page;
     private static boolean echoWas;
     private static TrainControlUI ui;
     private static MarklinControlStation model;
@@ -606,8 +606,8 @@ public class testAPageWindowsSquaresAskOverIt
      * A page that closes between the question being asked for and its being put gives way to the main window: the event
      * thread is held until the asking thread waits on it, and the window goes in between.
      *
-     * MUTATION: `over == null ? this : over` for the window in `askAboutRouteConflict`, and it hangs off a window that is
-     * not there.
+     * MUTATION: `over == null ? this.ui : over` for the window in `RouteListPanel.askAboutRouteConflict`, and it hangs
+     * off a window that is not there.
      */
     @Test
     public void testAPageGoneAsTheConflictIsPutGivesWayToTheMainWindow() throws Exception

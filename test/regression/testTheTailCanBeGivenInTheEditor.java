@@ -628,7 +628,7 @@ public class testTheTailCanBeGivenInTheEditor
                 try
                 {
                     cut.set(ui, f.train);
-                    ui.setHoveredDiagramTile(f.tile.getPage(), f.tile.getX(), f.tile.getY());
+                    ui.diagramLocGestures().setHoveredDiagramTile(f.tile.getPage(), f.tile.getX(), f.tile.getY());
                     handled[0] = gesture.invoke(ui, java.awt.event.KeyEvent.VK_V, true);
                 }
                 catch (Exception refused)
@@ -959,7 +959,7 @@ public class testTheTailCanBeGivenInTheEditor
                     try
                     {
                         cut.set(ui, train);
-                        ui.setHoveredDiagramTile(tile.getPage(), tile.getX(), tile.getY());
+                        ui.diagramLocGestures().setHoveredDiagramTile(tile.getPage(), tile.getX(), tile.getY());
                         handled[0] = gesture.invoke(ui, java.awt.event.KeyEvent.VK_V, true);
                     }
                     catch (Exception refused)
@@ -1012,7 +1012,7 @@ public class testTheTailCanBeGivenInTheEditor
                     try
                     {
                         cut.set(ui, train);
-                        ui.setHoveredDiagramTile(tile.getPage(), tile.getX(), tile.getY());
+                        ui.diagramLocGestures().setHoveredDiagramTile(tile.getPage(), tile.getX(), tile.getY());
                         handled[0] = gesture.invoke(ui, java.awt.event.KeyEvent.VK_V, true);
                     }
                     catch (Exception refused)
