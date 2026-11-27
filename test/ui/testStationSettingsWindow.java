@@ -2587,8 +2587,7 @@ public class testStationSettingsWindow
      *
      * Each also says a negative number makes a last choice, not "ranks after 0" (MT-1102).
      *
-     * MUTATION: drop "A higher importance is preferred" or the negative sentence from `flyPriorityNow` or
-     * `flyPriorityNoneNow`, and this fails.
+     * MUTATION: drop the negative sentence or the Routing Logic name from `flyPriorityChange`, and this fails.
      */
     @Test(timeOut = 120000)
     public void testThePriorityMarkSaysAHigherImportanceIsPreferred() throws Exception
@@ -2600,18 +2599,19 @@ public class testStationSettingsWindow
 
         StationDoors.current(window);
 
-        String said = "A higher importance is preferred";
-        String negative = "a negative one makes this a last choice";
+        String said = "A higher number makes autonomy prefer this station";
+        String negative = "a negative one makes it a last choice";
+        String logic = "Routing Logic";
         String atDefault = Components.onTheEventThread(() -> window.flyoverForTest("priority"));
 
-        assertTrue(atDefault.contains("the default") && atDefault.contains(said) && atDefault.contains(negative),
+        assertTrue(atDefault.contains("the default") && atDefault.contains(said) && atDefault.contains(negative) && atDefault.contains(logic),
             "the Importance (i) at the default does not say which way the number counts and what a negative one does");
 
         StationDoors.typeAndEnter(window, "station.priority", "4");
 
         String typed = Components.onTheEventThread(() -> window.flyoverForTest("priority"));
 
-        assertTrue(typed.contains("4.  ") && !typed.contains("the default") && typed.contains(said) && typed.contains(negative),
+        assertTrue(typed.contains("4.") && !typed.contains("the default") && typed.contains(said) && typed.contains(negative) && typed.contains(logic),
             "the Importance (i) with a number typed does not say which way the number counts and what a negative one does");
 
         StationDoors.close(window);
