@@ -28,7 +28,8 @@ import static org.testng.Assert.*;
 /**
  * Allowed trains per arrival side and per action (FR-260), on `single-switch`, with `Approach` set up as the user's
  * St31Apost: trains may turn there; from the west (the user's north) nobody stops and every train runs through; from
- * the east only Q stops, and only MX 26 runs through, so Q must turn.  `testPointAllowed` (test/unit) tests one cell alone.
+ * the east only Q stops, and only MX 26 runs through, so Q must turn.  `testPointAllowed` (test/unit) tests one cell
+ * alone.
  */
 public class testTrainsBySide
 {
@@ -158,8 +159,8 @@ public class testTrainsBySide
      *
      * MUTATION: put back `e.getStart().excludes(loc) && !isAStationSquare(e.getStart())` in `Layout.isPathClear` and Q
      * runs east to west; drop the through cell from `Point.excludes` and Q is offered the plain copy; have
-     * `Layout.setsOffFrom` answer `standing` and Q standing on the plain copy has no route; drop the through cell's test
-     * from `Layout.turningCopyBarring` and MX 26 standing there is turned rather than let carry on west.
+     * `Layout.setsOffFrom` answer `standing` and Q standing on the plain copy has no route; drop the through cell's
+     * test from `Layout.turningCopyBarring` and MX 26 standing there is turned rather than let carry on west.
      */
     @Test
     public void testTheSt31RuleRunsEndToEnd() throws Exception
@@ -540,6 +541,99 @@ public class testTrainsBySide
     }
 
     /**
+     * A set-off by turning whose switch does not confirm during the wait sends no turn: on a railway that switches
+     * for real, Q stands back on the plain copy, unturned, its tail and route with it.
+     *
+     * MUTATION: take `standBack` out of `Layout.handleMisconfiguredPath` and Q is left on the turning copy, unturned.
+     */
+    @Test(timeOut = 120000)
+    public void testASetOffWhoseSwitchDoesNotConfirmSendsNoTurn() throws Exception
+    {
+        st31();
+
+        Layout railway = build();
+
+        Point plainCopy = copy(railway, "W", false);
+
+        List<Edge> trip = null;
+
+        for (List<Edge> path : pathsFrom(railway, q, plainCopy))
+        {
+            if (path.get(path.size() - 1).getEnd() == railway.getPoint("MainPlatform")) trip = path;
+        }
+
+        assertNotNull(trip, "Q on the plain copy has no trip to MainPlatform");
+
+        List<Edge> along = new ArrayList<>();
+
+        for (Edge e : railway.getEdges())
+        {
+            if (e.getEnd() == plainCopy && along.isEmpty()) along.add(e);
+        }
+
+        plainCopy.setArrivedFrom(plainCopy.getArrivalSide());
+        plainCopy.setArrivedAlong(along);
+
+        // One switch on the trip held the other way for as long as the trip waits for it
+        Map.Entry<String, org.traincontrol.base.Accessory.accessorySetting> held = null;
+
+        for (Edge e : trip)
+        {
+            if (held == null && !e.getConfigCommands().isEmpty())
+            {
+                held = e.getConfigCommands().entrySet().iterator().next();
+            }
+        }
+
+        assertNotNull(held, "Q's trip throws no switch");
+
+        org.traincontrol.marklin.MarklinAccessory sw = scenario.getModel().getAccessoryByName(held.getKey());
+        boolean wrong = !org.traincontrol.base.Accessory.isThrow(held.getValue());
+        boolean[] holding = {true};
+
+        Thread holder = new Thread(() ->
+        {
+            while (holding[0])
+            {
+                sw.setSwitched(wrong);
+                Thread.yield();
+            }
+        }, "held-switch");
+
+        boolean forward = q.goingForward();
+        int failures = railway.getPathValidationFailureCount(), waited = Layout.PATH_VALIDATION_MS;
+
+        support.Reflect.method(org.traincontrol.marklin.MarklinControlStation.class, "setPowerState", boolean.class)
+            .invoke(scenario.getModel(), true);
+
+        Layout.PATH_VALIDATION_MS = 100;
+        holder.setDaemon(true);
+        holder.start();
+
+        try
+        {
+            assertFalse(railway.executePath(trip, q, 30, null), "Q set off with its switch held the other way");
+        }
+        finally
+        {
+            holding[0] = false;
+            holder.join(10000);
+            Layout.PATH_VALIDATION_MS = waited;
+        }
+
+        assertEquals(railway.getPathValidationFailureCount(), failures + 1, "the switch held was not what refused Q");
+        assertEquals(q.goingForward(), forward, "a set-off whose switch did not confirm turned Q");
+
+        for (Point each : copies(railway))
+        {
+            assertEquals(each.getCurrentLocomotive(), each == plainCopy ? q : null, "Q held by " + each.getName());
+        }
+
+        assertEquals(plainCopy.getArrivedFrom(), plainCopy.getArrivalSide(), "Q's tail was left on the turning copy");
+        assertEquals(plainCopy.getArrivedAlong(), along, "Q's route in was left on the turning copy");
+    }
+
+    /**
      * Two hand sends of Q from the plain copy at once turn it once: the second, waiting while the first holds the
      * railway, is refused as busy and moves nothing, so Q ends as one send leaves it.  A send whose train was moved
      * while it waited is refused as not where the train stands, and moves nothing.
@@ -668,53 +762,76 @@ public class testTrainsBySide
         java.util.concurrent.Callable<Boolean>... sends) throws Exception
     {
         Boolean[] answers = new Boolean[sends.length];
+        Exception[] thrown = new Exception[sends.length];
         Thread[] threads = new Thread[sends.length];
         java.lang.management.ThreadMXBean bean = java.lang.management.ManagementFactory.getThreadMXBean();
+        String unparked = null;
 
-        synchronized (railway)
+        try
         {
-            for (int i = 0; i < sends.length; i++)
+            synchronized (railway)
             {
-                final int which = i;
-
-                threads[i] = new Thread(() ->
+                for (int i = 0; i < sends.length; i++)
                 {
-                    try
-                    {
-                        answers[which] = sends[which].call();
-                    }
-                    catch (Exception e)
-                    {
-                        throw new IllegalStateException(e);
-                    }
-                }, "parked-send-" + i);
+                    final int which = i;
 
-                threads[i].setDaemon(true);
-                threads[i].start();
+                    threads[i] = new Thread(() ->
+                    {
+                        try
+                        {
+                            answers[which] = sends[which].call();
+                        }
+                        catch (Exception e)
+                        {
+                            thrown[which] = e;
+                        }
+                    }, "parked-send-" + i);
+
+                    threads[i].setDaemon(true);
+                    threads[i].start();
+                }
+
+                for (Thread t : threads)
+                {
+                    if (unparked == null && !support.Settle.until(() ->
+                    {
+                        java.lang.management.LockInfo lock = bean.getThreadInfo(t.getId()).getLockInfo();
+
+                        return t.getState() == Thread.State.BLOCKED && lock != null
+                            && lock.getIdentityHashCode() == System.identityHashCode(railway);
+                    }, 10000)) unparked = t.getName();
+                }
+
+                if (unparked == null) meanwhile.run();
             }
-
+        }
+        finally
+        {
+            // No send left running after the test: one that never parked is interrupted, then each is waited for.
             for (Thread t : threads)
             {
-                assertTrue(support.Settle.until(() ->
-                {
-                    java.lang.management.LockInfo lock = bean.getThreadInfo(t.getId()).getLockInfo();
+                if (t == null) continue;
 
-                    return t.getState() == Thread.State.BLOCKED && lock != null
-                        && lock.getIdentityHashCode() == System.identityHashCode(railway);
-                }, 10000), "a send never waited for the railway's monitor");
+                if (unparked != null) t.interrupt();
+
+                t.join(60000);
             }
-
-            meanwhile.run();
         }
 
-        for (Thread t : threads) t.join(60000);
+        assertNull(unparked, unparked + " never waited for the railway's monitor");
+
+        for (int i = 0; i < sends.length; i++)
+        {
+            if (thrown[i] != null) throw new AssertionError("send " + i + " threw " + thrown[i], thrown[i]);
+        }
 
         return answers;
     }
 
     /**
      * A square that is no station but may turn trains turns one its run-through cell from that side bars: a train
-     * standing there sets off turned, even one that cannot reverse, and What's allowed here lets any train leave turned.
+     * standing there sets off turned, even one that cannot reverse, and What's allowed here lets any train leave
+     * turned.
      *
      * MUTATION: drop `!isReversing` from `Point.barsPassingBySide` and the train cannot set off; have
      * `Point.allowedToPass` answer the through cell on a turning copy and the rules say Some trains.
@@ -726,7 +843,8 @@ public class testTrainsBySide
         session.setStopsAndRunsThrough(approach, false, true);
         session.setPointFlag(approach, AutonomyBuilder.CAN_REVERSE, true);
         session.setWhichTrains(approach, Side.E, true, WhichTrains.WHITELIST, Collections.singletonList(mx.getName()));
-        session.setWhichTrains(approach, Side.W, true, WhichTrains.WHITELIST, Arrays.asList(mx.getName(), plain.getName()));
+        session.setWhichTrains(approach, Side.W, true, WhichTrains.WHITELIST,
+            Arrays.asList(mx.getName(), plain.getName()));
 
         Layout railway = build();
 
@@ -825,7 +943,8 @@ public class testTrainsBySide
 
         assertEquals(said(), Collections.singletonList(plain.getName()), "the checks said: " + said());
 
-        session.setWhichTrains(approach, Side.E, true, WhichTrains.BLACKLIST, Collections.singletonList(plain.getName()));
+        session.setWhichTrains(approach, Side.E, true, WhichTrains.BLACKLIST,
+            Collections.singletonList(plain.getName()));
 
         assertEquals(said(), Collections.singletonList(plain.getName()), "a blacklist from the east: " + said());
 
@@ -903,7 +1022,8 @@ public class testTrainsBySide
             assertFalse(each.allowedToStop().getListed().contains(mx) || each.allowedToPass() != null
                 && each.allowedToPass().getListed().contains(mx), "the running layout kept a deleted train on a cell");
             assertFalse(each.allowedToStop().getListed().contains(q), "the running layout kept Q on a stop cell");
-            assertFalse(each.toJSON().toString().contains("Sides "), "an export names a deleted train: " + each.toJSON());
+            assertFalse(each.toJSON().toString().contains("Sides "),
+                "an export names a deleted train: " + each.toJSON());
         }
 
         session.getStore().locomotiveRenamed(mx.getName(), "Sides MX renamed");

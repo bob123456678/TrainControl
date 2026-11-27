@@ -3264,8 +3264,6 @@ public class Layout
      */
     private boolean configureAndLockPath(List<Edge> path, Locomotive loc, ReversalPolicy reversals, Point stood)
     {
-        final Point start = path.get(0).getStart();
-
         // Lock the path and send the accessory commands under the Layout monitor.  Holding it here is
         // fine - path locking must be atomic - but the validation wait below must NOT hold it, so other
         // locomotives' path checks are not blocked for the (possibly multi-second, scales with path size -
@@ -3319,7 +3317,7 @@ public class Layout
             try
             {
             // Stood on the path's start by the claim's holder; a throw from here on stands it back.
-            if (stood != null) moveToCopy(stood, start, loc);
+            if (stood != null) moveToCopy(stood, path.get(0).getStart(), loc);
 
             for (Edge e : path)
             {
@@ -3369,9 +3367,8 @@ public class Layout
         {
             // As a configuration failure does, and only the edges actually taken (releasing others clears lock edges
             // that may be another train's); none taken would make handleMisconfiguredPath throw.
-            if (edgesLocked > 0) this.handleMisconfiguredPath(path.subList(0, edgesLocked), loc);
+            if (edgesLocked > 0) this.handleMisconfiguredPath(path.subList(0, edgesLocked), loc, stood);
 
-            standBack(start, stood, loc);
             this.takingPath.remove(loc);
 
             // Rethrown, not turned into false: nobody can act on a fault reported as "the path was occupied".
@@ -3383,8 +3380,7 @@ public class Layout
             // Only the edges we actually took.  Releasing the rest would call setUnoccupied on edges we
             // never locked, and that also clears their lock edges - which, precisely because we never
             // held them, may belong to another locomotive by now.
-            this.handleMisconfiguredPath(path.subList(0, edgesLocked), loc);
-            standBack(start, stood, loc);
+            this.handleMisconfiguredPath(path.subList(0, edgesLocked), loc, stood);
             this.takingPath.remove(loc);
             return false;
         }
@@ -3404,8 +3400,7 @@ public class Layout
             if (why != null) giveBackUnrun(path, loc, stood, why);
             else
             {
-                this.handleMisconfiguredPath(path, loc);
-                standBack(start, stood, loc);
+                this.handleMisconfiguredPath(path, loc, stood);
                 this.takingPath.remove(loc);
             }
 
@@ -3503,11 +3498,11 @@ public class Layout
     }
 
     /**
-     * Stops the locomotive and releases the locks it just acquired (leaving it at its start point) when a path's
-     * accessories could not be confirmed.  Power stays on.  The UI alert comes only once failures reach
-     * PATH_VALIDATION_ALERT_THRESHOLD.
+     * Stops the locomotive and releases the locks it just acquired (leaving it at its start point, or stood back on
+     * `stood`) when a path's accessories could not be confirmed.  Power stays on.  The UI alert comes only once
+     * failures reach PATH_VALIDATION_ALERT_THRESHOLD.
      */
-    private void handleMisconfiguredPath(List<Edge> path, Locomotive loc)
+    private void handleMisconfiguredPath(List<Edge> path, Locomotive loc, Point stood)
     {
         // LinkedHashSet: if a path repeats the same accessory across edges (e.g. a shared throat switch
         // referenced by two consecutive edges), isPathClear already guarantees it's commanded to the same
@@ -3557,6 +3552,7 @@ public class Layout
             // Provably at its start, even on a path looping back through it.  Re-reserved, not placed, so a train on
             // several points is not swept down to this one.
             path.get(0).getStart().reserve(loc);
+            standBack(path.get(0).getStart(), stood, loc);
         }
 
         String accList = String.join(", ", misconfigured);
@@ -5986,12 +5982,12 @@ public class Layout
         return standing == null || standing == start || setsOffFrom(standing, loc) != start ? null : standing;
     }
 
-    /** Stands a moved train (`stood` non-null) back from `start` if `start` still holds it; sends nothing. */
+    /** Stands a moved train (`stood` non-null) back from `start`, which its caller has just reserved; sends nothing. */
     private void standBack(Point start, Point stood, Locomotive loc)
     {
         if (stood != null) synchronized (this)
         {
-            if (loc.equals(start.getCurrentLocomotive())) moveToCopy(start, stood, loc);
+            moveToCopy(start, stood, loc);
         }
     }
 
