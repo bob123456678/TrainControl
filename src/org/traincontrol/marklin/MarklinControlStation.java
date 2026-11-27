@@ -1819,7 +1819,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             try
             {
                 String device = CS2File.fetchText(CS2File.getDeviceInfoURL(cs2Address()));
-                this.isCS3 = device.contains(CS2File.CS3_PRODUCT);
+                this.isCS3 = CS2File.isCS3Device(device);
                 this.stationFirmware = null;
                 this.stationSerial = CS2File.deviceSerial(device);
                 this.typeLearned = true;

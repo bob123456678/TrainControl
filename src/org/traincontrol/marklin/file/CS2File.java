@@ -449,10 +449,17 @@ public final class CS2File
     
     /** What a CS3's device file (geraet.vrs) says that a CS2's does not. */
     public static final String CS3_PRODUCT = "Central Station 3";
-    /** Check if this is a CS3 by looking at the info file */
+
+    /** Whether the device file at this address names a CS3; it fetches the file (over the network for an http address). */
     public static boolean isCS3(String deviceInfoUrl) throws Exception
     {
-        return fetchText(deviceInfoUrl).contains(CS3_PRODUCT);
+        return isCS3Device(fetchText(deviceInfoUrl));
+    }
+
+    /** Whether this device file's text names a CS3; null text is not. */
+    public static boolean isCS3Device(String deviceFile)
+    {
+        return deviceFile != null && deviceFile.contains(CS3_PRODUCT);
     }
 
     /** The serial number a CS2's or CS3's device file (geraet.vrs) states on its ` .sernum=` line, or null (FR-242). */

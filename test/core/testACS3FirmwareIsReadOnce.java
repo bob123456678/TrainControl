@@ -81,10 +81,38 @@ public class testACS3FirmwareIsReadOnce
         assertEquals(CS2File.deviceSerial(cs2), "4321", "a CS2's serial number");
         assertEquals(CS2File.deviceSerial(cs2.replace("\n", "\r\n")), "4321", "CRLF lines");
         assertEquals(CS2File.deviceSerial(cs3), "1234", "a CS3's serial number");
-        assertTrue(cs3.contains(CS2File.CS3_PRODUCT) && !cs2.contains(CS2File.CS3_PRODUCT), "the CS3 check");
+        assertTrue(CS2File.isCS3Device(cs3), "a CS3's device file names a CS3");
+        assertFalse(CS2File.isCS3Device(cs2), "a CS2's does not");
+        assertFalse(CS2File.isCS3Device(null), "no text is no CS3");
         assertNull(CS2File.deviceSerial("geraet\n .sernum=0\n"), "a serial number of 0");
         assertNull(CS2File.deviceSerial("geraet\n .sernum=\n"), "a blank serial number");
         assertNull(CS2File.deviceSerial(""), "an empty file");
+    }
+
+    /**
+     * `isCS3(String)` answers for the device file at an address, read here from local file URLs.
+     *
+     * MUTATION: make `CS2File.isCS3(String)` return `isCS3Device(null)`, and this fails.
+     */
+    @Test
+    public void testAnAddressIsAskedWhetherItIsACS3() throws Exception
+    {
+        java.nio.file.Path cs3 = java.nio.file.Files.createTempFile("geraet", ".vrs");
+        java.nio.file.Path cs2 = java.nio.file.Files.createTempFile("geraet", ".vrs");
+
+        try
+        {
+            java.nio.file.Files.write(cs3, StandInStation.CS3_DEVICE);
+            java.nio.file.Files.write(cs2, "[geraet]\ngeraet\n .sernum=4321\n"
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            assertTrue(CS2File.isCS3(cs3.toUri().toString()), "a CS3's device file");
+            assertFalse(CS2File.isCS3(cs2.toUri().toString()), "a CS2's");
+        }
+        finally
+        {
+            java.nio.file.Files.delete(cs3);
+            java.nio.file.Files.delete(cs2);
+        }
     }
 
     /** The firmware and serial number a CS3 sync keeps, its device file `device` and its info `info`. */
