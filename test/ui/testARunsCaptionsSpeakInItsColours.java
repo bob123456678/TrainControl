@@ -494,13 +494,9 @@ public class testARunsCaptionsSpeakInItsColours
 
             support.Mouse.enter(caption);
 
-            settle(200);
-
             assertEquals(hovered(ui), named[1].toString(), "the pointer on a station's name did not report its square");
 
             support.Mouse.exit(caption);
-
-            settle(200);
 
             assertNull(hovered(ui), "the pointer leaving a station's name still reports its square");
 
@@ -560,13 +556,9 @@ public class testARunsCaptionsSpeakInItsColours
 
             support.Mouse.enter(square);
 
-            settle(200);
-
             assertNotNull(hovered(ui), "the pointer on a square did not report it");
 
             support.Mouse.exit(square);
-
-            settle(200);
 
             assertNull(hovered(ui), "the pointer leaving a square still reports it");
         }
