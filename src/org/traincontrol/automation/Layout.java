@@ -3002,21 +3002,8 @@ public class Layout
 
         if (sibling != null)
         {
-            String tail = arrived.getArrivedFrom();
-
-            // Read before the move, which clears the side and the route on the copy it leaves.
-            java.util.List<Edge> along = arrived.getArrivedAlong();
-
-            // Onto the plain copy first, and only then off the turning one: the sweep would otherwise leave the square
-            // empty for a moment and another thread could command the exit guard green over the standing train.
-            sibling.reserve(loc);
-
-            sibling.setArrivedFrom(tail);
-
-            // The route as read before the move (MT-335).
-            sibling.setArrivedAlong(along);
-
-            clearLocomotiveExcept(loc, sibling);
+            // The route with it (MT-335).
+            moveToCopy(arrived, sibling, loc);
 
             // The station, not the copy (see placeNameOf).
             this.control.logf("autolayout.log.stoodOnTheCopyItFaces", placeNameOf(arrived));
@@ -3168,17 +3155,7 @@ public class Layout
 
         if (onto.getCurrentLocomotive() != null && onto.getCurrentLocomotive() != loc) return;
 
-        String tail = arrived.getArrivedFrom();
-
-        java.util.List<Edge> along = arrived.getArrivedAlong();
-
-        onto.reserve(loc);
-
-        onto.setArrivedFrom(tail);
-
-        onto.setArrivedAlong(along);
-
-        clearLocomotiveExcept(loc, onto);
+        moveToCopy(arrived, onto, loc);
 
         if (loc.getName() != null && arrived.getName().equals(this.reversedOnArrival.get(loc.getName())))
         {
@@ -5984,17 +5961,42 @@ public class Layout
         return null;
     }
 
-    /** Turns a train where it stands onto the copy its route sets off from (`setsOffFrom`); false if it does not. */
-    private boolean turnToSetOff(Point start, Locomotive loc)
+    /** The copy a train stands on if its route sets off turned from another copy (`setsOffFrom`), else null. */
+    private Point turnsToSetOff(Point start, Locomotive loc)
     {
         Point standing = this.getLocomotiveLocation(loc);
-        if (standing == null || standing == start || setsOffFrom(standing, loc) != start) return false;
-        loc.switchDirection();
-        start.reserve(loc);
-        start.setArrivedFrom(standing.getArrivedFrom());
-        start.setArrivedAlong(standing.getArrivedAlong());
-        clearLocomotiveExcept(loc, start);
-        return true;
+        return standing == null || standing == start || setsOffFrom(standing, loc) != start ? null : standing;
+    }
+
+    /** `moveToCopy` under the monitor, sending nothing (no move if a copy is null); false, for a refusal to return. */
+    private boolean restand(Point from, Point onto, Locomotive loc)
+    {
+        if (from != null && onto != null) synchronized (this)
+        {
+            moveToCopy(from, onto, loc);
+        }
+
+        return false;
+    }
+
+    /**
+     * Moves a standing train onto another copy of its square, its tail and route read first (the move clears them on
+     * the copy it leaves), and onto the new copy before off the old: an empty square for a moment could have another
+     * thread command the exit guard green over the standing train.
+     */
+    private void moveToCopy(Point from, Point onto, Locomotive loc)
+    {
+        String tail = from.getArrivedFrom();
+
+        java.util.List<Edge> along = from.getArrivedAlong();
+
+        onto.reserve(loc);
+
+        onto.setArrivedFrom(tail);
+
+        onto.setArrivedAlong(along);
+
+        clearLocomotiveExcept(loc, onto);
     }
 
     /**
@@ -6294,7 +6296,11 @@ public class Layout
 
         Point start = path.get(0).getStart();
 
-        if (!loc.equals(start.getCurrentLocomotive()) && !turnToSetOff(start, loc))
+        // A train that sets off turned (D222) is stood on the turning copy only for the lock, and turned once nothing
+        // can refuse the route: a refused one stands back where it stood, unturned.
+        final Point stood = loc.equals(start.getCurrentLocomotive()) ? null : turnsToSetOff(start, loc);
+
+        if (!loc.equals(start.getCurrentLocomotive()) && stood == null)
         {
             this.control.logf("autolayout.errorLocomotiveNotAtPathStart", loc.getName());
             return false;
@@ -6316,14 +6322,25 @@ public class Layout
             return false;
         }
 
+        restand(stood, start, loc);
+
         boolean result;
-        
-        result = configureAndLockPath(path, loc, reversals);
+
+        try
+        {
+            result = configureAndLockPath(path, loc, reversals);
+        }
+        catch (RuntimeException e)
+        {
+            restand(start, stood, loc);
+
+            throw e;
+        }
 
         if (!result)
         {
             // configureAndLockPath has already logged the reason; every refusal inside it dropped its own claim.
-            return false;
+            return restand(start, stood, loc);
         }
         else
         {
@@ -6332,7 +6349,7 @@ public class Layout
             {
                 giveBackUnrun(path, loc, "autolayout.log.notSentAfterTheStop");
 
-                return false;
+                return restand(start, stood, loc);
             }
 
             // Nor if the track power went off while its route was set, even briefly (by epoch): given back unrun.
@@ -6340,7 +6357,7 @@ public class Layout
             {
                 giveBackUnrun(path, loc, "autolayout.log.notSentPowerOff");
 
-                return false;
+                return restand(start, stood, loc);
             }
 
             // Nor if the connection was replaced while its route was set: a switch frame written into the lost
@@ -6349,8 +6366,11 @@ public class Layout
             {
                 giveBackUnrun(path, loc, "autolayout.log.notSentReconnecting");
 
-                return false;
+                return restand(start, stood, loc);
             }
+
+            // The turn it sets off by, settled before it drives as a turn part-way is.
+            if (stood != null) loc.switchDirection().delay(this.getMinDelay(), this.getMaxDelay());
 
             synchronized (this.activeLocomotives)
             {                

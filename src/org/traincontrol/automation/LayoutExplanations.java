@@ -56,7 +56,7 @@ final class LayoutExplanations
 
         if (refused != null) return refused;
 
-        return whyItReachesNoStation(owner.getLocomotiveLocation(loc));
+        return whyItReachesNoStation(owner.setsOffFrom(owner.getLocomotiveLocation(loc), loc));
     }
 
     /**

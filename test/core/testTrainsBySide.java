@@ -356,7 +356,7 @@ public class testTrainsBySide
      * A train standing on the plain copy that may not run through sets off by turning where it may (D222): Q's trip
      * leaves back east, turned; a train that cannot reverse stays, and why it does not move names the square.
      *
-     * MUTATION: take `turnToSetOff` out of `Layout.executePathInternal` and Q's trip is refused; take
+     * MUTATION: take `turnsToSetOff` out of `Layout.executePathInternal` and Q's trip is refused; take
      * `whyItCannotGoOnNorTurn` out of `LayoutExplanations` and the train that cannot reverse is given no reason; start
      * `pickPath` or `explainDestinations` where the train stands and they find Q no trip; drop the side from
      * `Layout.turningCopyBarring` and Q, barred both ways, sets off from the other side's turning copy one way.
@@ -409,6 +409,93 @@ public class testTrainsBySide
                 assertEquals(path.get(0).getStart(), copy(both, "W".equals(facing) ? "E" : "W", true),
                     "Q facing " + facing + " set off from elsewhere: " + path);
             }
+        }
+
+        // Nor is it told it reaches no station when only the way it may not go has none
+        session.setAutoDestination(westEnd, false);
+
+        Layout noWest = build();
+
+        pathsFrom(noWest, q, copy(noWest, "W", false));
+
+        assertNull(noWest.explainCannotStart(q), "Q, which sets off turned, was told it reaches no station");
+    }
+
+    /**
+     * A set-off by turning refused by the lock (its end taken) or once its route is set (the power off) sends no turn:
+     * Q stands back on the plain copy, unturned, its tail with it.  A trip from another station is refused as not where Q stands, Q neither turned
+     * nor moved.
+     *
+     * MUTATION: send `switchDirection` before `configureAndLockPath` in `Layout.executePathInternal`, or drop the
+     * lock's or the power's give-back `restand`, and Q is left turned or on the turning copy; drop `setsOffFrom(standing, loc) !=
+     * start` from `Layout.turnsToSetOff` and the trip from MainPlatform runs.
+     */
+    @Test(timeOut = 120000)
+    public void testARefusedSetOffSendsNoTurn() throws Exception
+    {
+        st31();
+
+        Layout railway = scenario.buildSimulated();
+
+        Point plainCopy = copy(railway, "W", false);
+
+        List<Edge> elsewhere = pathsFrom(railway, q, railway.getPoint("MainPlatform")).get(0), trip = null;
+
+        for (List<Edge> path : pathsFrom(railway, q, plainCopy))
+        {
+            if (path.get(path.size() - 1).getEnd() == railway.getPoint("MainPlatform")) trip = path;
+        }
+
+        assertNotNull(trip, "Q on the plain copy has no trip to MainPlatform");
+
+        plainCopy.setArrivedFrom(plainCopy.getArrivalSide());
+
+        java.lang.reflect.Method power = support.Reflect.method(org.traincontrol.marklin.MarklinControlStation.class,
+            "setPowerState", boolean.class);
+
+        List<String> said = Collections.synchronizedList(new ArrayList<String>());
+
+        java.util.logging.Handler tap = support.LogTap.messagesInto(said);
+
+        java.util.logging.Logger log =
+            java.util.logging.Logger.getLogger(org.traincontrol.marklin.MarklinControlStation.class.getName());
+
+        log.addHandler(tap);
+
+        boolean forward = q.goingForward();
+
+        try
+        {
+            assertFalse(railway.executePath(elsewhere, q, 30, null), "a trip from MainPlatform ran, Q on Approach");
+            assertTrue(said.contains(org.traincontrol.util.I18n.f("autolayout.errorLocomotiveNotAtPathStart",
+                q.getName())), "the trip from MainPlatform was not refused as not where Q stands: " + said);
+            assertEquals(q.goingForward(), forward, "a trip from MainPlatform turned Q");
+            assertEquals(railway.getLocomotiveLocation(q), plainCopy, "a trip from MainPlatform moved Q");
+
+            // Refused by the lock (MainPlatform taken), then after it (the power off)
+            for (String why : new String[] {"autolayout.errorPathOccupied", "autolayout.log.notSentPowerOff"})
+            {
+                railway.getPoint("MainPlatform").setLocomotive(why.contains("Occupied") ? mx : null);
+
+                power.invoke(scenario.getModel(), why.contains("Occupied"));
+
+                assertFalse(railway.executePath(trip, q, 30, null), "Q set off: " + why);
+                assertTrue(said.contains(org.traincontrol.util.I18n.f(why, q.getName())), "not refused, " + why + said);
+                assertEquals(q.goingForward(), forward, "a set-off refused turned Q: " + why);
+
+                for (Point each : copies(railway))
+                {
+                    assertEquals(each.getCurrentLocomotive(), each == plainCopy ? q : null, "Q after " + why + each);
+                }
+
+                assertEquals(plainCopy.getArrivedFrom(), plainCopy.getArrivalSide(), "Q's tail was left, " + why);
+            }
+        }
+        finally
+        {
+            power.invoke(scenario.getModel(), true);
+
+            log.removeHandler(tap);
         }
     }
 
