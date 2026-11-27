@@ -195,16 +195,6 @@ public final class StationSettingsWindow extends StationWindowBase
     StationSettingsWindow(AutonomyEditorPanel editor, Window owner)
     {
         super(editor, owner);
-        // The diagram's arrow options may have changed in the main window meanwhile
-        addWindowListener(new java.awt.event.WindowAdapter()
-        {
-            @Override
-            public void windowActivated(java.awt.event.WindowEvent e)
-            {
-                picture.refresh();
-            }
-        });
-
         form.setName("station.form");
 
         buildForm();

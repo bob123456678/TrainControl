@@ -625,25 +625,74 @@ public class testLocomotiveCsvImportDoor
     }
 
     /**
-     * Canceling the Save window an export opens at once ends the export: no panel and no message follow (OB-525), for
-     * Export to CSV and Export Routes alike.
+     * Canceling the Save window Export to CSV opens at once ends the export: no panel and no message follow (OB-525).
      *
      * MUTATION: show the panel whatever `JsonExportPanel.isCancelled()` says and the export window opens after Cancel.
      */
     @Test
-    public void testCancelingTheExportsSaveWindowEndsTheExport() throws Exception
+    public void testCancelingTheCsvExportsSaveWindowEndsTheExport() throws Exception
     {
         inAWindow((ui, model) ->
-        {
-            for (String door : new String[] {"exportLocsToCSVMenuItem", "exportRoutesMenuItem"})
-            {
-                Seen seen = press(ui, door, null, null, s -> s.chose, null);
+            cancelTheSaveWindow(ui, "exportLocsToCSVMenuItem", I18n.t("loc.ui.dialogExportLocomotiveData")));
+    }
 
-                assertTrue(seen.chose, door + ": the export's chooser never showed");
-                assertEquals(seen.titles.size(), 1, door + ": a window opened after Cancel: " + seen.titles);
-                assertEquals(seen.said, Collections.emptyList(), door + ": a message followed Cancel");
-            }
-        });
+    /** The same for Export Routes. */
+    @Test
+    public void testCancelingTheRoutesExportsSaveWindowEndsTheExport() throws Exception
+    {
+        inAWindow((ui, model) ->
+            cancelTheSaveWindow(ui, "exportRoutesMenuItem", I18n.t("route.ui.dialogExportRouteData")));
+    }
+
+    /** Cancels the door's Save window, waits until it is gone, and looks for the export's window `title`. */
+    private static void cancelTheSaveWindow(TrainControlUI ui, String door, String title) throws Exception
+    {
+        try
+        {
+            Seen seen = press(ui, door, null, null, s -> s.chose, null);
+
+            assertTrue(seen.chose, door + ": the export's chooser never showed");
+
+            support.Components.waitFor(() -> !showing(null), 60000);
+
+            SwingUtilities.invokeAndWait(() -> { });
+            SwingUtilities.invokeAndWait(() -> { });
+
+            assertFalse(showing(title), door + ": the export window opened after Cancel");
+            assertEquals(seen.said, Collections.emptyList(), door + ": a message followed Cancel");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (java.awt.Window each : java.awt.Window.getWindows())
+                {
+                    if (each.isShowing() && each instanceof java.awt.Dialog && isExportWindow((java.awt.Dialog) each)) each.dispose();
+                }
+            });
+        }
+    }
+
+    private static boolean isExportWindow(java.awt.Dialog dialog)
+    {
+        return I18n.t("loc.ui.dialogExportLocomotiveData").equals(dialog.getTitle())
+            || I18n.t("route.ui.dialogExportRouteData").equals(dialog.getTitle());
+    }
+
+    /** Whether a dialog titled `title` is showing, or, for null, one holding a file chooser. */
+    private static boolean showing(String title)
+    {
+        for (java.awt.Window each : java.awt.Window.getWindows())
+        {
+            if (!each.isShowing() || !(each instanceof javax.swing.JDialog)) continue;
+
+            javax.swing.JDialog dialog = (javax.swing.JDialog) each;
+
+            if (title == null ? support.Components.inside(dialog.getContentPane(), JFileChooser.class) != null
+                : title.equals(dialog.getTitle())) return true;
+        }
+
+        return false;
     }
 
     /**

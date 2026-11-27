@@ -4093,7 +4093,7 @@ public class testStationSettingsWindow
 
         try
         {
-            for (boolean[] options : new boolean[][] {{true, false}, {true, true}, {false, true}})
+            for (boolean[] options : new boolean[][] {{true, false}, {true, true}, {false, true}, {false, false}})
             {
                 prefs.putBoolean(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, options[0]);
                 prefs.putBoolean(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, options[1]);
@@ -4197,8 +4197,7 @@ public class testStationSettingsWindow
     }
 
     /**
-     * With both of the diagram's arrow options off, the picture's station still draws its green and red arrows, and turning
-     * them on while the window is open and activating it again changes nothing (MT-1106).
+     * With both of the diagram's arrow options off, the picture's station still draws its green and red arrows (MT-1106).
      *
      * MUTATION: have `StationPicture.drawStation` ask the diagram's two options again, and this fails.
      */
@@ -4225,22 +4224,6 @@ public class testStationSettingsWindow
 
             assertTrue(!drawn.startsWith("G[] ") && !drawn.endsWith("R[]"), "with both options off the picture's station"
                 + " lacks a green or a red arrow: " + drawn);
-
-            prefs.putBoolean(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, true);
-            prefs.putBoolean(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, true);
-
-            Components.onTheEventThread(() ->
-            {
-                java.awt.event.WindowEvent activated = new java.awt.event.WindowEvent(window,
-                    java.awt.event.WindowEvent.WINDOW_ACTIVATED);
-
-                for (java.awt.event.WindowListener each : window.getWindowListeners()) each.windowActivated(activated);
-
-                return null;
-            });
-            Components.settle();
-
-            assertEquals(arrowsIn(window, station, true).get("SQUARE"), drawn, "the options changed the picture's station");
         }
         finally
         {
