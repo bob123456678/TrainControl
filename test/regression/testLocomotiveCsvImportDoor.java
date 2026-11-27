@@ -56,6 +56,8 @@ public class testLocomotiveCsvImportDoor
         final List<String> titles = Collections.synchronizedList(new ArrayList<>());
         final List<String> said = Collections.synchronizedList(new ArrayList<>());
         final List<support.PopupShape> saidShapes = Collections.synchronizedList(new ArrayList<>());
+        /** The titles of the dialogs that stood lower than an always-on-top main window, so under it. */
+        final List<String> under = Collections.synchronizedList(new ArrayList<>());
     }
 
     /** The shared shape of a claim: a window, a file, an answer, and the door pressed. */
@@ -234,7 +236,12 @@ public class testLocomotiveCsvImportDoor
         // Stopped as it wakes, so a watcher left from an earlier press never answers the next press's question
         Thread answering = new Thread(() -> support.DialogWatch.untilStillGoing(() -> going[0], 150, dialog ->
         {
-            if (handled.add(dialog)) seen.titles.add(dialog.getTitle());
+            if (handled.add(dialog))
+            {
+                seen.titles.add(dialog.getTitle());
+
+                if (ui.isAlwaysOnTop() && !dialog.isAlwaysOnTop()) seen.under.add(dialog.getTitle());
+            }
 
             JFileChooser chooser = support.Components.inside(dialog.getContentPane(), JFileChooser.class);
 
@@ -571,6 +578,50 @@ public class testLocomotiveCsvImportDoor
                 file.delete();
             }
         });
+    }
+
+    /**
+     * With Always on Top on, Export to CSV's chooser and panel stand as high as the main window, never hidden under
+     * it while they hold every window (OB-522): the chooser opens before the panel is in a window.  A closed window
+     * stops being their owner, or the next would reopen it.
+     *
+     * MUTATION: drop `JOptionPane.setRootFrame(this)` from `TrainControlUI`'s constructor and the chooser hangs off
+     * Swing's hidden shared frame, under the window; drop the line in `TrainControlUI.dispose` and the last fails.
+     */
+    @Test
+    public void testTheExportStandsAboveAnAlwaysOnTopWindow() throws Exception
+    {
+        final java.awt.Frame[] window = {null};
+
+        inAWindow((ui, model) ->
+        {
+            window[0] = ui;
+
+            final JMenuItem onTop = (JMenuItem) Reflect.get(TrainControlUI.class, ui, "windowAlwaysOnTopMenuItem");
+            final boolean was = onTop.isSelected();
+            File file = new File(System.getProperty("java.io.tmpdir"), "tc-export-" + System.nanoTime() + ".csv");
+
+            try
+            {
+                if (!was) SwingUtilities.invokeAndWait(onTop::doClick);
+
+                assertTrue(ui.isAlwaysOnTop(), "precondition: Always on Top did not put the window on top");
+
+                Seen seen = press(ui, "exportLocsToCSVMenuItem", file, null, s -> file.length() > 0, null);
+
+                assertTrue(seen.chose && file.length() > 0, "the export's chooser never saved; dialogs: " + seen.titles);
+                assertEquals(seen.under, Collections.emptyList(), "these stood under the always-on-top window,"
+                    + " holding it unclickable: " + seen.under + " of " + seen.titles);
+            }
+            finally
+            {
+                if (onTop.isSelected() != was) SwingUtilities.invokeAndWait(onTop::doClick);
+
+                file.delete();
+            }
+        });
+
+        assertTrue(JOptionPane.getRootFrame() != window[0], "the closed window still owns every windowless dialog");
     }
 
     /**
