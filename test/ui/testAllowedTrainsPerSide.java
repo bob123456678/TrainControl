@@ -281,13 +281,13 @@ public class testAllowedTrainsPerSide
     }
 
     /**
-     * A square's kind changes which cells its one list stands for: with Trains can stop here ticked off, cells that
-     * differ only in their Stop column now agree on Run through, so the grid folds and the old keys hold that list.
+     * A kind change leaves the grid as it is, so ticking Trains can stop here off and on again loses no cell: the Stop
+     * cells and the Run through restriction come back as they were.
      *
-     * MUTATION: drop the `storeGrid` call from `AutonomySession.setStopsAndRunsThrough`, and this fails.
+     * MUTATION: store `gridOf` again at the end of `AutonomySession.setStopsAndRunsThrough`, and this fails.
      */
     @Test(timeOut = 120000)
-    public void testChangingTheKindFoldsCellsThatNowAgree() throws Exception
+    public void testChangingTheKindLeavesTheGridAlone() throws Exception
     {
         on(() ->
         {
@@ -296,13 +296,22 @@ public class testAllowedTrainsPerSide
             session.setWhichTrains(approach, Side.E, false, WhichTrains.WHITELIST, Collections.singletonList(Q));
         });
 
+        String before = grid();
         StationSettingsWindow window = opened();
 
-        assertTrue(showing(window, "station.whichGrid"), "precondition: the cells differ");
-
+        StationDoors.press(window, "station.stops");
         StationDoors.press(window, "station.stops");
 
-        assertFoldedTo(window, MX);
+        assertEquals(grid(), before,
+            "unticking and reticking Trains can stop here changed the grid");
+    }
+
+    private String grid()
+    {
+        String[] out = new String[1];
+        on(() -> out[0] = String.valueOf(session.getPointProperty(approach, Point.TRAINS_BY_SIDE)));
+
+        return out[0];
     }
 
     /** The grid is gone and the one list, in the old keys, is this train alone. */

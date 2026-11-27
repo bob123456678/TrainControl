@@ -822,7 +822,8 @@ public class testSeveralStationsAtOnce
      * Several never show a grid.
      *
      * MUTATION: have `fill` agree on `getWhichTrains` alone, and the first pick shows the row as All; compare grids by
-     * `JSONObject.toMap()`, and the last pick shows it mixed; drop
+     * `JSONObject.toMap()`, and the last pick shows it mixed; have `trainsRule` read a pass-through's Stop column, and two pass-throughs
+     * differing only there differ; drop
      * `whichMixed.setVisible(true)` from `lockTheWidth`, and the triangle wraps out of sight.
      */
     @Test(timeOut = 180000)
@@ -868,6 +869,16 @@ public class testSeveralStationsAtOnce
         on(() -> { session.setWhichTrains(two.get(0), side, false, WhichTrains.ALL, Collections.singletonList(train)); return null; });
 
         assertFalse(showing(advanced(pick(two)), "station.whichMixed"), "grids that mean the same showed the row mixed");
+
+        // Two pass-throughs differing only in stale Stop cells agree: a non-station's Stop column reads nothing
+        on(() ->
+        {
+            session.setWhichTrains(two.get(0), side, false, WhichTrains.BLACKLIST, Collections.singletonList(train));
+            for (TileKey each : two) session.setStopsAndRunsThrough(each, false, true);
+
+            assertEquals(session.trainsRule(two.get(0)), session.trainsRule(two.get(1)), "stale Stop cells told two pass-throughs apart");
+            return null;
+        });
     }
 
     /**
