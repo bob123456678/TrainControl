@@ -16134,12 +16134,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
                 try
                 {
-                    JOptionPane.showMessageDialog(
-                        this,
-                        new JsonExportPanel(payload, this, type, extension),
-                        I18n.t(titleKey),
-                        JOptionPane.PLAIN_MESSAGE
-                    );
+                    JsonExportPanel panel = new JsonExportPanel(payload, this, type, extension);
+                    // Canceling the Save window opened at once ends the export
+                    if (panel.isCancelled()) return;
+
+                    JOptionPane.showMessageDialog(this, panel, I18n.t(titleKey), JOptionPane.PLAIN_MESSAGE);
 
                     if (toClipboard)
                     {

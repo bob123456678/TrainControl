@@ -492,7 +492,7 @@ Tab icons provided by Freepik.
             - When a rename cannot update the autonomy files, a message says so and offers `Retry`.
         - Interface
             - Train icons no longer vanish from the track diagram and page windows when an editor closes soon after the page windows open.
-            - With `Window Always on Top` ticked, file windows such as `Export to CSV...` no longer open hidden behind TrainControl and lock every window.
+            - With `Window Always on Top` ticked, file windows such as `Export to CSV...` no longer open hidden behind TrainControl and lock every window, and canceling their Save window no longer opens a second window.
             - When a layout cannot be read, whether opened, created, downloaded or synced, the current layout stays and a message says so.
             - When the layout folder cannot be read at start-up, TrainControl says so and keeps the folder, showing the Central Station's layout meanwhile.
             - A sync that read only part of the Central Station's data ends with a warning.
