@@ -215,6 +215,37 @@ public class testTrainsBySide
     }
 
     /**
+     * A square-wide choice keeps a grid per side, setting only the cells the one list stands for: a station's Stop cells,
+     * its Run through cells kept; a non-station's Run through cells, which agree then and fold the grid (FR-260).
+     *
+     * MUTATION: in `AutonomySession.storeTrains`, set the Stop cells at a non-station too, and this fails.
+     */
+    @Test
+    public void testASquareWideChoiceSetsTheCellsTheOneListStandsFor()
+    {
+        session.restoreSetup(new JSONObject(pristine.toString()));
+        session.setWhichTrains(approach, Side.E, true, WhichTrains.WHITELIST, Collections.singletonList(mx.getName()));
+        session.setWhichTrains(approach, WhichTrains.WHITELIST, Collections.singletonList(q.getName()));
+
+        assertTrue(session.hasTrainsBySide(approach), "a square-wide choice dropped a station's grid");
+        assertEquals(session.getTrainList(approach, Side.E, true), Collections.singletonList(mx.getName()),
+            "a square-wide choice changed a station's Run through cell");
+        assertEquals(session.getTrainList(approach, Side.W, false), Collections.singletonList(q.getName()),
+            "a station's Stop cell did not take the square-wide choice");
+
+        session.setStopsAndRunsThrough(approach, false, true);
+        session.setWhichTrains(approach, WhichTrains.BLACKLIST, Collections.singletonList(q.getName()));
+
+        for (Side side : Arrays.asList(Side.E, Side.W))
+        {
+            assertEquals(session.getWhichTrains(approach, side, true), WhichTrains.BLACKLIST,
+                "a non-station's Run through cell from the " + side + " did not take the square-wide choice");
+        }
+
+        assertFalse(session.hasTrainsBySide(approach), "a non-station's cells agree but kept the grid");
+    }
+
+    /**
      * On a square that is no station, the run-through cells give per-direction passing: every train west to east, only
      * MX 26 east to west.  Its stop cells mean nothing; cells that agree again are the one list again.
      *

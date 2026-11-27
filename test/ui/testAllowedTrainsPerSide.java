@@ -25,6 +25,7 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.autonomyeditor.StationSettingsWindow;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.util.I18n;
+import support.Answering;
 import support.Components;
 import support.StationDoors;
 
@@ -95,9 +96,11 @@ public class testAllowedTrainsPerSide
 
     /**
      * A square whose cells agree shows the one row with Per side... and no grid, and Per side... shows the grid without
-     * writing one; a square whose cells differ shows the grid at once, each cell's choice and list as the setup has them.
+     * writing one, its (i) explaining the grid; a square whose cells differ shows the grid at once, each cell's choice and
+     * list as the setup has them.
      *
-     * MUTATION: have `showWhich` ignore `hasTrainsBySide`, and the second window shows the row.
+     * MUTATION: have `showWhich` ignore `hasTrainsBySide`, and the second window shows the row; have the (i) read
+     * `grid` out of `fill`, and Per side... leaves it on the one list.
      */
     @Test(timeOut = 120000)
     public void testTheRowWhileTheCellsAgreeAndTheGridOnceTheyDiffer() throws Exception
@@ -114,6 +117,10 @@ public class testAllowedTrainsPerSide
         StationDoors.press(window, "station.whichPerSide");
 
         assertTrue(showing(window, "station.whichGrid"), "Per side... showed no grid");
+        StationSettingsWindow agreeing = window;
+
+        assertTrue(Components.onTheEventThread(() -> agreeing.flyoverForTest("which")).contains(I18n.t("autosetup.ui.flyWhichBySide")),
+            "the row's (i) does not explain the grid");
         assertFalse(showing(window, "station.whichWhite"), "the row still shows over the grid");
         assertFalse(Components.onTheEventThread(() -> session.hasTrainsBySide(approach)), "Per side... alone wrote a grid");
 
@@ -136,22 +143,32 @@ public class testAllowedTrainsPerSide
     /**
      * The user's St31Apost rule set from the window: Changing direction May, Per side..., then from the west a whitelist
      * of nobody to stop, from the east only Q to stop and only MX 26 to run through.  The setup holds the grid, and the
-     * railway built from it lets Q run west to east but only MX 26 east to west.
+     * railway built from it lets Q run west to east but only MX 26 east to west.  With Q at home there, a Stop cell
+     * keeping Q out asks about the home, as the one list does; a Run through cell, whose list or choice keeps Q out, asks
+     * nothing.
      *
-     * MUTATION: have `pressCell` set the square's one list (a null side), and this fails.
+     * MUTATION: have `pressCell` prompt for the square's one list (a null side), and this fails; drop `!through` from
+     * `EditorPrompts.promptTrainList` or from `AutonomyEditorPanel.setWhichTrains`, and Run through asks about the home.
      */
     @Test(timeOut = 180000)
     public void testTheSt31RuleSetFromTheWindowRoutes() throws Exception
     {
+        on(() -> session.setPointProperty(approach, "home", Q));
+
         StationSettingsWindow window = opened();
         String white = I18n.t("autosetup.ui.stationWhichWhite");
 
         StationDoors.press(window, "station.turnMay");
         StationDoors.press(window, "station.whichPerSide");
 
-        StationDoors.pickAndAnswer(window, "station.which.W.stop", white, message -> StationDoors.choosing());
+        assertEquals(StationDoors.pickAndAnswer(window, "station.which.W.stop", white, message -> StationDoors.choosing()).size(),
+            2, "a Stop cell keeping Q out did not ask about its home");
         StationDoors.pickAndAnswer(window, "station.which.E.stop", white, message -> StationDoors.choosing(Q));
-        StationDoors.pickAndAnswer(window, "station.which.E.through", white, message -> StationDoors.choosing(MX));
+        assertEquals(StationDoors.pickAndAnswer(window, "station.which.E.through", white, message -> StationDoors.choosing(MX))
+            .size(), 1, "a Run through cell's list asked about the home");
+        StationDoors.pick(window, "station.which.E.through", I18n.t("autosetup.ui.stationWhichAll"));
+        assertEquals(StationDoors.pickAndAnswer(window, "station.which.E.through", white, message -> Answering.pressAt(0)),
+            Collections.emptyList(), "a Run through cell's choice asked about the home");
 
         on(() ->
         {
@@ -199,6 +216,35 @@ public class testAllowedTrainsPerSide
         assertFalse(showing(window, "station.whichGrid"), "the grid did not fold once its cells agreed");
         assertTrue(StationDoors.on(window, "station.whichWhite"), "the row does not read the one list");
         assertEquals(setup(), before, "cells set back to agree saved differently");
+    }
+
+    /**
+     * A square that is not a station heeds only Run through: its Stop cells gray and its (i) says so, while a Run through
+     * cell's pencil sets that cell's list.
+     *
+     * MUTATION: have `whichCell` count every cell as heeded, or drop the track line from `StationFlyovers.whichBySide`,
+     * or have the pencil ask for the one list (a null side), and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testANonStationGraysItsStopCellsAndThePencilSetsItsCell() throws Exception
+    {
+        on(() ->
+        {
+            session.setStopsAndRunsThrough(approach, false, true);
+            session.setWhichTrains(approach, Side.E, true, WhichTrains.WHITELIST, Collections.singletonList(MX));
+        });
+
+        StationSettingsWindow window = opened();
+
+        assertFalse(StationDoors.live(window, "station.which.E.stop"), "a non-station's Stop cell can be set");
+        assertTrue(StationDoors.live(window, "station.which.E.through"), "a non-station's Run through cell cannot be set");
+        assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("which"))
+            .contains(I18n.t("autosetup.ui.flyWhichBySideTrack")), "the (i) does not say only Run through applies");
+
+        StationDoors.press(window, "station.which.E.through.choose", message -> StationDoors.choosing(Q, MX));
+
+        on(() -> assertEquals(new java.util.HashSet<>(session.getTrainList(approach, Side.E, true)),
+            new java.util.HashSet<>(java.util.Arrays.asList(Q, MX)), "the pencil did not set the cell's list"));
     }
 
     /** Whether this train, standing at `from`, has a trip to `to` over Approach. */
