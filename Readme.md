@@ -482,8 +482,7 @@ Tab icons provided by Freepik.
     - Bug Fixes
         - Autonomy
             - Page windows keep showing routes and trains after `Stop Using Autonomy` or a configuration switch.
-            - The `Station Settings` picture shows the same arrows as the track diagram.
-            - With `Display Allowed Directions` ticked, a station that trains may leave in every direction no longer shows green arrows.
+            - The `Station Settings` picture always shows the station's arrows and those beside it.
             - A train on track with only one way out shows that direction on its caption, and `Change Direction` offers only that way.
             - An autonomy file with a negative maximum number of active trains loads with no limit, and a damaged file gets a clear message.
         - Locomotive Control
