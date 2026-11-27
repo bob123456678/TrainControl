@@ -356,10 +356,11 @@ public class testTrainsBySide
      * A train standing on the plain copy that may not run through sets off by turning where it may (D222): Q's trip
      * leaves back east, turned; a train that cannot reverse stays, and why it does not move names the square.
      *
-     * MUTATION: take `turnsToSetOff` out of `Layout.executePathInternal` and Q's trip is refused; take
-     * `whyItCannotGoOnNorTurn` out of `LayoutExplanations` and the train that cannot reverse is given no reason; start
-     * `pickPath` or `explainDestinations` where the train stands and they find Q no trip; drop the side from
-     * `Layout.turningCopyBarring` and Q, barred both ways, sets off from the other side's turning copy one way.
+     * MUTATION: take `turnsToSetOff` out of `Layout.executePathInternal` and Q's trip is refused, or its re-stand and Q
+     * runs with the plain copy still holding it; take `whyItCannotGoOnNorTurn` out of `LayoutExplanations` and the
+     * train that cannot reverse is given no reason; start `pickPath` or `explainDestinations` where the train stands
+     * and they find Q no trip; drop the side from `Layout.turningCopyBarring` and Q, barred both ways, sets off from
+     * the other side's turning copy one way.
      */
     @Test(timeOut = 120000)
     public void testATrainThatMayNotGoOnSetsOffByTurning() throws Exception
@@ -389,7 +390,22 @@ public class testTrainsBySide
 
         boolean forward = q.goingForward();
 
-        assertTrue(railway.executePath(trip, q, 30, null), "Q's trip from the plain copy was refused");
+        // Off the plain copy once its route runs, standing on the copy it sets off from
+        Point plainCopy = copy(railway, "W", false);
+        Locomotive[] leftOnThePlainCopy = {q};
+
+        q.setCallback(Layout.CB_ROUTE_START, l -> leftOnThePlainCopy[0] = plainCopy.getCurrentLocomotive());
+
+        try
+        {
+            assertTrue(railway.executePath(trip, q, 30, null), "Q's trip from the plain copy was refused");
+        }
+        finally
+        {
+            q.setCallback(Layout.CB_ROUTE_START, l -> { });
+        }
+
+        assertNull(leftOnThePlainCopy[0], "Q's route ran with Q still on the plain copy");
         assertEquals(q.goingForward(), forward, "Q was not turned both where it set off and at MainPlatform's buffer");
         assertEquals(railway.getPoint("MainPlatform").getCurrentLocomotive(), q, "Q did not arrive");
 

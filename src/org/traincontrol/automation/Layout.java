@@ -6320,23 +6320,22 @@ public class Layout
 
         restand(stood, start, loc);
 
-        boolean result;
+        boolean result = false;
 
         try
         {
             result = configureAndLockPath(path, loc, reversals);
         }
-        catch (RuntimeException e)
+        finally
         {
-            restand(start, stood, loc);
-
-            throw e;
+            // Refused or thrown: stood back before the reason travels on.
+            if (!result) restand(start, stood, loc);
         }
 
         if (!result)
         {
             // configureAndLockPath has already logged the reason; every refusal inside it dropped its own claim.
-            return restand(start, stood, loc);
+            return false;
         }
         else
         {
