@@ -466,7 +466,7 @@ Tab icons provided by Freepik.
 * v3.1.2
     - New Features
         - Autonomy
-            - In the `Station Settings` picture, clicking the station changes `May depart`, and clicking a side arrow asks `Change the rest of the line too?`, with `Up to Next Station` or `Only Clicked Track`.
+            - In the `Station Settings` picture, clicking the station changes `May depart`, and clicking an arrow beside it changes that track; when the line further on still points the other way, it offers `Up to Next Station` or `Only Clicked Track`.
             - A station's `Priority` is now `Importance`, also in the route choices: a higher number is preferred, and a negative one makes the station a last choice.
             - `Manage Configurations` has a new `Save As...` that copies the current configuration with its trains and timetable, and `New Configuration...` now starts blank.
         - Locomotive Control
@@ -483,7 +483,7 @@ Tab icons provided by Freepik.
         - Autonomy
             - Page windows keep showing routes and trains after `Stop Using Autonomy` or a configuration switch.
             - The `Station Settings` picture shows the same arrows as the track diagram.
-            - With `Display Allowed Directions` ticked, a station trains may leave every way no longer shows green arrows.
+            - With `Display Allowed Directions` ticked, a station that trains may leave in every direction no longer shows green arrows.
             - A train on track with only one way out shows that direction on its caption, and `Change Direction` offers only that way.
             - An autonomy file with a negative maximum number of active trains loads with no limit, and a damaged file gets a clear message.
         - Locomotive Control
@@ -497,8 +497,8 @@ Tab icons provided by Freepik.
             - When the layout folder cannot be read at start-up, TrainControl says so and keeps the folder, showing the Central Station's layout meanwhile.
             - A sync that read only part of the Central Station's data ends with a warning.
             - With `Show Addresses` ticked, a square that links to another page no longer shows that page's name as an address.
-            - With Windows display scaling on Java 21, the last stretched pictures are sharp and every (i) mark is the same size.
-            - On a scaled display, four-digit addresses and tight station names are no longer cut short, and a parked train no longer hides a small curved sensor's arrows.
+            - On Java 21 with Windows display scaling above 100%, pictures are no longer blurry and every (i) mark is the same size.
+            - On the same setup, four-digit addresses and tight station names are no longer cut short, and a parked train no longer hides a small curved sensor's arrows.
 * v3.1.1 [11/21/2026]
     - New Features
         - Java 21
