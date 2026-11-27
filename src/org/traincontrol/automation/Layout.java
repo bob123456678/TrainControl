@@ -1616,9 +1616,10 @@ public class Layout
 
     /**
      * Gives back a route a stop has overtaken before the train moved, as handleMisconfiguredPath does: track and
-     * squares released, the train reserved where it stands.  `why` is the log key naming the train.
+     * squares released, the train reserved where it stands, or stood back on `stood` (`standBack`), before the claim
+     * goes.  `why` is the log key naming the train.
      */
-    private void giveBackUnrun(List<Edge> path, Locomotive loc, String why)
+    private void giveBackUnrun(List<Edge> path, Locomotive loc, Point stood, String why)
     {
         synchronized (this)
         {
@@ -1630,6 +1631,7 @@ public class Layout
             }
 
             path.get(0).getStart().reserve(loc);
+            standBack(path.get(0).getStart(), stood, loc);
         }
 
         this.takingPath.remove(loc);
@@ -3254,12 +3256,18 @@ public class Layout
      */
     public boolean configureAndLockPath(List<Edge> path, Locomotive loc)
     {
-        return configureAndLockPath(path, loc, null);
+        return configureAndLockPath(path, loc, null, null);
     }
 
-    /** configureAndLockPath, keeping the run's reversal answer with the claim (see copyItWillStandOn). */
-    private boolean configureAndLockPath(List<Edge> path, Locomotive loc, ReversalPolicy reversals)
+    /**
+     * configureAndLockPath, keeping the run's reversal answer with the claim (see copyItWillStandOn).  A train found on
+     * `stood` (non-null: it sets off turned, D222) is stood on the path's start by the dispatch that claims it, and
+     * every refusal here stands it back.
+     */
+    private boolean configureAndLockPath(List<Edge> path, Locomotive loc, ReversalPolicy reversals, Point stood)
     {
+        final Point start = path.get(0).getStart();
+
         // Lock the path and send the accessory commands under the Layout monitor.  Holding it here is
         // fine - path locking must be atomic - but the validation wait below must NOT hold it, so other
         // locomotives' path checks are not blocked for the (possibly multi-second, scales with path size -
@@ -3285,6 +3293,13 @@ public class Layout
                 return false;
             }
 
+            // Moved only from where this dispatch found it: another may have moved it since.
+            if (stood != null && !loc.equals(stood.getCurrentLocomotive()))
+            {
+                this.control.logf("autolayout.errorLocomotiveNotAtPathStart", loc.getName());
+                return false;
+            }
+
             // Return if this path isn't clear
             if (!this.isPathClear(path, loc))
             {
@@ -3305,6 +3320,9 @@ public class Layout
 
             try
             {
+            // Stood on the path's start by the claim's holder; a throw from here on stands it back.
+            if (stood != null) moveToCopy(stood, start, loc);
+
             for (Edge e : path)
             {
                 // Counted before it is taken, so a throw out of setOccupied or reserve still falls inside the release
@@ -3355,6 +3373,7 @@ public class Layout
             // that may be another train's); none taken would make handleMisconfiguredPath throw.
             if (edgesLocked > 0) this.handleMisconfiguredPath(path.subList(0, edgesLocked), loc);
 
+            standBack(start, stood, loc);
             this.takingPath.remove(loc);
 
             // Rethrown, not turned into false: nobody can act on a fault reported as "the path was occupied".
@@ -3367,6 +3386,7 @@ public class Layout
             // never locked, and that also clears their lock edges - which, precisely because we never
             // held them, may belong to another locomotive by now.
             this.handleMisconfiguredPath(path.subList(0, edgesLocked), loc);
+            standBack(start, stood, loc);
             this.takingPath.remove(loc);
             return false;
         }
@@ -3379,15 +3399,15 @@ public class Layout
         if (!this.validatePathActuation(path, stops, power, replacements))
         {
             // A Stop, power change or replaced connection ended the wait: the train goes back unrun, nothing counted.
-            if (this.stopsOrdered.get() != stops) giveBackUnrun(path, loc, "autolayout.log.notSentAfterTheStop");
-            else if (this.control.getPowerEpoch() != power) giveBackUnrun(path, loc, "autolayout.log.notSentPowerOff");
-            else if (this.control.getReplacementEpoch() != replacements)
-            {
-                giveBackUnrun(path, loc, "autolayout.log.notSentReconnecting");
-            }
+            String why = this.stopsOrdered.get() != stops ? "autolayout.log.notSentAfterTheStop"
+                : this.control.getPowerEpoch() != power ? "autolayout.log.notSentPowerOff"
+                : this.control.getReplacementEpoch() != replacements ? "autolayout.log.notSentReconnecting" : null;
+
+            if (why != null) giveBackUnrun(path, loc, stood, why);
             else
             {
                 this.handleMisconfiguredPath(path, loc);
+                standBack(start, stood, loc);
                 this.takingPath.remove(loc);
             }
 
@@ -5968,15 +5988,13 @@ public class Layout
         return standing == null || standing == start || setsOffFrom(standing, loc) != start ? null : standing;
     }
 
-    /** `moveToCopy` under the monitor, sending nothing (no move if a copy is null); false, for a refusal to return. */
-    private boolean restand(Point from, Point onto, Locomotive loc)
+    /** Stands a moved train (`stood` non-null) back from `start` if `start` still holds it; sends nothing. */
+    private void standBack(Point start, Point stood, Locomotive loc)
     {
-        if (from != null && onto != null) synchronized (this)
+        if (stood != null) synchronized (this)
         {
-            moveToCopy(from, onto, loc);
+            if (loc.equals(start.getCurrentLocomotive())) moveToCopy(start, stood, loc);
         }
-
-        return false;
     }
 
     /**
@@ -6292,8 +6310,8 @@ public class Layout
 
         Point start = path.get(0).getStart();
 
-        // A train that sets off turned (D222) is stood on the turning copy only for the lock, and turned once nothing
-        // can refuse the route: a refused one stands back where it stood, unturned.
+        // A train that sets off turned (D222) is stood on the turning copy by the lock that claims it, and turned once
+        // nothing can refuse the route: a refused one stands back where it stood, unturned.
         final Point stood = loc.equals(start.getCurrentLocomotive()) ? null : turnsToSetOff(start, loc);
 
         if (!loc.equals(start.getCurrentLocomotive()) && stood == null)
@@ -6318,21 +6336,7 @@ public class Layout
             return false;
         }
 
-        restand(stood, start, loc);
-
-        boolean result = false;
-
-        try
-        {
-            result = configureAndLockPath(path, loc, reversals);
-        }
-        finally
-        {
-            // Refused or thrown: stood back before the reason travels on.
-            if (!result) restand(start, stood, loc);
-        }
-
-        if (!result)
+        if (!configureAndLockPath(path, loc, reversals, stood))
         {
             // configureAndLockPath has already logged the reason; every refusal inside it dropped its own claim.
             return false;
@@ -6342,26 +6346,26 @@ public class Layout
             // A stop ordered while this claimed its route: given back unrun, the train standing where it was.
             if (this.stopsOrdered.get() != stopsAtDispatch)
             {
-                giveBackUnrun(path, loc, "autolayout.log.notSentAfterTheStop");
+                giveBackUnrun(path, loc, stood, "autolayout.log.notSentAfterTheStop");
 
-                return restand(start, stood, loc);
+                return false;
             }
 
             // Nor if the track power went off while its route was set, even briefly (by epoch): given back unrun.
             if (!this.control.getPowerState() || this.control.getPowerEpoch() != powerAtDispatch)
             {
-                giveBackUnrun(path, loc, "autolayout.log.notSentPowerOff");
+                giveBackUnrun(path, loc, stood, "autolayout.log.notSentPowerOff");
 
-                return restand(start, stood, loc);
+                return false;
             }
 
             // Nor if the connection was replaced while its route was set: a switch frame written into the lost
             // connection is not sent again (FR-186).
             if (this.control.isReplacingConnection() || this.control.getReplacementEpoch() != replacementsAtDispatch)
             {
-                giveBackUnrun(path, loc, "autolayout.log.notSentReconnecting");
+                giveBackUnrun(path, loc, stood, "autolayout.log.notSentReconnecting");
 
-                return restand(start, stood, loc);
+                return false;
             }
 
             // The turn it sets off by, settled before it drives as a turn part-way is.

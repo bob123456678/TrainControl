@@ -439,13 +439,13 @@ public class testTrainsBySide
     }
 
     /**
-     * A set-off by turning refused by the lock (its end taken) or once its route is set (the power off) sends no turn:
-     * Q stands back on the plain copy, unturned, its tail with it.  A trip from another station is refused as not where Q stands, Q neither turned
-     * nor moved.
+     * A set-off by turning refused by the lock (its end taken) or once its route is set (a stop, the power off, the
+     * connection replaced) sends no turn: Q stands back on the plain copy, unturned, its tail and route with it.  A
+     * trip from another station is refused as not where Q stands, Q neither turned nor moved.
      *
-     * MUTATION: send `switchDirection` before `configureAndLockPath` in `Layout.executePathInternal`, or drop the
-     * lock's or the power's give-back `restand`, and Q is left turned or on the turning copy; drop `setsOffFrom(standing, loc) !=
-     * start` from `Layout.turnsToSetOff` and the trip from MainPlatform runs.
+     * MUTATION: send `switchDirection` before `configureAndLockPath` in `Layout.executePathInternal`, or pass the
+     * stop's, the power's or the replacement's `giveBackUnrun` there no `stood`, and Q is left turned or on the turning
+     * copy; drop `setsOffFrom(standing, loc) != start` from `Layout.turnsToSetOff` and the trip from MainPlatform runs.
      */
     @Test(timeOut = 120000)
     public void testARefusedSetOffSendsNoTurn() throws Exception
@@ -465,7 +465,15 @@ public class testTrainsBySide
 
         assertNotNull(trip, "Q on the plain copy has no trip to MainPlatform");
 
+        final List<Edge> sent = trip, along = new ArrayList<>();
+
+        for (Edge e : railway.getEdges())
+        {
+            if (e.getEnd() == plainCopy && along.isEmpty()) along.add(e);
+        }
+
         plainCopy.setArrivedFrom(plainCopy.getArrivalSide());
+        plainCopy.setArrivedAlong(along);
 
         java.lang.reflect.Method power = support.Reflect.method(org.traincontrol.marklin.MarklinControlStation.class,
             "setPowerState", boolean.class);
@@ -481,6 +489,13 @@ public class testTrainsBySide
 
         boolean forward = q.goingForward();
 
+        // The connection's replacements, counted by the test
+        java.util.concurrent.atomic.AtomicInteger replacements = new java.util.concurrent.atomic.AtomicInteger();
+
+        Object control = support.Reflect.get(Layout.class, railway, "control");
+
+        support.Reflect.set(Layout.class, railway, "control", replacedBy(replacements));
+
         try
         {
             assertFalse(railway.executePath(elsewhere, q, 30, null), "a trip from MainPlatform ran, Q on Approach");
@@ -489,14 +504,19 @@ public class testTrainsBySide
             assertEquals(q.goingForward(), forward, "a trip from MainPlatform turned Q");
             assertEquals(railway.getLocomotiveLocation(q), plainCopy, "a trip from MainPlatform moved Q");
 
-            // Refused by the lock (MainPlatform taken), then after it (the power off)
-            for (String why : new String[] {"autolayout.errorPathOccupied", "autolayout.log.notSentPowerOff"})
+            // Refused by the lock (MainPlatform taken), then after it: a stop, the power off, the connection replaced
+            for (String why : new String[] {"autolayout.errorPathOccupied", "autolayout.log.notSentAfterTheStop",
+                "autolayout.log.notSentPowerOff", "autolayout.log.notSentReconnecting"})
             {
                 railway.getPoint("MainPlatform").setLocomotive(why.contains("Occupied") ? mx : null);
 
-                power.invoke(scenario.getModel(), why.contains("Occupied"));
+                power.invoke(scenario.getModel(), !why.contains("PowerOff"));
 
-                assertFalse(railway.executePath(trip, q, 30, null), "Q set off: " + why);
+                Runnable meanwhile = why.contains("Stop") ? railway::stopEveryTrainWhereItIs
+                    : why.contains("Reconnecting") ? replacements::incrementAndGet : () -> { };
+
+                assertEquals(parkedThenSent(railway, meanwhile, () -> railway.executePath(sent, q, 30, null))[0],
+                    Boolean.FALSE, "Q set off: " + why);
                 assertTrue(said.contains(org.traincontrol.util.I18n.f(why, q.getName())), "not refused, " + why + said);
                 assertEquals(q.goingForward(), forward, "a set-off refused turned Q: " + why);
 
@@ -506,14 +526,190 @@ public class testTrainsBySide
                 }
 
                 assertEquals(plainCopy.getArrivedFrom(), plainCopy.getArrivalSide(), "Q's tail was left, " + why);
+                assertEquals(plainCopy.getArrivedAlong(), along, "Q's route in was left, " + why);
             }
         }
         finally
         {
+            support.Reflect.set(Layout.class, railway, "control", control);
+
             power.invoke(scenario.getModel(), true);
 
             log.removeHandler(tap);
         }
+    }
+
+    /**
+     * Two hand sends of Q from the plain copy at once turn it once: the second, waiting while the first holds the
+     * railway, is refused as busy and moves nothing, so Q ends as one send leaves it.  A send whose train was moved
+     * while it waited is refused as not where the train stands, and moves nothing.
+     *
+     * MUTATION: stand Q on the turning copy before `configureAndLockPath`'s monitor in `Layout.executePathInternal`
+     * and the refused send moves Q back under the first; take the `stood` check out of `configureAndLockPath` and the
+     * send of a train moved meanwhile takes it back to Approach.
+     */
+    @Test(timeOut = 120000)
+    public void testTwoHandSendsOfOneTrainTurnItOnce() throws Exception
+    {
+        st31();
+
+        Layout railway = scenario.buildSimulated();
+
+        Point plainCopy = copy(railway, "W", false), platform = railway.getPoint("MainPlatform");
+
+        List<Edge> trip = null;
+
+        for (List<Edge> path : pathsFrom(railway, q, plainCopy))
+        {
+            if (path.get(path.size() - 1).getEnd() == platform) trip = path;
+        }
+
+        assertNotNull(trip, "Q on the plain copy has no trip to MainPlatform");
+
+        final List<Edge> sent = trip;
+
+        java.util.concurrent.Callable<Boolean> send =
+            () -> railway.executePathByHand(new ArrayList<>(sent), q, 30, Layout.ALWAYS_REVERSE, -1);
+
+        // One send alone, for what it leaves
+        boolean before = q.goingForward();
+
+        assertTrue(send.call(), "Q's send alone was refused");
+
+        boolean turns = q.goingForward() != before;
+        String tail = platform.getArrivedFrom();
+        List<Edge> along = platform.getArrivedAlong();
+        List<String> held = occupied(railway, q);
+
+        List<String> said = Collections.synchronizedList(new ArrayList<String>());
+
+        java.util.logging.Handler tap = support.LogTap.messagesInto(said);
+
+        java.util.logging.Logger log =
+            java.util.logging.Logger.getLogger(org.traincontrol.marklin.MarklinControlStation.class.getName());
+
+        log.addHandler(tap);
+
+        try
+        {
+            pathsFrom(railway, q, plainCopy);
+            before = q.goingForward();
+
+            List<Boolean> answers = Arrays.asList(parkedThenSent(railway, () -> { }, send, send));
+
+            assertTrue(answers.contains(true) && answers.contains(false), "two sends of Q answered " + answers);
+            assertTrue(said.contains(org.traincontrol.util.I18n.f("autolayout.errorLocomotiveBusy", q.getName())),
+                "the second send was not refused as busy: " + said);
+
+            for (Point each : railway.getPoints())
+            {
+                assertEquals(each.getCurrentLocomotive() == q, each == platform, "Q held by " + each.getName());
+            }
+
+            assertEquals(q.goingForward() != before, turns, "Q was not turned as one send turns it");
+            assertEquals(platform.getArrivedFrom(), tail, "Q's tail is not one send's");
+            assertEquals(platform.getArrivedAlong(), along, "Q's route in is not one send's");
+            assertEquals(occupied(railway, q), held, "the track held is not one send's");
+
+            // Moved by hand while its send waited for the railway
+            pathsFrom(railway, q, plainCopy);
+            before = q.goingForward();
+
+            Runnable moved = () ->
+            {
+                plainCopy.setLocomotive(null);
+                railway.getPoint("WestEnd").setLocomotive(q);
+            };
+
+            assertEquals(parkedThenSent(railway, moved, send)[0], Boolean.FALSE, "the send of a train moved meanwhile");
+            assertTrue(said.contains(org.traincontrol.util.I18n.f("autolayout.errorLocomotiveNotAtPathStart",
+                q.getName())), "the send of a train moved meanwhile was not refused as not where it stands: " + said);
+            assertEquals(railway.getLocomotiveLocation(q), railway.getPoint("WestEnd"), "the send moved Q");
+            assertEquals(q.goingForward(), before, "the send turned Q");
+        }
+        finally
+        {
+            log.removeHandler(tap);
+        }
+    }
+
+    /** The edges held other than by this train standing, by name. */
+    private static List<String> occupied(Layout railway, Locomotive loc)
+    {
+        List<String> out = new ArrayList<>();
+
+        for (Edge e : railway.getEdges())
+        {
+            if (e.isOccupied(loc)) out.add(e.getName());
+        }
+
+        Collections.sort(out);
+
+        return out;
+    }
+
+    /** The model as a railway's control, its replacement epoch the count given (FR-186). */
+    private static org.traincontrol.model.ViewListener replacedBy(java.util.concurrent.atomic.AtomicInteger count)
+    {
+        Object model = scenario.getModel();
+
+        return (org.traincontrol.model.ViewListener) java.lang.reflect.Proxy.newProxyInstance(
+            org.traincontrol.model.ViewListener.class.getClassLoader(),
+            new Class<?>[] {org.traincontrol.model.ViewListener.class}, (proxy, call, args) ->
+                call.getName().equals("getReplacementEpoch") ? count.get() : call.invoke(model, args));
+    }
+
+    /**
+     * Each send on a thread of its own while this thread holds the railway's monitor, until each waits for it; then
+     * `meanwhile` and, once all are done, their answers.
+     */
+    @SafeVarargs
+    private static Boolean[] parkedThenSent(Layout railway, Runnable meanwhile,
+        java.util.concurrent.Callable<Boolean>... sends) throws Exception
+    {
+        Boolean[] answers = new Boolean[sends.length];
+        Thread[] threads = new Thread[sends.length];
+        java.lang.management.ThreadMXBean bean = java.lang.management.ManagementFactory.getThreadMXBean();
+
+        synchronized (railway)
+        {
+            for (int i = 0; i < sends.length; i++)
+            {
+                final int which = i;
+
+                threads[i] = new Thread(() ->
+                {
+                    try
+                    {
+                        answers[which] = sends[which].call();
+                    }
+                    catch (Exception e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
+                }, "parked-send-" + i);
+
+                threads[i].setDaemon(true);
+                threads[i].start();
+            }
+
+            for (Thread t : threads)
+            {
+                assertTrue(support.Settle.until(() ->
+                {
+                    java.lang.management.LockInfo lock = bean.getThreadInfo(t.getId()).getLockInfo();
+
+                    return t.getState() == Thread.State.BLOCKED && lock != null
+                        && lock.getIdentityHashCode() == System.identityHashCode(railway);
+                }, 10000), "a send never waited for the railway's monitor");
+            }
+
+            meanwhile.run();
+        }
+
+        for (Thread t : threads) t.join(60000);
+
+        return answers;
     }
 
     /**
