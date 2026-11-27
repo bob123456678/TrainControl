@@ -813,10 +813,11 @@ public class testSeveralStationsAtOnce
 
     /**
      * Stations agree on Allowed trains only where their whole grids per side do (FR-260): a grid on one of two shows the
-     * row mixed, the same grid on both shows it set per side with no triangle, and one cell apart shows it mixed again.
-     * Several never show a grid.
+     * row mixed, its triangle in sight, the same grid on both shows no triangle and the row's (i) says it is set per
+     * side, and one cell apart shows it mixed again.  Several never show a grid.
      *
-     * MUTATION: have `fill` agree on `getWhichTrains` alone, and the first pick shows the row as All.
+     * MUTATION: have `fill` agree on `getWhichTrains` alone, and the first pick shows the row as All; drop
+     * `whichMixed.setVisible(true)` from `lockTheWidth`, and the triangle wraps out of sight.
      */
     @Test(timeOut = 180000)
     public void testGridsPerSideAgreeOnlyWhole() throws Exception
@@ -830,6 +831,12 @@ public class testSeveralStationsAtOnce
         StationSettingsWindow window = advanced(pick(two));
 
         assertTrue(showing(window, "station.whichMixed"), "a grid on one station did not show the row mixed");
+        assertTrue(on(() ->
+        {
+            JComponent mixed = Components.named(window, "station.whichMixed", JComponent.class);
+
+            return new java.awt.Rectangle(mixed.getParent().getSize()).contains(mixed.getBounds());
+        }), "the row's triangle is out of sight");
         assertFalse(StationDoors.on(window, "station.whichAll"), "a grid on one station showed the row as All");
         assertFalse(showing(window, "station.whichGrid"), "several stations showed a grid");
 
@@ -839,7 +846,8 @@ public class testSeveralStationsAtOnce
         StationSettingsWindow same = advanced(pick(two));
 
         assertFalse(showing(same, "station.whichMixed"), "the same grid on both showed the row mixed");
-        assertTrue(showing(same, "station.whichBySide"), "the same grid on both is not said to be set per side");
+        assertTrue(on(() -> same.flyoverForTest("which")).contains(I18n.t("autosetup.ui.flyWhichBySide")),
+            "the same grid on both is not said to be set per side");
 
         StationDoors.press(panel, "autonomy.pickStations");
         on(() -> { session.setWhichTrains(two.get(1), side, true, WhichTrains.BLACKLIST, Collections.singletonList(train)); return null; });
@@ -847,7 +855,6 @@ public class testSeveralStationsAtOnce
         StationSettingsWindow apart = advanced(pick(two));
 
         assertTrue(showing(apart, "station.whichMixed"), "grids one cell apart did not show the row mixed");
-        assertFalse(showing(apart, "station.whichBySide"), "grids one cell apart are said to be set per side");
     }
 
     /**

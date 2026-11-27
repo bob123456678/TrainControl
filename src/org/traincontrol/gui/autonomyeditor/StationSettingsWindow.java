@@ -175,7 +175,6 @@ public final class StationSettingsWindow extends StationWindowBase
     private final JRadioButton whichWhite = radio("station.whichWhite", "autosetup.ui.stationWhichWhite");
     private final JButton whichChoose = flat("station.whichChoose", "autosetup.ui.stationChoose");
     private final JButton whichPerSide = UiStyle.button(new JButton(I18n.t("autosetup.ui.stationWhichPerSide")));
-    private final JLabel whichBySide = value("station.whichBySide");
 
     /** Allowed trains' one row, its buttons, and the grid per side shown instead while the cells differ (FR-260). */
     private JPanel whichRow;
@@ -417,6 +416,9 @@ public final class StationSettingsWindow extends StationWindowBase
     private void lockTheWidth()
     {
         for (JComponent part : advancedRows) part.setVisible(true);
+
+        // Room for the triangle of stations that differ, or it wraps out of sight
+        whichMixed.setVisible(true);
 
         form.setSize(form.getPreferredSize());
         form.doLayout();
@@ -671,8 +673,6 @@ public final class StationSettingsWindow extends StationWindowBase
 
         whichRow.add(whichMixed);
         otherControls.add(whichMixed);
-        whichBySide.setText(I18n.t("autosetup.ui.stationWhichBySide"));
-        whichRow.add(whichBySide);
 
         whichPerSide.setName("station.whichPerSide");
         whichPerSide.setFocusable(false);
@@ -1341,7 +1341,8 @@ public final class StationSettingsWindow extends StationWindowBase
 
         fly("speed", pace == null ? mixedTip() : StationFlyovers.speed(pace));
 
-        // Squares agree only where their whole grids per side do (FR-260); a grid they share has no one radio
+        // Squares agree only where their whole grids per side do (FR-260); a grid they share has no one radio, and its
+        // (i) says it is set per side
         Object allowed = agreed(each -> session.hasTrainsBySide(each) ? ((org.json.JSONObject) session.getPointProperty(each,
             org.traincontrol.automation.Point.TRAINS_BY_SIDE)).toMap() : session.getWhichTrains(each));
         WhichTrains which = allowed instanceof WhichTrains ? (WhichTrains) allowed : null;
@@ -1354,7 +1355,6 @@ public final class StationSettingsWindow extends StationWindowBase
         whichBlack.setSelected(which == WhichTrains.BLACKLIST);
         whichWhite.setSelected(which == WhichTrains.WHITELIST);
         whichMixed.setVisible(allowed == null);
-        whichBySide.setVisible(allowed instanceof Map);
         fly("which", grid || allowed instanceof Map ? StationFlyovers.whichBySide(session.getStore().isStation(tile))
             : which == null || listed == null ? mixedTip()
             : StationFlyovers.whichTrains(which, listed, StationFlyovers.keptOut(session, targets())));
