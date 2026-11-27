@@ -1316,6 +1316,14 @@ public class testEditorSurfaceRules
             || all.contains("staticAnnotationFor(tile)"), "the session's pass asks an option for itself though it was"
             + " handed both");
 
+        // The session's marks, which the diagram and Station Settings' picture both take, drop an open station's green
+        // (MT-1100); the diagram's pass does not do it again
+        assertTrue(all.contains("withoutOpenGreen"), "the session's marks keep an open station's green, so the diagram"
+            + " and Station Settings' picture draw it");
+
+        assertFalse(pass.contains("withoutOpenGreen"), "the diagram's pass drops the open green alone, so Station"
+            + " Settings' picture draws what the diagram does not");
+
         String square = codeOf("public TileAnnotation staticAnnotationFor(TileKey tile, boolean arrows)");
 
         assertFalse(square.contains("diagramShowsRestrictionArrows()"), "a square's annotation asks the arrows option for"

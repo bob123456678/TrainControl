@@ -374,12 +374,12 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
             + " first square is drawn otherwise than with the restrictions alone");
 
         assertEquals(session.staticAnnotations(run, true, true).get(leader),
-            session.staticAnnotationFor(leader, true).withAllowedDirections(), "with the option, the run's first square"
+            session.staticAnnotationFor(leader, true).withAllowedDirections().withoutOpenGreen(), "with the option, the run's first square"
             + " is not drawn with the green arrows (FR-110)");
 
         // THE GREEN ALONE: drawn, with no red and no ingress arrows (MT-675)
         assertEquals(session.staticAnnotations(run, false, true).get(leader),
-            session.staticAnnotationFor(leader, true, false).withAllowedDirections().withoutRestrictions(), "with only the"
+            session.staticAnnotationFor(leader, true, false).withAllowedDirections().withoutOpenGreen().withoutRestrictions(), "with only the"
             + " allowed directions chosen, the run's first square is not drawn in green alone (MT-675)");
 
         assertNull(session.staticAnnotations(run, false, false).get(leader), "with neither chosen, the run's first square"
@@ -1888,5 +1888,98 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
                     + " running " + way + (active == null ? "" : ", out of service"));
             }
         }
+    }
+
+    /** How many pixels of the green arrows' fill a station square draws, with the open-green rule (diagram and picture) or not. */
+    private static int greenPixels(Direction way, boolean diagram)
+    {
+        TileAnnotation.Badge station = new TileAnnotation.Badge(true, false, false, false, true, Side.W, Side.E);
+
+        TileAnnotation square = new TileAnnotation(
+            Arrays.asList(new TileAnnotation.Mark(Side.W, Side.E, way)), -1, false, station, false, false, false, null, true)
+            .withAllowedDirections();
+
+        BufferedImage image = new BufferedImage(60, 60, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = image.createGraphics();
+
+        g.setColor(Color.WHITE);
+        g.fillRect(0, 0, 60, 60);
+
+        (diagram ? square.withoutOpenGreen() : square).paint(g, 60, 60);
+        g.dispose();
+
+        int count = 0;
+
+        for (int x = 0; x < 60; x++)
+        {
+            for (int y = 0; y < 60; y++)
+            {
+                if (image.getRGB(x, y) == new Color(70, 205, 90).getRGB()) count++;
+            }
+        }
+
+        return count;
+    }
+
+    /**
+     * A station open every way draws no green arrows, on the diagram and in Station Settings' picture alike, as that
+     * is the default; one that keeps a way shut keeps its greens beside the red; the same square without the rule
+     * keeps its marks.
+     *
+     * MUTATION: drop the early return in `TileAnnotation.paintArrows`, and this fails.
+     */
+    @Test
+    public void testAStationOpenEveryWayDrawsNoGreenOnTheDiagram()
+    {
+        assertTrue(greenPixels(Direction.BOTH, false) > 0, "precondition: a station open both ways draws green"
+            + " arrows without the rule");
+
+        assertEquals(greenPixels(Direction.BOTH, true), 0, "an open station still draws green arrows");
+
+        assertTrue(greenPixels(Direction.TOWARD_B, true) > 0, "a one-way station lost its green arrows");
+    }
+
+    /** Green pixels in the 30 by 30 corner at (x0, y0) of a 60 by 60 double curve: N-W plain road, E-S the station's. */
+    private static int doubleCurveGreen(Direction plainRoad, int x0, int y0)
+    {
+        TileAnnotation.Badge station = new TileAnnotation.Badge(true, false, false, false, true, Side.E, Side.S);
+
+        TileAnnotation square = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(Side.N, Side.W, plainRoad),
+            new TileAnnotation.Mark(Side.E, Side.S, Direction.BOTH)), -1, false, station, false, true, false, null, true)
+            .withAllowedDirections().withoutOpenGreen();
+
+        BufferedImage image = new BufferedImage(60, 60, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = image.createGraphics();
+
+        g.setColor(Color.WHITE);
+        g.fillRect(0, 0, 60, 60);
+        square.paint(g, 60, 60);
+        g.dispose();
+
+        int count = 0;
+
+        for (int x = x0; x < x0 + 30; x++)
+        {
+            for (int y = y0; y < y0 + 30; y++)
+            {
+                if (image.getRGB(x, y) == new Color(70, 205, 90).getRGB()) count++;
+            }
+        }
+
+        return count;
+    }
+
+    /**
+     * On an s88 double curve the station is one road and a plain road shares the square: the open rule judges and
+     * quiets the station's road only.
+     *
+     * MUTATION: judge every road on the square again in `TileAnnotation.paintArrows`, and this fails.
+     */
+    @Test
+    public void testADoubleCurveQuietsOnlyTheStationsOwnRoad()
+    {
+        assertTrue(doubleCurveGreen(Direction.BOTH, 0, 0) > 0, "an open plain road beside an open station lost its greens");
+        assertEquals(doubleCurveGreen(Direction.BOTH, 30, 30), 0, "an open station road draws greens");
+        assertEquals(doubleCurveGreen(Direction.TOWARD_A, 30, 30), 0, "a one-way plain road brought back the station road's greens");
     }
 }

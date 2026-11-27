@@ -2582,26 +2582,37 @@ public class testStationSettingsWindow
     }
 
     /**
-     * The Importance row's (i) says which way the number counts, in both states: at the default 0 and with a number typed.
+     * The Importance row's (i) says which way the number counts, in both states: at the default (a station whose importance
+     * is unset, so the text read is `flyPriorityNoneNow`) and with a number typed (`flyPriorityNow`).
      *
-     * MUTATION: drop "A higher importance is preferred" from `flyPriorityNow` or `flyPriorityNoneNow`, and this fails.
+     * Each also says a negative number makes a last choice, not "ranks after 0" (MT-1102).
+     *
+     * MUTATION: drop "A higher importance is preferred" or the negative sentence from `flyPriorityNow` or
+     * `flyPriorityNoneNow`, and this fails.
      */
     @Test(timeOut = 120000)
     public void testThePriorityMarkSaysAHigherImportanceIsPreferred() throws Exception
     {
-        StationSettingsWindow window = StationDoors.open(panel, aStation());
+        TileKey unset = stationsOn(PAGE).stream().filter(each -> Components.onTheEventThread(() ->
+            session.getPointProperty(each, "priority") == null)).findFirst()
+            .orElseThrow(() -> new AssertionError("precondition: every station has an importance set"));
+        StationSettingsWindow window = StationDoors.open(panel, unset);
 
         StationDoors.current(window);
 
         String said = "A higher importance is preferred";
+        String negative = "a negative one makes this a last choice";
+        String atDefault = Components.onTheEventThread(() -> window.flyoverForTest("priority"));
 
-        assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("priority")).contains(said),
-            "the Importance (i) at the default does not say which way the number counts");
+        assertTrue(atDefault.contains("the default") && atDefault.contains(said) && atDefault.contains(negative),
+            "the Importance (i) at the default does not say which way the number counts and what a negative one does");
 
         StationDoors.typeAndEnter(window, "station.priority", "4");
 
-        assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("priority")).contains(said),
-            "the Importance (i) with a number typed does not say which way the number counts");
+        String typed = Components.onTheEventThread(() -> window.flyoverForTest("priority"));
+
+        assertTrue(typed.contains("4.  ") && !typed.contains("the default") && typed.contains(said) && typed.contains(negative),
+            "the Importance (i) with a number typed does not say which way the number counts and what a negative one does");
 
         StationDoors.close(window);
     }
@@ -4109,6 +4120,76 @@ public class testStationSettingsWindow
 
             if (allowed == null) prefs.remove(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS);
             else prefs.put(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, allowed);
+        }
+    }
+
+    /**
+     * With Display Allowed Directions ticked, a station that lets trains leave every way draws no green arrows in the
+     * picture, as on the diagram; a click on its square still steps May depart, with the hand and the tooltip; one with a
+     * way shut keeps its greens beside the red (MT-1100).
+     *
+     * MUTATION: drop `withoutOpenGreen()` from `SessionRuns.staticAnnotations`, or key the click on the painted arrows,
+     * and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAnOpenStationDrawsNoGreenInThePictureAndStillTakesTheClick() throws Exception
+    {
+        java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+        String[] keys = {TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS};
+        String[] kept = {prefs.get(keys[0], null), prefs.get(keys[1], null)};
+
+        TileKey square = aStationWhereMayDepart();
+
+        prefs.putBoolean(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, true);
+        prefs.putBoolean(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, true);
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+        StationSettingsWindow second = null;
+
+        try
+        {
+            assertTrue(arrowsIn(window, square, true).get("SQUARE").startsWith("G[] "), "an open station's picture draws green: "
+                + arrowsIn(window, square, true).get("SQUARE"));
+
+            String[] hover = new String[3];
+            int first = Components.onTheEventThread(() -> departList(window).getSelectedIndex());
+
+            routedClick(window, "DEPART", hover);
+            StationDoors.current(window);
+
+            assertNotEquals((int) Components.onTheEventThread(() -> departList(window).getSelectedIndex()), first,
+                "with no green drawn, a click on the station did not step May depart");
+            assertTrue(hover[2] != null && hover[2].contains(I18n.t("autosetup.ui.stationPicDepart")), "the station's tooltip"
+                + " is " + hover[2]);
+            assertTrue(Components.onTheEventThread(() -> HandPointer.isHand(StationDoors.part(window, "station.picture.ways",
+                javax.swing.JComponent.class).getCursor())), "no hand over the station");
+        }
+        finally
+        {
+            StationDoors.close(window);
+        }
+
+        try
+        {
+            restrictAsAFileWould(square, Direction.TOWARD_A);
+
+            second = StationDoors.open(panel, square);
+
+            assertFalse(arrowsIn(second, square, true).get("SQUARE").startsWith("G[] "), "a restricted station's picture lost"
+                + " its green arrows");
+            assertEquals(arrowsIn(second, square, true), arrowsIn(second, square, false), "the picture draws other arrows"
+                + " than the diagram on a restricted station");
+        }
+        finally
+        {
+            if (second != null) StationDoors.close(second);
+
+            for (int key = 0; key < keys.length; key++)
+            {
+                if (kept[key] == null) prefs.remove(keys[key]);
+                else prefs.put(keys[key], kept[key]);
+            }
         }
     }
 

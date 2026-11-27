@@ -466,37 +466,39 @@ Tab icons provided by Freepik.
 * v3.1.2
     - New Features
         - Autonomy
-            - In the `Station Settings` picture, clicking the station changes `May depart`.  Clicking a track arrow beside it can also change the rest of the line up to the next station or switch: `Change the rest of the line too?` highlights those squares, then choose `Up to Next Station` or `Only Clicked Track`.
-            - A station's `Priority` is now `Importance` (higher is preferred), and the route choices that use it are renamed to match, such as `At Random, Respecting Importance`.
-            - `Manage Configurations` has a new `Save As...` that copies the current configuration with its trains and timetable, or replaces another one after you confirm, and `New Configuration...` now starts blank.
+            - In the `Station Settings` picture, clicking the station changes `May depart`, and clicking an arrow beside it changes that track; when the line further on still points the other way, it offers `Up to Next Station` or `Only Clicked Track`.
+            - A station's `Priority` is now `Importance`, also in the route choices: a higher number is preferred, and a negative one makes the station a last choice.
+            - `Manage Configurations` has a new `Save As...` that copies the current configuration with its trains and timetable, and `New Configuration...` now starts blank.
         - Locomotive Control
-            - `Sync Database w/ Central Station` lists in one table every locomotive the Central Station has renamed or given another address, and changes only the rows you answer; click a column's heading to answer them all.  The `Sync` button in Locomotive Settings asks the same, and the automatic syncs no longer change a locomotive's address.
-            - While a difference is unanswered, the `Locomotives` menu shows `*`; hover over `Sync Database w/ Central Station` to see how many locomotives differ.
-            - `Import from CSV...` asks about locomotives in the file that may already be here under another name.  `Merge`, the default, keeps your functions and `Replace` takes the file's, both keeping running time and multi-unit links; `Keep Both` adds the file's beside it and `Ignore` leaves it out.
+            - `Sync Database w/ Central Station` shows in one table every locomotive the Central Station has renamed or given another address, and changes only the rows you answer.  Automatic syncs no longer change addresses.
+            - The `Locomotives` menu shows `*` while such a difference is unanswered.
+            - `Import from CSV...` asks what to do with locomotives that may already be here under another name: `Merge`, `Replace`, `Keep Both` or `Ignore`.
         - Interface
-            - The lower right of the main window shows how quickly the Central Station answers, for example `12 ms`, turning yellow past 100 ms and red past 300 ms, and the line right of `Primary Keyboard Controls` names the station and its firmware.
-            - Windows reopen where you left them, page windows included; you can turn this off under `Preferences`, `Remember Window Locations`.
-            - Long messages wrap and very long help scrolls instead of making a popup wider than the screen, and many messages are shorter and clearer in every language.
+            - The lower right of the main window shows how quickly the Central Station answers, in green, yellow or red, and the line beside `Primary Keyboard Controls` names the station and its firmware.
+            - Windows reopen where you left them, page windows included; untick `Remember Window Locations` under `Preferences` to turn this off.
+            - Long messages wrap and long help scrolls instead of growing wider than the screen, and many messages are shorter and clearer.
             - The `Log` tab marks warnings with a yellow triangle and errors with a red one.
-            - In `Station Settings`, the pointer is a hand over the X that removes a guard signal.
+            - The pointer is a hand over the X that removes a guard signal and over the accessory keyboard's red and green halves.
     - Bug Fixes
         - Autonomy
-            - Page windows keep showing routes and trains in every autonomy run, also after `Stop Using Autonomy` or switching configurations, and no orange destination label stays behind.
-            - The `Station Settings` picture shows the same red and green arrows as the track diagram, on the station too.
-            - A train where the track has only one way out shows that direction on its caption, and `Change Direction` offers only that way.
-            - In an imported JSON autonomy file, a negative maximum number of active trains means no limit, and a malformed lock or maximum is refused with a clear message.
+            - Page windows keep showing routes and trains after `Stop Using Autonomy` or a configuration switch.
+            - The `Station Settings` picture shows the same arrows as the track diagram.
+            - With `Display Allowed Directions` ticked, a station that trains may leave in every direction no longer shows green arrows.
+            - A train on track with only one way out shows that direction on its caption, and `Change Direction` offers only that way.
+            - An autonomy file with a negative maximum number of active trains loads with no limit, and a damaged file gets a clear message.
         - Locomotive Control
-            - A locomotive already in a multi-unit can no longer head another one; in a saved database with such a pair, the outer multi-unit keeps it.
-            - Renaming a Central Station multi-unit no longer adds a second copy at the next sync.
-            - When a rename cannot update the autonomy files, for example because another program has one open or its folder can't be reached, a message says so and offers `Retry`.
+            - A locomotive already in a multi-unit can no longer head another one.
+            - Renaming a locomotive that heads a multi-unit no longer adds a second copy at the next sync.
+            - When a rename cannot update the autonomy files, a message says so and offers `Retry`.
         - Interface
-            - Train icons no longer vanish from the track diagram and page windows when you close an editor soon after opening the page windows.
-            - With `Window Always on Top` ticked, `Export to CSV...` and `Export Routes...` no longer open their file window hidden behind TrainControl, which left every window unclickable.
-            - When `Open Layout...`, `Recent Layouts`, `Download Central Station Layout Files...` or `Create New Layout...` cannot read the new layout, the current one stays and a message says so.
-            - When a sync cannot read the layout folder, it keeps your track diagram and warns you; at start-up, TrainControl says so and keeps the folder, showing the Central Station's layout when one is connected until a sync or the next start can read the folder, or until you choose `Switch to Central Station Layout`.  A sync that read only part of the Central Station's data ends with a warning icon.
+            - Train icons no longer vanish from the track diagram and page windows when an editor closes soon after the page windows open.
+            - With `Window Always on Top` ticked, file windows such as `Export to CSV...` no longer open hidden behind TrainControl and lock every window.
+            - When a layout cannot be read, whether opened, created, downloaded or synced, the current layout stays and a message says so.
+            - When the layout folder cannot be read at start-up, TrainControl says so and keeps the folder, showing the Central Station's layout meanwhile.
+            - A sync that read only part of the Central Station's data ends with a warning.
             - With `Show Addresses` ticked, a square that links to another page no longer shows that page's name as an address.
-            - On the accessory keyboard, the pointer is a hand over a key's red and green halves too.
-            - On Java 21 with a Windows display set above 100%, the last stretched pictures are drawn sharp, every (i) mark has the same size, four-digit addresses and tight station names are no longer cut short, and a parked train no longer covers a small curved sensor's arrows.
+            - On Java 21 with Windows display scaling above 100%, pictures are no longer blurry and every (i) mark is the same size.
+            - On the same setup, four-digit addresses and tight station names are no longer cut short, and a parked train no longer hides a small curved sensor's arrows.
 * v3.1.1 [11/21/2026]
     - New Features
         - Java 21
