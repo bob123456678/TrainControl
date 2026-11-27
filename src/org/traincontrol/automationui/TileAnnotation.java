@@ -495,7 +495,7 @@ public class TileAnnotation
     private boolean allowedToo = false;
     private volatile boolean hideOpenGreen = false;
 
-    /** Draws no green on a station that lets trains leave every way: on the diagram that is the default, so it says nothing. */
+    /** Draws no green on a station's own road while trains may leave it every way: on the diagram that is the default, so it says nothing. */
     public TileAnnotation withoutOpenGreen()
     {
         this.hideOpenGreen = true;
@@ -1136,7 +1136,14 @@ public class TileAnnotation
             allow(out, mark.getB(), direction == Direction.BOTH || direction == Direction.TOWARD_B);
         }
 
-        if (hideOpenGreen && badge != null && badge.isStation() && !out.containsValue(false)) return;
+        // A STATION OPEN EVERY WAY SAYS NOTHING ON ITS OWN ROAD (a double curve's plain road is judged and drawn on its own).
+        Set<Side> quiet = Collections.emptySet();
+        if (hideOpenGreen && badge != null && badge.isStation())
+        {
+            Set<Side> road = badge.getA() == null || badge.getB() == null ? out.keySet()
+                : EnumSet.of(badge.getA(), badge.getB());
+            if (!road.stream().anyMatch(side -> Boolean.FALSE.equals(out.get(side)))) quiet = road;
+        }
         // Full strength whatever the state: pale arrows on open track read as track gone wrong.
         for (Map.Entry<Side, Boolean> entry : out.entrySet())
         {
@@ -1144,7 +1151,7 @@ public class TileAnnotation
 
             if (target == null) continue;
 
-            if (entry.getKey() == bareSide) continue;
+            if (entry.getKey() == bareSide || quiet.contains(entry.getKey())) continue;
 
             if (blockedOnly && !allowedToo && Boolean.TRUE.equals(entry.getValue())) continue;
 
@@ -2043,6 +2050,7 @@ public class TileAnnotation
             + (badge == null ? "" : " " + badge)
             + (arrivals.isEmpty() ? "" : " " + arrivals)
             + (ignored ? " ignored" : "") + (empty ? " empty" : "") + (stationless ? " no station" : "")
+            + (hideOpenGreen ? " no open green" : "")
             + (toolMark == null ? "" : " " + toolMark);
     }
 }

@@ -2597,7 +2597,7 @@ public class testStationSettingsWindow
         StationDoors.current(window);
 
         String said = "A higher importance is preferred";
-        String negative = "no station at 0 or above is free";
+        String negative = "a negative one makes this a last choice";
 
         assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("priority")).contains(said),
             "the Importance (i) at the default does not say which way the number counts");

@@ -467,7 +467,7 @@ Tab icons provided by Freepik.
     - New Features
         - Autonomy
             - In the `Station Settings` picture, clicking the station changes `May depart`.  Clicking a track arrow beside it can also change the rest of the line up to the next station or switch: `Change the rest of the line too?` highlights those squares, then choose `Up to Next Station` or `Only Clicked Track`.
-            - A station's `Priority` is now `Importance` (higher is preferred), and the route choices that use it are renamed to match, such as `At Random, Respecting Importance`.
+            - A station's `Priority` is now `Importance` (higher is preferred, and a negative one makes it a last choice), and the route choices that use it are renamed to match, such as `At Random, Respecting Importance`.
             - `Manage Configurations` has a new `Save As...` that copies the current configuration with its trains and timetable, or replaces another one after you confirm, and `New Configuration...` now starts blank.
         - Locomotive Control
             - `Sync Database w/ Central Station` lists in one table every locomotive the Central Station has renamed or given another address, and changes only the rows you answer; click a column's heading to answer them all.  The `Sync` button in Locomotive Settings asks the same, and the automatic syncs no longer change a locomotive's address.
