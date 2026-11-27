@@ -180,10 +180,10 @@ public final class StationSettingsWindow extends StationWindowBase
     private final JPanel whichButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
     private final JPanel whichGrid = new JPanel(new GridBagLayout());
     /** Per side... was pressed: the grid shows while the cells still agree, until they first differ. */
-    private boolean perSideAsked;
+    private volatile boolean perSideAsked;
     /** The sides the grid was built for, and whether a station; each cell's refill by its name. */
-    private List<Object> gridShape;
-    private final Map<String, java.util.function.Consumer<Boolean>> whichCells = new LinkedHashMap<>();
+    private transient List<Object> gridShape;
+    private transient Map<String, java.util.function.Consumer<Boolean>> whichCells;
     private final JLabel unavailable = value("station.unavailable");
 
     /** Every label and control of the stop section, and those May Depart and Changing Direction gray with. */
@@ -1789,7 +1789,7 @@ public final class StationSettingsWindow extends StationWindowBase
         if (!shape.equals(gridShape))
         {
             whichGrid.removeAll();
-            whichCells.clear();
+            whichCells = new LinkedHashMap<>();
             GridBagConstraints stop = at(1, 0), through = at(4, 0);
             stop.gridwidth = 3;
             through.gridwidth = 3;

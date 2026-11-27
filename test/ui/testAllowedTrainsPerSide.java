@@ -100,7 +100,8 @@ public class testAllowedTrainsPerSide
      * list as the setup has them.
      *
      * MUTATION: have `showWhich` ignore `hasTrainsBySide`, and the second window shows the row; have the (i) read
-     * `grid` out of `fill`, and Per side... leaves it on the one list.
+     * `grid` out of `fill`, and Per side... leaves it on the one list; drop the `perSideAsked` reset from `aimAt`, and
+     * the next station opens on the grid.
      */
     @Test(timeOut = 120000)
     public void testTheRowWhileTheCellsAgreeAndTheGridOnceTheyDiffer() throws Exception
@@ -124,7 +125,12 @@ public class testAllowedTrainsPerSide
         assertFalse(showing(window, "station.whichWhite"), "the row still shows over the grid");
         assertFalse(Components.onTheEventThread(() -> session.hasTrainsBySide(approach)), "Per side... alone wrote a grid");
 
-        StationDoors.close(window);
+        StationSettingsWindow other = StationDoors.open(Components.onTheEventThread(editor::getAutonomyPanel),
+            support.AskingWindows.stationNamed(session, "MainPlatform"));
+
+        assertFalse(showing(other, "station.whichGrid"), "Per side... pressed for Approach opened the next station's grid");
+
+        StationDoors.close(other);
 
         on(() -> session.setWhichTrains(approach, Side.E, true, WhichTrains.WHITELIST, Collections.singletonList(MX)));
 

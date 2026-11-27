@@ -4508,7 +4508,6 @@ public class AutonomySession
      */
     public void setWhichTrains(TileKey tile, Side side, boolean through, WhichTrains which, Collection<String> names)
     {
-        boolean station = store.isStation(tile);
         List<Side> sides = new ArrayList<>(getStationIndex().arrivalSidesAt(tile));
         if (!sides.contains(side)) sides.add(side);
         JSONObject grid = new JSONObject();
