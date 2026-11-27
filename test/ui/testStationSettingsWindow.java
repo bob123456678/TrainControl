@@ -2717,9 +2717,10 @@ public class testStationSettingsWindow
 
     /**
      * While a run holds the setup, a click on a station still opens its Station Settings, read-only, as its other doors
-     * do.
+     * do, `Per side...` grayed (FR-260).
      *
-     * MUTATION: have `tileClicked` ask `heldByARun` before every click again, and no window opens.
+     * MUTATION: have `tileClicked` ask `heldByARun` before every click again, and no window opens; leave `Per side...`
+     * live in `fill`, and this fails.
      */
     @Test(timeOut = 120000)
     public void testAClickDuringARunOpensStationSettingsReadOnly() throws Exception
@@ -2742,6 +2743,8 @@ public class testStationSettingsWindow
             assertNotNull(window, "a click during a run opened no Station Settings");
             assertTrue(Components.onTheEventThread(window::isReadOnly),
                 "Station Settings opened editable during a run");
+            assertFalse(Components.onTheEventThread(() -> Components.named(window, "station.whichPerSide",
+                javax.swing.JComponent.class).isEnabled()), "Per side... is live during a run");
             assertEquals(setup(), before, "a click during a run changed the setup");
 
             StationDoors.close(window);

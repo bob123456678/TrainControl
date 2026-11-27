@@ -763,7 +763,10 @@ public class testSeveralStationsAtOnce
      * shuts out a station's home locomotive (OB-022) asks, No keeps that station and those after it as they were, and
      * the window says how many changed.
      *
-     * MUTATION: have `actOnEach` go on past a door that answers false, and this fails.
+     * A grid per side on the station after the No leaves that said (FR-260).
+     *
+     * MUTATION: have `actOnEach` go on past a door that answers false, or `pressWhich` name the kept grids after a No,
+     * and this fails.
      */
     @Test(timeOut = 180000)
     public void testAQuestionOneStationAsksIsAskedAmongSeveral() throws Exception
@@ -784,6 +787,7 @@ public class testSeveralStationsAtOnce
 
             return null;
         });
+        gridOn(after, on(() -> session.arrivalSides(after).get(0)), train);
 
         Components.settle();
 
@@ -918,6 +922,36 @@ public class testSeveralStationsAtOnce
         {
             assertEquals(on(() -> session.getWhichTrains(each)), WhichTrains.ALL, "Cancel did not put " + each + "'s list back");
         }
+    }
+
+    /**
+     * A choice the stations' one lists already read still reaches a grid's Stop cell that differs from it (FR-260).
+     *
+     * MUTATION: have `pressWhich` skip a choice `getWhichTrains` reads on every station, or pass over a station with a
+     * grid whose one list reads it, and the Stop cell keeps its whitelist.
+     */
+    @Test(timeOut = 180000)
+    public void testAChoiceTheListsReadStillReachesAGrid() throws Exception
+    {
+        List<TileKey> two = twoAlike();
+        TileKey gridded = two.get(1);
+        String train = aTrain();
+        TilePorts.Side side = on(() -> session.arrivalSides(gridded).get(0));
+
+        on(() ->
+        {
+            for (TileKey each : two) session.setWhichTrains(each, WhichTrains.BLACKLIST, Collections.singletonList(train));
+            session.setWhichTrains(gridded, side, false, WhichTrains.WHITELIST, Collections.singletonList(train));
+
+            return null;
+        });
+
+        StationSettingsWindow window = advanced(pick(two));
+
+        StationDoors.press(window, "station.whichBlack", message -> Answering.pressAt(0));
+
+        assertEquals(on(() -> session.getWhichTrains(gridded, side, false)), WhichTrains.BLACKLIST,
+            "a choice the one lists already read did not reach a grid's Stop cell");
     }
 
     /** The window with Advanced open. */
