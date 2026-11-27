@@ -356,7 +356,8 @@ public class testTrainsBySide
      *
      * MUTATION: take `turnToSetOff` out of `Layout.executePathInternal` and Q's trip is refused; take
      * `whyItCannotGoOnNorTurn` out of `LayoutExplanations` and the train that cannot reverse is given no reason; start
-     * `pickPath` or `explainDestinations` where the train stands and they find Q no trip.
+     * `pickPath` or `explainDestinations` where the train stands and they find Q no trip; drop the side from
+     * `Layout.turningCopyBarring` and Q, barred both ways, sets off from the other side's turning copy one way.
      */
     @Test(timeOut = 120000)
     public void testATrainThatMayNotGoOnSetsOffByTurning() throws Exception
@@ -389,6 +390,24 @@ public class testTrainsBySide
         assertTrue(railway.executePath(trip, q, 30, null), "Q's trip from the plain copy was refused");
         assertEquals(q.goingForward(), forward, "Q was not turned both where it set off and at MainPlatform's buffer");
         assertEquals(railway.getPoint("MainPlatform").getCurrentLocomotive(), q, "Q did not arrive");
+
+        // Barred both ways, it sets off from the turning copy for the side it came in by, each way
+        session.setWhichTrains(approach, Side.W, true, WhichTrains.WHITELIST, Collections.singletonList(mx.getName()));
+
+        Layout both = build();
+
+        for (String facing : new String[] {"W", "E"})
+        {
+            List<List<Edge>> paths = pathsFrom(both, q, copy(both, facing, false));
+
+            assertFalse(paths.isEmpty(), "Q facing " + facing + " on Approach, barred both ways, has no route");
+
+            for (List<Edge> path : paths)
+            {
+                assertEquals(path.get(0).getStart(), copy(both, "W".equals(facing) ? "E" : "W", true),
+                    "Q facing " + facing + " set off from elsewhere: " + path);
+            }
+        }
     }
 
     /**
