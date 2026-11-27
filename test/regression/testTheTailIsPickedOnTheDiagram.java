@@ -358,9 +358,8 @@ public class testTheTailIsPickedOnTheDiagram
             Future<TailCrossedPrompt.Answer> asked = asker.submit(() ->
                 TailCrossedPrompt.askAfterPlacement(q.layout, q.tunnel, "N", 5, "FR-100 train", ui, null));
 
-            Thread.sleep(2000);
-
-            assertTrue(q.label.isFlashOutstanding(), "precondition: TunnelPre is not lit while the tail question waits");
+            assertTrue(support.Components.waitFor(q.label::isFlashOutstanding, 10000),
+                "precondition: TunnelPre is not lit while the tail question waits");
 
             javax.swing.SwingUtilities.invokeAndWait(q.label::endFlash);
 
