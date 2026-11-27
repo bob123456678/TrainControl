@@ -22,7 +22,7 @@ TrainControl connects to a Central Station 2, 3, or 3 Plus over your network.  I
 
 * Tick whether trains can stop there and whether they can run through, or press a button under `Presets` to set it up in one click.
 * Choose which ways trains may leave the station under `May depart`, or click a station in the autonomy editor to open its window.
-* Under `Advanced`, `Allowed trains` keeps some trains away or lets only the ones you pick stop there.
+* Under `Advanced`, `Allowed trains` keeps some trains away or lets only the ones you pick stop there, and `Per side...` sets this for each side trains arrive from.
 * A table beside the picture tells you what trains may do at the station, whether autonomy sends them or you do.
 
 *Locomotive Settings.*  All of a locomotive's settings are now in one window, with tabs for `Basic Settings`, `Functions`, `Notes`, `Multi-Unit` and `Autonomy`: right-click its button and choose `Locomotive Settings...`, or press Ctrl+E.
