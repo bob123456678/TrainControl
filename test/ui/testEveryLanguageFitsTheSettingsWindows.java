@@ -114,7 +114,8 @@ public class testEveryLanguageFitsTheSettingsWindows
 
     /**
      * Station Settings, its settings tab with the station row table and its train tab with a train on the station, fits
-     * in every language; the German row headings, the German and Polish Arrived and the Polish Presets are named.
+     * in every language, Advanced open with Allowed trains' row and with its grid per side; the German row headings,
+     * the German and Polish Arrived, the Polish Presets and in every language Per side... and Run through are named.
      *
      * MUTATION: see the class.
      */
@@ -141,6 +142,12 @@ public class testEveryLanguageFitsTheSettingsWindows
 
                 List<String> found = LanguageFit.measureNow(LEDGER, "station-settings", language, window, 20);
 
+                // Advanced open, Allowed trains' row with Per side..., then the grid per side under it (FR-260)
+                Components.onTheEventThread(() -> { window.openAdvancedForTest(); return null; });
+                found.addAll(LanguageFit.measureNow(LEDGER, "station-settings", language, window, 20));
+                StationDoors.press(window, "station.whichPerSide");
+                found.addAll(LanguageFit.measureNow(LEDGER, "station-settings", language, window, 20));
+
                 List<String> named = new ArrayList<>();
 
                 if (!LEDGER.saw("station-settings", language, I18n.t("autosetup.ui.stationSectionAdvanced") + " *"))
@@ -155,6 +162,8 @@ public class testEveryLanguageFitsTheSettingsWindows
                 }
 
                 if ("de".equals(language) || "pl".equals(language)) named.add("autosetup.ui.trainArrived");
+
+                for (String key : new String[] {"autosetup.ui.stationWhichPerSide", "autosetup.ui.stationWhichThrough"}) named.add(key);
                 if ("pl".equals(language)) named.add("autosetup.ui.stationPresets");
 
                 for (String key : named)

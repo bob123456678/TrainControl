@@ -4518,17 +4518,25 @@ public class AutonomySession
                 .put(Point.THROUGH, cellAt(tile, each, true)));
         }
         grid.getJSONObject(side.name()).put(through ? Point.THROUGH : Point.STOP, cellOf(which, names));
-        JSONObject one = grid.getJSONObject(sides.get(0).name()).getJSONObject(station ? Point.STOP : Point.THROUGH);
+        storeGrid(tile, grid);
+    }
+
+    /** A grid, or the one list where its cells read as one. */
+    private void storeGrid(TileKey tile, JSONObject grid)
+    {
+        boolean station = store.isStation(tile);
+        JSONObject one = grid.getJSONObject(grid.keys().next()).getJSONObject(station ? Point.STOP : Point.THROUGH);
         boolean uniform = true;
-        for (Side each : sides)
+        for (String each : grid.keySet())
         {
-            JSONObject row = grid.getJSONObject(each.name());
+            JSONObject row = grid.getJSONObject(each);
             uniform &= sameCell(row.getJSONObject(Point.THROUGH), station ? new JSONObject() : one)
                 && (!station || sameCell(row.getJSONObject(Point.STOP), one));
         }
 
-        if (uniform) storeTrains(tile, whichIn(one), listIn(one));
-        else setPointProperty(tile, Point.TRAINS_BY_SIDE, grid);
+        JSONObject base = cellOf(whichIn(one), listIn(one));
+        if (uniform) for (String key : LIST_KEYS) setPointProperty(tile, key, base.opt(key));
+        setPointProperty(tile, Point.TRAINS_BY_SIDE, uniform ? null : grid);
     }
 
     /** One cell, a copy: the grid's, or else the one list as it reads there. */
@@ -4570,12 +4578,23 @@ public class AutonomySession
         storeTrains(tile, which, names);
     }
 
-    /** The one list, the grid per side dropped. */
+    /**
+     * The one list; a grid per side is kept, its cells the one list stands for (Stop at a station, else Run through)
+     * set to it, so a square-wide choice never drops the other column.
+     */
     private void storeTrains(TileKey tile, WhichTrains which, Collection<String> names)
     {
         JSONObject cell = cellOf(which, names);
         for (String key : LIST_KEYS) setPointProperty(tile, key, cell.opt(key));
-        setPointProperty(tile, Point.TRAINS_BY_SIDE, null);
+        Object grid = getPointProperty(tile, Point.TRAINS_BY_SIDE);
+        if (!(grid instanceof JSONObject)) return;
+
+        JSONObject kept = new JSONObject(grid.toString());
+        for (String side : kept.keySet())
+        {
+            kept.getJSONObject(side).put(store.isStation(tile) ? Point.STOP : Point.THROUGH, new JSONObject(cell.toString()));
+        }
+        storeGrid(tile, kept);
     }
 
     /** The keys a list is written under, the square's one list and each cell per side alike. */

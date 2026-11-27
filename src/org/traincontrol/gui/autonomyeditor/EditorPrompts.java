@@ -15,6 +15,7 @@ import javax.swing.JScrollPane;
 import javax.swing.UIManager;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.util.I18n;
@@ -274,14 +275,17 @@ final class EditorPrompts
     }
 
     /**
-     * Asks which locomotives are on a square's one list (FR-111), as a multi-select list rather than typed names: a name
-     * that does not match the roster exactly would silently do nothing.  OK puts the list in force under `which`.
+     * Asks which locomotives are on a square's one list (FR-111), or on one cell of its grid per side (FR-260), as a
+     * multi-select list rather than typed names: a name that does not match the roster exactly would silently do
+     * nothing.  OK puts the list in force under `which`.
      *
      * @param tile the square
+     * @param side the cell's side, or null for the one list
+     * @param through the Run through cell, rather than Stop
      * @param which Blacklist or Whitelist
      * @return false where nothing changed: no locomotives, Cancel, or a home the operator would not break
      */
-    boolean promptTrainList(TileKey tile, AutonomySession.WhichTrains which)
+    boolean promptTrainList(TileKey tile, TilePorts.Side side, boolean through, AutonomySession.WhichTrains which)
     {
         List<String> names = editor.allLocomotives();
 
@@ -301,7 +305,8 @@ final class EditorPrompts
         list.setVisibleRowCount(Math.max(8, Math.min(18, names.size())));
         AutonomyEditorPanel.control(list);
 
-        List<String> chosen = editor.session.getTrainList(tile);
+        List<String> chosen = side == null ? editor.session.getTrainList(tile)
+            : editor.session.getTrainList(tile, side, through);
         List<Integer> indexes = new ArrayList<>();
 
         for (int i = 0; i < names.size(); i++)
@@ -330,9 +335,10 @@ final class EditorPrompts
 
         List<String> picked = list.getSelectedValuesList();
 
-        if (!homeMayBeBroken(tile, picked, which)) return false;
+        if (!through && !homeMayBeBroken(tile, picked, which)) return false;
 
-        editor.session.setWhichTrains(tile, which, picked);
+        if (side == null) editor.session.setWhichTrains(tile, which, picked);
+        else editor.session.setWhichTrains(tile, side, through, which, picked);
 
         // Persisted, and the running layout told (MT-246).
         editor.setupChanged();

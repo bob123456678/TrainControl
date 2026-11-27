@@ -761,6 +761,7 @@
         <test-one-class class="testSyncDifferences"/>
         <test-one-class class="testTheSyncDifferencesWindow"/>
         <test-one-class class="testTrainsBySide"/>
+        <test-one-class class="testAllowedTrainsPerSide"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

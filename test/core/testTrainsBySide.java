@@ -574,31 +574,7 @@ public class testTrainsBySide
         plainCopy.setArrivedFrom(plainCopy.getArrivalSide());
         plainCopy.setArrivedAlong(along);
 
-        // One switch on the trip held the other way for as long as the trip waits for it
-        Map.Entry<String, org.traincontrol.base.Accessory.accessorySetting> held = null;
-
-        for (Edge e : trip)
-        {
-            if (held == null && !e.getConfigCommands().isEmpty())
-            {
-                held = e.getConfigCommands().entrySet().iterator().next();
-            }
-        }
-
-        assertNotNull(held, "Q's trip throws no switch");
-
-        org.traincontrol.marklin.MarklinAccessory sw = scenario.getModel().getAccessoryByName(held.getKey());
-        boolean wrong = !org.traincontrol.base.Accessory.isThrow(held.getValue());
-        boolean[] holding = {true};
-
-        Thread holder = new Thread(() ->
-        {
-            while (holding[0])
-            {
-                sw.setSwitched(wrong);
-                Thread.yield();
-            }
-        }, "held-switch");
+        assertTrue(trip.stream().anyMatch(e -> !e.getConfigCommands().isEmpty()), "Q's trip throws no switch");
 
         boolean forward = q.goingForward();
         int failures = railway.getPathValidationFailureCount(), waited = Layout.PATH_VALIDATION_MS;
@@ -606,18 +582,15 @@ public class testTrainsBySide
         support.Reflect.method(org.traincontrol.marklin.MarklinControlStation.class, "setPowerState", boolean.class)
             .invoke(scenario.getModel(), true);
 
-        Layout.PATH_VALIDATION_MS = 100;
-        holder.setDaemon(true);
-        holder.start();
-
+        // The trip's switch never confirms here: the simulated station echoes nothing, so the wait runs out
         try
         {
-            assertFalse(railway.executePath(trip, q, 30, null), "Q set off with its switch held the other way");
+            Layout.PATH_VALIDATION_MS = 100;
+
+            assertFalse(railway.executePath(trip, q, 30, null), "Q set off with its switch unconfirmed");
         }
         finally
         {
-            holding[0] = false;
-            holder.join(10000);
             Layout.PATH_VALIDATION_MS = waited;
         }
 

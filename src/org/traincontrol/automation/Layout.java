@@ -3316,7 +3316,7 @@ public class Layout
 
             try
             {
-            // Stood on the path's start by the claim's holder; a throw from here on stands it back.
+            // Stood on the path's start by the claim's holder.
             if (stood != null) moveToCopy(stood, path.get(0).getStart(), loc);
 
             for (Edge e : path)

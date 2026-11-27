@@ -134,6 +134,15 @@ final class StationFlyovers
         }
     }
 
+    /** Allowed trains set per side (FR-260); a square that isn't a station heeds only Run through. */
+    static String whichBySide(boolean station)
+    {
+        String now = I18n.t("autosetup.ui.flyWhichBySide");
+
+        return nowThenChange(station ? now : now + "  " + I18n.t("autosetup.ui.flyWhichBySideTrack"),
+            I18n.t("autosetup.ui.flyWhichBySideChange"));
+    }
+
     /**
      * What a list does to a train kept out of these squares, a line for each kind among them (OB-483): it may run
      * through a station that trains run through, and never through any other square.

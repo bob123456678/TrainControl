@@ -29,6 +29,8 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.AutonomySession.WhichTrains;
 import org.traincontrol.automationui.TileAnnotation;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.automationui.TilePorts;
+import org.traincontrol.automation.Point;
 import org.traincontrol.gui.RunGates;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
@@ -807,6 +809,152 @@ public class testSeveralStationsAtOnce
 
         assertEquals(StationDoors.said(window, "station.strip"), I18n.f("autosetup.ui.stationPartlyChanged", 1, 3),
             "the window does not say that only some changed");
+    }
+
+    /**
+     * Stations agree on Allowed trains only where their whole grids per side do (FR-260): a grid on one of two shows the
+     * row mixed, the same grid on both shows it set per side with no triangle, and one cell apart shows it mixed again.
+     * Several never show a grid.
+     *
+     * MUTATION: have `fill` agree on `getWhichTrains` alone, and the first pick shows the row as All.
+     */
+    @Test(timeOut = 180000)
+    public void testGridsPerSideAgreeOnlyWhole() throws Exception
+    {
+        List<TileKey> two = twoAlike();
+        String train = aTrain();
+        TilePorts.Side side = on(() -> session.arrivalSides(two.get(0)).get(0));
+
+        gridOn(two.get(0), side, train);
+
+        StationSettingsWindow window = advanced(pick(two));
+
+        assertTrue(showing(window, "station.whichMixed"), "a grid on one station did not show the row mixed");
+        assertFalse(StationDoors.on(window, "station.whichAll"), "a grid on one station showed the row as All");
+        assertFalse(showing(window, "station.whichGrid"), "several stations showed a grid");
+
+        StationDoors.press(panel, "autonomy.pickStations");
+        gridOn(two.get(1), side, train);
+
+        StationSettingsWindow same = advanced(pick(two));
+
+        assertFalse(showing(same, "station.whichMixed"), "the same grid on both showed the row mixed");
+        assertTrue(showing(same, "station.whichBySide"), "the same grid on both is not said to be set per side");
+
+        StationDoors.press(panel, "autonomy.pickStations");
+        on(() -> { session.setWhichTrains(two.get(1), side, true, WhichTrains.BLACKLIST, Collections.singletonList(train)); return null; });
+
+        StationSettingsWindow apart = advanced(pick(two));
+
+        assertTrue(showing(apart, "station.whichMixed"), "grids one cell apart did not show the row mixed");
+        assertFalse(showing(apart, "station.whichBySide"), "grids one cell apart are said to be set per side");
+    }
+
+    /**
+     * A choice of Allowed trains for several keeps a grid per side (FR-260): the station with one takes the choice in its
+     * Stop cells and keeps its Run through cell, the strip names it, the others take the choice as before; the editor's
+     * Cancel puts the grid and the lists back.
+     *
+     * MUTATION: have `AutonomySession.storeTrains` drop the grid, as before FR-260, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAChoiceForSeveralKeepsAGridAndCancelPutsItBack() throws Exception
+    {
+        List<TileKey> three = stations(3);
+        TileKey gridded = three.get(1);
+        String train = aTrain();
+        TilePorts.Side side = on(() -> session.arrivalSides(gridded).get(0));
+
+        closeTheEditor();
+
+        on(() ->
+        {
+            for (TileKey each : three) session.setWhichTrains(each, WhichTrains.ALL, Collections.singletonList(train));
+
+            return null;
+        });
+        gridOn(gridded, side, train);
+
+        String grid = on(() -> session.getPointProperty(gridded, Point.TRAINS_BY_SIDE).toString());
+
+        open();
+
+        StationSettingsWindow window = advanced(pick(three));
+
+        StationDoors.press(window, "station.whichBlack", message -> Answering.pressAt(0));
+
+        assertTrue(on(() -> session.hasTrainsBySide(gridded)), "a choice for several dropped a grid per side");
+        assertEquals(on(() -> session.getWhichTrains(gridded, side, true)), WhichTrains.WHITELIST,
+            "a choice for several changed a station's Run through cell");
+
+        for (TilePorts.Side each : on(() -> session.arrivalSides(gridded)))
+        {
+            assertEquals(on(() -> session.getWhichTrains(gridded, each, false)), WhichTrains.BLACKLIST,
+                "a Stop cell did not take the choice for several, from the " + each);
+        }
+
+        for (TileKey each : Arrays.asList(three.get(0), three.get(2)))
+        {
+            assertEquals(on(() -> session.getWhichTrains(each)), WhichTrains.BLACKLIST, each + " did not take the choice");
+        }
+
+        assertEquals(StationDoors.said(window, "station.strip"),
+            I18n.f("autosetup.ui.stationWhichKeptSides", on(() -> session.describeTile(gridded))),
+            "the strip does not say which station kept its grid");
+
+        support.AskingWindows.cancelTheEditor(editor);
+
+        assertTrue(on(() -> new org.json.JSONObject(grid).similar(session.getPointProperty(gridded, Point.TRAINS_BY_SIDE))),
+            "Cancel did not put the grid back");
+
+        for (TileKey each : three)
+        {
+            assertEquals(on(() -> session.getWhichTrains(each)), WhichTrains.ALL, "Cancel did not put " + each + "'s list back");
+        }
+    }
+
+    /** The window with Advanced open. */
+    private static StationSettingsWindow advanced(StationSettingsWindow window)
+    {
+        if (!showing(window, "station.priority")) Components.onTheEventThread(() -> { window.openAdvancedForTest(); return null; });
+
+        return window;
+    }
+
+    /** One Run through cell of a station set apart: a whitelist of this train from this side. */
+    private static void gridOn(TileKey station, TilePorts.Side side, String train)
+    {
+        on(() ->
+        {
+            session.setWhichTrains(station, side, true, WhichTrains.WHITELIST, Collections.singletonList(train));
+
+            return null;
+        });
+    }
+
+    /** Two plain stations trains arrive at from the same sides, so one grid fits both. */
+    private static List<TileKey> twoAlike()
+    {
+        return on(() ->
+        {
+            for (TileKey one : session.getReducer().getPoints().keySet())
+            {
+                for (TileKey other : session.getReducer().getPoints().keySet())
+                {
+                    if (one.equals(other) || !plain(one) || !plain(other)) continue;
+
+                    if (session.arrivalSides(one).equals(session.arrivalSides(other))) return Arrays.asList(one, other);
+                }
+            }
+
+            throw new AssertionError("precondition: no two plain stations on " + PAGE + " share their sides");
+        });
+    }
+
+    private static boolean plain(TileKey square)
+    {
+        return PAGE.equals(square.getPage()) && session.getStore().isStation(square) && !session.isTurnAround(square)
+            && session.getStore().getPointName(square) != null && !session.arrivalSides(square).isEmpty();
     }
 
     /**

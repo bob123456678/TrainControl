@@ -3985,24 +3985,28 @@ public class AutonomyEditorPanel extends JPanel
         return chosen;
     }
 
-    boolean promptTrainList(TileKey tile, AutonomySession.WhichTrains which)
+    /** `side` null for the square's one list, else that side's Stop or Run through cell (FR-260). */
+    boolean promptTrainList(TileKey tile, TilePorts.Side side, boolean through, AutonomySession.WhichTrains which)
     {
-        return prompts.promptTrainList(tile, which);
+        return prompts.promptTrainList(tile, side, through, which);
     }
 
     /**
-     * Allowed trains (FR-111), asking about a home the choice would break as the list does (OB-022).
+     * Allowed trains (FR-111), the square's one list for a null `side`, else one cell (FR-260), asking about a home the
+     * choice would break as the list does (OB-022); running through breaks none.
      * @return false where the operator kept it as it was
      */
-    boolean setWhichTrains(TileKey tile, AutonomySession.WhichTrains which)
+    boolean setWhichTrains(TileKey tile, TilePorts.Side side, boolean through, AutonomySession.WhichTrains which)
     {
-        if (which != AutonomySession.WhichTrains.ALL
-            && !prompts.homeMayBeBroken(tile, session.getTrainList(tile), which))
+        List<String> listed = side == null ? session.getTrainList(tile) : session.getTrainList(tile, side, through);
+
+        if (which != AutonomySession.WhichTrains.ALL && !through && !prompts.homeMayBeBroken(tile, listed, which))
         {
             return false;
         }
 
-        session.setWhichTrains(tile, which);
+        if (side == null) session.setWhichTrains(tile, which);
+        else session.setWhichTrains(tile, side, through, which, listed);
 
         setupChanged();
 

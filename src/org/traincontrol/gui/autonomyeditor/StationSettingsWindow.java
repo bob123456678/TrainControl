@@ -174,6 +174,20 @@ public final class StationSettingsWindow extends StationWindowBase
     private final JRadioButton whichBlack = radio("station.whichBlack", "autosetup.ui.stationWhichBlack");
     private final JRadioButton whichWhite = radio("station.whichWhite", "autosetup.ui.stationWhichWhite");
     private final JButton whichChoose = flat("station.whichChoose", "autosetup.ui.stationChoose");
+    private final JButton whichPerSide = UiStyle.button(new JButton(I18n.t("autosetup.ui.stationWhichPerSide")));
+    private final JLabel whichBySide = value("station.whichBySide");
+
+    /** Allowed trains' one row, its buttons, and the grid per side shown instead while the cells differ (FR-260). */
+    private JPanel whichRow;
+    private final JPanel whichButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+    private final JPanel whichGrid = new JPanel(new GridBagLayout());
+
+    /** Per side... was pressed: the grid shows until a cell is set, though the cells still agree. */
+    private boolean perSideAsked;
+
+    /** The sides the grid was built for, and whether a station; each cell's refill by its name. */
+    private List<Object> gridShape;
+    private final Map<String, java.util.function.Consumer<Boolean>> whichCells = new LinkedHashMap<>();
     private final JLabel unavailable = value("station.unavailable");
 
     /** Every label and control of the stop section, and those May Depart and Changing Direction gray with. */
@@ -289,6 +303,8 @@ public final class StationSettingsWindow extends StationWindowBase
         // A refusal, and the text it kept, belong to the squares it was typed for (OB-415)
         if (!before.equals(squares))
         {
+            perSideAsked = false;
+
             for (JTextField part : problems.keySet()) showProblem(part, null);
 
             sayOnTheStrip(null);
@@ -344,13 +360,13 @@ public final class StationSettingsWindow extends StationWindowBase
      * over left as they are.  A door answering false was refused or canceled, which stops the rest; where some had
      * changed, the strip says how many.
      */
-    private void actOnEach(Predicate<TileKey> needs, Predicate<TileKey> door)
+    private boolean actOnEach(Predicate<TileKey> needs, Predicate<TileKey> door)
     {
-        actOnEach(needs, door, true);
+        return actOnEach(needs, door, true);
     }
 
-    /** `actOnEach`, with `act`'s `putBack`. */
-    private void actOnEach(Predicate<TileKey> needs, Predicate<TileKey> door, boolean putBack)
+    /** `actOnEach`, with `act`'s `putBack`; false where a door stopped the rest. */
+    private boolean actOnEach(Predicate<TileKey> needs, Predicate<TileKey> door, boolean putBack)
     {
         final List<TileKey> squares = new ArrayList<>(targets());
         final int[] changed = {0};
@@ -390,6 +406,8 @@ public final class StationSettingsWindow extends StationWindowBase
         {
             sayOnTheStrip(I18n.f("autosetup.ui.stationPartlyChanged", changed[0], squares.size()));
         }
+
+        return !stopped[0];
     }
 
     /**
@@ -649,15 +667,39 @@ public final class StationSettingsWindow extends StationWindowBase
         whichWhite.addActionListener(e -> pressWhich(WhichTrains.WHITELIST));
         whichChoose.addActionListener(e -> pressChoose());
 
-        JPanel which = oneOf(otherControls, whichAll, whichBlack, whichWhite);
+        whichRow = oneOf(otherControls, whichAll, whichBlack, whichWhite);
 
-        which.add(whichMixed);
+        whichRow.add(whichMixed);
         otherControls.add(whichMixed);
+        whichBySide.setText(I18n.t("autosetup.ui.stationWhichBySide"));
+        whichRow.add(whichBySide);
 
-        rowOf("autosetup.ui.stationWhich", "which", which, whichChoose, otherControls);
+        whichPerSide.setName("station.whichPerSide");
+        whichPerSide.setFocusable(false);
+        whichPerSide.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.stationWhichPerSideTip")));
+        whichPerSide.addActionListener(e ->
+        {
+            perSideAsked = true;
+            reload();
+        });
 
-        // Each station's own list: several are given theirs by the radios, which open an empty one
+        whichButtons.add(whichChoose);
+        whichButtons.add(Box.createHorizontalStrut(4));
+        whichButtons.add(whichPerSide);
+
+        rowOf("autosetup.ui.stationWhich", "which", whichRow, whichButtons, otherControls);
+
+        // Each station's own list and grid: several are given theirs by the radios, which open an empty one
         perStation.add(whichChoose);
+        perStation.add(whichPerSide);
+
+        GridBagConstraints grid = at(0, row++);
+
+        grid.gridwidth = 4;
+        grid.fill = GridBagConstraints.HORIZONTAL;
+        grid.insets = new Insets(0, 12, 3, 0);
+        whichGrid.setName("station.whichGrid");
+        form.add(whichGrid, grid);
 
         JButton unavailableChoose = flat("station.unavailableChoose", "autosetup.ui.stationChoose");
 
@@ -1299,17 +1341,25 @@ public final class StationSettingsWindow extends StationWindowBase
 
         fly("speed", pace == null ? mixedTip() : StationFlyovers.speed(pace));
 
-        WhichTrains which = agreed(session::getWhichTrains);
+        // Squares agree only where their whole grids per side do (FR-260); a grid they share has no one radio
+        Object allowed = agreed(each -> session.hasTrainsBySide(each) ? ((org.json.JSONObject) session.getPointProperty(each,
+            org.traincontrol.automation.Point.TRAINS_BY_SIDE)).toMap() : session.getWhichTrains(each));
+        WhichTrains which = allowed instanceof WhichTrains ? (WhichTrains) allowed : null;
         Integer listed = agreed(each -> session.getTrainList(each).size());
+        boolean grid = !many && (perSideAsked || session.hasTrainsBySide(tile));
 
         if (which == null) clearOneOf(whichAll);
 
         whichAll.setSelected(which == WhichTrains.ALL);
         whichBlack.setSelected(which == WhichTrains.BLACKLIST);
         whichWhite.setSelected(which == WhichTrains.WHITELIST);
-        whichMixed.setVisible(which == null);
-        fly("which", which == null || listed == null ? mixedTip()
+        whichMixed.setVisible(allowed == null);
+        whichBySide.setVisible(allowed instanceof Map);
+        fly("which", grid || allowed instanceof Map ? StationFlyovers.whichBySide(session.getStore().isStation(tile))
+            : which == null || listed == null ? mixedTip()
             : StationFlyovers.whichTrains(which, listed, StationFlyovers.keptOut(session, targets())));
+
+        if (grid) fillWhichGrid(!readOnly);
 
         String blockers = many ? null : namesOf(session.getStore().getBlockingPoints(tile));
 
@@ -1336,8 +1386,10 @@ public final class StationSettingsWindow extends StationWindowBase
 
         // A field grayed by a section still shows its value
         whichChoose.setEnabled(!readOnly && which != WhichTrains.ALL);
+        whichPerSide.setEnabled(!readOnly);
 
         showForHowMany(many);
+        showWhich();
 
         if (many)
         {
@@ -1701,19 +1753,144 @@ public final class StationSettingsWindow extends StationWindowBase
 
     private void pressWhich(WhichTrains which)
     {
-        if (reading || which == agreed(editor.session::getWhichTrains)) return;
+        AutonomySession session = editor.session;
 
-        // Either list picked with nothing on it opens the list (FR-111), each square's own
-        actOnEach(each -> which != editor.session.getWhichTrains(each),
-            each -> which != WhichTrains.ALL && editor.session.getTrainList(each).isEmpty()
-                ? editor.promptTrainList(each, which) : editor.setWhichTrains(each, which));
+        if (reading || which == agreed(each -> session.hasTrainsBySide(each) ? null : session.getWhichTrains(each))) return;
+
+        List<TileKey> bySide = new ArrayList<>();
+
+        for (TileKey each : targets()) if (session.hasTrainsBySide(each)) bySide.add(each);
+
+        // Either list picked with nothing on it opens the list (FR-111), each square's own; a grid per side keeps the
+        // column the one list does not stand for, and the strip says so (FR-260)
+        boolean whole = actOnEach(each -> bySide.contains(each) || which != session.getWhichTrains(each),
+            each -> which != WhichTrains.ALL && session.getTrainList(each).isEmpty()
+                ? editor.promptTrainList(each, null, false, which) : editor.setWhichTrains(each, null, false, which));
+
+        if (whole && !bySide.isEmpty()) sayOnTheStrip(I18n.f("autosetup.ui.stationWhichKeptSides", namesOf(bySide)));
     }
 
     private void pressChoose()
     {
         final WhichTrains which = editor.session.getWhichTrains(tile);
 
-        act(() -> editor.promptTrainList(tile, which));
+        act(() -> editor.promptTrainList(tile, null, false, which));
+    }
+
+    /** One cell of the grid per side, as the row's radios: either list with nothing on it opens the list (FR-260). */
+    private void pressCell(TilePorts.Side side, boolean through, WhichTrains which)
+    {
+        act(() -> collapsing(which != WhichTrains.ALL && editor.session.getTrainList(tile, side, through).isEmpty()
+            ? editor.promptTrainList(tile, side, through, which) : editor.setWhichTrains(tile, side, through, which)));
+    }
+
+    /** A cell set lets the grid fold once its cells agree again; one left as it was keeps the window as it was. */
+    private boolean collapsing(boolean changed)
+    {
+        if (changed) perSideAsked = false;
+
+        return changed;
+    }
+
+    /** The one row, or the grid under it while the cells differ or Per side... was pressed; one station only. */
+    private void showWhich()
+    {
+        boolean grid = tile != null && !isSeveral() && (perSideAsked || editor.session.hasTrainsBySide(tile));
+
+        whichRow.setVisible(advancedOpen && !grid);
+        whichButtons.setVisible(advancedOpen && !grid);
+        whichGrid.setVisible(advancedOpen && grid);
+    }
+
+    /** A row per side trains arrive from, each with a Stop and a Run through cell; a non-station's Stop cells gray. */
+    private void fillWhichGrid(boolean live)
+    {
+        AutonomySession session = editor.session;
+
+        List<Object> shape = new ArrayList<>(session.arrivalSides(tile));
+
+        shape.add(session.getStore().isStation(tile));
+
+        // The cells stay while the sides do, as the arrival boxes (OB-436)
+        if (!shape.equals(gridShape))
+        {
+            whichGrid.removeAll();
+            whichCells.clear();
+
+            GridBagConstraints stop = at(1, 0), through = at(4, 0);
+
+            stop.gridwidth = 3;
+            through.gridwidth = 3;
+            whichGrid.add(UiStyle.blackLabel(I18n.t("autosetup.ui.stationWhichStop")), stop);
+            whichGrid.add(UiStyle.blackLabel(I18n.t("autosetup.ui.stationWhichThrough")), through);
+
+            int y = 1;
+
+            for (TilePorts.Side side : session.arrivalSides(tile))
+            {
+                String from = I18n.f("autosetup.ui.stationSideFrom", I18n.t("autosetup.ui.side" + side.name()));
+
+                whichGrid.add(UiStyle.blackLabel(Character.toUpperCase(from.charAt(0)) + from.substring(1)), at(0, y));
+                whichCell(side, false, y);
+                whichCell(side, true, y++);
+            }
+        }
+
+        gridShape = shape;
+
+        for (java.util.function.Consumer<Boolean> cell : whichCells.values()) cell.accept(live);
+
+        whichGrid.revalidate();
+    }
+
+    private void whichCell(TilePorts.Side side, boolean through, int y)
+    {
+        String part = "station.which." + side.name() + (through ? ".through" : ".stop");
+
+        Choice choice = new Choice(at -> pressCell(side, through, WhichTrains.values()[at]),
+            I18n.t("autosetup.ui.stationWhichAll"), I18n.t("autosetup.ui.stationWhichBlack"),
+            I18n.t("autosetup.ui.stationWhichWhite"));
+        JButton pencil = flat(part + ".choose", "autosetup.ui.stationChoose");
+        JLabel names = new RoomyLabel();
+
+        choice.setName(part);
+        names.setName(part + ".names");
+        names.setFont(REGULAR);
+
+        pencil.addActionListener(e ->
+        {
+            WhichTrains now = editor.session.getWhichTrains(tile, side, through);
+
+            act(() -> collapsing(editor.promptTrainList(tile, side, through, now)));
+        });
+
+        int x = through ? 4 : 1;
+
+        whichGrid.add(choice, at(x, y));
+        whichGrid.add(pencil, at(x + 1, y));
+
+        GridBagConstraints c = at(x + 2, y);
+
+        c.weightx = 1;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        whichGrid.add(names, c);
+
+        whichCells.put(part, live ->
+        {
+            AutonomySession session = editor.session;
+            WhichTrains which = session.getWhichTrains(tile, side, through);
+            List<String> listed = session.getTrainList(tile, side, through);
+            boolean heeded = through || session.getStore().isStation(tile);
+            String said = which == WhichTrains.ALL ? "" : listed.isEmpty() ? I18n.t("autosetup.ui.labelNone")
+                : String.join(", ", listed);
+
+            choice.setSelectedIndex(which.ordinal());
+            choice.setEnabled(live && heeded);
+            pencil.setEnabled(live && heeded && which != WhichTrains.ALL);
+            names.setText(said);
+            names.setToolTipText(said.isEmpty() ? null : said);
+            names.setEnabled(heeded);
+        });
     }
 
     private void showAdvanced(boolean open)
@@ -1730,6 +1907,8 @@ public final class StationSettingsWindow extends StationWindowBase
             problems.get(priority).setVisible(false);
             problems.get(speed).setVisible(false);
         }
+
+        showWhich();
 
         if (isVisible()) pack();
     }
