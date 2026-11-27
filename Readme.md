@@ -463,6 +463,11 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
+* v3.1.3
+    - New Features
+        - Autonomy
+            - `Allowed trains` in `Station Settings` can now differ by the side a train arrives from, and between stopping and running through: choose `Per side...`.
+
 * v3.1.2
     - New Features
         - Autonomy
