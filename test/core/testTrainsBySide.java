@@ -413,6 +413,7 @@ public class testTrainsBySide
 
         // Nor is it told it reaches no station when only the way it may not go has none
         session.setAutoDestination(westEnd, false);
+        session.setPointFlag(westEnd, AutonomyBuilder.MUST_REVERSE, false);
 
         Layout noWest = build();
 
