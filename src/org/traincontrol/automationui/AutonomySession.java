@@ -4456,6 +4456,10 @@ public class AutonomySession
         setPointProperty(tile, "active", null);
 
         setPointProperty(tile, Point.RUN_THROUGH, runsThrough ? null : Boolean.FALSE);
+        // Which column the one list stands for changed with the kind, so cells that now agree fold (FR-260)
+        if (hasTrainsBySide(tile)) storeGrid(tile, gridOf(tile, null));
+
+        // Which column the one list stands for changed with the kind, so cells that now agree fold (FR-260)
     }
 
     /** Which trains a square's list applies to (FR-111); the three share one list. */
@@ -4508,16 +4512,45 @@ public class AutonomySession
      */
     public void setWhichTrains(TileKey tile, Side side, boolean through, WhichTrains which, Collection<String> names)
     {
+        JSONObject grid = gridOf(tile, side);
+        grid.getJSONObject(side.name()).put(through ? Point.THROUGH : Point.STOP, cellOf(which, names));
+        storeGrid(tile, grid);
+    }
+
+    /** The cells as they read now, a row for each arrival side and for `extra`. */
+    private JSONObject gridOf(TileKey tile, Side extra)
+    {
         List<Side> sides = new ArrayList<>(getStationIndex().arrivalSidesAt(tile));
-        if (!sides.contains(side)) sides.add(side);
+        if (extra != null && !sides.contains(extra)) sides.add(extra);
         JSONObject grid = new JSONObject();
         for (Side each : sides)
         {
             grid.put(each.name(), new JSONObject().put(Point.STOP, cellAt(tile, each, false))
                 .put(Point.THROUGH, cellAt(tile, each, true)));
         }
-        grid.getJSONObject(side.name()).put(through ? Point.THROUGH : Point.STOP, cellOf(which, names));
-        storeGrid(tile, grid);
+        return grid;
+    }
+
+    /**
+     * What this square's Allowed trains mean, for squares to compare: the one choice, or each cell's choice and set
+     * (a list kept under All reads nothing), so grids that mean the same compare equal.
+     */
+    public Object trainsRule(TileKey tile)
+    {
+        if (!hasTrainsBySide(tile)) return getWhichTrains(tile);
+        Map<String, List<Object>> rule = new LinkedHashMap<>();
+        for (Side side : arrivalSides(tile))
+        {
+            List<Object> cells = new ArrayList<>();
+            for (boolean through : new boolean[] {false, true})
+            {
+                WhichTrains which = getWhichTrains(tile, side, through);
+                cells.add(which);
+                cells.add(which == WhichTrains.ALL ? Collections.emptySet() : new HashSet<>(getTrainList(tile, side, through)));
+            }
+            rule.put(side.name(), cells);
+        }
+        return rule;
     }
 
     /** A grid, or the one list where its cells read as one. */
@@ -4532,7 +4565,6 @@ public class AutonomySession
             uniform &= sameCell(row.getJSONObject(Point.THROUGH), station ? new JSONObject() : one)
                 && (!station || sameCell(row.getJSONObject(Point.STOP), one));
         }
-
         JSONObject base = cellOf(whichIn(one), listIn(one));
         if (uniform) for (String key : LIST_KEYS) setPointProperty(tile, key, base.opt(key));
         setPointProperty(tile, Point.TRAINS_BY_SIDE, uniform ? null : grid);
@@ -4604,7 +4636,6 @@ public class AutonomySession
         String key = which == WhichTrains.ALL ? AutonomyBuilder.REMEMBERED_LOCS : "excludedLocs";
         if (listed != null) cell.put(key, listed);
         if (which == WhichTrains.WHITELIST) cell.put(Point.EXCLUDED_LOCS_MODE, Point.ALLOW_ONLY_LISTED);
-
         return cell;
     }
 
@@ -4614,7 +4645,6 @@ public class AutonomySession
         JSONObject out = new JSONObject();
 
         for (String key : LIST_KEYS) out.putOpt(key, getPointProperty(tile, key));
-
         return new JSONObject(out.toString());
     }
 

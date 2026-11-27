@@ -818,9 +818,11 @@ public class testSeveralStationsAtOnce
     /**
      * Stations agree on Allowed trains only where their whole grids per side do (FR-260): a grid on one of two shows the
      * row mixed, its triangle in sight, the same grid on both shows no triangle and the row's (i) says it is set per
-     * side, and one cell apart shows it mixed again.  Several never show a grid.
+     * side, and one cell apart shows it mixed again; grids that differ only in a list kept under All show no triangle.
+     * Several never show a grid.
      *
-     * MUTATION: have `fill` agree on `getWhichTrains` alone, and the first pick shows the row as All; drop
+     * MUTATION: have `fill` agree on `getWhichTrains` alone, and the first pick shows the row as All; compare grids by
+     * `JSONObject.toMap()`, and the last pick shows it mixed; drop
      * `whichMixed.setVisible(true)` from `lockTheWidth`, and the triangle wraps out of sight.
      */
     @Test(timeOut = 180000)
@@ -859,6 +861,13 @@ public class testSeveralStationsAtOnce
         StationSettingsWindow apart = advanced(pick(two));
 
         assertTrue(showing(apart, "station.whichMixed"), "grids one cell apart did not show the row mixed");
+
+        // The same meaning in other data: a list kept under All is no difference
+        StationDoors.press(panel, "autonomy.pickStations");
+        gridOn(two.get(1), side, train);
+        on(() -> { session.setWhichTrains(two.get(0), side, false, WhichTrains.ALL, Collections.singletonList(train)); return null; });
+
+        assertFalse(showing(advanced(pick(two)), "station.whichMixed"), "grids that mean the same showed the row mixed");
     }
 
     /**

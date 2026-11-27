@@ -187,9 +187,7 @@ public class testAllowedTrainsPerSide
 
         assertTrue(showing(window, "station.whichGrid"), "the grid folded while its cells differ");
 
-        Layout railway = Layout.fromJSON(Components.onTheEventThread(session::buildConfiguration), frozen.model);
-
-        assertTrue(railway.isValid(), "the setup does not build: " + Layout.getLastError());
+        Layout railway = built();
         assertTrue(overApproach(railway, Q, "WestEnd", "MainPlatform"), "Q may not run west to east over Approach");
         assertTrue(overApproach(railway, MX, "MainPlatform", "WestEnd"), "MX 26 may not run east to west over Approach");
         assertFalse(overApproach(railway, Q, "MainPlatform", "WestEnd"),
@@ -252,6 +250,89 @@ public class testAllowedTrainsPerSide
         on(() -> assertEquals(new java.util.HashSet<>(session.getTrainList(approach, Side.E, true)),
             new java.util.HashSet<>(java.util.Arrays.asList(Q, MX)), "the pencil did not set the cell's list"));
         on(() -> assertEquals(session.getWhichTrains(approach, Side.W, true), WhichTrains.ALL, "the pencil set another cell"));
+    }
+
+    /**
+     * Every Stop cell set one by one to the same list, a list unlike the square's old one, folds the grid into the one
+     * row, the old keys hold the new list only, and the railway built from them lets Q stop and refuses MX 26.
+     *
+     * MUTATION: drop the `LIST_KEYS` loop for a uniform grid from `AutonomySession.storeGrid`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testEveryStopCellSetToOneListSavesThatListInTheOldKeys() throws Exception
+    {
+        on(() -> session.setWhichTrains(approach, WhichTrains.WHITELIST, Collections.singletonList(MX)));
+
+        StationSettingsWindow window = opened();
+
+        StationDoors.press(window, "station.whichPerSide");
+        StationDoors.press(window, "station.which.W.stop.choose", message -> StationDoors.choosing(Q));
+
+        assertTrue(Components.onTheEventThread(() -> session.hasTrainsBySide(approach)), "precondition: one cell made no grid");
+
+        StationDoors.press(window, "station.which.E.stop.choose", message -> StationDoors.choosing(Q));
+
+        assertFoldedTo(window, Q);
+        assertTrue(StationDoors.on(window, "station.whichWhite"), "the row does not read the cells' choice");
+
+        Layout railway = built();
+        assertTrue(stopsAtApproach(railway, Q), "Q may not stop at Approach");
+        assertFalse(stopsAtApproach(railway, MX), "MX 26 stops at Approach, whose cells name only Q");
+    }
+
+    /**
+     * A square's kind changes which cells its one list stands for: with Trains can stop here ticked off, cells that
+     * differ only in their Stop column now agree on Run through, so the grid folds and the old keys hold that list.
+     *
+     * MUTATION: drop the `storeGrid` call from `AutonomySession.setStopsAndRunsThrough`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testChangingTheKindFoldsCellsThatNowAgree() throws Exception
+    {
+        on(() ->
+        {
+            session.setWhichTrains(approach, Side.W, true, WhichTrains.WHITELIST, Collections.singletonList(MX));
+            session.setWhichTrains(approach, Side.E, true, WhichTrains.WHITELIST, Collections.singletonList(MX));
+            session.setWhichTrains(approach, Side.E, false, WhichTrains.WHITELIST, Collections.singletonList(Q));
+        });
+
+        StationSettingsWindow window = opened();
+
+        assertTrue(showing(window, "station.whichGrid"), "precondition: the cells differ");
+
+        StationDoors.press(window, "station.stops");
+
+        assertFoldedTo(window, MX);
+    }
+
+    /** The grid is gone and the one list, in the old keys, is this train alone. */
+    private void assertFoldedTo(StationSettingsWindow window, String train)
+    {
+        on(() ->
+        {
+            assertFalse(session.hasTrainsBySide(approach), "cells that agree kept the grid");
+            assertEquals(session.getTrainList(approach), Collections.singletonList(train), "the one list is not the cells'");
+            assertEquals(session.getPointProperty(approach, "excludedLocs").toString(), "[\"" + train + "\"]", "the old keys");
+        });
+        assertFalse(showing(window, "station.whichGrid"), "the grid did not fold");
+    }
+
+    /** The railway the setup builds, which must be valid. */
+    private static Layout built()
+    {
+        Layout railway = Layout.fromJSON(Components.onTheEventThread(session::buildConfiguration), frozen.model);
+
+        assertTrue(railway.isValid(), "the setup does not build: " + Layout.getLastError());
+
+        return railway;
+    }
+
+    /** Whether the built railway lets this train stop on any copy of Approach. */
+    private static boolean stopsAtApproach(Layout railway, String train)
+    {
+        Locomotive loc = frozen.model.getLocByName(train);
+
+        return session.getStationIndex().pointNamesAt(approach).stream().anyMatch(name -> !railway.getPoint(name).excludes(loc));
     }
 
     /** Whether this train, standing at `from`, has a trip to `to` over Approach. */

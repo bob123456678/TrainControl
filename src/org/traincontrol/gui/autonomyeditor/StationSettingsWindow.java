@@ -1333,8 +1333,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
         // Squares agree only where their whole grids per side do (FR-260); a grid they share has no one radio, and its
         // (i) says it is set per side
-        Object allowed = agreed(each -> session.hasTrainsBySide(each) ? ((org.json.JSONObject) session.getPointProperty(each,
-            org.traincontrol.automation.Point.TRAINS_BY_SIDE)).toMap() : session.getWhichTrains(each));
+        Object allowed = agreed(session::trainsRule);
         WhichTrains which = allowed instanceof WhichTrains ? (WhichTrains) allowed : null;
         Integer listed = agreed(each -> session.getTrainList(each).size());
         // Once the cells differ, the grid folds as soon as they agree again
