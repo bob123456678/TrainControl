@@ -4036,10 +4036,9 @@ public class testStationSettingsWindow
     }
 
     /**
-     * With the diagram's default options the picture draws no green arrow on the station's square, as the diagram draws
-     * none (OB-511), and a red one only at a side May depart shuts:
-     * TopMainR1, allowing its one way in, wears none (OB-494), and one way toward its side A draws red at its side B
-     * alone.
+     * Whatever the diagram's options, the picture draws a green arrow on the station's square at each side trains may
+     * leave by and a red one only at a side May depart shuts (MT-1106): TopMainR1, allowing its one way in, wears no way
+     * in (OB-494); open both ways it draws green at both sides, one way toward its side A green at A and red at B.
      *
      * MUTATION: have `StationPicture.show` give the station no marks, and this fails.
      */
@@ -4050,27 +4049,31 @@ public class testStationSettingsWindow
 
         StationSettingsWindow window = StationDoors.open(panel, square);
 
+        String[] road = Components.onTheEventThread(() -> new String[] {
+            String.valueOf(session.getRoutes(square).values().iterator().next().getA()),
+            String.valueOf(session.getRoutes(square).values().iterator().next().getB())});
+
         assertWays(window, set());
+        assertEquals(sidesDrawnIn(window, ONE_WAY_GREEN), set(road), "a station leaving both ways lacks a green arrow");
         assertEquals(sidesDrawnIn(window, CLOSED_RED), set(), "a station leaving both ways wears a red arrow");
 
         StationDoors.close(window);
 
         restrictAsAFileWould(square, Direction.TOWARD_A);
 
-        String shut = Components.onTheEventThread(() ->
-            String.valueOf(session.getRoutes(square).values().iterator().next().getB()));
-
         window = StationDoors.open(panel, square);
 
-        assertEquals(sidesDrawnIn(window, ONE_WAY_GREEN), set(), "a one-way station wears a green arrow");
-        assertEquals(sidesDrawnIn(window, CLOSED_RED), set(shut), "a one-way station's red arrow is not at the side it shuts");
+        assertEquals(sidesDrawnIn(window, ONE_WAY_GREEN), set(road[0]), "a one-way station's green arrow is not at the side"
+            + " it leaves by");
+        assertEquals(sidesDrawnIn(window, CLOSED_RED), set(road[1]), "a one-way station's red arrow is not at the side it"
+            + " shuts");
 
         StationDoors.close(window);
     }
 
     /**
-     * The picture draws the red and green arrows the track diagram draws, square for square (OB-511): the station's own
-     * under each choice of the diagram's two arrow options, a next square's every arm.  A one-way station, a next switch
+     * The picture draws every red and green arrow, square for square, under each choice of the diagram's two arrow options
+     * (MT-1106): the station's own, a next square's every arm.  A one-way station, a next switch
      * with an arm off the station's road, and one with a red there.  A next square wears its greens whatever the options,
      * as the picture's controls, and one that follows its run is left out: the diagram draws that on the run's first square.
      *
@@ -4078,7 +4081,7 @@ public class testStationSettingsWindow
      * meet the station, and this fails.
      */
     @Test(timeOut = 180000)
-    public void testThePictureDrawsTheDiagramsArrows() throws Exception
+    public void testThePictureDrawsEveryArrowWhateverTheOptions() throws Exception
     {
         java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
 
@@ -4104,7 +4107,7 @@ public class testStationSettingsWindow
                     try
                     {
                         assertEquals(arrowsIn(window, station, true), arrowsIn(window, station, false), name + "'s picture"
-                            + " draws other arrows than the diagram, with restrictions " + options[0] + " and allowed " + options[1]);
+                            + " leaves out arrows, with restrictions " + options[0] + " and allowed " + options[1]);
                     }
                     finally
                     {
@@ -4124,15 +4127,15 @@ public class testStationSettingsWindow
     }
 
     /**
-     * With Display Allowed Directions ticked, a station that lets trains leave every way draws no green arrows in the
-     * picture, as on the diagram; a click on its square still steps May depart, with the hand and the tooltip; one with a
-     * way shut keeps its greens beside the red (MT-1100).
+     * With Display Allowed Directions ticked, a station that lets trains leave every way draws its green arrows in the
+     * picture, as on the diagram (MT-1106); a click on its square steps May depart, with the hand and the tooltip; one
+     * with a way shut keeps its greens beside the red.
      *
-     * MUTATION: drop `withoutOpenGreen()` from `SessionRuns.staticAnnotations`, or key the click on the painted arrows,
-     * and this fails.
+     * MUTATION: have `SessionRuns.staticAnnotations` leave out an open station's greens, or key the click on the painted
+     * arrows, and this fails.
      */
     @Test(timeOut = 180000)
-    public void testAnOpenStationDrawsNoGreenInThePictureAndStillTakesTheClick() throws Exception
+    public void testAnOpenStationDrawsItsGreenInThePictureAndTakesTheClick() throws Exception
     {
         java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
 
@@ -4149,8 +4152,8 @@ public class testStationSettingsWindow
 
         try
         {
-            assertTrue(arrowsIn(window, square, true).get("SQUARE").startsWith("G[] "), "an open station's picture draws green: "
-                + arrowsIn(window, square, true).get("SQUARE"));
+            assertFalse(arrowsIn(window, square, true).get("SQUARE").startsWith("G[] "), "an open station's picture draws no"
+                + " green: " + arrowsIn(window, square, true).get("SQUARE"));
 
             String[] hover = new String[3];
             int first = Components.onTheEventThread(() -> departList(window).getSelectedIndex());
@@ -4159,7 +4162,7 @@ public class testStationSettingsWindow
             StationDoors.current(window);
 
             assertNotEquals((int) Components.onTheEventThread(() -> departList(window).getSelectedIndex()), first,
-                "with no green drawn, a click on the station did not step May depart");
+                "a click on the station did not step May depart");
             assertTrue(hover[2] != null && hover[2].contains(I18n.t("autosetup.ui.stationPicDepart")), "the station's tooltip"
                 + " is " + hover[2]);
             assertTrue(Components.onTheEventThread(() -> HandPointer.isHand(StationDoors.part(window, "station.picture.ways",
@@ -4194,13 +4197,13 @@ public class testStationSettingsWindow
     }
 
     /**
-     * The picture takes up a change of the diagram's arrow options made in the main window while Station Settings is open,
-     * when the window is activated again (OB-511).
+     * With both of the diagram's arrow options off, the picture's station still draws its green and red arrows, and turning
+     * them on while the window is open and activating it again changes nothing (MT-1106).
      *
-     * MUTATION: drop `picture.refresh()` from the window's `windowActivated`, and this fails.
+     * MUTATION: have `StationPicture.drawStation` ask the diagram's two options again, and this fails.
      */
     @Test(timeOut = 120000)
-    public void testThePictureFollowsTheOptionsWhenTheWindowIsActivated() throws Exception
+    public void testThePictureDrawsTheStationsArrowsWithTheOptionsOff() throws Exception
     {
         java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
 
@@ -4211,17 +4214,20 @@ public class testStationSettingsWindow
 
         restrictAsAFileWould(station, Direction.TOWARD_A);
 
-        prefs.putBoolean(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, true);
+        prefs.putBoolean(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, false);
         prefs.putBoolean(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, false);
 
         StationSettingsWindow window = StationDoors.open(panel, station);
 
         try
         {
-            prefs.putBoolean(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, true);
+            String drawn = arrowsIn(window, station, true).get("SQUARE");
 
-            assertNotEquals(arrowsIn(window, station, true), arrowsIn(window, station, false),
-                "precondition: the option changes the diagram's station");
+            assertTrue(!drawn.startsWith("G[] ") && !drawn.endsWith("R[]"), "with both options off the picture's station"
+                + " lacks a green or a red arrow: " + drawn);
+
+            prefs.putBoolean(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, true);
+            prefs.putBoolean(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, true);
 
             Components.onTheEventThread(() ->
             {
@@ -4234,8 +4240,7 @@ public class testStationSettingsWindow
             });
             Components.settle();
 
-            assertEquals(arrowsIn(window, station, true), arrowsIn(window, station, false),
-                "the picture kept the old option after the window was activated");
+            assertEquals(arrowsIn(window, station, true).get("SQUARE"), drawn, "the options changed the picture's station");
         }
         finally
         {
@@ -4383,8 +4388,7 @@ public class testStationSettingsWindow
                 }
 
                 org.traincontrol.automationui.TileAnnotation diagram = session.staticAnnotations(
-                    java.util.Collections.singleton(square), !own || TrainControlUI.diagramShowsRestrictionArrows(),
-                    !own || TrainControlUI.diagramShowsAllowedDirections()).get(square);
+                    java.util.Collections.singleton(square), true, true).get(square);
 
                 BufferedImage alone = new BufferedImage(60, 60, BufferedImage.TYPE_INT_RGB);
 
@@ -6061,12 +6065,10 @@ public class testStationSettingsWindow
     private static final int TRACE_YELLOW = 0xffd600;
     private static final int TRACE_ORANGE = 0xff9628;
 
-    /** What the picture's station shows: its open ways in, and no green arrow, as the diagram draws none by default (OB-511). */
+    /** The open ways in the picture's station shows. */
     private static void assertWays(StationSettingsWindow window, Set<String> in) throws Exception
     {
         assertEquals(Components.onTheEventThread(window::pictureWaysInForTest), in, "the ways in");
-
-        assertEquals(sidesDrawnIn(window, ONE_WAY_GREEN), set(), "the sides of the station a green arrow is drawn at");
     }
 
     /** The sides of the picture's station square that pixels of exactly this color lie nearest to. */
