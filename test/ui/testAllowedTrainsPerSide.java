@@ -44,7 +44,6 @@ public class testAllowedTrainsPerSide
     private static TileKey approach;
 
     private LayoutEditor editor;
-    private AutonomyEditorPanel panel;
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -78,19 +77,20 @@ public class testAllowedTrainsPerSide
         if (frozen == null) throw new SkipException("the class did not set up");
 
         frozen.putBack();
-
         editor = frozen.editorOn(PAGE);
-        panel = Components.onTheEventThread(() -> editor.getAutonomyPanel());
     }
 
     @AfterMethod(alwaysRun = true)
     public void closeTheEditor() throws Exception
     {
-        support.FrozenEditor.dispose(editor);
-
-        editor = null;
-
-        support.AskingWindows.closeEveryDialog();
+        try
+        {
+            support.AskingWindows.closeEveryDialog();
+        }
+        finally
+        {
+            support.FrozenEditor.dispose(editor);
+        }
     }
 
     /**
@@ -223,6 +223,7 @@ public class testAllowedTrainsPerSide
 
     private StationSettingsWindow opened() throws Exception
     {
+        AutonomyEditorPanel panel = Components.onTheEventThread(editor::getAutonomyPanel);
         StationSettingsWindow window = StationDoors.open(panel, approach);
 
         Components.onTheEventThread(() -> { window.openAdvancedForTest(); return null; });

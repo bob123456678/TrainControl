@@ -3999,7 +3999,6 @@ public class AutonomyEditorPanel extends JPanel
     boolean setWhichTrains(TileKey tile, TilePorts.Side side, boolean through, AutonomySession.WhichTrains which)
     {
         List<String> listed = side == null ? session.getTrainList(tile) : session.getTrainList(tile, side, through);
-
         if (which != AutonomySession.WhichTrains.ALL && !through && !prompts.homeMayBeBroken(tile, listed, which))
         {
             return false;
@@ -4007,7 +4006,6 @@ public class AutonomyEditorPanel extends JPanel
 
         if (side == null) session.setWhichTrains(tile, which);
         else session.setWhichTrains(tile, side, through, which, listed);
-
         setupChanged();
 
         return true;

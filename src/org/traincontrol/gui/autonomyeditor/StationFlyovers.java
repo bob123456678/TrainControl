@@ -138,7 +138,6 @@ final class StationFlyovers
     static String whichBySide(boolean station)
     {
         String now = I18n.t("autosetup.ui.flyWhichBySide");
-
         return nowThenChange(station ? now : now + "  " + I18n.t("autosetup.ui.flyWhichBySideTrack"),
             I18n.t("autosetup.ui.flyWhichBySideChange"));
     }

@@ -4578,17 +4578,13 @@ public class AutonomySession
         storeTrains(tile, which, names);
     }
 
-    /**
-     * The one list; a grid per side is kept, its cells the one list stands for (Stop at a station, else Run through)
-     * set to it, so a square-wide choice never drops the other column.
-     */
+    /** The one list; a grid per side keeps its other column, the cells the one list stands for set to it (FR-260). */
     private void storeTrains(TileKey tile, WhichTrains which, Collection<String> names)
     {
         JSONObject cell = cellOf(which, names);
         for (String key : LIST_KEYS) setPointProperty(tile, key, cell.opt(key));
         Object grid = getPointProperty(tile, Point.TRAINS_BY_SIDE);
         if (!(grid instanceof JSONObject)) return;
-
         JSONObject kept = new JSONObject(grid.toString());
         for (String side : kept.keySet())
         {
