@@ -463,7 +463,7 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
-* v3.1.2
+* v3.1.2 [11/27/2026]
     - New Features
         - Autonomy
             - In the `Station Settings` picture, clicking the station changes `May depart`, and clicking an arrow beside it changes that track; when the line further on still points the other way, it offers `Up to Next Station` or `Only Clicked Track`.
