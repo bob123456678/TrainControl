@@ -8505,14 +8505,6 @@ public class Layout
                 return false;
             }
 
-            if (points == null || edges == null)
-            {
-                layout.invalidate(
-                    I18n.f("autolayout.errorMissingKeysPointsEdges")
-                );
-                return false;
-            }
-                
             try
             {
                 layout.setDefaultLocSpeed(defaultLocSpeed);
