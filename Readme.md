@@ -483,7 +483,7 @@ Tab icons provided by Freepik.
         - Autonomy
             - Page windows keep showing routes and trains in every autonomy run, also after `Stop Using Autonomy` or switching configurations, and no orange destination label stays behind.
             - The `Station Settings` picture shows the same red and green arrows as the track diagram, on the station too.
-            - With `Display Allowed Directions` ticked, a station that lets trains leave every way no longer draws green arrows on the track diagram; a station with a red side keeps its green ones.
+            - With `Display Allowed Directions` ticked, a station that lets trains leave every way no longer draws green arrows, on the track diagram or in Station Settings' picture; a station with a red side keeps its green ones.
             - A train where the track has only one way out shows that direction on its caption, and `Change Direction` offers only that way.
             - In an imported JSON autonomy file, a negative maximum number of active trains means no limit, and a malformed lock or maximum is refused with a clear message.
         - Locomotive Control

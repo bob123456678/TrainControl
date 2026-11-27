@@ -374,12 +374,12 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
             + " first square is drawn otherwise than with the restrictions alone");
 
         assertEquals(session.staticAnnotations(run, true, true).get(leader),
-            session.staticAnnotationFor(leader, true).withAllowedDirections(), "with the option, the run's first square"
+            session.staticAnnotationFor(leader, true).withAllowedDirections().withoutOpenGreen(), "with the option, the run's first square"
             + " is not drawn with the green arrows (FR-110)");
 
         // THE GREEN ALONE: drawn, with no red and no ingress arrows (MT-675)
         assertEquals(session.staticAnnotations(run, false, true).get(leader),
-            session.staticAnnotationFor(leader, true, false).withAllowedDirections().withoutRestrictions(), "with only the"
+            session.staticAnnotationFor(leader, true, false).withAllowedDirections().withoutOpenGreen().withoutRestrictions(), "with only the"
             + " allowed directions chosen, the run's first square is not drawn in green alone (MT-675)");
 
         assertNull(session.staticAnnotations(run, false, false).get(leader), "with neither chosen, the run's first square"

@@ -493,7 +493,7 @@ public class TileAnnotation
     }
 
     private boolean allowedToo = false;
-    private boolean hideOpenGreen = false;
+    private volatile boolean hideOpenGreen = false;
 
     /** Draws no green on a station that lets trains leave every way: on the diagram that is the default, so it says nothing. */
     public TileAnnotation withoutOpenGreen()

@@ -302,7 +302,8 @@ final class SessionRuns
 
             if (annotation != null && drawn)
             {
-                if (allowedToo) annotation.withAllowedDirections();
+                // A station open every side says nothing in green, on the diagram and in Station Settings' picture alike
+                if (allowedToo) annotation.withAllowedDirections().withoutOpenGreen();
 
                 if (!arrows) annotation.withoutRestrictions();
             }
