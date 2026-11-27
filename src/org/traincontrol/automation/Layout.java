@@ -5980,22 +5980,18 @@ public class Layout
     }
 
     /**
-     * Moves a standing train onto another copy of its square, its tail and route read first (the move clears them on
-     * the copy it leaves), and onto the new copy before off the old: an empty square for a moment could have another
-     * thread command the exit guard green over the standing train.
+     * Moves a standing train onto another copy of its square with its tail and route, never leaving the square empty.
      */
     private void moveToCopy(Point from, Point onto, Locomotive loc)
     {
+        // Read first: the move clears them on the copy it leaves.
         String tail = from.getArrivedFrom();
-
         java.util.List<Edge> along = from.getArrivedAlong();
 
+        // Onto the new copy before off the old: an empty square could let the exit guard be commanded green over it.
         onto.reserve(loc);
-
         onto.setArrivedFrom(tail);
-
         onto.setArrivedAlong(along);
-
         clearLocomotiveExcept(loc, onto);
     }
 
