@@ -143,9 +143,10 @@ public class testATrainIsDispatchedOnce
         claimsField.set(layout, claims);
 
         java.lang.reflect.Method lock = Reflect.method(Layout.class,
-            "configureAndLockPath", List.class, Locomotive.class, Layout.ReversalPolicy.class);
+            "configureAndLockPath", List.class, Locomotive.class, Layout.ReversalPolicy.class,
+            org.traincontrol.automation.Point.class);
 
-        boolean locked = (boolean) lock.invoke(layout, theRoute(layout), train, thisRuns);
+        boolean locked = (boolean) lock.invoke(layout, theRoute(layout), train, thisRuns, null);
 
         try
         {

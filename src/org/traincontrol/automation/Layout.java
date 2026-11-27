@@ -3260,9 +3260,7 @@ public class Layout
     }
 
     /**
-     * configureAndLockPath, keeping the run's reversal answer with the claim (see copyItWillStandOn).  A train found on
-     * `stood` (non-null: it sets off turned, D222) is stood on the path's start by the dispatch that claims it, and
-     * every refusal here stands it back.
+     * configureAndLockPath with the reversal answer; moves a train found on `stood` onto the start under its claim.
      */
     private boolean configureAndLockPath(List<Edge> path, Locomotive loc, ReversalPolicy reversals, Point stood)
     {
